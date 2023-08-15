@@ -1,0 +1,6 @@
+__pycache__
+*.ini
+wildcards/**
+.vscode/
+.idea/
+node_modules/
