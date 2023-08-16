@@ -645,7 +645,8 @@ export declare class LGraphNode {
         | typeof LiteGraph.ON_EVENT
         | typeof LiteGraph.ON_TRIGGER
         | typeof LiteGraph.NEVER
-        | typeof LiteGraph.ALWAYS;
+        | typeof LiteGraph.ALWAYS
+        | 4; // Comfy App "Bypass"
 
     /** If set to true widgets do not start after the slots */
     widgets_up: boolean;

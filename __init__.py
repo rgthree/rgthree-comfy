@@ -43,7 +43,7 @@ not_nodes=['constants','log','utils']
 
 for file in glob.glob('*.py', root_dir=DIR_PY) + glob.glob('*.js', root_dir=DIR_JS):
     name = os.path.splitext(file)[0]
-    if name not in nodes and name not in not_nodes and not name.startswith('_'):
+    if name not in nodes and name not in not_nodes and not name.startswith('_') and not name.startswith('base'):
         nodes.append(name)
 
 log_welcome(num_nodes=len(nodes))
