@@ -5,8 +5,8 @@ const ALWAYS_MODE = 0;
 app.registerExtension({
     name: "rgthree.Muter",
     registerCustomNodes() {
-        class CustomNode extends LGraphNode {
-            constructor(title = CustomNode.title) {
+        class MuterNode extends LGraphNode {
+            constructor(title = MuterNode.title) {
                 super(title);
                 this.debouncer = 0;
                 this.schedulePromise = null;
@@ -94,20 +94,22 @@ app.registerExtension({
                 return size;
             }
         }
-        CustomNode.title = "Fast Muter (rgthree)";
-        CustomNode.collapsible = false;
-        CustomNode.category = "rgthree/utils";
-        addConnectionLayoutSupport(CustomNode, app, [['Left'], ['Right']]);
-        addMenuItem(CustomNode, app, {
+        MuterNode.title = "Fast Muter (rgthree)";
+        MuterNode.category = 'rgthree';
+        MuterNode._category = 'rgthree';
+        MuterNode.collapsible = false;
+        addConnectionLayoutSupport(MuterNode, app, [['Left'], ['Right']]);
+        addMenuItem(MuterNode, app, {
             name: (node) => { var _a; return (`${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['collapse_connections']) ? 'Show' : 'Collapse'} Connections`); },
             property: 'collapse_connections',
             prepareValue: (_value, node) => { var _a; return !((_a = node.properties) === null || _a === void 0 ? void 0 : _a['collapse_connections']); },
             callback: (_node) => { app.graph.setDirtyCanvas(true, true); }
         });
-        addMenuItem(CustomNode, app, {
+        addMenuItem(MuterNode, app, {
             name: 'Refresh',
             callback: (node) => { node.scheduleRefreshMutables(); }
         });
-        LiteGraph.registerNodeType(CustomNode.title, CustomNode);
+        LiteGraph.registerNodeType(MuterNode.title, MuterNode);
+        MuterNode.category = MuterNode._category;
     },
 });

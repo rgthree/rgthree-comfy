@@ -55,8 +55,10 @@ app.registerExtension({
             }
         }
         CombinerNode.title = "Node Combiner (rgthree)";
-        CombinerNode.category = "rgthree";
+        CombinerNode.category = 'rgthree';
+        CombinerNode._category = 'rgthree';
         addConnectionLayoutSupport(CombinerNode, app, [['Left', 'Right'], ['Right', 'Left']]);
         LiteGraph.registerNodeType(CombinerNode.title, CombinerNode);
+        CombinerNode.category = CombinerNode._category;
     },
 });

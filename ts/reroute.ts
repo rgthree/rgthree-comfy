@@ -15,6 +15,10 @@ app.registerExtension({
 		class RerouteNode extends LGraphNode {
 
 			static override title = "Reroute (rgthree)";
+       // `category` seems to get reset at register, so we'll
+       // re-reset it after the register call. ¯\_(ツ)_/¯
+      static category = 'rgthree';
+      static _category = 'rgthree';
 			static readonly title_mode = LiteGraph.NO_TITLE;
 			static collapsable = false;
       static layout_slot_offset = 0;
@@ -209,6 +213,7 @@ app.registerExtension({
     });
 
 		LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
+    RerouteNode.category = RerouteNode._category;
 	},
 });
 

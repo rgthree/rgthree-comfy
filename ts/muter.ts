@@ -14,16 +14,19 @@ const ALWAYS_MODE = 0;
 app.registerExtension({
 	name: "rgthree.Muter",
 	registerCustomNodes() {
-		class CustomNode extends LGraphNode {
+		class MuterNode extends LGraphNode {
 
 			static override title = "Fast Muter (rgthree)";
+      // `category` seems to get reset at register, so we'll
+      // re-reset it after the register call. ¯\_(ツ)_/¯
+      static category = 'rgthree';
+      static _category = 'rgthree';
 			static collapsible = false;
-      static category = "rgthree/utils";
       debouncer: number = 0;
       schedulePromise: Promise<void> | null = null;
       isVirtualNode = true;
 
-			constructor(title = CustomNode.title) {
+			constructor(title = MuterNode.title) {
         super(title);
         this.properties = this.properties || {};
         this.connections = [];
@@ -117,10 +120,10 @@ app.registerExtension({
 		}
 
     // @ts-ignore: Fix incorrect litegraph typings.
-    addConnectionLayoutSupport(CustomNode, app, [['Left'],['Right']]);
+    addConnectionLayoutSupport(MuterNode, app, [['Left'],['Right']]);
 
     // @ts-ignore: Fix incorrect litegraph typings.
-    addMenuItem(CustomNode, app, {
+    addMenuItem(MuterNode, app, {
       name: (node) => (`${node.properties?.['collapse_connections'] ? 'Show' : 'Collapse'} Connections`),
       property: 'collapse_connections',
       prepareValue: (_value, node) => !node.properties?.['collapse_connections'],
@@ -128,11 +131,12 @@ app.registerExtension({
     });
 
     // @ts-ignore: Fix incorrect litegraph typings.
-    addMenuItem(CustomNode, app, {
+    addMenuItem(MuterNode, app, {
       name: 'Refresh',
-      callback: (node) => {(node as CustomNode).scheduleRefreshMutables()}
+      callback: (node) => {(node as MuterNode).scheduleRefreshMutables()}
     });
 
-		LiteGraph.registerNodeType(CustomNode.title, CustomNode);
+		LiteGraph.registerNodeType(MuterNode.title, MuterNode);
+    MuterNode.category = MuterNode._category;
 	},
 });

@@ -132,6 +132,8 @@ app.registerExtension({
             }
         }
         RerouteNode.title = "Reroute (rgthree)";
+        RerouteNode.category = 'rgthree';
+        RerouteNode._category = 'rgthree';
         RerouteNode.title_mode = LiteGraph.NO_TITLE;
         RerouteNode.collapsable = false;
         RerouteNode.layout_slot_offset = 0;
@@ -166,5 +168,6 @@ app.registerExtension({
             callback: (node) => node.applyNodeSize()
         });
         LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
+        RerouteNode.category = RerouteNode._category;
     },
 });

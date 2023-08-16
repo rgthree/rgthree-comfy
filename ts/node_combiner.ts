@@ -13,7 +13,10 @@ app.registerExtension({
 		class CombinerNode extends LGraphNode {
 
       static override title = "Node Combiner (rgthree)";
-      static category = "rgthree"
+      // `category` seems to get reset at register, so we'll
+      // re-reset it after the register call. ¯\_(ツ)_/¯
+      static category = 'rgthree';
+      static _category = 'rgthree';
 
       isVirtualNode = true;
 
@@ -76,6 +79,7 @@ app.registerExtension({
     addConnectionLayoutSupport(CombinerNode, app, [['Left','Right'],['Right','Left']]);
 
 		LiteGraph.registerNodeType(CombinerNode.title, CombinerNode);
+    CombinerNode.category = CombinerNode._category;
 	},
 });
 
