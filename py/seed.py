@@ -1,6 +1,10 @@
-from constants import category_prefix, get_name
+from .constants import get_category, get_name
 
 class RgthreeSeed:
+
+    NAME = get_name('Seed')
+    CATEGORY = get_category()
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -13,11 +17,6 @@ class RgthreeSeed:
     RETURN_NAMES = ("SEED",)
     FUNCTION = "main"
 
-    CATEGORY = "%s/utils" % category_prefix
-
     def main(self, seed=0):
         return (seed,)
 
-
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS[get_name('Seed')] = RgthreeSeed

@@ -1,6 +1,10 @@
-from constants import category_prefix, get_name
+from .constants import get_category, get_name
 
 class RgthreeDisplayInt:
+
+    NAME = get_name('Display Int')
+    CATEGORY = get_category()
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -13,11 +17,7 @@ class RgthreeDisplayInt:
     FUNCTION = "main"
     OUTPUT_NODE = True
 
-    CATEGORY = "%s/utils" % category_prefix
 
     def main(self, input=None):
         return {"ui": {"text": (input,)}}
 
-
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS[get_name('Display Int')] = RgthreeDisplayInt

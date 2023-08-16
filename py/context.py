@@ -1,4 +1,4 @@
-from constants import category_prefix, get_name
+from .constants import get_category, get_name
 
 ctx_keys = ["model", "clip", "vae", "positive", "negative", "latent", "images", "seed"]
 def new_context(context=None, model=None, clip=None, vae=None, positive=None, negative=None, latent=None, images=None, seed=None):
@@ -22,7 +22,12 @@ def d_k(dct, key, default=None):
 def a_b(a, b):
     return a if a != None else b
 
+
 class RgthreeContext:
+
+    NAME = get_name('Context')
+    CATEGORY = get_category()
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -46,13 +51,8 @@ class RgthreeContext:
     RETURN_NAMES = ("CONTEXT", "MODEL", "CLIP", "VAE", "POSITIVE", "NEGATIVE", "LATENT", "IMAGE", "SEED",)
     FUNCTION = "convert"
 
-    CATEGORY = "%s/utils" % category_prefix
 
     def convert(self, base_ctx=None, model=None, clip=None, vae=None, positive=None, negative=None, latent=None, images=None, seed=None, prompt=None):
         ctx = new_context(context=base_ctx, model=model, clip=clip, vae=vae, positive=positive, negative=negative, latent=latent, images=images, seed=seed)
         return (ctx, ctx['model'], ctx['clip'], ctx['vae'], ctx['positive'], ctx['negative'], ctx['latent'], ctx['images'], ctx['seed'],)
 
-
-
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS[get_name('Context')] = RgthreeContext

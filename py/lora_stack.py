@@ -1,9 +1,13 @@
-from constants import category_prefix, get_name
+from .constants import get_category, get_name
 from nodes import LoraLoader
 import folder_paths
 
 
 class RgthreeLoraLoaderStack:
+
+    NAME = get_name('Lora Loader Stack')
+    CATEGORY = get_category()
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -28,8 +32,6 @@ class RgthreeLoraLoaderStack:
     RETURN_TYPES = ("MODEL", "CLIP")
     FUNCTION = "load_lora"
 
-    CATEGORY = "%s/loaders" % category_prefix
-
     def load_lora(self, model, clip, lora_01, strength_01, lora_02, strength_02, lora_03, strength_03, lora_04, strength_04):
         if lora_01 != "None" and strength_01 != 0:
             model, clip = LoraLoader().load_lora(model, clip, lora_01, strength_01, strength_01)
@@ -42,7 +44,3 @@ class RgthreeLoraLoaderStack:
 
         return (model, clip)
 
-
-
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS[get_name('Lora Loader Stack')] = RgthreeLoraLoaderStack

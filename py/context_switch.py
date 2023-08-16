@@ -1,6 +1,10 @@
-from constants import category_prefix, get_name
+from .constants import get_category, get_name
 
 class RgthreeContextSwitch:
+
+    NAME = get_name('Context Switch')
+    CATEGORY = get_category()
+
     @classmethod
     def INPUT_TYPES(s):
         return {
@@ -20,8 +24,6 @@ class RgthreeContextSwitch:
     RETURN_NAMES = ("CONTEXT",)
     FUNCTION = "switch"
 
-    CATEGORY = "%s/utils" % category_prefix
-
     def switch(self, ctx_01=None, ctx_02=None, ctx_03=None, ctx_04=None, prompt=None):
         if ctx_01 != None:
             return (ctx_01,)
@@ -33,6 +35,3 @@ class RgthreeContextSwitch:
             return (ctx_04,)
         return (None,)
 
-
-NODE_CLASS_MAPPINGS = {}
-NODE_CLASS_MAPPINGS[get_name('Context Switch')] = RgthreeContextSwitch
