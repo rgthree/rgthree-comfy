@@ -43,7 +43,7 @@ export class BaseNodeDispatcher extends LGraphNode {
         const link: LLink = (app.graph as LGraph).links[linkId]!;
         const originNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
         const originNodeType = (originNode.constructor as typeof TLGraphNode).type;
-        if (originNodeType?.includes('Reroute') || type?.includes('Combiner')) {
+        if (originNodeType?.includes('Reroute') || originNodeType?.includes('Combiner')) {
           const foundNodes = this.doChainLookup(originNode);
           rootNodes = rootNodes.concat(foundNodes);
         } else if (rootNodes.includes(originNode)) {

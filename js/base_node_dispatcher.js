@@ -27,7 +27,7 @@ export class BaseNodeDispatcher extends LGraphNode {
                 const link = app.graph.links[linkId];
                 const originNode = app.graph.getNodeById(link.origin_id);
                 const originNodeType = originNode.constructor.type;
-                if ((originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Reroute')) || (type === null || type === void 0 ? void 0 : type.includes('Combiner'))) {
+                if ((originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Reroute')) || (originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Combiner'))) {
                     const foundNodes = this.doChainLookup(originNode);
                     rootNodes = rootNodes.concat(foundNodes);
                 }
