@@ -1,4 +1,4 @@
-# rgthree's ComfyUi Nodes
+# rgthree's Comfy Nodes
 
 These are a bunch of comfort and power nodes I created when messing around with Stable Diffusion. I made them for myself to make my workflow easier and cleaner. You're welcome to try them out, but do so at your own risk. Since I made them for myself, I didn't battle test them much outside of my specific use cases.
 
@@ -14,6 +14,12 @@ These are a bunch of comfort and power nodes I created when messing around with 
 
 ## Comfort Nodes
 
+### Reroute (but, like, for real)
+
+I wasn't a fan of how the original re-route wouldn't let me route in different directions (like, upwards, or to the left), so I made my own that can with each direction covered and pre-fixed small sizes.
+
+![Router Node](./docs/rgthree_router.png)
+
 ### Seed
 
 Finally, an intuitive seed control node for ComfyUI that works very much like Automatic1111's seed control.
@@ -24,12 +30,6 @@ Finally, an intuitive seed control node for ComfyUI that works very much like Au
 - Note, since we can randomize each time, and quickly grab previous ones
 
 ![Router Node](./docs/rgthree_seed.png)
-
-### Reroute (but, like, for real)
-
-I wasn't a fan of how the original re-route wouldn't let me route in different directions (like, upwards, or to the left), so I made my own that can with each direction covered and pre-fixed small sizes.
-
-![Router Node](./docs/rgthree_router.png)
 
 ### Context
 
@@ -57,9 +57,9 @@ With the following nodes, you can make your ComfyUI experience more streamlined 
 
 _(In aqua blue above)_ Chooses the first non-null context.
 
-### Fast Muter
+### Fast Muter/Bypasser
 
-_(In purple above)_ A collection of all connected nodes allowing a single-spot "dashbaord" to quickly enable and disable nodes.
+_(In purple above)_ Add a collection of all connected nodes allowing a single-spot as a "dashboard" to quickly enable and disable nodes. Two distinct nodes; one for "Muting" connected nodes, and one for "Bypassing" connected nodes.
 
 Also, you can use the **Node Combiner** as UI-only virtual node that allows you to connect any number of nodes as an input, into a single output. As of right now, this is only useful for cleaning up noodles to the Muter node and **any other use will likely not work at all.**
 

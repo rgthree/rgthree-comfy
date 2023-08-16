@@ -28,8 +28,11 @@ export class BaseNodeDispatcher extends LGraphNode {
                 const originNode = app.graph.getNodeById(link.origin_id);
                 const originNodeType = originNode.constructor.type;
                 if ((originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Reroute')) || (originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Combiner'))) {
-                    const foundNodes = this.doChainLookup(originNode);
-                    rootNodes = rootNodes.concat(foundNodes);
+                    for (const foundNode of this.doChainLookup(originNode)) {
+                        if (!rootNodes.includes(foundNode)) {
+                            rootNodes.push(foundNode);
+                        }
+                    }
                 }
                 else if (rootNodes.includes(originNode)) {
                     removeDups && (slotsToRemove.push(link.target_slot));
@@ -41,9 +44,6 @@ export class BaseNodeDispatcher extends LGraphNode {
             for (const slot of slotsToRemove) {
                 this.disconnectInput(slot);
             }
-        }
-        else if (!(type === null || type === void 0 ? void 0 : type.includes('Reroute')) && !(type === null || type === void 0 ? void 0 : type.includes('Combiner'))) {
-            rootNodes.push(startNode);
         }
         return rootNodes;
     }
