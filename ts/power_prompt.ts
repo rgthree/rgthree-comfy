@@ -103,12 +103,11 @@ class PowerPrompt {
 
   insertText(text: string) {
     if (this.promptEl) {
-      const noSpace = [',','\n'];
       let prompt = this.promptEl.value;
       let first = prompt.substring(0, this.promptEl.selectionStart).replace(/ +$/, '');
-      first = first + (noSpace.includes(first[first.length-1]!) ? '' : first.length ? ' ' : '');
+      first = first + (['\n'].includes(first[first.length-1]!) ? '' : first.length ? ' ' : '');
       let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
-      second = (noSpace.includes(second[0]!) ? '' : second.length ? ' ' : '') + second;
+      second = (['\n'].includes(second[0]!) ? '' : second.length ? ' ' : '') + second;
       this.promptEl.value = first + text + second;
       this.promptEl.focus();
       this.promptEl.selectionStart = first.length;
