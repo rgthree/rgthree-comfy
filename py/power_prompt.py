@@ -16,8 +16,6 @@ class RgthreePowerPrompt:
         SAVED_PROMPTS_FILES=folder_paths.get_filename_list('saved_prompts')
         SAVED_PROMPTS_CONTENT=[]
         for filename in SAVED_PROMPTS_FILES:
-            # path=f'../../folder_paths.get_full_path('saved_prompts', filename)'
-            print(folder_paths.get_full_path('saved_prompts', filename))
             with open(folder_paths.get_full_path('saved_prompts', filename), 'r') as f:
                 SAVED_PROMPTS_CONTENT.append(f.read())
         return {
