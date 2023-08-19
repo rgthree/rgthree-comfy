@@ -24,31 +24,23 @@ NODE_CLASS_MAPPINGS = {
     RgthreePowerPrompt.NAME: RgthreePowerPrompt,
 }
 
-def get_dir(subpath, mkdir=False):
-    dir = os.path.dirname(inspect.getfile(PromptServer))
-    dir = os.path.join(dir, subpath)
-    dir = os.path.abspath(dir)
-    if not os.path.exists(dir):
-        if mkdir:
-            os.makedirs(dir)
-        else:
-            raise ValueError('Path not found: %s' % dir)
-    return dir
+THIS_DIR=os.path.dirname(os.path.abspath(__file__))
+DIR_DEV_JS=os.path.abspath(f'{THIS_DIR}/js')
+DIR_PY=os.path.abspath(f'{THIS_DIR}/py')
+DIR_WEB_JS=os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
+if not os.path.exists(DIR_WEB_JS):
+    os.makedirs(DIR_WEB_JS)
 
-DIR_JS = get_dir('custom_nodes/rgthree-comfy/js')
-DIR_PY = get_dir('custom_nodes/rgthree-comfy/py')
-DIR_WEB = get_dir('web/extensions/rgthree', mkdir=True)
-
-shutil.copytree(DIR_JS, DIR_WEB, dirs_exist_ok=True)
+shutil.copytree(DIR_DEV_JS, DIR_WEB_JS, dirs_exist_ok=True)
 
 nodes=[]
-not_nodes=['constants','log','utils']
+NOT_NODES=['constants','log','utils']
 
-for file in glob.glob('*.py', root_dir=DIR_PY) + glob.glob('*.js', root_dir=DIR_JS):
+__all__ = ['NODE_CLASS_MAPPINGS']
+
+for file in glob.glob('*.py', root_dir=DIR_PY) + glob.glob('*.js', root_dir=DIR_DEV_JS):
     name = os.path.splitext(file)[0]
-    if name not in nodes and name not in not_nodes and not name.startswith('_') and not name.startswith('base'):
+    if name not in nodes and name not in NOT_NODES and not name.startswith('_') and not name.startswith('base'):
         nodes.append(name)
 
 log_welcome(num_nodes=len(nodes))
-
-__all__ = ['NODE_CLASS_MAPPINGS']
