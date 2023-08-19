@@ -1,12 +1,3 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 const LAST_SEED_BUTTON_LABEL = '♻️ (Use Last Queued Seed)';
@@ -43,7 +34,7 @@ class SeedControl {
             this.lastSeedButton.disabled = true;
         }, { width: 50, serialize: false });
         this.lastSeedButton.disabled = true;
-        this.seedWidget.serializeValue = (node, index) => __awaiter(this, void 0, void 0, function* () {
+        this.seedWidget.serializeValue = async (node, index) => {
             const currentSeed = this.seedWidget.value;
             this.serializedCtx = {
                 wasRandom: currentSeed == -1,
@@ -69,7 +60,7 @@ class SeedControl {
                 this.lastSeedButton.disabled = true;
             }
             return this.serializedCtx.seedUsed;
-        });
+        };
         this.seedWidget.afterQueued = () => {
             if (this.serializedCtx.wasRandom) {
                 this.seedWidget.value = -1;
@@ -98,10 +89,10 @@ class SeedControl {
         this.lastSeedValue.inputEl.readOnly = true;
         this.lastSeedValue.inputEl.style.fontSize = '0.75rem';
         this.lastSeedValue.inputEl.style.textAlign = 'center';
-        this.lastSeedValue.serializeValue = (node, index) => __awaiter(this, void 0, void 0, function* () {
+        this.lastSeedValue.serializeValue = async (node, index) => {
             node.widgets_values[index] = '';
             return '';
-        });
+        };
         this.node.computeSize();
     }
     removeLastSeedValue() {
@@ -115,15 +106,13 @@ class SeedControl {
 }
 app.registerExtension({
     name: "rgthree.Seed",
-    beforeRegisterNodeDef(nodeType, nodeData, _app) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (nodeData.name === "Seed (rgthree)") {
-                const onNodeCreated = nodeType.prototype.onNodeCreated;
-                nodeType.prototype.onNodeCreated = function () {
-                    onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
-                    this.seedControl = new SeedControl(this);
-                };
-            }
-        });
+    async beforeRegisterNodeDef(nodeType, nodeData, _app) {
+        if (nodeData.name === "Seed (rgthree)") {
+            const onNodeCreated = nodeType.prototype.onNodeCreated;
+            nodeType.prototype.onNodeCreated = function () {
+                onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
+                this.seedControl = new SeedControl(this);
+            };
+        }
     },
 });

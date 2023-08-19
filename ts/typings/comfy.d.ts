@@ -82,6 +82,7 @@ export type ComfyObjectInfo = {
 	input?: {
 		required?: Record<string, ComfyObjectInfoConfig>;
 		optional?: Record<string, ComfyObjectInfoConfig>;
+		hidden?: Record<string, ComfyObjectInfoConfig>;
 	};
 	output?: string[];
 	output_name: string[];

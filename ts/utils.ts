@@ -1,5 +1,19 @@
 import type {ComfyApp} from './typings/comfy';
 import {Vector2, LGraphCanvas as TLGraphCanvas, ContextMenuItem, IContextMenuOptions, ContextMenu, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
+// @ts-ignore
+import {api} from '../../scripts/api.js';
+
+/**
+ * Override the api.getNodeDefs call to add a hook for refreshing node defs.
+ * This is necessary for power prompt's custom combos. Since API implements
+ * add/removeEventListener already, this is rather trivial.
+ */
+const oldApiGetNodeDefs = api.getNodeDefs;
+api.getNodeDefs = async function() {
+  const defs = await oldApiGetNodeDefs.call(api);
+  this.dispatchEvent(new CustomEvent('fresh-node-defs', { detail: defs }));
+  return defs;
+}
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;

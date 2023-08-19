@@ -1,3 +1,10 @@
+import { api } from '../../scripts/api.js';
+const oldApiGetNodeDefs = api.getNodeDefs;
+api.getNodeDefs = async function () {
+    const defs = await oldApiGetNodeDefs.call(api);
+    this.dispatchEvent(new CustomEvent('fresh-node-defs', { detail: defs }));
+    return defs;
+};
 const PADDING = 0;
 export const LAYOUT_LABEL_TO_DATA = {
     'Left': [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],

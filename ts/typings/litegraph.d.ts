@@ -105,7 +105,7 @@ export interface IComboWidget
             values:
                 | string[]
                 | ((widget: IComboWidget, node: LGraphNode) => string[]);
-        }
+        } | TOptions
     > {
     type: "combo";
 }

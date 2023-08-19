@@ -11,14 +11,17 @@ from .py.context_switch import RgthreeContextSwitch
 from .py.display_int import RgthreeDisplayInt
 from .py.lora_stack import RgthreeLoraLoaderStack
 from .py.seed import RgthreeSeed
-
+from .py.sdxl_empty_latent_image import RgthreeSDXLEmptyLatentImage
+from .py.power_prompt import RgthreePowerPrompt
 
 NODE_CLASS_MAPPINGS = {
     RgthreeContext.NAME: RgthreeContext,
     RgthreeContextSwitch.NAME: RgthreeContextSwitch,
     RgthreeDisplayInt.NAME: RgthreeDisplayInt,
     RgthreeLoraLoaderStack.NAME: RgthreeLoraLoaderStack,
-    RgthreeSeed.NAME: RgthreeSeed
+    RgthreeSeed.NAME: RgthreeSeed,
+    RgthreeSDXLEmptyLatentImage.NAME: RgthreeSDXLEmptyLatentImage,
+    RgthreePowerPrompt.NAME: RgthreePowerPrompt,
 }
 
 def get_dir(subpath, mkdir=False):
