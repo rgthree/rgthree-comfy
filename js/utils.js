@@ -105,11 +105,28 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : (LiteGraph.NODE_SLOT_HEIGHT * 0.5);
     const side = isInput ? layout[0] : layout[1];
     const data = LAYOUT_LABEL_TO_DATA[side];
-    const cxn = node[isInput ? 'inputs' : 'outputs'][slotNumber];
+    const slotList = node[isInput ? 'inputs' : 'outputs'];
+    const cxn = slotList[slotNumber];
     if (!cxn) {
         console.log('No connection found.. weird', isInput, slotNumber);
         return out;
     }
+    if (cxn.disabled) {
+        if (cxn.color_on !== '#666665') {
+            cxn._color_on_org = cxn._color_on_org || cxn.color_on;
+            cxn._color_off_org = cxn._color_off_org || cxn.color_off;
+        }
+        cxn.color_on = '#666665';
+        cxn.color_off = '#666665';
+    }
+    else if (cxn.color_on === '#666665') {
+        cxn.color_on = cxn._color_on_org || undefined;
+        cxn.color_off = cxn._color_off_org || undefined;
+    }
+    const displaySlot = collapseConnections ? 0 : (slotNumber - slotList.reduce((count, ioput, index) => {
+        count += index < slotNumber && ioput.hidden ? 1 : 0;
+        return count;
+    }, 0));
     cxn.dir = data[0];
     if (side === 'Left') {
         if (node.flags.collapsed) {
@@ -133,7 +150,6 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
                 out[1] = node.pos[1] + (node.size[1] * .5);
             }
             else {
-                const displaySlot = collapseConnections ? 0 : slotNumber;
                 out[1] =
                     node.pos[1] +
                         (displaySlot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
@@ -163,7 +179,6 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
                 out[1] = node.pos[1] + (node.size[1] * .5);
             }
             else {
-                const displaySlot = collapseConnections ? 0 : slotNumber;
                 out[1] =
                     node.pos[1] +
                         (displaySlot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +

@@ -1,22 +1,22 @@
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
+# https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
 COLORS_FG = {
     'BLACK': '\33[30m',
     'RED': '\33[31m',
     'GREEN': '\33[32m',
     'YELLOW': '\33[33m',
     'BLUE': '\33[34m',
-    'VIOLET': '\33[35m',
-    'BEIGE': '\33[36m',
+    'MAGENTA': '\33[35m',
+    'CYAN': '\33[36m',
     'WHITE': '\33[37m',
-
     'GREY': '\33[90m',
-    'LIGHTRED': '\33[91m',
-    'LIGHTGREEN': '\33[92m',
-    'LIGHTYELLOW': '\33[93m',
-    'LIGHTBLUE': '\33[94m',
-    'LIGHTVIOLET': '\33[95m',
-    'LIGHTBEIGE': '\33[96m',
-    'LIGHTWHITE': '\33[97m',
+    'BRIGHT_RED': '\33[91m',
+    'BRIGHT_GREEN': '\33[92m',
+    'BRIGHT_YELLOW': '\33[93m',
+    'BRIGHT_BLUE': '\33[94m',
+    'BRIGHT_MAGENTA': '\33[95m',
+    'BRIGHT_CYAN': '\33[96m',
+    'BRIGHT_WHITE': '\33[97m',
 }
 COLORS_STYLE = {
     'RESET': '\33[0m',
@@ -29,23 +29,22 @@ COLORS_STYLE = {
     'SELECTED': '\33[7m',
 }
 COLORS_BG = {
-    'BLACKBG': '\33[40m',
-    'REDBG': '\33[41m',
-    'GREENBG': '\33[42m',
-    'YELLOWBG': '\33[43m',
-    'BLUEBG': '\33[44m',
-    'VIOLETBG': '\33[45m',
-    'BEIGEBG': '\33[46m',
-    'WHITEBG': '\33[47m',
-
-    'GREYBG': '\33[100m',
-    'LIGHTREDBG': '\33[101m',
-    'LIGHTGREENBG': '\33[102m',
-    'LIGHTYELLOWBG': '\33[103m',
-    'LIGHTBLUEBG': '\33[104m',
-    'LIGHTVIOLETBG': '\33[105m',
-    'LIGHTBEIGEBG': '\33[106m',
-    'LIGHTWHITEBG': '\33[107m',
+    'BLACK': '\33[40m',
+    'RED': '\33[41m',
+    'GREEN': '\33[42m',
+    'YELLOW': '\33[43m',
+    'BLUE': '\33[44m',
+    'MAGENTA': '\33[45m',
+    'CYAN': '\33[46m',
+    'WHITE': '\33[47m',
+    'GREY': '\33[100m',
+    'BRIGHT_RED': '\33[101m',
+    'BRIGHT_GREEN': '\33[102m',
+    'BRIGHT_YELLOW': '\33[103m',
+    'BRIGHT_BLUE': '\33[104m',
+    'BRIGHT_MAGENTA': '\33[105m',
+    'BRIGHT_CYAN': '\33[106m',
+    'BRIGHT_WHITE': '\33[107m',
 }
 
 def log_welcome(num_nodes=None):
@@ -54,3 +53,18 @@ def log_welcome(num_nodes=None):
         print('{} {} exciting nodes.{}'.format(msg, num_nodes, COLORS_STYLE['RESET']))
     else:
         print('{}.{}'.format(msg, COLORS_STYLE['RESET']))
+
+def log_node_success(node_name, message):
+    _log_node(COLORS_FG["GREEN"], node_name, message, prefix='✓  ')
+
+def log_node_info(node_name, message):
+    _log_node(COLORS_FG["CYAN"], node_name, message, prefix='🛈  ')
+
+def log_node(node_name, message):
+    _log_node(COLORS_FG["CYAN"], node_name, message, prefix='   ')
+
+def log_node_warn(node_name, message):
+    _log_node(COLORS_FG["YELLOW"], node_name, message, prefix='⚠  ')
+
+def _log_node(color, node_name, message, prefix=''):
+    print(f'{COLORS_STYLE["BOLD"]}{color}{prefix}rgthree {node_name.replace(" (rgthree)", "")}:{COLORS_STYLE["RESET"]} {message}')

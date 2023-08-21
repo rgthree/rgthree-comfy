@@ -34,6 +34,10 @@ export interface INodeSlot {
     locked?: boolean;
     nameLocked?: boolean;
     pos?: Vector2;
+    // @rgthree
+    hidden?: boolean;
+    // @rgthree
+    disabled?: boolean;
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -46,6 +50,16 @@ export interface INodeOutputSlot extends INodeSlot {
 export type WidgetCallback<T extends IWidget = IWidget> = (
     this: T,
     value: T["value"],
+    graphCanvas: LGraphCanvas,
+    node: LGraphNode,
+    pos: Vector2,
+    event?: MouseEvent
+) => void;
+
+// #rgthree
+export type WidgetComboCallback<T extends IWidget = IWidget> = (
+    this: T,
+    value: T["value"][0],
     graphCanvas: LGraphCanvas,
     node: LGraphNode,
     pos: Vector2,
@@ -107,7 +121,9 @@ export interface IComboWidget
                 | ((widget: IComboWidget, node: LGraphNode) => string[]);
         } | TOptions
     > {
+    value: T[0];
     type: "combo";
+    callback?: WidgetComboCallback;
 }
 
 export interface ITextWidget extends IWidget<string, {}> {
@@ -817,7 +833,8 @@ export declare class LGraphNode {
         type: T["type"],
         name: string,
         value: T["value"],
-        callback?: WidgetCallback<T> | string,
+        // @rgthree
+        callback?: T["callback"] | string,//WidgetCallback<T> | string,
         options?: T["options"]
     ): T;
 

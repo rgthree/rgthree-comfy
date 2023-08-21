@@ -144,11 +144,36 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   const offset = (node.constructor as any).layout_slot_offset ?? (LiteGraph.NODE_SLOT_HEIGHT * 0.5);
   const side = isInput ? layout[0] : layout[1];
   const data = LAYOUT_LABEL_TO_DATA[side]!;
-  const cxn = node[isInput ? 'inputs' : 'outputs'][slotNumber];
+  const slotList = node[isInput ? 'inputs' : 'outputs'];
+  const cxn = slotList[slotNumber];
   if (!cxn) {
     console.log('No connection found.. weird', isInput, slotNumber);
     return out;
   }
+  // Experimental; doesn't work without node.clip_area set (so it won't draw outside),
+  // but litegraph.core inexplicably clips the title off which we want... so, no go.
+  // if (cxn.hidden) {
+  //   out[0] = node.pos[0] - 100000
+  //   out[1] = node.pos[1] - 100000
+  //   return out
+  // }
+  if (cxn.disabled) {
+    // Let's store the original colors if have them and haven't yet overridden
+    if (cxn.color_on !== '#666665') {
+      (cxn as any)._color_on_org = (cxn as any)._color_on_org || cxn.color_on;
+      (cxn as any)._color_off_org = (cxn as any)._color_off_org || cxn.color_off;
+    }
+    cxn.color_on = '#666665';
+    cxn.color_off = '#666665';
+  } else if (cxn.color_on === '#666665') {
+    cxn.color_on = (cxn as any)._color_on_org || undefined;
+    cxn.color_off = (cxn as any)._color_off_org || undefined;
+  }
+  // @ts-ignore
+  const displaySlot = collapseConnections ? 0 : (slotNumber - slotList.reduce<Number>((count, ioput, index) => {
+    count += index < slotNumber && ioput.hidden ? 1 : 0;
+    return count
+  }, 0));
   cxn.dir = data[0];
   if (side === 'Left') {
     if (node.flags.collapsed) {
@@ -171,7 +196,6 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
       if ((node.constructor as any)?.type.includes('Reroute')) {
         out[1] = node.pos[1] + (node.size[1] * .5);
       } else {
-        const displaySlot = collapseConnections ? 0 : slotNumber;
         out[1] =
             node.pos[1] +
             (displaySlot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
@@ -200,7 +224,6 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
       if ((node.constructor as any)?.type.includes('Reroute')) {
         out[1] = node.pos[1] + (node.size[1] * .5);
       } else {
-        const displaySlot = collapseConnections ? 0 : slotNumber;
         out[1] =
             node.pos[1] +
             (displaySlot + 0.7) * LiteGraph.NODE_SLOT_HEIGHT +
