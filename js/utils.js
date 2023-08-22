@@ -103,7 +103,8 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     const layout = node.properties['connections_layout'] || ['Left', 'Right'];
     const collapseConnections = node.properties['collapse_connections'] || false;
     const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : (LiteGraph.NODE_SLOT_HEIGHT * 0.5);
-    const side = isInput ? layout[0] : layout[1];
+    let side = isInput ? layout[0] : layout[1];
+    const otherSide = isInput ? layout[1] : layout[0];
     const data = LAYOUT_LABEL_TO_DATA[side];
     const slotList = node[isInput ? 'inputs' : 'outputs'];
     const cxn = slotList[slotNumber];
@@ -128,6 +129,12 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
         return count;
     }, 0));
     cxn.dir = data[0];
+    if (node.size[0] == 10 && ['Left', 'Right'].includes(side) && ['Top', 'Bottom'].includes(otherSide)) {
+        side = otherSide === 'Top' ? 'Bottom' : 'Top';
+    }
+    else if (node.size[1] == 10 && ['Top', 'Bottom'].includes(side) && ['Left', 'Right'].includes(otherSide)) {
+        side = otherSide === 'Left' ? 'Right' : 'Left';
+    }
     if (side === 'Left') {
         if (node.flags.collapsed) {
             var w = node._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH;

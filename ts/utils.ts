@@ -142,7 +142,8 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   const layout = node.properties['connections_layout'] || ['Left', 'Right'];
   const collapseConnections = node.properties['collapse_connections'] || false;
   const offset = (node.constructor as any).layout_slot_offset ?? (LiteGraph.NODE_SLOT_HEIGHT * 0.5);
-  const side = isInput ? layout[0] : layout[1];
+  let side = isInput ? layout[0] : layout[1];
+  const otherSide = isInput ? layout[1] : layout[0];
   const data = LAYOUT_LABEL_TO_DATA[side]!;
   const slotList = node[isInput ? 'inputs' : 'outputs'];
   const cxn = slotList[slotNumber];
@@ -174,7 +175,14 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
     count += index < slotNumber && ioput.hidden ? 1 : 0;
     return count
   }, 0));
+  // Set the direction first. This is how the connection line will be drawn.
   cxn.dir = data[0];
+  // If we are only 10px wide or tall, then put it one the end.
+  if (node.size[0] == 10 && ['Left', 'Right'].includes(side) && ['Top', 'Bottom'].includes(otherSide)) {
+    side = otherSide === 'Top' ? 'Bottom' : 'Top';
+  } else if (node.size[1] == 10 && ['Top', 'Bottom'].includes(side) && ['Left', 'Right'].includes(otherSide)) {
+    side = otherSide === 'Left' ? 'Right' : 'Left';
+  }
   if (side === 'Left') {
     if (node.flags.collapsed) {
       var w = (node as any)._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH;

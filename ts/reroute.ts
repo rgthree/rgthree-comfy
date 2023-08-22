@@ -197,20 +197,34 @@ app.registerExtension({
 
     // @ts-ignore: Fix incorrect litegraph typings.
     addMenuSubMenu(RerouteNode, app, {
-      name: 'Size',
+      name: 'Height',
       property: 'size',
       options: (() => {
         const options = [];
-        for (let w = 6; w > 1; w--) {
-          for (let h = 6; h > 1; h--) {
-            options.push(`${w * 10} x ${h * 10}`);
-          }
+        for (let w = 8; w > 0; w--) {
+          options.push(`${w * 10}`);
         }
         return options;
       })(),
-      prepareValue: (value: string) => value.split(' x ').map(n => Number(n)),
+      prepareValue: (value, node) => [node.size[0], Number(value)],
       callback: (node) => (node as RerouteNode).applyNodeSize()
     });
+
+    // @ts-ignore: Fix incorrect litegraph typings.
+    addMenuSubMenu(RerouteNode, app, {
+      name: 'Width',
+      property: 'size',
+      options: (() => {
+        const options = [];
+        for (let w = 8; w > 0; w--) {
+          options.push(`${w * 10}`);
+        }
+        return options;
+      })(),
+      prepareValue: (value, node) => [Number(value), node.size[1]],
+      callback: (node) => (node as RerouteNode).applyNodeSize()
+    });
+
 
 		LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
     RerouteNode.category = RerouteNode._category;

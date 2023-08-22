@@ -153,18 +153,29 @@ app.registerExtension({
             ["Bottom", "Top"],
         ], (node) => { node.applyNodeSize(); });
         addMenuSubMenu(RerouteNode, app, {
-            name: 'Size',
+            name: 'Height',
             property: 'size',
             options: (() => {
                 const options = [];
-                for (let w = 6; w > 1; w--) {
-                    for (let h = 6; h > 1; h--) {
-                        options.push(`${w * 10} x ${h * 10}`);
-                    }
+                for (let w = 8; w > 0; w--) {
+                    options.push(`${w * 10}`);
                 }
                 return options;
             })(),
-            prepareValue: (value) => value.split(' x ').map(n => Number(n)),
+            prepareValue: (value, node) => [node.size[0], Number(value)],
+            callback: (node) => node.applyNodeSize()
+        });
+        addMenuSubMenu(RerouteNode, app, {
+            name: 'Width',
+            property: 'size',
+            options: (() => {
+                const options = [];
+                for (let w = 8; w > 0; w--) {
+                    options.push(`${w * 10}`);
+                }
+                return options;
+            })(),
+            prepareValue: (value, node) => [Number(value), node.size[1]],
             callback: (node) => node.applyNodeSize()
         });
         LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
