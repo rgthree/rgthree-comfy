@@ -213,3 +213,8 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     }
     return out;
 }
+export function wait(ms = 16, value) {
+    return new Promise((resolve) => {
+        setTimeout(() => { resolve(value); }, ms);
+    });
+}

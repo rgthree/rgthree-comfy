@@ -263,3 +263,9 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   }
   return out;
 }
+
+export function wait(ms = 16, value?: any) {
+  return new Promise((resolve) => {
+    setTimeout(() => { resolve(value); }, ms);
+  });
+}

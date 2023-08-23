@@ -7,7 +7,7 @@ import {api} from '../../scripts/api.js';
 import { ComfyWidgets } from '../../scripts/widgets.js';
 import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, Vector2} from './typings/litegraph.js';
 import type {ComfyApp, ComfyObjectInfo, ComfyGraphNode} from './typings/comfy.js'
-import {addConnectionLayoutSupport} from './utils.js';
+import {addConnectionLayoutSupport, wait} from './utils.js';
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -157,14 +157,18 @@ class PowerPrompt {
             if (!this.combos[key]) {
               this.combos[key] = this.node.addWidget('combo', key, values, (selected) => {
                 if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
-                  if (key.includes('embedding')) {
-                    this.insertText(`embedding:${selected}`);
-                  } else if (key.includes('saved')) {
-                    this.insertText(this.combosValues[`values_${key}`]![values.indexOf(selected)]!);
-                  } else if (key.includes('lora')) {
-                    this.insertText(`<lora:${selected}:1.0>`);
-                  }
-                  this.combos[key]!.value = values[0];
+                  // We wait a frame because if we use a keydown event to call, it'll wipe out
+                  // the selection.
+                  wait().then(() => {
+                    if (key.includes('embedding')) {
+                      this.insertSelectionText(`embedding:${selected}`);
+                    } else if (key.includes('saved')) {
+                      this.insertSelectionText(this.combosValues[`values_${key}`]![values.indexOf(selected)]!);
+                    } else if (key.includes('lora')) {
+                      this.insertSelectionText(`<lora:${selected}:1.0>`);
+                    }
+                    this.combos[key]!.value = values[0];
+                  });
                 }
               }, {
                 values,
@@ -194,18 +198,22 @@ class PowerPrompt {
     }
   }
 
-  insertText(text: string) {
-    if (this.promptEl) {
-      let prompt = this.promptEl.value;
-      let first = prompt.substring(0, this.promptEl.selectionStart).replace(/ +$/, '');
-      first = first + (['\n'].includes(first[first.length-1]!) ? '' : first.length ? ' ' : '');
-      let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
-      second = (['\n'].includes(second[0]!) ? '' : second.length ? ' ' : '') + second;
-      this.promptEl.value = first + text + second;
-      this.promptEl.focus();
-      this.promptEl.selectionStart = first.length;
-      this.promptEl.selectionEnd = first.length + text.length;
+  insertSelectionText(text: string) {
+    if (!this.promptEl) {
+      console.error('Asked to insert text, but no textbox found.');
+      return;
     }
+    let prompt = this.promptEl.value;
+    // Use selectionEnd as the split; if we have highlighted text, then we likely don't want to
+    // overwrite it (we could have just deleted it more easily).
+    let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, '');
+    first = first + (['\n'].includes(first[first.length-1]!) ? '' : first.length ? ' ' : '');
+    let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
+    second = (['\n'].includes(second[0]!) ? '' : second.length ? ' ' : '') + second;
+    this.promptEl.value = first + text + second;
+    this.promptEl.focus();
+    this.promptEl.selectionStart = first.length;
+    this.promptEl.selectionEnd = first.length + text.length;
   }
 
   /**

@@ -1,6 +1,6 @@
 import { app } from '../../scripts/app.js';
 import { api } from '../../scripts/api.js';
-import { addConnectionLayoutSupport } from './utils.js';
+import { addConnectionLayoutSupport, wait } from './utils.js';
 class PowerPrompt {
     constructor(node, nodeData) {
         this.combos = {};
@@ -97,16 +97,18 @@ class PowerPrompt {
                         if (!this.combos[key]) {
                             this.combos[key] = this.node.addWidget('combo', key, values, (selected) => {
                                 if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
-                                    if (key.includes('embedding')) {
-                                        this.insertText(`embedding:${selected}`);
-                                    }
-                                    else if (key.includes('saved')) {
-                                        this.insertText(this.combosValues[`values_${key}`][values.indexOf(selected)]);
-                                    }
-                                    else if (key.includes('lora')) {
-                                        this.insertText(`<lora:${selected}:1.0>`);
-                                    }
-                                    this.combos[key].value = values[0];
+                                    wait().then(() => {
+                                        if (key.includes('embedding')) {
+                                            this.insertSelectionText(`embedding:${selected}`);
+                                        }
+                                        else if (key.includes('saved')) {
+                                            this.insertSelectionText(this.combosValues[`values_${key}`][values.indexOf(selected)]);
+                                        }
+                                        else if (key.includes('lora')) {
+                                            this.insertSelectionText(`<lora:${selected}:1.0>`);
+                                        }
+                                        this.combos[key].value = values[0];
+                                    });
                                 }
                             }, {
                                 values,
@@ -137,10 +139,10 @@ class PowerPrompt {
             }
         }
     }
-    insertText(text) {
+    insertSelectionText(text) {
         if (this.promptEl) {
             let prompt = this.promptEl.value;
-            let first = prompt.substring(0, this.promptEl.selectionStart).replace(/ +$/, '');
+            let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, '');
             first = first + (['\n'].includes(first[first.length - 1]) ? '' : first.length ? ' ' : '');
             let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
             second = (['\n'].includes(second[0]) ? '' : second.length ? ' ' : '') + second;
