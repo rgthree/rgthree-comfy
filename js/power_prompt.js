@@ -69,20 +69,6 @@ class PowerPrompt {
     }
     findAndPatchCombos() {
     }
-    onPromptComboCallback(widget, selected) {
-        const values = widget.options.values;
-        if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
-            if (widget.name.includes('embedding')) {
-                this.insertText(`embedding:${selected}`);
-            }
-            else if (widget.name.includes('saved')) {
-                this.insertText(this.combosValues[`saved_${widget.name}`][values.indexOf(selected)]);
-            }
-            else if (widget.name.includes('lora')) {
-                this.insertText(`<lora:${selected}:1.0>`);
-            }
-        }
-    }
     refreshCombos(nodeData) {
         var _a, _b;
         this.nodeData = nodeData;
@@ -140,17 +126,19 @@ class PowerPrompt {
         }
     }
     insertSelectionText(text) {
-        if (this.promptEl) {
-            let prompt = this.promptEl.value;
-            let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, '');
-            first = first + (['\n'].includes(first[first.length - 1]) ? '' : first.length ? ' ' : '');
-            let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
-            second = (['\n'].includes(second[0]) ? '' : second.length ? ' ' : '') + second;
-            this.promptEl.value = first + text + second;
-            this.promptEl.focus();
-            this.promptEl.selectionStart = first.length;
-            this.promptEl.selectionEnd = first.length + text.length;
+        if (!this.promptEl) {
+            console.error('Asked to insert text, but no textbox found.');
+            return;
         }
+        let prompt = this.promptEl.value;
+        let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, '');
+        first = first + (['\n'].includes(first[first.length - 1]) ? '' : first.length ? ' ' : '');
+        let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
+        second = (['\n'].includes(second[0]) ? '' : second.length ? ' ' : '') + second;
+        this.promptEl.value = first + text + second;
+        this.promptEl.focus();
+        this.promptEl.selectionStart = first.length;
+        this.promptEl.selectionEnd = first.length + text.length;
     }
     addAndHandleKeyboardLoraEditWeight() {
         this.promptEl.addEventListener('keydown', (event) => {

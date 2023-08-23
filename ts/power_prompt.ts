@@ -33,8 +33,6 @@ class PowerPrompt {
     this.promptEl = (node.widgets[0]! as any).inputEl;
     this.addAndHandleKeyboardLoraEditWeight();
 
-
-    // this.findAndPatchCombos();
     this.patchNodeRefresh();
 
     const oldOnConnectionsChange = this.node.onConnectionsChange;
@@ -125,21 +123,6 @@ class PowerPrompt {
     //   }
     // }
   }
-
-  onPromptComboCallback(widget: IComboWidget, selected: string) {
-    const values = widget.options.values as string[];
-    if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
-      if (widget.name!.includes('embedding')) {
-        this.insertText(`embedding:${selected}`);
-      } else if (widget.name!.includes('saved')) {
-        this.insertText(this.combosValues[`saved_${widget.name!}`]![values.indexOf(selected)]!);
-      } else if (widget.name!.includes('lora')) {
-        this.insertText(`<lora:${selected}:1.0>`);
-      }
-    }
-  }
-
-
 
   refreshCombos(nodeData: ComfyObjectInfo) {
 
