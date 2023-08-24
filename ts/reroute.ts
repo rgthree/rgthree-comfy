@@ -151,7 +151,7 @@ app.registerExtension({
           node.__outputType = displayType;
           node.outputs[0].name = node.properties.showOutputText ? displayType : "";
           node.size = node.computeSize();
-          node.applyNodeSize();
+          node.applyNodeSize?.();
 
           for (const l of node.outputs[0].links || []) {
             const link = app.graph.links[l];

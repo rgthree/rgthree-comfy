@@ -24,7 +24,7 @@ app.registerExtension({
                 return cloned;
             }
             onConnectionsChange(type, _slotIndex, connected, _link_info, _ioSlot) {
-                var _a, _b;
+                var _a, _b, _c;
                 if (connected && type === LiteGraph.OUTPUT) {
                     const types = new Set(this.outputs[0].links.map((l) => app.graph.links[l].type).filter((t) => t !== "*"));
                     if (types.size > 1) {
@@ -108,7 +108,7 @@ app.registerExtension({
                     node.__outputType = displayType;
                     node.outputs[0].name = node.properties.showOutputText ? displayType : "";
                     node.size = node.computeSize();
-                    node.applyNodeSize();
+                    (_c = node.applyNodeSize) === null || _c === void 0 ? void 0 : _c.call(node);
                     for (const l of node.outputs[0].links || []) {
                         const link = app.graph.links[l];
                         if (link) {
