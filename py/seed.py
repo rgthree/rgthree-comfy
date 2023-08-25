@@ -9,7 +9,7 @@ class RgthreeSeed:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "seed": ("INT", {"default": 0, "min": 0, "max": 1125899906842624}),
+                "seed": ("INT", {"default": 0, "min": -1125899906842624, "max": 1125899906842624}),
             },
         }
 

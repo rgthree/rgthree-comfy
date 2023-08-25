@@ -11,8 +11,13 @@ declare const LGraphNode: typeof TLGraphNode;
 
 const LAST_SEED_BUTTON_LABEL = '♻️ (Use Last Queued Seed)';
 
+const SPECIAL_SEED_RANDOM = -1;
+const SPECIAL_SEED_INCREMENT = -2;
+const SPECIAL_SEED_DECREMENT = -3;
+const SPECIAL_SEEDS = [SPECIAL_SEED_RANDOM, SPECIAL_SEED_INCREMENT, SPECIAL_SEED_DECREMENT];
+
 interface SeedSerializedCtx {
-  wasRandom?: boolean;
+  inputSeed?: number;
   seedUsed?: number;
 }
 
@@ -45,16 +50,19 @@ class SeedControl {
       throw new Error('Something\'s wrong; expected seed widget');
     }
 
-    const max = Math.min(1125899906842624, this.seedWidget.options.max);
-    const min = Math.max(-1125899906842624, this.seedWidget.options.min);
-    const range = (max - min) / (this.seedWidget.options.step / 10);
+    const randMax = Math.min(1125899906842624, this.seedWidget.options.max);
+    // We can have a full range of seeds, including negative. But, for the randomRange we'll
+    // only generate positives, since that's what folks assume.
+    // const min = Math.max(-1125899906842624, this.seedWidget.options.min);
+    const randMin = Math.max(0, this.seedWidget.options.min);
+    const randomRange = (randMax - Math.max(0, randMin)) / (this.seedWidget.options.step / 10);
 
     this.node.addWidget('button', '🎲 Randomize Each Time', null, () => {
-      this.seedWidget.value = -1;
+      this.seedWidget.value = SPECIAL_SEED_RANDOM;
     }, {serialize: false}) as ComfyWidget;
 
     this.node.addWidget('button', '🎲 New Fixed Random', null, () => {
-      this.seedWidget.value = Math.floor(Math.random() * range) * (this.seedWidget.options.step / 10) + min;
+      this.seedWidget.value = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
     }, {serialize: false});
 
     this.lastSeedButton = this.node.addWidget("button", LAST_SEED_BUTTON_LABEL, null, () => {
@@ -72,22 +80,34 @@ class SeedControl {
      * seed value will be pre-filled, instead of `-1`.
      */
     this.seedWidget.serializeValue = async (node: SerializedLGraphNode, index: number) => {
-      const currentSeed = this.seedWidget.value;
+      const inputSeed = this.seedWidget.value;
       this.serializedCtx = {
-        wasRandom: currentSeed == -1,
+        inputSeed: this.seedWidget.value,
       }
 
-      if (this.serializedCtx.wasRandom) {
-        this.serializedCtx.seedUsed = Math.floor(Math.random() * range) * (this.seedWidget.options.step / 10) + min;
+      // If our input seed was a special seed, then handle it.
+      if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed!)) {
+        // If the last seed was not a special seed and we have increment/decrement, then do that on the last seed.
+        if (!SPECIAL_SEEDS.includes(this.lastSeed)) {
+          if (inputSeed === SPECIAL_SEED_INCREMENT) {
+            this.serializedCtx.seedUsed = this.lastSeed + 1;
+          } else if (inputSeed === SPECIAL_SEED_INCREMENT) {
+            this.serializedCtx.seedUsed = this.lastSeed - 1;
+          }
+          // If we don't have a seed to use, or it's special seed (like we incremented into one), then we randomize.
+          if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
+            this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
+          }
+        }
       } else {
         this.serializedCtx.seedUsed = this.seedWidget.value;
       }
 
       node.widgets_values![index] = this.serializedCtx.seedUsed;
       this.seedWidget.value = this.serializedCtx.seedUsed;
+      this.lastSeed = this.serializedCtx.seedUsed!;
       // Enabled the 'Last seed' Button
-      if (this.serializedCtx.wasRandom) {
-        this.lastSeed = this.serializedCtx.seedUsed!;
+      if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed!)) {
         this.lastSeedButton.name = `♻️ ${this.serializedCtx.seedUsed}`
         this.lastSeedButton.disabled = false;
         if (this.lastSeedValue) {
@@ -105,8 +125,8 @@ class SeedControl {
      * After the widget has been queued, change back to "-1" if we started as "-1".
      */
     this.seedWidget.afterQueued = () => {
-      if (this.serializedCtx.wasRandom) {
-        this.seedWidget.value = -1;
+      if (this.serializedCtx.inputSeed) {
+        this.seedWidget.value = this.serializedCtx.inputSeed;
       }
       this.serializedCtx = {};
     }
