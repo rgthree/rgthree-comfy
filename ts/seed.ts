@@ -26,7 +26,7 @@ class SeedControl {
 
   readonly node: ComfyGraphNode;
 
-  lastSeed = -1;
+  lastSeed?:number = undefined;
   serializedCtx: SeedSerializedCtx = {};
   seedWidget: ComfyWidget;
   lastSeedButton: ComfyWidget;
@@ -88,16 +88,16 @@ class SeedControl {
       // If our input seed was a special seed, then handle it.
       if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed!)) {
         // If the last seed was not a special seed and we have increment/decrement, then do that on the last seed.
-        if (!SPECIAL_SEEDS.includes(this.lastSeed)) {
+        if (typeof this.lastSeed === 'number' && !SPECIAL_SEEDS.includes(this.lastSeed)) {
           if (inputSeed === SPECIAL_SEED_INCREMENT) {
             this.serializedCtx.seedUsed = this.lastSeed + 1;
           } else if (inputSeed === SPECIAL_SEED_INCREMENT) {
             this.serializedCtx.seedUsed = this.lastSeed - 1;
           }
-          // If we don't have a seed to use, or it's special seed (like we incremented into one), then we randomize.
-          if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
-            this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
-          }
+        }
+        // If we don't have a seed to use, or it's special seed (like we incremented into one), then we randomize.
+        if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
+          this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
         }
       } else {
         this.serializedCtx.seedUsed = this.seedWidget.value;

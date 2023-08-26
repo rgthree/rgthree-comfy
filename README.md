@@ -27,7 +27,7 @@ Finally, an intuitive seed control node for ComfyUI that works very much like Au
 - Set any other number in there to use as a static/fixed seed
 - Quick actions to randomize, or (re-)use the last queued seed.
 - Images metadata will store the seed value _(so dragging an image in, will have the seed field already fixed to its seed)_.
-- Note, since we can randomize each time, and quickly grab previous ones
+- _Secret Features_: You can manually set the seed value to "-2" or "-3" to increment or decrement the last seed value. If there was not last seed value, it will randomly use on first.
 
 ![Router Node](./docs/rgthree_seed.png)
 
@@ -45,6 +45,9 @@ Shows an int _after execution_.
 
 A simplified Lora Loader stack. Much like other suites, but more interoperable with standard inputs/outputs.
 
+### Power Prompt
+
+The power prompt lets you choose from your embeddings and lora tags. Use it as a replacement for a string primitive, outputting the raw text, or connect a CLIP to it, to output the conditioning. If you add &lt;lora> tags, you can connect a MODEL and it will load the loras, and output the model to use.
 
 
 ## Power Nodes
@@ -63,7 +66,8 @@ _(In purple above)_ Add a collection of all connected nodes allowing a single-sp
 
 Also, you can use the **Node Combiner** as UI-only virtual node that allows you to connect any number of nodes as an input, into a single output. As of right now, this is only useful for cleaning up noodles to the Muter node and **any other use will likely not work at all.**
 
-### Putting it together
+<details>
+<summary><big><b>A powerful combination: Using Context, Context Switch, & Fast Muter</b></big></summary>
 
 1. Using the **Context Switch** feed context inputs in order of preference. In the workflow above, the `Upscale Out` context is first so, if that one is enabled, it will be chosen for the output. If not, the second input slot which comes from the context rerouted from above (before the Upscaler booth) will be chosen.
 
@@ -76,3 +80,5 @@ Also, you can use the **Node Combiner** as UI-only virtual node that allows you 
     - The workflow seen here would be a common one where we can generate a handful of base previews cheaply with a random seed, and then choose one to upscale and save to disk.
 
 4. Lastly, and optionally, you can see the `Node Combiner`. Use it to clean up noodles if you want and connect it to the muter. You can connect anything to it, but doing so may break your workflow's execution.
+
+</details>

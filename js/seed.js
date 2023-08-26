@@ -7,7 +7,7 @@ const SPECIAL_SEED_DECREMENT = -3;
 const SPECIAL_SEEDS = [SPECIAL_SEED_RANDOM, SPECIAL_SEED_INCREMENT, SPECIAL_SEED_DECREMENT];
 class SeedControl {
     constructor(node) {
-        this.lastSeed = -1;
+        this.lastSeed = undefined;
         this.serializedCtx = {};
         this.lastSeedValue = null;
         this.node = node;
@@ -44,16 +44,16 @@ class SeedControl {
                 inputSeed: this.seedWidget.value,
             };
             if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed)) {
-                if (!SPECIAL_SEEDS.includes(this.lastSeed)) {
+                if (typeof this.lastSeed === 'number' && !SPECIAL_SEEDS.includes(this.lastSeed)) {
                     if (inputSeed === SPECIAL_SEED_INCREMENT) {
                         this.serializedCtx.seedUsed = this.lastSeed + 1;
                     }
                     else if (inputSeed === SPECIAL_SEED_INCREMENT) {
                         this.serializedCtx.seedUsed = this.lastSeed - 1;
                     }
-                    if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
-                        this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
-                    }
+                }
+                if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
+                    this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
                 }
             }
             else {
