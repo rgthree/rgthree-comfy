@@ -13,11 +13,14 @@ export class BaseNodeDispatcher extends LGraphNode {
         this.connections = [];
         this.addInput("", "*");
     }
+    isPassThroughType(type) {
+        return (type === null || type === void 0 ? void 0 : type.includes('Reroute')) || (type === null || type === void 0 ? void 0 : type.includes('Node Combiner')) || (type === null || type === void 0 ? void 0 : type.includes('Node Collector'));
+    }
     doChainLookup(startNode = this) {
         let rootNodes = [];
         const slotsToRemove = [];
         const type = startNode.constructor.type;
-        if (startNode === this || (type === null || type === void 0 ? void 0 : type.includes('Reroute')) || (type === null || type === void 0 ? void 0 : type.includes('Combiner'))) {
+        if (startNode === this || this.isPassThroughType(type)) {
             const removeDups = startNode === this;
             for (const input of startNode.inputs) {
                 const linkId = input.link;
@@ -27,7 +30,7 @@ export class BaseNodeDispatcher extends LGraphNode {
                 const link = app.graph.links[linkId];
                 const originNode = app.graph.getNodeById(link.origin_id);
                 const originNodeType = originNode.constructor.type;
-                if ((originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Reroute')) || (originNodeType === null || originNodeType === void 0 ? void 0 : originNodeType.includes('Combiner'))) {
+                if (this.isPassThroughType(originNodeType)) {
                     for (const foundNode of this.doChainLookup(originNode)) {
                         if (!rootNodes.includes(foundNode)) {
                             rootNodes.push(foundNode);

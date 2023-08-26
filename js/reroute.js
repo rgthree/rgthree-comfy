@@ -136,7 +136,7 @@ app.registerExtension({
         RerouteNode._category = 'rgthree';
         RerouteNode.title_mode = LiteGraph.NO_TITLE;
         RerouteNode.collapsable = false;
-        RerouteNode.layout_slot_offset = 0;
+        RerouteNode.layout_slot_offset = 5;
         RerouteNode.size = [40, 30];
         addConnectionLayoutSupport(RerouteNode, app, [
             ["Left", "Right"],

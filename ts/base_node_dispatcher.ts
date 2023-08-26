@@ -29,11 +29,15 @@ export class BaseNodeDispatcher extends LGraphNode {
     this.addInput("", "*");
   }
 
+  private isPassThroughType(type: string|null) {
+    return type?.includes('Reroute') || type?.includes('Node Combiner') || type?.includes('Node Collector');
+  }
+
   private doChainLookup(startNode: TLGraphNode = this) {
     let rootNodes: TLGraphNode[] = [];
     const slotsToRemove = [];
     const type = (startNode.constructor as typeof TLGraphNode).type;
-    if (startNode === this || type?.includes('Reroute') || type?.includes('Combiner')) {
+    if (startNode === this || this.isPassThroughType(type)) {
       const removeDups = startNode === this;
       for (const input of startNode.inputs) {
         const linkId: number | null = input!.link;
@@ -43,7 +47,7 @@ export class BaseNodeDispatcher extends LGraphNode {
         const link: LLink = (app.graph as LGraph).links[linkId]!;
         const originNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
         const originNodeType = (originNode.constructor as typeof TLGraphNode).type;
-        if (originNodeType?.includes('Reroute') || originNodeType?.includes('Combiner')) {
+        if (this.isPassThroughType(originNodeType)) {
           for (const foundNode of this.doChainLookup(originNode)) {
             if (!rootNodes.includes(foundNode)) {
               rootNodes.push(foundNode);

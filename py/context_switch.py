@@ -20,18 +20,21 @@ class RgthreeContextSwitch:
             },
         }
 
-    RETURN_TYPES = ("RGTHREE_CONTEXT",)
-    RETURN_NAMES = ("CONTEXT",)
+    RETURN_TYPES = ("RGTHREE_CONTEXT", "MODEL", "CLIP", "VAE", "CONDITIONING", "CONDITIONING", "LATENT", "IMAGE", "INT",)
+    RETURN_NAMES = ("CONTEXT", "MODEL", "CLIP", "VAE", "POSITIVE", "NEGATIVE", "LATENT", "IMAGE", "SEED",)
     FUNCTION = "switch"
 
     def switch(self, ctx_01=None, ctx_02=None, ctx_03=None, ctx_04=None, prompt=None):
+        ctx=None
         if ctx_01 != None:
-            return (ctx_01,)
-        if ctx_02 != None:
-            return (ctx_02,)
-        if ctx_03 != None:
-            return (ctx_03,)
-        if ctx_04 != None:
-            return (ctx_04,)
-        return (None,)
+            ctx = ctx_01
+        elif ctx_02 != None:
+            ctx = ctx_02
+        elif ctx_03 != None:
+            ctx = ctx_03
+        elif ctx_04 != None:
+            ctx = ctx_04
+        if ctx != None:
+            return (ctx, ctx['model'], ctx['clip'], ctx['vae'], ctx['positive'], ctx['negative'], ctx['latent'], ctx['images'], ctx['seed'],)
+        return (None,None,None,None,None,None,None,None,None,)
 

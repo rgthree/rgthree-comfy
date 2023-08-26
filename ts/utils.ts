@@ -177,7 +177,7 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   }, 0));
   // Set the direction first. This is how the connection line will be drawn.
   cxn.dir = data[0];
-  // If we are only 10px wide or tall, then put it one the end.
+  // If we are only 10px wide or tall, then put it one the end
   if (node.size[0] == 10 && ['Left', 'Right'].includes(side) && ['Top', 'Bottom'].includes(otherSide)) {
     side = otherSide === 'Top' ? 'Bottom' : 'Top';
   } else if (node.size[1] == 10 && ['Top', 'Bottom'].includes(side) && ['Left', 'Right'].includes(otherSide)) {

@@ -21,7 +21,7 @@ app.registerExtension({
       static _category = 'rgthree';
 			static readonly title_mode = LiteGraph.NO_TITLE;
 			static collapsable = false;
-      static layout_slot_offset = 0;
+      static layout_slot_offset = 5;
       static size: Vector2 = [40, 30];  // Starting size, read from within litegraph.core
 
       readonly isVirtualNode?: boolean;

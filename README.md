@@ -64,7 +64,7 @@ _(In aqua blue above)_ Chooses the first non-null context.
 
 _(In purple above)_ Add a collection of all connected nodes allowing a single-spot as a "dashboard" to quickly enable and disable nodes. Two distinct nodes; one for "Muting" connected nodes, and one for "Bypassing" connected nodes.
 
-Also, you can use the **Node Combiner** as UI-only virtual node that allows you to connect any number of nodes as an input, into a single output. As of right now, this is only useful for cleaning up noodles to the Muter node and **any other use will likely not work at all.**
+Also, you can use the **Node Collector** as UI-only virtual node that allows you to connect any number of nodes as an input, into a single output. As of right now, this is only useful for cleaning up noodles to the Muter node and **any other use will likely not work at all.**
 
 <details>
 <summary><big><b>A powerful combination: Using Context, Context Switch, & Fast Muter</b></big></summary>
@@ -79,6 +79,6 @@ Also, you can use the **Node Combiner** as UI-only virtual node that allows you 
 
     - The workflow seen here would be a common one where we can generate a handful of base previews cheaply with a random seed, and then choose one to upscale and save to disk.
 
-4. Lastly, and optionally, you can see the `Node Combiner`. Use it to clean up noodles if you want and connect it to the muter. You can connect anything to it, but doing so may break your workflow's execution.
+4. Lastly, and optionally, you can see the `Node Collector`. Use it to clean up noodles if you want and connect it to the muter. You can connect anything to it, but doing so may break your workflow's execution.
 
 </details>
