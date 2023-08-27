@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport } from "./utils.js";
+import { addConnectionLayoutSupport, wait } from "./utils.js";
+import { ComfyWidgets } from "../../scripts/widgets.js";
 class CollectorNode extends LGraphNode {
     constructor(title = CollectorNode.title) {
         super(title);
@@ -24,6 +25,8 @@ class CollectorNode extends LGraphNode {
                     continue;
                 for (const linkId of output.links) {
                     const link = app.graph.links[linkId];
+                    if (!link)
+                        continue;
                     const targetNode = app.graph.getNodeById(link.target_id);
                     targetNode && this.updateOutputLinks(targetNode);
                 }
@@ -56,9 +59,69 @@ CollectorNode.title = "Node Collector (rgthree)";
 CollectorNode.category = 'rgthree';
 CollectorNode._category = 'rgthree';
 class CombinerNode extends CollectorNode {
+    constructor(title = CombinerNode.title) {
+        super(title);
+        const note = ComfyWidgets["STRING"](this, "last_seed", ["STRING", { multiline: true }], app).widget;
+        note.inputEl.value = 'The Node Combiner has been renamed to Node Collector. You can right-click and select "Update to Node Collector" to attempt to automatically update.';
+        note.inputEl.readOnly = true;
+        note.inputEl.style.backgroundColor = '#332222';
+        note.inputEl.style.fontWeight = 'bold';
+        note.inputEl.style.fontStyle = 'italic';
+        note.inputEl.style.opacity = '0.8';
+        this.getExtraMenuOptions = (_, options) => {
+            options.splice(options.length - 1, 0, {
+                content: "‼️ Update to Node Collector",
+                callback: (_value, _options, _event, _parentMenu, _node) => {
+                    updateCombinerToCollector(this);
+                }
+            });
+        };
+    }
+    configure(info) {
+        super.configure(info);
+        if (this.title != CombinerNode.title && !this.title.startsWith('‼️')) {
+            this.title = '‼️ ' + this.title;
+        }
+    }
 }
 CombinerNode.legacyType = "Node Combiner (rgthree)";
-CombinerNode.title = "Node Combiner (rgthree)";
+CombinerNode.title = "‼️ Node Combiner [DEPRECATED]";
+async function updateCombinerToCollector(node) {
+    if (node.type === CollectorNode.legacyType) {
+        const newNode = new CollectorNode();
+        if (node.title != CombinerNode.title) {
+            newNode.title = node.title.replace('‼️ ', '');
+        }
+        newNode.pos = [...node.pos];
+        newNode.size = [...node.size];
+        newNode.properties = Object.assign({}, node.properties);
+        const links = [];
+        for (const [index, output] of node.outputs.entries()) {
+            for (const linkId of (output.links || [])) {
+                const link = app.graph.links[linkId];
+                if (!link)
+                    continue;
+                const targetNode = app.graph.getNodeById(link.target_id);
+                links.push({ node: newNode, slot: index, targetNode, targetSlot: link.target_slot });
+            }
+        }
+        for (const [index, input] of node.inputs.entries()) {
+            const linkId = input.link;
+            if (linkId) {
+                const link = app.graph.links[linkId];
+                const originNode = app.graph.getNodeById(link.origin_id);
+                links.push({ node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index });
+            }
+        }
+        app.graph.add(newNode);
+        await wait();
+        for (const link of links) {
+            link.node.connect(link.slot, link.targetNode, link.targetSlot);
+        }
+        await wait();
+        app.graph.remove(node);
+    }
+}
 app.registerExtension({
     name: "rgthree.NodeCollector",
     registerCustomNodes() {

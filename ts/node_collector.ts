@@ -1,8 +1,10 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type {LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
-import { addConnectionLayoutSupport } from "./utils.js";
+import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from './typings/litegraph.js';
+import { addConnectionLayoutSupport, wait } from "./utils.js";
+// @ts-ignore
+import { ComfyWidgets } from "../../scripts/widgets.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -43,6 +45,7 @@ class CollectorNode extends LGraphNode {
         if (!output.links || !output.links.length) continue;
         for (const linkId of output.links) {
           const link: LLink = (app.graph as LGraph).links[linkId]!;
+          if (!link) continue;
           const targetNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.target_id)!;
           targetNode && this.updateOutputLinks(targetNode)
         }
@@ -77,8 +80,82 @@ class CollectorNode extends LGraphNode {
 /** Legacy "Combiner" */
 class CombinerNode extends CollectorNode {
   static override legacyType = "Node Combiner (rgthree)";
-  static override title = "Node Combiner (rgthree)";
+  static override title = "‼️ Node Combiner [DEPRECATED]";
 
+  constructor(title = CombinerNode.title) {
+    super(title);
+
+    const note = ComfyWidgets["STRING"](this, "last_seed", ["STRING", { multiline: true }], app).widget;
+    note.inputEl.value = 'The Node Combiner has been renamed to Node Collector. You can right-click and select "Update to Node Collector" to attempt to automatically update.';
+    note.inputEl.readOnly = true;
+    note.inputEl.style.backgroundColor = '#332222';
+    note.inputEl.style.fontWeight = 'bold';
+    note.inputEl.style.fontStyle = 'italic';
+    note.inputEl.style.opacity = '0.8';
+
+		this.getExtraMenuOptions = (_: LGraphCanvas, options: ContextMenuItem[]) => {
+      options.splice(options.length - 1, 0,
+        {
+          content: "‼️ Update to Node Collector",
+          callback: (_value: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
+            updateCombinerToCollector(this);
+          }
+        }
+      );
+    }
+  }
+
+  override configure(info: SerializedLGraphNode) {
+    super.configure(info);
+    if (this.title != CombinerNode.title && !this.title.startsWith('‼️')) {
+      this.title = '‼️ ' + this.title;
+    }
+  }
+}
+
+  /**
+   * Updates a Node Combiner to a Node Collector.
+   */
+async function updateCombinerToCollector(node: TLGraphNode) {
+  if (node.type === CollectorNode.legacyType) {
+    // Create a new CollectorNode.
+    const newNode = new CollectorNode();
+    if (node.title != CombinerNode.title) {
+      newNode.title = node.title.replace('‼️ ', '');
+    }
+    // Port the position, size, and properties from the old node.
+    newNode.pos = [...node.pos];
+    newNode.size = [...node.size];
+    newNode.properties = {...node.properties};
+    // We now collect the links data, inputs and outputs, of the old node since these will be
+    // lost when we remove it.
+    const links: any[] = [];
+    for (const [index, output] of node.outputs.entries()) {
+      for (const linkId of (output.links || [])) {
+        const link: LLink = (app.graph as LGraph).links[linkId]!;
+        if (!link) continue;
+        const targetNode = app.graph.getNodeById(link.target_id);
+        links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
+      }
+    }
+    for (const [index, input] of node.inputs.entries()) {
+      const linkId = input.link;
+      if (linkId) {
+        const link: LLink = (app.graph as LGraph).links[linkId]!;
+        const originNode = app.graph.getNodeById(link.origin_id);
+        links.push({node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index});
+      }
+    }
+    // Add the new node, remove the old node.
+    app.graph.add(newNode);
+    await wait();
+    // Now go through and connect the other nodes up as they were.
+    for (const link of links) {
+      link.node.connect(link.slot, link.targetNode, link.targetSlot);
+    }
+    await wait();
+    app.graph.remove(node);
+  }
 }
 
 app.registerExtension({
@@ -90,50 +167,8 @@ app.registerExtension({
 		LiteGraph.registerNodeType(CollectorNode.title, CollectorNode);
     CollectorNode.category = CollectorNode._category;
 	},
-
-  /**
-   * In case anyone has the old Node Combiner (which was a bad name since it doesn't really
-   * combine, but rather collects), let's port it over to the new Collector. There will be an
-   * error that shows for these users, since ComfyUI doesn't know we're porting it, but when they
-   * look for the redbox, they won't see it and a refresh will fix it (since it will then be
-   * ported).
-   */
-	// async loadedGraphNode(node: TLGraphNode) {
-  //   if (node.type === CollectorNode.legacyType) {
-  //     // Create a new CollectorNode.
-  //     const newNode = new CollectorNode();
-  //     // Port the position, size, and properties from the old node.
-  //     newNode.pos = [...node.pos];
-  //     newNode.size = [...node.size];
-  //     newNode.properties = {...node.properties};
-  //     // We now collect the links data, inputs and outputs, of the old node since these will be
-  //     // lost when we remove it.
-  //     const links: any[] = [];
-  //     for (const [index, output] of node.outputs.entries()) {
-  //       for (const linkId of (output.links || [])) {
-  //         const link: LLink = (app.graph as LGraph).links[linkId]!;
-  //         const targetNode = app.graph.getNodeById(link.target_id);
-  //         links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
-  //       }
-  //     }
-  //     for (const [index, input] of node.inputs.entries()) {
-  //       const linkId = input.link;
-  //       if (linkId) {
-  //         const link: LLink = (app.graph as LGraph).links[linkId]!;
-  //         const originNode = app.graph.getNodeById(link.origin_id);
-  //         links.push({node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index});
-  //       }
-  //     }
-  //     // Add the new node, remove the old node.
-  //     app.graph.add(newNode);
-  //     app.graph.remove(node);
-  //     // Now go through and connect the other nodes up as they were.
-  //     for (const link of links) {
-  //       link.node.connect(link.slot, link.targetNode, link.targetSlot);
-  //     }
-  //   }
-  // },
 });
+
 
 app.registerExtension({
 	name: "rgthree.NodeCombiner",
@@ -144,4 +179,5 @@ app.registerExtension({
 		LiteGraph.registerNodeType(CombinerNode.legacyType, CombinerNode);
     CombinerNode.category = CombinerNode._category;
 	},
-})
+});
+
