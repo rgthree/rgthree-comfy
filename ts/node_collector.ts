@@ -73,11 +73,17 @@ class CollectorNode extends LGraphNode {
   }
 }
 
+
+/** Legacy "Combiner" */
+class CombinerNode extends CollectorNode {
+  static override legacyType = "Node Combiner (rgthree)";
+  static override title = "Node Combiner (rgthree)";
+
+}
+
 app.registerExtension({
 	name: "rgthree.NodeCollector",
 	registerCustomNodes() {
-    console.log('registerCustomNodes')
-
     // @ts-ignore: Fix incorrect litegraph typings.
     addConnectionLayoutSupport(CollectorNode, app, [['Left','Right'],['Right','Left']]);
 
@@ -92,39 +98,50 @@ app.registerExtension({
    * look for the redbox, they won't see it and a refresh will fix it (since it will then be
    * ported).
    */
-	async loadedGraphNode(node: TLGraphNode) {
-    if (node.type === CollectorNode.legacyType) {
-      // Create a new CollectorNode.
-      const newNode = new CollectorNode();
-      // Port the position, size, and properties from the old node.
-      newNode.pos = [...node.pos];
-      newNode.size = [...node.size];
-      newNode.properties = {...node.properties};
-      // We now collect the links data, inputs and outputs, of the old node since these will be
-      // lost when we remove it.
-      const links: any[] = [];
-      for (const [index, output] of node.outputs.entries()) {
-        for (const linkId of (output.links || [])) {
-          const link: LLink = (app.graph as LGraph).links[linkId]!;
-          const targetNode = app.graph.getNodeById(link.target_id);
-          links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
-        }
-      }
-      for (const [index, input] of node.inputs.entries()) {
-        const linkId = input.link;
-        if (linkId) {
-          const link: LLink = (app.graph as LGraph).links[linkId]!;
-          const originNode = app.graph.getNodeById(link.origin_id);
-          links.push({node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index});
-        }
-      }
-      // Add the new node, remove the old node.
-      app.graph.add(newNode);
-      app.graph.remove(node);
-      // Now go through and connect the other nodes up as they were.
-      for (const link of links) {
-        link.node.connect(link.slot, link.targetNode, link.targetSlot);
-      }
-    }
-  },
+	// async loadedGraphNode(node: TLGraphNode) {
+  //   if (node.type === CollectorNode.legacyType) {
+  //     // Create a new CollectorNode.
+  //     const newNode = new CollectorNode();
+  //     // Port the position, size, and properties from the old node.
+  //     newNode.pos = [...node.pos];
+  //     newNode.size = [...node.size];
+  //     newNode.properties = {...node.properties};
+  //     // We now collect the links data, inputs and outputs, of the old node since these will be
+  //     // lost when we remove it.
+  //     const links: any[] = [];
+  //     for (const [index, output] of node.outputs.entries()) {
+  //       for (const linkId of (output.links || [])) {
+  //         const link: LLink = (app.graph as LGraph).links[linkId]!;
+  //         const targetNode = app.graph.getNodeById(link.target_id);
+  //         links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
+  //       }
+  //     }
+  //     for (const [index, input] of node.inputs.entries()) {
+  //       const linkId = input.link;
+  //       if (linkId) {
+  //         const link: LLink = (app.graph as LGraph).links[linkId]!;
+  //         const originNode = app.graph.getNodeById(link.origin_id);
+  //         links.push({node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index});
+  //       }
+  //     }
+  //     // Add the new node, remove the old node.
+  //     app.graph.add(newNode);
+  //     app.graph.remove(node);
+  //     // Now go through and connect the other nodes up as they were.
+  //     for (const link of links) {
+  //       link.node.connect(link.slot, link.targetNode, link.targetSlot);
+  //     }
+  //   }
+  // },
 });
+
+app.registerExtension({
+	name: "rgthree.NodeCombiner",
+	registerCustomNodes() {
+    // @ts-ignore: Fix incorrect litegraph typings.
+    addConnectionLayoutSupport(CombinerNode, app, [['Left','Right'],['Right','Left']]);
+
+		LiteGraph.registerNodeType(CombinerNode.legacyType, CombinerNode);
+    CombinerNode.category = CombinerNode._category;
+	},
+})

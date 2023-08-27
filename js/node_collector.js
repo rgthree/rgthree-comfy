@@ -55,41 +55,23 @@ CollectorNode.legacyType = "Node Combiner (rgthree)";
 CollectorNode.title = "Node Collector (rgthree)";
 CollectorNode.category = 'rgthree';
 CollectorNode._category = 'rgthree';
+class CombinerNode extends CollectorNode {
+}
+CombinerNode.legacyType = "Node Combiner (rgthree)";
+CombinerNode.title = "Node Combiner (rgthree)";
 app.registerExtension({
     name: "rgthree.NodeCollector",
     registerCustomNodes() {
-        console.log('registerCustomNodes');
         addConnectionLayoutSupport(CollectorNode, app, [['Left', 'Right'], ['Right', 'Left']]);
         LiteGraph.registerNodeType(CollectorNode.title, CollectorNode);
         CollectorNode.category = CollectorNode._category;
     },
-    async loadedGraphNode(node) {
-        if (node.type === CollectorNode.legacyType) {
-            const newNode = new CollectorNode();
-            newNode.pos = [...node.pos];
-            newNode.size = [...node.size];
-            newNode.properties = Object.assign({}, node.properties);
-            const links = [];
-            for (const [index, output] of node.outputs.entries()) {
-                for (const linkId of (output.links || [])) {
-                    const link = app.graph.links[linkId];
-                    const targetNode = app.graph.getNodeById(link.target_id);
-                    links.push({ node: newNode, slot: index, targetNode, targetSlot: link.target_slot });
-                }
-            }
-            for (const [index, input] of node.inputs.entries()) {
-                const linkId = input.link;
-                if (linkId) {
-                    const link = app.graph.links[linkId];
-                    const originNode = app.graph.getNodeById(link.origin_id);
-                    links.push({ node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index });
-                }
-            }
-            app.graph.add(newNode);
-            app.graph.remove(node);
-            for (const link of links) {
-                link.node.connect(link.slot, link.targetNode, link.targetSlot);
-            }
-        }
+});
+app.registerExtension({
+    name: "rgthree.NodeCombiner",
+    registerCustomNodes() {
+        addConnectionLayoutSupport(CombinerNode, app, [['Left', 'Right'], ['Right', 'Left']]);
+        LiteGraph.registerNodeType(CombinerNode.legacyType, CombinerNode);
+        CombinerNode.category = CombinerNode._category;
     },
 });
