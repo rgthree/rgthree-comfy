@@ -5,7 +5,7 @@ import {app} from '../../scripts/app.js';
 import {api} from '../../scripts/api.js';
 // @ts-ignore
 import { ComfyWidgets } from '../../scripts/widgets.js';
-import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, Vector2} from './typings/litegraph.js';
+import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot} from './typings/litegraph.js';
 import type {ComfyApp, ComfyObjectInfo, ComfyGraphNode} from './typings/comfy.js'
 import {addConnectionLayoutSupport, wait} from './utils.js';
 
@@ -78,7 +78,7 @@ class PowerPrompt {
     // If our first input is connected, then we can show the proper output.
     const clipLinked = this.node.inputs.some(i=>i.name.includes('clip') && !!i.link);
     const modelLinked = this.node.inputs.some(i=>i.name.includes('model') && !!i.link);
-    for (const [index, output] of this.node.outputs.entries()) {
+    for (const output of this.node.outputs) {
       const type = (output.type as string).toLowerCase();
       if (type.includes('model')) {
         output.disabled = !modelLinked;

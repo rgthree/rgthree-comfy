@@ -1,54 +1,24 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport, addMenuItem } from "./utils.js";
-export class BaseNodeDispatcher extends LGraphNode {
-    constructor(title = BaseNodeDispatcher.title) {
-        if (title == '__NEED_NAME__') {
-            throw new Error('BaseNodeDispatcher needs overrides.');
-        }
+import { addConnectionLayoutSupport, addMenuItem, doChainLookup, wait } from "./utils.js";
+export class BaseNodeModeChanger extends LGraphNode {
+    constructor(title = BaseNodeModeChanger.title) {
         super(title);
         this.debouncer = 0;
         this.schedulePromise = null;
         this.isVirtualNode = true;
+        this.modeOn = -1;
+        this.modeOff = -1;
+        if (title == '__NEED_NAME__') {
+            throw new Error('BaseNodeModeChanger needs overrides.');
+        }
+        wait(10).then(() => {
+            if (this.modeOn < 0 || this.modeOff < 0) {
+                throw new Error('modeOn and modeOff must be overridden.');
+            }
+        });
         this.properties = this.properties || {};
         this.connections = [];
         this.addInput("", "*");
-    }
-    isPassThroughType(type) {
-        return (type === null || type === void 0 ? void 0 : type.includes('Reroute')) || (type === null || type === void 0 ? void 0 : type.includes('Node Combiner')) || (type === null || type === void 0 ? void 0 : type.includes('Node Collector'));
-    }
-    doChainLookup(startNode = this) {
-        let rootNodes = [];
-        const slotsToRemove = [];
-        const type = startNode.constructor.type;
-        if (startNode === this || this.isPassThroughType(type)) {
-            const removeDups = startNode === this;
-            for (const input of startNode.inputs) {
-                const linkId = input.link;
-                if (!linkId) {
-                    continue;
-                }
-                const link = app.graph.links[linkId];
-                const originNode = app.graph.getNodeById(link.origin_id);
-                const originNodeType = originNode.constructor.type;
-                if (this.isPassThroughType(originNodeType)) {
-                    for (const foundNode of this.doChainLookup(originNode)) {
-                        if (!rootNodes.includes(foundNode)) {
-                            rootNodes.push(foundNode);
-                        }
-                    }
-                }
-                else if (rootNodes.includes(originNode)) {
-                    removeDups && (slotsToRemove.push(link.target_slot));
-                }
-                else {
-                    rootNodes.push(originNode);
-                }
-            }
-            for (const slot of slotsToRemove) {
-                this.disconnectInput(slot);
-            }
-        }
-        return rootNodes;
     }
     scheduleRefreshWidgets() {
         if (!this.schedulePromise) {
@@ -62,7 +32,7 @@ export class BaseNodeDispatcher extends LGraphNode {
         return this.schedulePromise;
     }
     refreshWidgets() {
-        const linkedNodes = this.doChainLookup();
+        const linkedNodes = doChainLookup(app, this, this);
         this.stabilizeInputsOutputs();
         for (const [index, node] of linkedNodes.entries()) {
             let widget = this.widgets && this.widgets[index];
@@ -78,8 +48,16 @@ export class BaseNodeDispatcher extends LGraphNode {
         }
         app.graph.setDirtyCanvas(true, true);
     }
-    setWidget(_widget, _linkedNode) {
-        throw new Error('setWidget should be overridden');
+    setWidget(widget, linkedNode) {
+        const off = linkedNode.mode === this.modeOff;
+        widget.name = `Enable ${linkedNode.title}`;
+        widget.options = { 'on': 'yes', 'off': 'no' };
+        widget.value = !off;
+        widget.callback = () => {
+            const off = linkedNode.mode === this.modeOff;
+            linkedNode.mode = (off ? this.modeOn : this.modeOff);
+            widget.value = off;
+        };
     }
     onConnectionsChainChange() {
         this.scheduleRefreshWidgets();
@@ -142,7 +120,7 @@ export class BaseNodeDispatcher extends LGraphNode {
         clazz.category = clazz._category;
     }
 }
-BaseNodeDispatcher.title = "__NEED_NAME__";
-BaseNodeDispatcher.category = 'rgthree';
-BaseNodeDispatcher._category = 'rgthree';
-BaseNodeDispatcher.collapsible = false;
+BaseNodeModeChanger.title = "__NEED_NAME__";
+BaseNodeModeChanger.category = 'rgthree';
+BaseNodeModeChanger._category = 'rgthree';
+BaseNodeModeChanger.collapsible = false;

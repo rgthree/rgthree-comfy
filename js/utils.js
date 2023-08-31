@@ -26,8 +26,10 @@ export function addMenuItem(node, _app, config) {
         menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
             content: typeof config.name == 'function' ? config.name(this) : config.name,
             callback: (_value, _options, _event, _parentMenu, _node) => {
-                this.properties = this.properties || {};
-                this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
+                if (config.property) {
+                    this.properties = this.properties || {};
+                    this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
+                }
                 config.callback && config.callback(this);
             }
         });
@@ -46,8 +48,10 @@ export function addMenuSubMenu(node, _app, config) {
                     event,
                     parentMenu,
                     callback: (value, _options, _event, _parentMenu, _node) => {
-                        this.properties = this.properties || {};
-                        this.properties[config.property] = config.prepareValue ? config.prepareValue(value.content, this) : value.content;
+                        if (config.property) {
+                            this.properties = this.properties || {};
+                            this.properties[config.property] = config.prepareValue ? config.prepareValue(value.content, this) : value.content;
+                        }
                         config.callback && config.callback(this);
                     },
                 });
@@ -217,4 +221,53 @@ export function wait(ms = 16, value) {
     return new Promise((resolve) => {
         setTimeout(() => { resolve(value); }, ms);
     });
+}
+export function addHelp(node, app) {
+    const help = node.help;
+    if (help) {
+        addMenuItem(node, app, {
+            name: 'Node Help',
+            property: 'help',
+            callback: (_node) => { alert(help); }
+        });
+    }
+}
+export function isPassThroughType(node) {
+    var _a;
+    const type = (_a = node === null || node === void 0 ? void 0 : node.constructor) === null || _a === void 0 ? void 0 : _a.type;
+    return (type === null || type === void 0 ? void 0 : type.includes('Reroute'))
+        || (type === null || type === void 0 ? void 0 : type.includes('Node Combiner'))
+        || (type === null || type === void 0 ? void 0 : type.includes('Node Collector'));
+}
+export function doChainLookup(app, startNode, currentNode) {
+    let rootNodes = [];
+    const slotsToRemove = [];
+    if (startNode === currentNode || isPassThroughType(currentNode)) {
+        const removeDups = startNode === currentNode;
+        for (const input of currentNode.inputs) {
+            const linkId = input.link;
+            if (!linkId) {
+                continue;
+            }
+            const link = app.graph.links[linkId];
+            const originNode = app.graph.getNodeById(link.origin_id);
+            if (isPassThroughType(originNode)) {
+                for (const foundNode of doChainLookup(app, startNode, originNode)) {
+                    if (!rootNodes.includes(foundNode)) {
+                        rootNodes.push(foundNode);
+                    }
+                }
+            }
+            else if (rootNodes.includes(originNode)) {
+                removeDups && (slotsToRemove.push(link.target_slot));
+            }
+            else {
+                rootNodes.push(originNode);
+            }
+        }
+        for (const slot of slotsToRemove) {
+            startNode.disconnectInput(slot);
+        }
+    }
+    return rootNodes;
 }

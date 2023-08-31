@@ -1,24 +1,12 @@
 import { app } from "../../scripts/app.js";
-import { BaseNodeDispatcher } from "./base_node_dispatcher.js";
+import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
 const MODE_BYPASS = 4;
 const MODE_ALWAYS = 0;
-class BypasserNode extends BaseNodeDispatcher {
+class BypasserNode extends BaseNodeModeChanger {
     constructor(title = BypasserNode.title) {
         super(title);
-    }
-    setWidget(widget, linkedNode) {
-        const bypassed = linkedNode.mode === MODE_BYPASS;
-        widget.name = `Enable ${linkedNode.title}`;
-        widget.options = {
-            'on': 'yes',
-            'off': 'no'
-        };
-        widget.value = !bypassed;
-        widget.callback = () => {
-            const bypassed = linkedNode.mode === MODE_BYPASS;
-            linkedNode.mode = bypassed ? MODE_ALWAYS : MODE_BYPASS;
-            widget.value = bypassed;
-        };
+        this.modeOn = MODE_ALWAYS;
+        this.modeOff = MODE_BYPASS;
     }
 }
 BypasserNode.title = "Fast Bypasser (rgthree)";

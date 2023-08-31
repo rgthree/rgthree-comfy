@@ -1,13 +1,13 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import {app} from "../../scripts/app.js";
-import type {Vector2, LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, addMenuItem } from "./utils.js";
+import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
+import { addConnectionLayoutSupport, addMenuItem, doChainLookup, wait } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
 
-export class BaseNodeDispatcher extends LGraphNode {
+export class BaseNodeModeChanger extends LGraphNode {
 
   static override title = "__NEED_NAME__";
   // `category` seems to get reset at register, so we'll
@@ -18,52 +18,23 @@ export class BaseNodeDispatcher extends LGraphNode {
   debouncer: number = 0;
   schedulePromise: Promise<void> | null = null;
   isVirtualNode = true;
+  // These Must be overriden
+  readonly modeOn: number = -1;
+  readonly modeOff: number = -1;
 
-  constructor(title = BaseNodeDispatcher.title) {
-    if (title == '__NEED_NAME__') {
-      throw new Error('BaseNodeDispatcher needs overrides.');
-    }
+  constructor(title = BaseNodeModeChanger.title) {
     super(title);
+    if (title == '__NEED_NAME__') {
+      throw new Error('BaseNodeModeChanger needs overrides.');
+    }
+    wait(10).then(() => {
+      if (this.modeOn < 0 || this.modeOff < 0) {
+        throw new Error('modeOn and modeOff must be overridden.');
+      }
+    });
     this.properties = this.properties || {};
     this.connections = [];
     this.addInput("", "*");
-  }
-
-  private isPassThroughType(type: string|null) {
-    return type?.includes('Reroute') || type?.includes('Node Combiner') || type?.includes('Node Collector');
-  }
-
-  private doChainLookup(startNode: TLGraphNode = this) {
-    let rootNodes: TLGraphNode[] = [];
-    const slotsToRemove = [];
-    const type = (startNode.constructor as typeof TLGraphNode).type;
-    if (startNode === this || this.isPassThroughType(type)) {
-      const removeDups = startNode === this;
-      for (const input of startNode.inputs) {
-        const linkId: number | null = input!.link;
-        if (!linkId) {
-          continue;
-        }
-        const link: LLink = (app.graph as LGraph).links[linkId]!;
-        const originNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
-        const originNodeType = (originNode.constructor as typeof TLGraphNode).type;
-        if (this.isPassThroughType(originNodeType)) {
-          for (const foundNode of this.doChainLookup(originNode)) {
-            if (!rootNodes.includes(foundNode)) {
-              rootNodes.push(foundNode);
-            }
-          }
-        } else if (rootNodes.includes(originNode)) {
-          removeDups && (slotsToRemove.push(link.target_slot))
-        } else {
-          rootNodes.push(originNode);
-        }
-      }
-      for (const slot of slotsToRemove) {
-        this.disconnectInput(slot);
-      }
-    }
-    return rootNodes;
   }
 
   scheduleRefreshWidgets() {
@@ -79,7 +50,7 @@ export class BaseNodeDispatcher extends LGraphNode {
   }
 
   refreshWidgets() {
-    const linkedNodes = this.doChainLookup();
+    const linkedNodes = doChainLookup(app, this, this);
     this.stabilizeInputsOutputs();
     for (const [index, node] of linkedNodes.entries()) {
       let widget = this.widgets && this.widgets[index];
@@ -100,9 +71,19 @@ export class BaseNodeDispatcher extends LGraphNode {
     app.graph.setDirtyCanvas(true, true);
   }
 
-  setWidget(_widget: IWidget, _linkedNode: TLGraphNode) {
-    throw new Error('setWidget should be overridden');
+  setWidget(widget: IWidget, linkedNode: TLGraphNode) {
+    const off = linkedNode.mode === this.modeOff;
+    widget.name = `Enable ${linkedNode.title}`;
+    widget.options = {'on': 'yes', 'off': 'no'}
+    widget.value = !off;
+    widget.callback = () => {
+      const off = linkedNode.mode === this.modeOff;
+      linkedNode.mode = (off ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
+      widget!.value = off;
+    }
   }
+
+
 
   onConnectionsChainChange() {
     this.scheduleRefreshWidgets();
@@ -153,7 +134,7 @@ export class BaseNodeDispatcher extends LGraphNode {
     return size;
   }
 
-  static setUp<T extends BaseNodeDispatcher>(clazz: new(...args: any[]) => T) {
+  static setUp<T extends BaseNodeModeChanger>(clazz: new(...args: any[]) => T) {
     // @ts-ignore: Fix incorrect litegraph typings.
     addMenuItem(clazz, app, {
       name: 'Refresh',

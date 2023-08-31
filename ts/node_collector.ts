@@ -1,79 +1,24 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from './typings/litegraph.js';
+import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from './typings/litegraph.js';
 import { addConnectionLayoutSupport, wait } from "./utils.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
+// @ts-ignore
+import { BaseCollectorNode } from './base_node_collector.js';
 
 declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
 
-class CollectorNode extends LGraphNode {
+
+/** Legacy "Combiner" */
+class CollectorNode extends BaseCollectorNode {
+
+  static override type = "Node Collector (rgthree)";
+  static override title = "Node Collector (rgthree)";
 
   static legacyType = "Node Combiner (rgthree)";
-  static override title = "Node Collector (rgthree)";
-  // `category` seems to get reset at register, so we'll
-  // re-reset it after the register call. ¯\_(ツ)_/¯
-  static category = 'rgthree';
-  static _category = 'rgthree';
 
-  isVirtualNode = true;
-
-  constructor(title = CollectorNode.title) {
-    super(title);
-    this.properties = this.properties || {};
-    this.connections = [];
-    this.addInput("", "*");
-    this.addOutput("Output", "*");
-  }
-
-  override clone() {
-    const cloned = super.clone();
-    return cloned;
-  }
-
-  private updateOutputLinks(startNode: TLGraphNode = this) {
-    const type = (startNode.constructor as typeof TLGraphNode).type;
-    // @ts-ignore
-    if (startNode.onConnectionsChainChange) {
-      // @ts-ignore
-      startNode.onConnectionsChainChange();
-    }
-    if (startNode === this || type?.includes('Reroute') || type?.includes('Combiner')) {
-      for (const output of startNode.outputs) {
-        if (!output.links || !output.links.length) continue;
-        for (const linkId of output.links) {
-          const link: LLink = (app.graph as LGraph).links[linkId]!;
-          if (!link) continue;
-          const targetNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.target_id)!;
-          targetNode && this.updateOutputLinks(targetNode)
-        }
-      }
-    }
-  }
-
-  override onConnectionsChange(_type: number, _slotIndex: number, _isConnected: boolean, link_info: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) {
-    if (!link_info) return;
-    this.stabilizeInputsOutputs();
-    // Follow outputs to see if we need to trigger an onConnectionChange.
-    this.updateOutputLinks();
-  }
-
-  private stabilizeInputsOutputs() {
-    for (let index = this.inputs.length - 1; index >= 0; index--) {
-      const input = this.inputs[index]!;
-      if (!input.link) {
-        this.removeInput(index);
-      }
-    }
-    this.addInput('', '*');
-
-    const outputLength = this.outputs[0]?.links?.length || 0;
-    if (outputLength > 1) {
-      this.outputs[0]!.links!.length = 1;
-    }
-  }
 }
 
 
@@ -113,9 +58,10 @@ class CombinerNode extends CollectorNode {
   }
 }
 
-  /**
-   * Updates a Node Combiner to a Node Collector.
-   */
+
+/**
+ * Updates a Node Combiner to a Node Collector.
+ */
 async function updateCombinerToCollector(node: TLGraphNode) {
   if (node.type === CollectorNode.legacyType) {
     // Create a new CollectorNode.
@@ -157,6 +103,7 @@ async function updateCombinerToCollector(node: TLGraphNode) {
     app.graph.remove(node);
   }
 }
+
 
 app.registerExtension({
 	name: "rgthree.NodeCollector",

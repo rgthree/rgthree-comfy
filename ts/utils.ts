@@ -1,5 +1,5 @@
 import type {ComfyApp} from './typings/comfy';
-import {Vector2, LGraphCanvas as TLGraphCanvas, ContextMenuItem, IContextMenuOptions, ContextMenu, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
+import {Vector2, LGraphCanvas as TLGraphCanvas, ContextMenuItem, LLink, LGraph, IContextMenuOptions, ContextMenu, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
 // @ts-ignore
 import {api} from '../../scripts/api.js';
 
@@ -36,7 +36,7 @@ const OPPOSITE_LABEL : {[label: string]: string} = {
 
 interface MenuConfig {
   name: string | ((node: TLGraphNode) => string);
-  property: string;
+  property?: string;
   prepareValue?: (value: string, node: TLGraphNode) => any;
   callback?: (node: TLGraphNode) => void;
 }
@@ -53,8 +53,10 @@ export function addMenuItem(node: typeof LGraphNode, _app: ComfyApp, config: Men
     menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
       content: typeof config.name == 'function' ? config.name(this) : config.name,
       callback: (_value: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
-        this.properties = this.properties || {};
-        this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
+        if (config.property) {
+          this.properties = this.properties || {};
+          this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
+        }
         config.callback && config.callback(this);
       }
     });
@@ -77,8 +79,10 @@ export function addMenuSubMenu(node: typeof LGraphNode, _app: ComfyApp, config: 
             event,
             parentMenu,
             callback: (value: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
-              this.properties = this.properties || {};
-              this.properties[config.property] = config.prepareValue ? config.prepareValue(value!.content, this) : value!.content;
+              if (config.property) {
+                this.properties = this.properties || {};
+                this.properties[config.property] = config.prepareValue ? config.prepareValue(value!.content, this) : value!.content;
+              }
               config.callback && config.callback(this);
             },
           });
@@ -268,4 +272,63 @@ export function wait(ms = 16, value?: any) {
   return new Promise((resolve) => {
     setTimeout(() => { resolve(value); }, ms);
   });
+}
+
+
+export function addHelp(node: typeof LGraphNode, app: ComfyApp) {
+  const help = (node as any).help as string;
+  if (help) {
+    addMenuItem(node, app, {
+        name: 'Node Help',
+        property: 'help',
+        callback: (_node) => { alert(help); }
+    });
+  }
+}
+
+
+/**
+ * Determines if, when doing a chain lookup for connected nodes, we want to pass through this node,
+ * like reroutes, etc.
+ */
+export function isPassThroughType(node: TLGraphNode|null) {
+  const type = (node?.constructor as typeof TLGraphNode)?.type;
+  return type?.includes('Reroute')
+      || type?.includes('Node Combiner')
+      || type?.includes('Node Collector');
+}
+
+/**
+ * Looks through the immediate chain of a node to collect all connected nodes, passing through nodes
+ * like reroute, etc. Will also disconnect duplicate nodes from a provided node
+ */
+export function doChainLookup(app: ComfyApp, startNode: TLGraphNode, currentNode: TLGraphNode) {
+  let rootNodes: TLGraphNode[] = [];
+  const slotsToRemove = [];
+  if (startNode === currentNode || isPassThroughType(currentNode)) {
+    const removeDups = startNode === currentNode;
+    for (const input of currentNode.inputs) {
+      const linkId: number | null = input!.link;
+      if (!linkId) {
+        continue;
+      }
+      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const originNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
+      if (isPassThroughType(originNode)) {
+        for (const foundNode of doChainLookup(app, startNode, originNode)) {
+          if (!rootNodes.includes(foundNode)) {
+            rootNodes.push(foundNode);
+          }
+        }
+      } else if (rootNodes.includes(originNode)) {
+        removeDups && (slotsToRemove.push(link.target_slot))
+      } else {
+        rootNodes.push(originNode);
+      }
+    }
+    for (const slot of slotsToRemove) {
+      startNode.disconnectInput(slot);
+    }
+  }
+  return rootNodes;
 }

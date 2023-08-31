@@ -45,7 +45,7 @@ class PowerPrompt {
     stabilizeInputsOutputs() {
         const clipLinked = this.node.inputs.some(i => i.name.includes('clip') && !!i.link);
         const modelLinked = this.node.inputs.some(i => i.name.includes('model') && !!i.link);
-        for (const [index, output] of this.node.outputs.entries()) {
+        for (const output of this.node.outputs) {
             const type = output.type.toLowerCase();
             if (type.includes('model')) {
                 output.disabled = !modelLinked;

@@ -15,6 +15,9 @@ export interface ComfyGraphNode extends LGraphNode {
 }
 
 
+export type NodeMode = 0|1|2|3|4|undefined;
+
+
 export interface ComfyExtension {
 	/**
 	 * The name of the extension
