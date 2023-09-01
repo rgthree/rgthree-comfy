@@ -1,38 +1,37 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport, addMenuItem, doChainLookup, wait } from "./utils.js";
-export class BaseNodeModeChanger extends LGraphNode {
-    constructor(title = BaseNodeModeChanger.title) {
+import { RgthreeBaseNode } from "./base_node.js";
+import { addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, wait } from "./utils.js";
+export class BaseNodeModeChanger extends RgthreeBaseNode {
+    constructor(title) {
         super(title);
+        this.isVirtualNode = true;
         this.debouncer = 0;
         this.schedulePromise = null;
-        this.isVirtualNode = true;
         this.modeOn = -1;
         this.modeOff = -1;
-        if (title == '__NEED_NAME__') {
-            throw new Error('BaseNodeModeChanger needs overrides.');
-        }
         wait(10).then(() => {
             if (this.modeOn < 0 || this.modeOff < 0) {
                 throw new Error('modeOn and modeOff must be overridden.');
             }
         });
-        this.properties = this.properties || {};
-        this.connections = [];
         this.addInput("", "*");
     }
-    scheduleRefreshWidgets() {
+    scheduleStabilizeWidgets() {
         if (!this.schedulePromise) {
             this.schedulePromise = new Promise((resolve) => {
                 setTimeout(() => {
-                    resolve(this.refreshWidgets());
+                    resolve(this.stabilizeWidgets());
                     this.schedulePromise = null;
                 }, 100);
             });
         }
         return this.schedulePromise;
     }
-    refreshWidgets() {
-        const linkedNodes = doChainLookup(app, this, this);
+    stabilizeWidgets() {
+        if (!this.graph) {
+            return;
+        }
+        const linkedNodes = getConnectedInputNodes(app, this);
         this.stabilizeInputsOutputs();
         for (const [index, node] of linkedNodes.entries()) {
             let widget = this.widgets && this.widgets[index];
@@ -47,6 +46,7 @@ export class BaseNodeModeChanger extends LGraphNode {
             this.widgets.length = linkedNodes.length;
         }
         app.graph.setDirtyCanvas(true, true);
+        setTimeout(() => { this.stabilizeWidgets(); }, 500);
     }
     setWidget(widget, linkedNode) {
         const off = linkedNode.mode === this.modeOff;
@@ -60,10 +60,10 @@ export class BaseNodeModeChanger extends LGraphNode {
         };
     }
     onConnectionsChainChange() {
-        this.scheduleRefreshWidgets();
+        this.scheduleStabilizeWidgets();
     }
     onConnectionsChange(_type, _index, _connected, _linkInfo, _ioSlot) {
-        this.scheduleRefreshWidgets();
+        this.scheduleStabilizeWidgets();
     }
     removeInput(slot) {
         this._tempWidth = this.size[0];
@@ -107,7 +107,7 @@ export class BaseNodeModeChanger extends LGraphNode {
     static setUp(clazz) {
         addMenuItem(clazz, app, {
             name: 'Refresh',
-            callback: (node) => { node.scheduleRefreshWidgets(); }
+            callback: (node) => { node.scheduleStabilizeWidgets(); }
         });
         addMenuItem(clazz, app, {
             name: (node) => { var _a; return (`${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['collapse_connections']) ? 'Show' : 'Collapse'} Connections`); },
@@ -116,11 +116,8 @@ export class BaseNodeModeChanger extends LGraphNode {
             callback: (_node) => { app.graph.setDirtyCanvas(true, true); }
         });
         addConnectionLayoutSupport(clazz, app, [['Left'], ['Right']]);
-        LiteGraph.registerNodeType(clazz.title, clazz);
+        LiteGraph.registerNodeType(clazz.type, clazz);
         clazz.category = clazz._category;
     }
 }
-BaseNodeModeChanger.title = "__NEED_NAME__";
-BaseNodeModeChanger.category = 'rgthree';
-BaseNodeModeChanger._category = 'rgthree';
 BaseNodeModeChanger.collapsible = false;

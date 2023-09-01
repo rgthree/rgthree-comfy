@@ -43,7 +43,7 @@ async function updateCombinerToCollector(node) {
         }
         newNode.pos = [...node.pos];
         newNode.size = [...node.size];
-        newNode.properties = Object.assign({}, node.properties);
+        newNode.properties = { ...node.properties };
         const links = [];
         for (const [index, output] of node.outputs.entries()) {
             for (const linkId of (output.links || [])) {

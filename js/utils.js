@@ -5,6 +5,11 @@ api.getNodeDefs = async function () {
     this.dispatchEvent(new CustomEvent('fresh-node-defs', { detail: defs }));
     return defs;
 };
+var IoDirection;
+(function (IoDirection) {
+    IoDirection[IoDirection["INPUT"] = 0] = "INPUT";
+    IoDirection[IoDirection["OUTPUT"] = 1] = "OUTPUT";
+})(IoDirection || (IoDirection = {}));
 const PADDING = 0;
 export const LAYOUT_LABEL_TO_DATA = {
     'Left': [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
@@ -226,7 +231,7 @@ export function addHelp(node, app) {
     const help = node.help;
     if (help) {
         addMenuItem(node, app, {
-            name: 'Node Help',
+            name: '🛟 Node Help',
             property: 'help',
             callback: (_node) => { alert(help); }
         });
@@ -239,34 +244,56 @@ export function isPassThroughType(node) {
         || (type === null || type === void 0 ? void 0 : type.includes('Node Combiner'))
         || (type === null || type === void 0 ? void 0 : type.includes('Node Collector'));
 }
-export function doChainLookup(app, startNode, currentNode) {
+export function getConnectedInputNodes(app, startNode, currentNode) {
+    return getConnectedNodes(app, startNode, IoDirection.INPUT, currentNode);
+}
+export function getConnectedOutputNodes(app, startNode, currentNode) {
+    return getConnectedNodes(app, startNode, IoDirection.OUTPUT, currentNode);
+}
+function getConnectedNodes(app, startNode, dir = IoDirection.INPUT, currentNode) {
+    var _a, _b;
+    currentNode = currentNode || startNode;
     let rootNodes = [];
     const slotsToRemove = [];
     if (startNode === currentNode || isPassThroughType(currentNode)) {
         const removeDups = startNode === currentNode;
-        for (const input of currentNode.inputs) {
-            const linkId = input.link;
+        let linkIds;
+        if (dir == IoDirection.OUTPUT) {
+            linkIds = (_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a.flatMap(i => i.links);
+        }
+        else {
+            linkIds = (_b = currentNode.inputs) === null || _b === void 0 ? void 0 : _b.map(i => i.link);
+        }
+        let graph = app.graph;
+        for (const linkId of linkIds) {
             if (!linkId) {
                 continue;
             }
-            const link = app.graph.links[linkId];
-            const originNode = app.graph.getNodeById(link.origin_id);
+            const link = graph.links[linkId];
+            const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
+            const originNode = graph.getNodeById(connectedId);
             if (isPassThroughType(originNode)) {
-                for (const foundNode of doChainLookup(app, startNode, originNode)) {
+                for (const foundNode of getConnectedNodes(app, startNode, dir, originNode)) {
                     if (!rootNodes.includes(foundNode)) {
                         rootNodes.push(foundNode);
                     }
                 }
             }
             else if (rootNodes.includes(originNode)) {
-                removeDups && (slotsToRemove.push(link.target_slot));
+                const connectedSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
+                removeDups && (slotsToRemove.push(connectedSlot));
             }
             else {
                 rootNodes.push(originNode);
             }
         }
         for (const slot of slotsToRemove) {
-            startNode.disconnectInput(slot);
+            if (dir == IoDirection.OUTPUT) {
+                startNode.disconnectOutput(slot);
+            }
+            else {
+                startNode.disconnectInput(slot);
+            }
         }
     }
     return rootNodes;

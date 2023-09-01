@@ -1,13 +1,9 @@
 import { app } from "../../scripts/app.js";
-export class BaseCollectorNode extends LGraphNode {
-    constructor(title = BaseCollectorNode.title) {
+import { RgthreeBaseNode } from "./base_node.js";
+export class BaseCollectorNode extends RgthreeBaseNode {
+    constructor(title) {
         super(title);
         this.isVirtualNode = true;
-        if (title == '__NEED_NAME__') {
-            throw new Error('BaseCollectorNode needs overrides.');
-        }
-        this.properties = this.properties || {};
-        this.connections = [];
         this.addInput("", "*");
         this.addOutput("Output", "*");
     }
@@ -55,6 +51,3 @@ export class BaseCollectorNode extends LGraphNode {
         }
     }
 }
-BaseCollectorNode.title = "__NEED_NAME__";
-BaseCollectorNode.category = 'rgthree';
-BaseCollectorNode._category = 'rgthree';

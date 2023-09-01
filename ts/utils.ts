@@ -18,6 +18,11 @@ api.getNodeDefs = async function() {
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
 
+enum IoDirection {
+  INPUT,
+  OUTPUT,
+}
+
 const PADDING = 0;
 
 type LiteGraphDir = typeof LiteGraph.LEFT | typeof LiteGraph.RIGHT | typeof LiteGraph.UP | typeof LiteGraph.DOWN;
@@ -279,7 +284,7 @@ export function addHelp(node: typeof LGraphNode, app: ComfyApp) {
   const help = (node as any).help as string;
   if (help) {
     addMenuItem(node, app, {
-        name: 'Node Help',
+        name: '🛟 Node Help',
         property: 'help',
         callback: (_node) => { alert(help); }
     });
@@ -302,32 +307,54 @@ export function isPassThroughType(node: TLGraphNode|null) {
  * Looks through the immediate chain of a node to collect all connected nodes, passing through nodes
  * like reroute, etc. Will also disconnect duplicate nodes from a provided node
  */
-export function doChainLookup(app: ComfyApp, startNode: TLGraphNode, currentNode: TLGraphNode) {
+export function getConnectedInputNodes(app: ComfyApp, startNode: TLGraphNode, currentNode?: TLGraphNode) {
+  return getConnectedNodes(app, startNode, IoDirection.INPUT, currentNode);
+}
+
+export function getConnectedOutputNodes(app: ComfyApp, startNode: TLGraphNode, currentNode?: TLGraphNode) {
+  return getConnectedNodes(app, startNode, IoDirection.OUTPUT, currentNode);
+}
+
+
+function getConnectedNodes(app: ComfyApp, startNode: TLGraphNode, dir = IoDirection.INPUT, currentNode?: TLGraphNode) {
+  currentNode = currentNode || startNode;
   let rootNodes: TLGraphNode[] = [];
   const slotsToRemove = [];
   if (startNode === currentNode || isPassThroughType(currentNode)) {
     const removeDups = startNode === currentNode;
-    for (const input of currentNode.inputs) {
-      const linkId: number | null = input!.link;
+    let linkIds: Array<number|null>;
+    if (dir == IoDirection.OUTPUT) {
+      linkIds = currentNode.outputs?.flatMap(i => i.links);
+    } else {
+      linkIds = currentNode.inputs?.map(i => i.link);
+    }
+    let graph = app.graph as LGraph;
+    for (const linkId of linkIds) {
       if (!linkId) {
         continue;
       }
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
-      const originNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
+      const link: LLink = graph.links[linkId]!;
+      const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
+      const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
       if (isPassThroughType(originNode)) {
-        for (const foundNode of doChainLookup(app, startNode, originNode)) {
+        for (const foundNode of getConnectedNodes(app, startNode, dir, originNode)) {
           if (!rootNodes.includes(foundNode)) {
             rootNodes.push(foundNode);
           }
         }
       } else if (rootNodes.includes(originNode)) {
-        removeDups && (slotsToRemove.push(link.target_slot))
+        const connectedSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
+        removeDups && (slotsToRemove.push(connectedSlot))
       } else {
         rootNodes.push(originNode);
       }
     }
     for (const slot of slotsToRemove) {
-      startNode.disconnectInput(slot);
+      if (dir == IoDirection.OUTPUT) {
+        startNode.disconnectOutput(slot);
+      } else {
+        startNode.disconnectInput(slot);
+      }
     }
   }
   return rootNodes;

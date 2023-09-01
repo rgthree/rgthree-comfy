@@ -1,29 +1,20 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type {LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode} from './typings/litegraph.js';
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 
+import type {LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+import { RgthreeBaseNode } from "./base_node.js";
+
 declare const LGraphNode: typeof TLGraphNode;
 
-export class BaseCollectorNode extends LGraphNode {
+export class BaseCollectorNode extends RgthreeBaseNode {
 
-  static override title = "__NEED_NAME__";
-  // `category` seems to get reset at register, so we'll
-  // re-reset it after the register call. ¯\_(ツ)_/¯
-  static category = 'rgthree';
-  static _category = 'rgthree';
+  override isVirtualNode = true;
 
-  isVirtualNode = true;
-
-  constructor(title = BaseCollectorNode.title) {
+  constructor(title?: string) {
     super(title);
-    if (title == '__NEED_NAME__') {
-      throw new Error('BaseCollectorNode needs overrides.');
-    }
-    this.properties = this.properties || {};
-    this.connections = [];
     this.addInput("", "*");
     this.addOutput("Output", "*");
   }

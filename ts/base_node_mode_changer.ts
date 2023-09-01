@@ -1,47 +1,41 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import {app} from "../../scripts/app.js";
+import { RgthreeBaseNode } from "./base_node.js";
 import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, addMenuItem, doChainLookup, wait } from "./utils.js";
+import { addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, wait } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
 
-export class BaseNodeModeChanger extends LGraphNode {
+export class BaseNodeModeChanger extends RgthreeBaseNode {
 
-  static override title = "__NEED_NAME__";
-  // `category` seems to get reset at register, so we'll
-  // re-reset it after the register call. ¯\_(ツ)_/¯
-  static category = 'rgthree';
-  static _category = 'rgthree';
   static collapsible = false;
+
+  override isVirtualNode = true;
   debouncer: number = 0;
   schedulePromise: Promise<void> | null = null;
-  isVirtualNode = true;
+
   // These Must be overriden
   readonly modeOn: number = -1;
   readonly modeOff: number = -1;
 
-  constructor(title = BaseNodeModeChanger.title) {
+  constructor(title?: string) {
     super(title);
-    if (title == '__NEED_NAME__') {
-      throw new Error('BaseNodeModeChanger needs overrides.');
-    }
+
     wait(10).then(() => {
       if (this.modeOn < 0 || this.modeOff < 0) {
         throw new Error('modeOn and modeOff must be overridden.');
       }
     });
-    this.properties = this.properties || {};
-    this.connections = [];
     this.addInput("", "*");
   }
 
-  scheduleRefreshWidgets() {
+  scheduleStabilizeWidgets() {
     if (!this.schedulePromise) {
       this.schedulePromise = new Promise((resolve) => {
         setTimeout(() => {
-          resolve(this.refreshWidgets());
+          resolve(this.stabilizeWidgets());
           this.schedulePromise = null;
         }, 100);
       });
@@ -49,8 +43,11 @@ export class BaseNodeModeChanger extends LGraphNode {
     return this.schedulePromise;
   }
 
-  refreshWidgets() {
-    const linkedNodes = doChainLookup(app, this, this);
+  stabilizeWidgets() {
+    if (!this.graph) {
+      return;
+    }
+    const linkedNodes = getConnectedInputNodes(app, this);
     this.stabilizeInputsOutputs();
     for (const [index, node] of linkedNodes.entries()) {
       let widget = this.widgets && this.widgets[index];
@@ -69,6 +66,7 @@ export class BaseNodeModeChanger extends LGraphNode {
       this.widgets.length = linkedNodes.length
     }
     app.graph.setDirtyCanvas(true, true);
+    setTimeout(() => { this.stabilizeWidgets(); }, 500);
   }
 
   setWidget(widget: IWidget, linkedNode: TLGraphNode) {
@@ -84,13 +82,12 @@ export class BaseNodeModeChanger extends LGraphNode {
   }
 
 
-
   onConnectionsChainChange() {
-    this.scheduleRefreshWidgets();
+    this.scheduleStabilizeWidgets();
   }
 
   override onConnectionsChange(_type: number, _index: number, _connected: boolean, _linkInfo: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) {
-    this.scheduleRefreshWidgets();
+    this.scheduleStabilizeWidgets();
   }
 
   override removeInput(slot: number) {
@@ -138,7 +135,7 @@ export class BaseNodeModeChanger extends LGraphNode {
     // @ts-ignore: Fix incorrect litegraph typings.
     addMenuItem(clazz, app, {
       name: 'Refresh',
-      callback: (node) => {(node as T).scheduleRefreshWidgets()}
+      callback: (node) => {(node as T).scheduleStabilizeWidgets()}
     });
 
     // @ts-ignore: Fix incorrect litegraph typings.
@@ -152,7 +149,7 @@ export class BaseNodeModeChanger extends LGraphNode {
     // @ts-ignore: Fix incorrect litegraph typings.
     addConnectionLayoutSupport(clazz, app, [['Left'],['Right']]);
 
-    LiteGraph.registerNodeType((clazz as any).title, clazz);
+    LiteGraph.registerNodeType((clazz as any).type, clazz);
     (clazz as any).category = (clazz as any)._category;
   }
 }

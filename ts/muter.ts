@@ -2,6 +2,7 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
+import { NodeTypesString } from "./constants.js";
 import type {LGraphNode} from './typings/litegraph.js';
 
 const MODE_MUTE = 2;
@@ -9,7 +10,8 @@ const MODE_ALWAYS = 0;
 
 class MuterNode extends BaseNodeModeChanger {
 
-  static override title = "Fast Muter (rgthree)";
+  static override type = NodeTypesString.FAST_MUTER;
+  static override title = NodeTypesString.FAST_MUTER;
   override readonly modeOn = MODE_ALWAYS;
   override readonly modeOff = MODE_MUTE;
 

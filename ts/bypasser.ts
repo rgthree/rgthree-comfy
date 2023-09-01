@@ -2,6 +2,7 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
+import { NodeTypesString } from "./constants.js";
 import type {LGraphNode} from './typings/litegraph.js';
 
 const MODE_BYPASS = 4;
@@ -9,7 +10,8 @@ const MODE_ALWAYS = 0;
 
 class BypasserNode extends BaseNodeModeChanger {
 
-  static override title = "Fast Bypasser (rgthree)";
+  static override type = NodeTypesString.FAST_BYPASSER;
+  static override title = NodeTypesString.FAST_BYPASSER;
   override readonly modeOn = MODE_ALWAYS;
   override readonly modeOff = MODE_BYPASS;
 

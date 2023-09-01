@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
+import { NodeTypesString } from "./constants.js";
 const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;
 class MuterNode extends BaseNodeModeChanger {
@@ -9,7 +10,8 @@ class MuterNode extends BaseNodeModeChanger {
         this.modeOff = MODE_MUTE;
     }
 }
-MuterNode.title = "Fast Muter (rgthree)";
+MuterNode.type = NodeTypesString.FAST_MUTER;
+MuterNode.title = NodeTypesString.FAST_MUTER;
 app.registerExtension({
     name: "rgthree.Muter",
     registerCustomNodes() {
