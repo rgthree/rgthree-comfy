@@ -21,7 +21,6 @@ from .py.seed import RgthreeSeed
 from .py.sdxl_empty_latent_image import RgthreeSDXLEmptyLatentImage
 from .py.power_prompt import RgthreePowerPrompt
 from .py.power_prompt_simple import RgthreePowerPromptSimple
-from .py.image_inset_crop import RgthreeImageInsetCrop
 
 NODE_CLASS_MAPPINGS = {
     RgthreeContext.NAME: RgthreeContext,
@@ -32,7 +31,6 @@ NODE_CLASS_MAPPINGS = {
     RgthreeSDXLEmptyLatentImage.NAME: RgthreeSDXLEmptyLatentImage,
     RgthreePowerPrompt.NAME: RgthreePowerPrompt,
     RgthreePowerPromptSimple.NAME: RgthreePowerPromptSimple,
-    RgthreeImageInsetCrop.NAME: RgthreeImageInsetCrop
 }
 
 THIS_DIR=os.path.dirname(os.path.abspath(__file__))
