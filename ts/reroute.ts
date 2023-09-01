@@ -119,6 +119,8 @@ app.registerExtension({
               if (!link) continue;
 
               const node = app.graph.getNodeById(link.target_id);
+              // Don't know why this ever happens.. but it did around the repeater..
+              if (!node) continue;
               const type = node.constructor.type;
               if (type?.includes("Reroute")) {
                 // Follow reroute nodes

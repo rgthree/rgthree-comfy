@@ -82,6 +82,8 @@ app.registerExtension({
                             if (!link)
                                 continue;
                             const node = app.graph.getNodeById(link.target_id);
+                            if (!node)
+                                continue;
                             const type = node.constructor.type;
                             if (type === null || type === void 0 ? void 0 : type.includes("Reroute")) {
                                 nodes.push(node);

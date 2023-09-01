@@ -330,12 +330,16 @@ function getConnectedNodes(app: ComfyApp, startNode: TLGraphNode, dir = IoDirect
     }
     let graph = app.graph as LGraph;
     for (const linkId of linkIds) {
-      if (!linkId) {
+      const link: LLink = (linkId != null && graph.links[linkId]) as LLink;
+      if (!link) {
         continue;
       }
-      const link: LLink = graph.links[linkId]!;
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
       const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
+      if (!link) {
+        console.error('No connected node found... weird');
+        continue;
+      }
       if (isPassThroughType(originNode)) {
         for (const foundNode of getConnectedNodes(app, startNode, dir, originNode)) {
           if (!rootNodes.includes(foundNode)) {

@@ -266,12 +266,16 @@ function getConnectedNodes(app, startNode, dir = IoDirection.INPUT, currentNode)
         }
         let graph = app.graph;
         for (const linkId of linkIds) {
-            if (!linkId) {
+            const link = (linkId != null && graph.links[linkId]);
+            if (!link) {
                 continue;
             }
-            const link = graph.links[linkId];
             const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
             const originNode = graph.getNodeById(connectedId);
+            if (!link) {
+                console.error('No connected node found... weird');
+                continue;
+            }
             if (isPassThroughType(originNode)) {
                 for (const foundNode of getConnectedNodes(app, startNode, dir, originNode)) {
                     if (!rootNodes.includes(foundNode)) {

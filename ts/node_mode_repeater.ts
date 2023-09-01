@@ -27,8 +27,11 @@ class NodeModeRepeater extends BaseCollectorNode {
     `mute/bypass all its connected nodes.`,
     `\n- Optionally, connect a ${stripRgthree(NodeTypesString.NODE_MODE_RELAY)} to this nodes'`,
     `inputs to have it automatically toggle its mode. If connected, this will always take`,
-    `precedence`,
+    `precedence (and disconnect any connected fast togglers)`,
   ].join(' ');
+
+  private hasRelayInput = false;
+  private hasTogglerOutput = false;
 
   constructor(title?: string) {
     super(title);
@@ -36,32 +39,81 @@ class NodeModeRepeater extends BaseCollectorNode {
     this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
       color_on: '#Fc0',
       color_off: '#a80',
-      shape: LiteGraph.ARROW_SHAPE,
     });
   }
 
   override onConnectOutput(outputIndex: number, inputType: string | -1, inputSlot: INodeInputSlot, inputNode: LGraphNode, inputIndex: number): boolean {
-    let canConnect = true;
+    // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
+    let canConnect = !this.hasRelayInput;
     if (super.onConnectOutput) {
-      canConnect = super.onConnectOutput?.(outputIndex, inputType, inputSlot, inputNode, inputIndex);
+      canConnect = canConnect && super.onConnectOutput?.(outputIndex, inputType, inputSlot, inputNode, inputIndex);
     }
     // Output can only connect to a FAST MUTER or FAST BYPASSER
-    let nextNode = getConnectedOutputNodes(app, this, inputNode)[0] ?? inputNode;
+    let nextNode = getConnectedOutputNodes(app, this, inputNode)[0] || inputNode;
     return canConnect && (nextNode.type === NodeTypesString.FAST_MUTER || nextNode.type === NodeTypesString.FAST_BYPASSER);
   }
 
+
+  override onConnectInput(inputIndex: number, outputType: string | -1, outputSlot: INodeOutputSlot, outputNode: LGraphNode, outputIndex: number): boolean {
+    // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
+    let canConnect = true;
+    if (super.onConnectInput) {
+      canConnect = canConnect && super.onConnectInput?.(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+    }
+    // Output can only connect to a FAST MUTER or FAST BYPASSER
+    let nextNode = getConnectedOutputNodes(app, this, outputNode)[0] || outputNode;
+    const isNextNodeRelay = nextNode.type === NodeTypesString.NODE_MODE_RELAY
+    return canConnect && (!isNextNodeRelay || !this.hasTogglerOutput);
+  }
+
+
   override onConnectionsChange(type: number, slotIndex: number, isConnected: boolean, linkInfo: LLink, ioSlot: INodeOutputSlot | INodeInputSlot): void {
     super.onConnectionsChange(type, slotIndex, isConnected, linkInfo, ioSlot);
-    // If we've added an input, let's see if it's a relay and change our shape and color.
-    if (type === LiteGraph.INPUT && isConnected) {
-      const connectedNode = this.getInputNode(slotIndex);
-      if (connectedNode?.type === NodeTypesString.NODE_MODE_RELAY) {
-        const input = this.inputs[slotIndex]
-        if (input) {
-          input.color_on = '#FC0';
-          input.color_off = '#a80';
-        }
+
+    let hasTogglerOutput = false;
+    let hasRelayInput = false;
+
+    const outputNodes = getConnectedOutputNodes(app, this);
+    for (const outputNode of outputNodes) {
+      if (outputNode?.type === NodeTypesString.FAST_MUTER || outputNode?.type === NodeTypesString.FAST_BYPASSER) {
+        hasTogglerOutput = true;
+        break;
       }
+    }
+
+    const inputNodes = getConnectedInputNodes(app, this);
+    for (const [index, inputNode] of inputNodes.entries()) {
+      if (inputNode?.type === NodeTypesString.NODE_MODE_RELAY) {
+        // We can't be connected to a relay if we're connected to a toggler. Something has gone wrong.
+        if (hasTogglerOutput) {
+          console.log(`Can't be connected to a Relay if also output to a toggler.`);
+          this.disconnectInput(index);
+        } else {
+          hasRelayInput = true;
+          if (this.inputs[index]) {
+            this.inputs[index]!.color_on = '#FC0';
+            this.inputs[index]!.color_off = '#a80';
+          }
+        }
+      } else {
+        inputNode.mode = this.mode;
+      }
+    }
+
+    this.hasTogglerOutput = hasTogglerOutput;
+    this.hasRelayInput = hasRelayInput;
+
+    // If we have a relay input, then we should remove the toggler output, or add it if not.
+    if (this.hasRelayInput) {
+      if (this.outputs[0]) {
+        this.disconnectOutput(0);
+        this.removeOutput(0);
+      }
+    } else if (!this.outputs[0]) {
+      this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
+        color_on: '#Fc0',
+        color_off: '#a80',
+      });
     }
   }
 
