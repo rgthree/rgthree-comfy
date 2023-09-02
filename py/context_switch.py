@@ -1,5 +1,10 @@
 from .constants import get_category, get_name
 
+def is_context_empty(ctx):
+    if ctx == None:
+        return True
+    return all(v == None for v in ctx.values())
+
 class RgthreeContextSwitch:
 
     NAME = get_name('Context Switch')
@@ -26,13 +31,13 @@ class RgthreeContextSwitch:
 
     def switch(self, ctx_01=None, ctx_02=None, ctx_03=None, ctx_04=None, prompt=None):
         ctx=None
-        if ctx_01 != None:
+        if not is_context_empty(ctx_01):
             ctx = ctx_01
-        elif ctx_02 != None:
+        elif not is_context_empty(ctx_02):
             ctx = ctx_02
-        elif ctx_03 != None:
+        elif not is_context_empty(ctx_03):
             ctx = ctx_03
-        elif ctx_04 != None:
+        elif not is_context_empty(ctx_04):
             ctx = ctx_04
         if ctx != None:
             return (ctx, ctx['model'], ctx['clip'], ctx['vae'], ctx['positive'], ctx['negative'], ctx['latent'], ctx['images'], ctx['seed'],)
