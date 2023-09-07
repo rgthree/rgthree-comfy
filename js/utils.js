@@ -5,7 +5,7 @@ api.getNodeDefs = async function () {
     this.dispatchEvent(new CustomEvent('fresh-node-defs', { detail: defs }));
     return defs;
 };
-var IoDirection;
+export var IoDirection;
 (function (IoDirection) {
     IoDirection[IoDirection["INPUT"] = 0] = "INPUT";
     IoDirection[IoDirection["OUTPUT"] = 1] = "OUTPUT";
@@ -26,11 +26,39 @@ const OPPOSITE_LABEL = {
 export function addMenuItem(node, _app, config) {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
+        var _a;
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-        const idx = menuOptions.findIndex(option => option === null || option === void 0 ? void 0 : option.content.includes('Shape')) + 1;
-        menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
+        let idx = menuOptions.slice().reverse().findIndex(option => option === null || option === void 0 ? void 0 : option.isRgthree);
+        if (idx == -1) {
+            idx = menuOptions.findIndex(option => option === null || option === void 0 ? void 0 : option.content.includes('Shape')) + 1;
+            if (!idx) {
+                idx = menuOptions.length - 1;
+            }
+            menuOptions.splice(idx, 0, null);
+            idx++;
+        }
+        else {
+            idx = menuOptions.length - idx;
+        }
+        menuOptions.splice(idx, 0, {
             content: typeof config.name == 'function' ? config.name(this) : config.name,
-            callback: (_value, _options, _event, _parentMenu, _node) => {
+            has_submenu: !!((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length),
+            isRgthree: true,
+            callback: (_value, _options, event, parentMenu, _node) => {
+                var _a;
+                if ((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length) {
+                    new LiteGraph.ContextMenu(config.subMenuOptions.map(option => ({ content: option })), {
+                        event,
+                        parentMenu,
+                        callback: (subValue, _options, _event, _parentMenu, _node) => {
+                            if (config.property) {
+                                this.properties = this.properties || {};
+                                this.properties[config.property] = config.prepareValue ? config.prepareValue(subValue.content, this) : subValue.content;
+                            }
+                            config.callback && config.callback(this);
+                        },
+                    });
+                }
                 if (config.property) {
                     this.properties = this.properties || {};
                     this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
@@ -40,35 +68,11 @@ export function addMenuItem(node, _app, config) {
         });
     };
 }
-export function addMenuSubMenu(node, _app, config) {
-    const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
-    node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
-        oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-        const idx = menuOptions.findIndex(option => option === null || option === void 0 ? void 0 : option.content.includes('Shape')) + 1;
-        menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
-            content: typeof config.name == 'function' ? config.name(this) : config.name,
-            has_submenu: true,
-            callback: (_value, _options, event, parentMenu, _node) => {
-                new LiteGraph.ContextMenu(config.options.map(option => ({ content: option })), {
-                    event,
-                    parentMenu,
-                    callback: (value, _options, _event, _parentMenu, _node) => {
-                        if (config.property) {
-                            this.properties = this.properties || {};
-                            this.properties[config.property] = config.prepareValue ? config.prepareValue(value.content, this) : value.content;
-                        }
-                        config.callback && config.callback(this);
-                    },
-                });
-            }
-        });
-    };
-}
 export function addConnectionLayoutSupport(node, app, options = [['Left', 'Right'], ['Right', 'Left']], callback) {
-    addMenuSubMenu(node, app, {
+    addMenuItem(node, app, {
         name: 'Connections Layout',
         property: 'connections_layout',
-        options: options.map(option => option[0] + (option[1] ? ' -> ' + option[1] : '')),
+        subMenuOptions: options.map(option => option[0] + (option[1] ? ' -> ' + option[1] : '')),
         prepareValue: (value, node) => {
             var _a;
             const values = value.split(' -> ');
@@ -119,6 +123,11 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     const cxn = slotList[slotNumber];
     if (!cxn) {
         console.log('No connection found.. weird', isInput, slotNumber);
+        return out;
+    }
+    if (cxn.hidden) {
+        out[0] = node.pos[0] - 100000;
+        out[1] = node.pos[1] - 100000;
         return out;
     }
     if (cxn.disabled) {

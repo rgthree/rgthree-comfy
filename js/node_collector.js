@@ -7,7 +7,6 @@ class CollectorNode extends BaseCollectorNode {
 }
 CollectorNode.type = NodeTypesString.NODE_COLLECTOR;
 CollectorNode.title = NodeTypesString.NODE_COLLECTOR;
-CollectorNode.legacyType = "Node Combiner (rgthree)";
 class CombinerNode extends CollectorNode {
     constructor(title = CombinerNode.title) {
         super(title);
@@ -37,7 +36,7 @@ class CombinerNode extends CollectorNode {
 CombinerNode.legacyType = "Node Combiner (rgthree)";
 CombinerNode.title = "‼️ Node Combiner [DEPRECATED]";
 async function updateCombinerToCollector(node) {
-    if (node.type === CollectorNode.legacyType) {
+    if (node.type === CombinerNode.legacyType) {
         const newNode = new CollectorNode();
         if (node.title != CombinerNode.title) {
             newNode.title = node.title.replace('‼️ ', '');

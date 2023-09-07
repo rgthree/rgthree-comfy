@@ -19,9 +19,8 @@ app.registerExtension({
             addConnectionLayoutSupport(nodeType, app, [['Left'], ['Right']]);
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
-                var _a;
                 onExecuted === null || onExecuted === void 0 ? void 0 : onExecuted.apply(this, [message]);
-                (_a = this.showValueWidget) === null || _a === void 0 ? void 0 : _a.value = message.text[0];
+                this.showValueWidget.value = message.text[0];
             };
         }
     },

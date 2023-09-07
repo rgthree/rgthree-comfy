@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
+import { getConnectedOutputNodes } from "./utils.js";
 export class BaseCollectorNode extends RgthreeBaseNode {
     constructor(title) {
         super(title);
@@ -11,30 +12,16 @@ export class BaseCollectorNode extends RgthreeBaseNode {
         const cloned = super.clone();
         return cloned;
     }
-    updateOutputLinks(startNode = this) {
-        const type = startNode.constructor.type;
-        if (startNode.onConnectionsChainChange) {
-            startNode.onConnectionsChainChange();
-        }
-        if (startNode === this || (type === null || type === void 0 ? void 0 : type.includes('Reroute')) || (type === null || type === void 0 ? void 0 : type.includes('Combiner'))) {
-            for (const output of startNode.outputs) {
-                if (!output.links || !output.links.length)
-                    continue;
-                for (const linkId of output.links) {
-                    const link = app.graph.links[linkId];
-                    if (!link)
-                        continue;
-                    const targetNode = app.graph.getNodeById(link.target_id);
-                    targetNode && this.updateOutputLinks(targetNode);
-                }
-            }
-        }
-    }
     onConnectionsChange(_type, _slotIndex, _isConnected, link_info, _ioSlot) {
         if (!link_info)
             return;
         this.stabilizeInputsOutputs();
-        this.updateOutputLinks();
+        const connectedNodes = getConnectedOutputNodes(app, this);
+        for (const node of connectedNodes) {
+            if (node.onConnectionsChainChange) {
+                node.onConnectionsChainChange();
+            }
+        }
     }
     stabilizeInputsOutputs() {
         var _a, _b;

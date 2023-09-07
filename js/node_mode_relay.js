@@ -78,8 +78,8 @@ NodeModeRelay.help = [
 app.registerExtension({
     name: "rgthree.NodeModeRepeaterHelper",
     registerCustomNodes() {
-        addHelp(NodeModeRelay, app);
         addConnectionLayoutSupport(NodeModeRelay, app, [['Left', 'Right'], ['Right', 'Left']]);
+        addHelp(NodeModeRelay, app);
         LiteGraph.registerNodeType(NodeModeRelay.type, NodeModeRelay);
         NodeModeRelay.category = NodeModeRelay._category;
     },

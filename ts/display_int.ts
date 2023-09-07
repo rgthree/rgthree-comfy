@@ -4,7 +4,7 @@ import {app} from "../../scripts/app.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import type {SerializedLGraphNode, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
-import type {ComfyApp, ComfyObjectInfo, ComfyWidget} from './typings/comfy.js'
+import type {ComfyApp, ComfyObjectInfo} from './typings/comfy.js'
 import { addConnectionLayoutSupport } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -36,7 +36,7 @@ app.registerExtension({
       const onExecuted = nodeType.prototype.onExecuted;
       nodeType.prototype.onExecuted = function (message) {
         onExecuted?.apply(this, [message]);
-        (this as any).showValueWidget?.value = message.text[0];
+        (this as any).showValueWidget.value = message.text[0];
       };
     }
   },

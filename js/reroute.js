@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport, addMenuSubMenu } from "./utils.js";
+import { addConnectionLayoutSupport, addMenuItem } from "./utils.js";
 app.registerExtension({
     name: "rgthree.Reroute",
     registerCustomNodes() {
@@ -24,7 +24,6 @@ app.registerExtension({
                 return cloned;
             }
             onConnectionsChange(type, _slotIndex, connected, _link_info, _ioSlot) {
-                var _a, _b, _c;
                 if (connected && type === LiteGraph.OUTPUT) {
                     const types = new Set(this.outputs[0].links.map((l) => app.graph.links[l].type).filter((t) => t !== "*"));
                     if (types.size > 1) {
@@ -40,6 +39,10 @@ app.registerExtension({
                         }
                     }
                 }
+                this.stabilize();
+            }
+            stabilize() {
+                var _a, _b, _c;
                 let currentNode = this;
                 let updateNodes = [];
                 let inputType = null;
@@ -154,23 +157,10 @@ app.registerExtension({
             ["Bottom", "Right"],
             ["Bottom", "Top"],
         ], (node) => { node.applyNodeSize(); });
-        addMenuSubMenu(RerouteNode, app, {
-            name: 'Height',
-            property: 'size',
-            options: (() => {
-                const options = [];
-                for (let w = 8; w > 0; w--) {
-                    options.push(`${w * 10}`);
-                }
-                return options;
-            })(),
-            prepareValue: (value, node) => [node.size[0], Number(value)],
-            callback: (node) => node.applyNodeSize()
-        });
-        addMenuSubMenu(RerouteNode, app, {
+        addMenuItem(RerouteNode, app, {
             name: 'Width',
             property: 'size',
-            options: (() => {
+            subMenuOptions: (() => {
                 const options = [];
                 for (let w = 8; w > 0; w--) {
                     options.push(`${w * 10}`);
@@ -178,6 +168,19 @@ app.registerExtension({
                 return options;
             })(),
             prepareValue: (value, node) => [Number(value), node.size[1]],
+            callback: (node) => node.applyNodeSize()
+        });
+        addMenuItem(RerouteNode, app, {
+            name: 'Height',
+            property: 'size',
+            subMenuOptions: (() => {
+                const options = [];
+                for (let w = 8; w > 0; w--) {
+                    options.push(`${w * 10}`);
+                }
+                return options;
+            })(),
+            prepareValue: (value, node) => [node.size[0], Number(value)],
             callback: (node) => node.applyNodeSize()
         });
         LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);

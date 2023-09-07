@@ -5,6 +5,7 @@ import {app} from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import type {SerializedLGraphNode, ContextMenuItem, IContextMenuOptions, ContextMenu, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
 import type {ComfyApp, ComfyObjectInfo, ComfyWidget, ComfyGraphNode} from './typings/comfy.js'
+import { RgthreeBaseNode } from "./base_node.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -33,7 +34,22 @@ class SeedControl {
   lastSeedValue: ComfyWidget|null = null;
 
   constructor(node: ComfyGraphNode) {
+
     this.node = node;
+
+    (this.node.constructor as any).exposedActions = ['Randomize Each Time', 'Use Last Queued Seed'];
+    const handleAction = (this.node as RgthreeBaseNode).handleAction;
+    (this.node as RgthreeBaseNode).handleAction = async (action: string) => {
+      handleAction && handleAction.call(this.node, action);
+      if (action === 'Randomize Each Time') {
+        this.seedWidget.value = SPECIAL_SEED_RANDOM;
+      } else if (action === 'Use Last Queued Seed') {
+        this.seedWidget.value = this.lastSeed;
+        this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
+        this.lastSeedButton.disabled = true;
+      }
+    }
+
     this.node.properties = this.node.properties || {};
 
     // Grab the already available widgets, and remove the built-in control_after_generate

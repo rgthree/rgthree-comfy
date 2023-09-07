@@ -8,7 +8,7 @@ class NodeModeRepeater extends BaseCollectorNode {
         this.hasRelayInput = false;
         this.hasTogglerOutput = false;
         this.removeOutput(0);
-        this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
+        this.addOutput('OPT_CONNECTION', '*', {
             color_on: '#Fc0',
             color_off: '#a80',
         });
@@ -20,7 +20,7 @@ class NodeModeRepeater extends BaseCollectorNode {
             canConnect = canConnect && ((_a = super.onConnectOutput) === null || _a === void 0 ? void 0 : _a.call(this, outputIndex, inputType, inputSlot, inputNode, inputIndex));
         }
         let nextNode = getConnectedOutputNodes(app, this, inputNode)[0] || inputNode;
-        return canConnect && (nextNode.type === NodeTypesString.FAST_MUTER || nextNode.type === NodeTypesString.FAST_BYPASSER);
+        return canConnect && [NodeTypesString.FAST_MUTER, NodeTypesString.FAST_BYPASSER, NodeTypesString.NODE_COLLECTOR, NodeTypesString.FAST_ACTIONS_BUTTON].includes(nextNode.type || '');
     }
     onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
         var _a;
@@ -71,7 +71,7 @@ class NodeModeRepeater extends BaseCollectorNode {
             }
         }
         else if (!this.outputs[0]) {
-            this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
+            this.addOutput('OPT_CONNECTION', '*', {
                 color_on: '#Fc0',
                 color_off: '#a80',
             });
@@ -103,8 +103,8 @@ NodeModeRepeater.help = [
 app.registerExtension({
     name: "rgthree.NodeModeRepeater",
     registerCustomNodes() {
-        addHelp(NodeModeRepeater, app);
         addConnectionLayoutSupport(NodeModeRepeater, app, [['Left', 'Right'], ['Right', 'Left']]);
+        addHelp(NodeModeRepeater, app);
         LiteGraph.registerNodeType(NodeModeRepeater.type, NodeModeRepeater);
         NodeModeRepeater.category = NodeModeRepeater._category;
     },

@@ -36,7 +36,7 @@ class NodeModeRepeater extends BaseCollectorNode {
   constructor(title?: string) {
     super(title);
     this.removeOutput(0);
-    this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
+    this.addOutput('OPT_CONNECTION', '*', {
       color_on: '#Fc0',
       color_off: '#a80',
     });
@@ -48,9 +48,9 @@ class NodeModeRepeater extends BaseCollectorNode {
     if (super.onConnectOutput) {
       canConnect = canConnect && super.onConnectOutput?.(outputIndex, inputType, inputSlot, inputNode, inputIndex);
     }
-    // Output can only connect to a FAST MUTER or FAST BYPASSER
+    // Output can only connect to a FAST MUTER, FAST BYPASSER, NODE_COLLECTOR OR ACTION BUTTON
     let nextNode = getConnectedOutputNodes(app, this, inputNode)[0] || inputNode;
-    return canConnect && (nextNode.type === NodeTypesString.FAST_MUTER || nextNode.type === NodeTypesString.FAST_BYPASSER);
+    return canConnect && [NodeTypesString.FAST_MUTER, NodeTypesString.FAST_BYPASSER, NodeTypesString.NODE_COLLECTOR, NodeTypesString.FAST_ACTIONS_BUTTON].includes(nextNode.type || '');
   }
 
 
@@ -62,7 +62,7 @@ class NodeModeRepeater extends BaseCollectorNode {
     }
     // Output can only connect to a FAST MUTER or FAST BYPASSER
     let nextNode = getConnectedOutputNodes(app, this, outputNode)[0] || outputNode;
-    const isNextNodeRelay = nextNode.type === NodeTypesString.NODE_MODE_RELAY
+    const isNextNodeRelay = nextNode.type === NodeTypesString.NODE_MODE_RELAY;
     return canConnect && (!isNextNodeRelay || !this.hasTogglerOutput);
   }
 
@@ -110,7 +110,7 @@ class NodeModeRepeater extends BaseCollectorNode {
         this.removeOutput(0);
       }
     } else if (!this.outputs[0]) {
-      this.addOutput('FAST_TOGGLER', '_FAST_TOGGLER_', {
+      this.addOutput('OPT_CONNECTION', '*', {
         color_on: '#Fc0',
         color_off: '#a80',
       });
@@ -134,8 +134,8 @@ app.registerExtension({
 	name: "rgthree.NodeModeRepeater",
 	registerCustomNodes() {
 
-    addHelp(NodeModeRepeater, app);
     addConnectionLayoutSupport(NodeModeRepeater, app, [['Left','Right'],['Right','Left']]);
+    addHelp(NodeModeRepeater, app);
 
 		LiteGraph.registerNodeType(NodeModeRepeater.type, NodeModeRepeater);
     NodeModeRepeater.category = NodeModeRepeater._category;

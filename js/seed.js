@@ -11,6 +11,19 @@ class SeedControl {
         this.serializedCtx = {};
         this.lastSeedValue = null;
         this.node = node;
+        this.node.constructor.exposedActions = ['Randomize Each Time', 'Use Last Queued Seed'];
+        const handleAction = this.node.handleAction;
+        this.node.handleAction = async (action) => {
+            handleAction && handleAction.call(this.node, action);
+            if (action === 'Randomize Each Time') {
+                this.seedWidget.value = SPECIAL_SEED_RANDOM;
+            }
+            else if (action === 'Use Last Queued Seed') {
+                this.seedWidget.value = this.lastSeed;
+                this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
+                this.lastSeedButton.disabled = true;
+            }
+        };
         this.node.properties = this.node.properties || {};
         for (const [i, w] of this.node.widgets.entries()) {
             if (w.name === 'seed') {

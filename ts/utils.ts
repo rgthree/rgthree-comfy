@@ -18,7 +18,7 @@ api.getNodeDefs = async function() {
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
 
-enum IoDirection {
+export enum IoDirection {
   INPUT,
   OUTPUT,
 }
@@ -44,63 +44,63 @@ interface MenuConfig {
   property?: string;
   prepareValue?: (value: string, node: TLGraphNode) => any;
   callback?: (node: TLGraphNode) => void;
-}
-
-interface SubMenuConfig extends MenuConfig {
-  options: string[],
+  subMenuOptions?: string[];
 }
 
 export function addMenuItem(node: typeof LGraphNode, _app: ComfyApp, config: MenuConfig) {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function(canvas: TLGraphCanvas, menuOptions: ContextMenuItem[]) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-    const idx = menuOptions.findIndex(option => option?.content.includes('Shape')) + 1;
-    menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
+
+    let idx = menuOptions.slice().reverse().findIndex(option => (option as any)?.isRgthree);
+    if (idx == -1) {
+      idx = menuOptions.findIndex(option => option?.content.includes('Shape')) + 1;
+      if (!idx) {
+        idx = menuOptions.length - 1;
+      }
+      // Add a separator, and move to the next one.
+      menuOptions.splice(idx, 0, null);
+      idx++;
+    } else {
+      idx = menuOptions.length - idx;
+    }
+
+    menuOptions.splice(idx, 0, {
       content: typeof config.name == 'function' ? config.name(this) : config.name,
-      callback: (_value: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
+      has_submenu: !!config.subMenuOptions?.length,
+      isRgthree: true, // Mark it, so we can find it.
+      callback: (_value: ContextMenuItem, _options: IContextMenuOptions, event: MouseEvent, parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
+        if (config.subMenuOptions?.length) {
+          new LiteGraph.ContextMenu(
+            config.subMenuOptions.map(option => ({content: option})),
+            {
+              event,
+              parentMenu,
+              callback: (subValue: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
+                if (config.property) {
+                  this.properties = this.properties || {};
+                  this.properties[config.property] = config.prepareValue ? config.prepareValue(subValue!.content, this) : subValue!.content;
+                }
+                config.callback && config.callback(this);
+              },
+            });
+        }
         if (config.property) {
           this.properties = this.properties || {};
           this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
         }
         config.callback && config.callback(this);
       }
-    });
+    } as ContextMenuItem);
   };
 }
 
 
-export function addMenuSubMenu(node: typeof LGraphNode, _app: ComfyApp, config: SubMenuConfig) {
-  const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
-  node.prototype.getExtraMenuOptions = function(canvas: TLGraphCanvas, menuOptions: ContextMenuItem[]) {
-    oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-    const idx = menuOptions.findIndex(option => option?.content.includes('Shape')) + 1;
-    menuOptions.splice((idx > 0 ? idx : menuOptions.length - 1), 0, {
-      content: typeof config.name == 'function' ? config.name(this) : config.name,
-      has_submenu: true,
-      callback: (_value: ContextMenuItem, _options: IContextMenuOptions, event: MouseEvent, parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
-        new LiteGraph.ContextMenu(
-          config.options.map(option => ({content: option})),
-          {
-            event,
-            parentMenu,
-            callback: (value: ContextMenuItem, _options: IContextMenuOptions, _event: MouseEvent, _parentMenu: ContextMenu | undefined, _node: TLGraphNode) => {
-              if (config.property) {
-                this.properties = this.properties || {};
-                this.properties[config.property] = config.prepareValue ? config.prepareValue(value!.content, this) : value!.content;
-              }
-              config.callback && config.callback(this);
-            },
-          });
-      }
-    });
-  }
-}
-
 export function addConnectionLayoutSupport(node: typeof LGraphNode, app: ComfyApp, options = [['Left', 'Right'], ['Right', 'Left']], callback?: (node: TLGraphNode) => void) {
-  addMenuSubMenu(node, app, {
+  addMenuItem(node, app, {
     name: 'Connections Layout',
     property: 'connections_layout',
-    options: options.map(option => option[0] + (option[1] ? ' -> ' + option[1]: '')),
+    subMenuOptions: options.map(option => option[0] + (option[1] ? ' -> ' + option[1]: '')),
     prepareValue: (value, node) => {
       const values = value.split(' -> ');
       if (!values[1] && !node.outputs?.length) {
@@ -162,11 +162,11 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   }
   // Experimental; doesn't work without node.clip_area set (so it won't draw outside),
   // but litegraph.core inexplicably clips the title off which we want... so, no go.
-  // if (cxn.hidden) {
-  //   out[0] = node.pos[0] - 100000
-  //   out[1] = node.pos[1] - 100000
-  //   return out
-  // }
+  if (cxn.hidden) {
+    out[0] = node.pos[0] - 100000
+    out[1] = node.pos[1] - 100000
+    return out
+  }
   if (cxn.disabled) {
     // Let's store the original colors if have them and haven't yet overridden
     if (cxn.color_on !== '#666665') {
@@ -180,7 +180,7 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
     cxn.color_off = (cxn as any)._color_off_org || undefined;
   }
   // @ts-ignore
-  const displaySlot = collapseConnections ? 0 : (slotNumber - slotList.reduce<Number>((count, ioput, index) => {
+  const displaySlot = collapseConnections ? 0 : (slotNumber - slotList.reduce<number>((count, ioput, index) => {
     count += index < slotNumber && ioput.hidden ? 1 : 0;
     return count
   }, 0));

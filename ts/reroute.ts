@@ -2,7 +2,7 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import type {Vector2, LLink, LGraphCanvas as TLGraphCanvas, LGraph, SerializedLGraphNode, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, addMenuSubMenu } from "./utils.js";
+import { addConnectionLayoutSupport, addMenuItem } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -69,7 +69,10 @@ app.registerExtension({
             }
           }
         }
+        this.stabilize();
+      }
 
+      stabilize() {
         // Find root input
         let currentNode: TLGraphNode|null = this;
         let updateNodes = [];
@@ -196,27 +199,11 @@ app.registerExtension({
       ["Bottom","Top"],
     ], (node) => {(node as RerouteNode).applyNodeSize();});
 
-
     // @ts-ignore: Fix incorrect litegraph typings.
-    addMenuSubMenu(RerouteNode, app, {
-      name: 'Height',
-      property: 'size',
-      options: (() => {
-        const options = [];
-        for (let w = 8; w > 0; w--) {
-          options.push(`${w * 10}`);
-        }
-        return options;
-      })(),
-      prepareValue: (value, node) => [node.size[0], Number(value)],
-      callback: (node) => (node as RerouteNode).applyNodeSize()
-    });
-
-    // @ts-ignore: Fix incorrect litegraph typings.
-    addMenuSubMenu(RerouteNode, app, {
+    addMenuItem(RerouteNode, app, {
       name: 'Width',
       property: 'size',
-      options: (() => {
+      subMenuOptions: (() => {
         const options = [];
         for (let w = 8; w > 0; w--) {
           options.push(`${w * 10}`);
@@ -224,6 +211,22 @@ app.registerExtension({
         return options;
       })(),
       prepareValue: (value, node) => [Number(value), node.size[1]],
+      callback: (node) => (node as RerouteNode).applyNodeSize()
+    });
+
+
+    // @ts-ignore: Fix incorrect litegraph typings.
+    addMenuItem(RerouteNode, app, {
+      name: 'Height',
+      property: 'size',
+      subMenuOptions: (() => {
+        const options = [];
+        for (let w = 8; w > 0; w--) {
+          options.push(`${w * 10}`);
+        }
+        return options;
+      })(),
+      prepareValue: (value, node) => [node.size[0], Number(value)],
       callback: (node) => (node as RerouteNode).applyNodeSize()
     });
 

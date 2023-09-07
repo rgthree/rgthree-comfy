@@ -1,14 +1,14 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-// @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
-
-import type {LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+import type {LLink, LGraph, INodeInputSlot, INodeOutputSlot, LGraphNode} from './typings/litegraph.js';
 import { RgthreeBaseNode } from "./base_node.js";
+import { getConnectedOutputNodes } from "./utils.js";
+import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 
-declare const LGraphNode: typeof TLGraphNode;
-
+/**
+ * Base collector node that monitors changing inputs and outputs.
+ */
 export class BaseCollectorNode extends RgthreeBaseNode {
 
   override isVirtualNode = true;
@@ -24,31 +24,17 @@ export class BaseCollectorNode extends RgthreeBaseNode {
     return cloned;
   }
 
-  private updateOutputLinks(startNode: TLGraphNode = this) {
-    const type = (startNode.constructor as typeof TLGraphNode).type;
-    // @ts-ignore
-    if (startNode.onConnectionsChainChange) {
-      // @ts-ignore
-      startNode.onConnectionsChainChange();
-    }
-    if (startNode === this || type?.includes('Reroute') || type?.includes('Combiner')) {
-      for (const output of startNode.outputs) {
-        if (!output.links || !output.links.length) continue;
-        for (const linkId of output.links) {
-          const link: LLink = (app.graph as LGraph).links[linkId]!;
-          if (!link) continue;
-          const targetNode: TLGraphNode = (app.graph as LGraph).getNodeById(link.target_id)!;
-          targetNode && this.updateOutputLinks(targetNode)
-        }
-      }
-    }
-  }
-
   override onConnectionsChange(_type: number, _slotIndex: number, _isConnected: boolean, link_info: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) {
     if (!link_info) return;
     this.stabilizeInputsOutputs();
+
     // Follow outputs to see if we need to trigger an onConnectionChange.
-    this.updateOutputLinks();
+    const connectedNodes = getConnectedOutputNodes(app, this);
+    for (const node of connectedNodes) {
+      if ((node as BaseAnyInputConnectedNode).onConnectionsChainChange) {
+        (node as BaseAnyInputConnectedNode).onConnectionsChainChange();
+      }
+    }
   }
 
   private stabilizeInputsOutputs() {

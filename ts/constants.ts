@@ -12,6 +12,6 @@ export const NodeTypesString = {
   NODE_MODE_REPEATER: addRgthree('Mute / Bypass Repeater'),
   FAST_MUTER: addRgthree('Fast Muter'),
   FAST_BYPASSER: addRgthree('Fast Bypasser'),
-  FAST_BUTTON_ACTION: addRgthree('Fast Button Action'),
+  FAST_ACTIONS_BUTTON: addRgthree('Fast Actions Button'),
   NODE_COLLECTOR: addRgthree('Node Collector'),
 }

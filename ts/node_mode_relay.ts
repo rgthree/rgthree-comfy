@@ -2,12 +2,9 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import type {INodeInputSlot, INodeOutputSlot, LGraphNode, LLink, LiteGraph as TLiteGraph,} from './typings/litegraph.js';
+import type { NodeMode } from "./typings/comfy.js";
 import { addConnectionLayoutSupport, addHelp, getConnectedInputNodes, getConnectedOutputNodes, wait} from "./utils.js";
-// @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
-// @ts-ignore
 import { BaseCollectorNode } from './base_node_collector.js';
-import { NodeMode } from "./typings/comfy.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -17,7 +14,10 @@ const MODE_MUTE = 2;
 const MODE_BYPASS = 4;
 const MODE_REPEATS = [MODE_MUTE, MODE_BYPASS];
 
-
+/**
+ * Like a BaseCollectorNode, this relay node connects to a Repeater and changes it mode (so it can go
+ * on to mute it's connections).
+ */
 class NodeModeRelay extends BaseCollectorNode {
 
   static override type = NodeTypesString.NODE_MODE_RELAY;
@@ -36,6 +36,7 @@ class NodeModeRelay extends BaseCollectorNode {
     super(title);
 
     setTimeout(() => { this.stabilize(); }, 500);
+    // We want to customize the output, so remove the one BaseCollectorNode adds, and add out own.
     this.removeOutput(0);
     this.addOutput('REPEATER', '_NODE_REPEATER_', {
       color_on: '#Fc0',
@@ -102,8 +103,8 @@ app.registerExtension({
 	name: "rgthree.NodeModeRepeaterHelper",
 	registerCustomNodes() {
 
-    addHelp(NodeModeRelay, app);
     addConnectionLayoutSupport(NodeModeRelay, app, [['Left','Right'],['Right','Left']]);
+    addHelp(NodeModeRelay, app);
 
 		LiteGraph.registerNodeType(NodeModeRelay.type, NodeModeRelay);
     NodeModeRelay.category = NodeModeRelay._category;

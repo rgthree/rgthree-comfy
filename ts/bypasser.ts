@@ -10,6 +10,8 @@ const MODE_ALWAYS = 0;
 
 class BypasserNode extends BaseNodeModeChanger {
 
+  static override exposedActions = ['Bypass all', 'Enable all'];
+
   static override type = NodeTypesString.FAST_BYPASSER;
   static override title = NodeTypesString.FAST_BYPASSER;
   override readonly modeOn = MODE_ALWAYS;
@@ -17,6 +19,19 @@ class BypasserNode extends BaseNodeModeChanger {
 
   constructor(title = BypasserNode.title) {
     super(title);
+  }
+
+
+  override async handleAction(action: string) {
+    if (action === 'Bypass all') {
+      for (const widget of this.widgets) {
+        this.forceWidgetOff(widget);
+      }
+    } else if (action === 'Enable all') {
+      for (const widget of this.widgets) {
+        this.forceWidgetOn(widget);
+      }
+    }
   }
 }
 
