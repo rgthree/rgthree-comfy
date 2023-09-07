@@ -7,6 +7,7 @@ import { addConnectionLayoutSupport, wait } from "./utils.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore
 import { BaseCollectorNode } from './base_node_collector.js';
+import { NodeTypesString } from "./constants.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -14,8 +15,8 @@ declare const LiteGraph: typeof TLiteGraph;
 /** Legacy "Combiner" */
 class CollectorNode extends BaseCollectorNode {
 
-  static override type = "Node Collector (rgthree)";
-  static override title = "Node Collector (rgthree)";
+  static override type = NodeTypesString.NODE_COLLECTOR;
+  static override title = NodeTypesString.NODE_COLLECTOR;
 
   static legacyType = "Node Combiner (rgthree)";
 

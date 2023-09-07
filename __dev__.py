@@ -8,7 +8,7 @@ DIR_WEB_JS=os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
 
 shutil.rmtree(DIR_DEV_JS)
 
-subprocess.run(["tsc"])
+subprocess.run(["./node_modules/typescript/bin/tsc"])
 
 
 shutil.rmtree(DIR_WEB_JS)
