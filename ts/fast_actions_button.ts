@@ -6,6 +6,8 @@ import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { ComfyApp, ComfyWidget } from "./typings/comfy.js";
 import type {IWidget, LGraph, LGraphNode, SerializedLGraphNode} from './typings/litegraph.js';
+import type {Constructor} from './typings/index.js'
+import { addMenuItem } from "./utils.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
@@ -279,10 +281,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
 
-  static override setUp<T extends BaseAnyInputConnectedNode>(clazz: new(...args: any[]) => T) {
+  static override setUp<T extends BaseAnyInputConnectedNode>(clazz: Constructor<T>) {
     BaseAnyInputConnectedNode.setUp(clazz);
 
-    // @ts-ignore: Fix incorrect litegraph typings.
     addMenuItem(clazz, app, {
       name: '➕ Append a Comfy Action',
       callback: (nodeArg: LGraphNode) => {
@@ -296,7 +297,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
 
 app.registerExtension({
-  name: "rgthree.FastButtonAction",
+  name: "rgthree.FastActionsButton",
   registerCustomNodes() {
     FastActionsButton.setUp(FastActionsButton);
   },

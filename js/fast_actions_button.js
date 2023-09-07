@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
+import { addMenuItem } from "./utils.js";
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
 const MODE_BYPASS = 4;
@@ -217,7 +218,7 @@ FastActionsButton['@shortcutModifier'] = { type: 'combo', values: ['ctrl', 'alt'
 FastActionsButton['@shortcutKey'] = { type: 'string' };
 FastActionsButton.collapsible = false;
 app.registerExtension({
-    name: "rgthree.FastButtonAction",
+    name: "rgthree.FastActionsButton",
     registerCustomNodes() {
         FastActionsButton.setUp(FastActionsButton);
     },

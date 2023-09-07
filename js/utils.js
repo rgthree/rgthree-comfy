@@ -125,11 +125,6 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
         console.log('No connection found.. weird', isInput, slotNumber);
         return out;
     }
-    if (cxn.hidden) {
-        out[0] = node.pos[0] - 100000;
-        out[1] = node.pos[1] - 100000;
-        return out;
-    }
     if (cxn.disabled) {
         if (cxn.color_on !== '#666665') {
             cxn._color_on_org = cxn._color_on_org || cxn.color_on;

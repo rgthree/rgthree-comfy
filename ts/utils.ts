@@ -1,5 +1,6 @@
 import type {ComfyApp} from './typings/comfy';
 import {Vector2, LGraphCanvas as TLGraphCanvas, ContextMenuItem, LLink, LGraph, IContextMenuOptions, ContextMenu, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from './typings/litegraph.js';
+import type {Constructor} from './typings/index.js'
 // @ts-ignore
 import {api} from '../../scripts/api.js';
 
@@ -47,7 +48,7 @@ interface MenuConfig {
   subMenuOptions?: string[];
 }
 
-export function addMenuItem(node: typeof LGraphNode, _app: ComfyApp, config: MenuConfig) {
+export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, config: MenuConfig) {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function(canvas: TLGraphCanvas, menuOptions: ContextMenuItem[]) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
@@ -162,11 +163,11 @@ export function getConnectionPosForLayout(node: TLGraphNode, isInput: boolean, s
   }
   // Experimental; doesn't work without node.clip_area set (so it won't draw outside),
   // but litegraph.core inexplicably clips the title off which we want... so, no go.
-  if (cxn.hidden) {
-    out[0] = node.pos[0] - 100000
-    out[1] = node.pos[1] - 100000
-    return out
-  }
+  // if (cxn.hidden) {
+  //   out[0] = node.pos[0] - 100000
+  //   out[1] = node.pos[1] - 100000
+  //   return out
+  // }
   if (cxn.disabled) {
     // Let's store the original colors if have them and haven't yet overridden
     if (cxn.color_on !== '#666665') {
