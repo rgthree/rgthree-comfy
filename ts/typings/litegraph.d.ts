@@ -886,6 +886,22 @@ export declare class LGraphNode {
         targetNode: LGraphNode,
         targetSlot: number | string
     ): T | null;
+
+    connectByTypeOutput<T = any>(
+        slot: number | string,
+        sourceNode: LGraphNode,
+        sourceSlotType: string,
+        optsIn: string
+    ): T | null;
+
+    connectByType<T = any>(
+        slot: number | string,
+        sourceNode: LGraphNode,
+        sourceSlotType: string,
+        optsIn: string
+    ): T | null;
+
+
     /**
      * disconnect one output to an specific node
      * @param slot (could be the number of the slot or the string with the name of the slot)
