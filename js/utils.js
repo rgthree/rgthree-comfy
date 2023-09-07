@@ -306,3 +306,11 @@ function getConnectedNodes(app, startNode, dir = IoDirection.INPUT, currentNode)
     }
     return rootNodes;
 }
+export function applyMixins(original, constructors) {
+    constructors.forEach((baseCtor) => {
+        Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
+            Object.defineProperty(original.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
+                Object.create(null));
+        });
+    });
+}

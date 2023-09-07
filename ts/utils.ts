@@ -364,3 +364,18 @@ function getConnectedNodes(app: ComfyApp, startNode: TLGraphNode, dir = IoDirect
   }
   return rootNodes;
 }
+
+
+// This can live anywhere in your codebase:
+export function applyMixins(original: Constructor<TLGraphNode>, constructors: any[]) {
+  constructors.forEach((baseCtor) => {
+    Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
+      Object.defineProperty(
+        original.prototype,
+        name,
+        Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
+          Object.create(null)
+      );
+    });
+  });
+}
