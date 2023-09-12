@@ -1,0 +1,8 @@
+# https://github.com/google/yapf
+[style]
+based_on_style = google
+indent_width = 2
+CONTINUATION_INDENT_WIDTH = 2
+COLUMN_LIMIT = 100
+EACH_DICT_ENTRY_ON_SEPARATE_LINE = true
+INDENT_DICTIONARY_VALUE = false

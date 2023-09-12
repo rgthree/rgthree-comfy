@@ -56,7 +56,7 @@ export type WidgetCallback<T extends IWidget = IWidget> = (
     event?: MouseEvent
 ) => void;
 
-// #rgthree
+// @rgthree
 export type WidgetComboCallback<T extends IWidget = IWidget> = (
     this: T,
     value: T["value"][0],
@@ -612,6 +612,13 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
+
+    // @rgthree added
+    findInputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+    findOutputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+
+    // end @rgthree added
+
     static title_color: string;
     static title: string;
     static type: null | string;
