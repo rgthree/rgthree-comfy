@@ -11,4 +11,5 @@ export const NodeTypesString = {
     FAST_BYPASSER: addRgthree('Fast Bypasser'),
     FAST_ACTIONS_BUTTON: addRgthree('Fast Actions Button'),
     NODE_COLLECTOR: addRgthree('Node Collector'),
+    REROUTE: addRgthree('Reroute'),
 };

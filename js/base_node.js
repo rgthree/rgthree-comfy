@@ -1,12 +1,18 @@
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
-        this.isVirtualNode = true;
         this._tempWidth = 0;
+        this.isVirtualNode = false;
         if (title == '__NEED_NAME__') {
             throw new Error('RgthreeBaseNode needs overrides.');
         }
         this.properties = this.properties || {};
+    }
+    configure(info) {
+        super.configure(info);
+        for (const w of (this.widgets || [])) {
+            w.last_y = w.last_y || 0;
+        }
     }
     set mode(mode) {
         if (this.mode_ != mode) {
@@ -32,6 +38,8 @@ export class RgthreeBaseNode extends LGraphNode {
                 this.widgets.splice(index, 1);
             }
         }
+    }
+    static setUp(clazz) {
     }
 }
 RgthreeBaseNode.exposedActions = [];

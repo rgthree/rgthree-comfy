@@ -19,7 +19,7 @@ class SeedControl {
                 this.seedWidget.value = SPECIAL_SEED_RANDOM;
             }
             else if (action === 'Use Last Queued Seed') {
-                this.seedWidget.value = this.lastSeed;
+                this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
                 this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
                 this.lastSeedButton.disabled = true;
             }
@@ -46,7 +46,7 @@ class SeedControl {
             this.seedWidget.value = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
         }, { serialize: false });
         this.lastSeedButton = this.node.addWidget("button", LAST_SEED_BUTTON_LABEL, null, () => {
-            this.seedWidget.value = this.lastSeed;
+            this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
             this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
         }, { width: 50, serialize: false });

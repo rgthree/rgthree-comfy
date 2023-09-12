@@ -1,8 +1,9 @@
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { wait } from "./utils.js";
+import { PassThroughFollowing, wait } from "./utils.js";
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);
+        this.inputsPassThroughFollowing = PassThroughFollowing.ALL;
         this.isVirtualNode = true;
         this.modeOn = -1;
         this.modeOff = -1;
@@ -20,7 +21,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
                 this._tempWidth = this.size[0];
                 widget = this.addWidget('toggle', '', false, '', { "on": 'yes', "off": 'no' });
             }
-            this.setWidget(widget, node);
+            node && this.setWidget(widget, node);
         }
         if (this.widgets && this.widgets.length > linkedNodes.length) {
             this.widgets.length = linkedNodes.length;

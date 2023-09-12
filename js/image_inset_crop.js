@@ -37,14 +37,24 @@ class ImageInsetCrop extends RgthreeBaseNode {
             }
         }
     }
+    static setUp(clazz) {
+        ImageInsetCrop.title = clazz.title;
+        ImageInsetCrop.comfyClass = clazz.comfyClass;
+        setTimeout(() => {
+            ImageInsetCrop.category = clazz.category;
+        });
+        applyMixins(clazz, [RgthreeBaseNode, ImageInsetCrop]);
+    }
 }
+ImageInsetCrop.type = '__OVERRIDE_ME__';
+ImageInsetCrop.comfyClass = '__OVERRIDE_ME__';
 ImageInsetCrop.exposedActions = ['Reset Crop'];
 ImageInsetCrop.maxResolution = 8192;
 app.registerExtension({
     name: "rgthree.ImageInsetCrop",
     async beforeRegisterNodeDef(nodeType, nodeData, _app) {
         if (nodeData.name === "Image Inset Crop (rgthree)") {
-            applyMixins(nodeType, [RgthreeBaseNode, ImageInsetCrop]);
+            ImageInsetCrop.setUp(nodeType);
         }
     },
 });

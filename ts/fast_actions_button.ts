@@ -1,13 +1,19 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
-import {app} from "../../scripts/app.js";
+import { app } from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { ComfyApp, ComfyWidget } from "./typings/comfy.js";
-import type {IWidget, LGraph, LGraphNode, SerializedLGraphNode} from './typings/litegraph.js';
-import type {Constructor} from './typings/index.js'
+import type {
+  IWidget,
+  LGraph,
+  LGraphNode,
+  SerializedLGraphNode,
+} from "./typings/litegraph.js";
+import type { Constructor } from "./typings/index.js";
 import { addMenuItem } from "./utils.js";
+import { rgthree } from "./rgthree.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
@@ -21,13 +27,15 @@ const MODE_BYPASS = 4;
  * Nodes can expose actions additional actions that can then be called back.
  */
 class FastActionsButton extends BaseAnyInputConnectedNode {
-
   static override type = NodeTypesString.FAST_ACTIONS_BUTTON;
   static override title = NodeTypesString.FAST_ACTIONS_BUTTON;
 
-  static '@buttonText' = {type: 'string'};
-  static '@shortcutModifier' = {type: 'combo', values: ['ctrl', 'alt', 'shift']};
-  static '@shortcutKey' = {type: 'string'};
+  static "@buttonText" = { type: "string" };
+  static "@shortcutModifier" = {
+    type: "combo",
+    values: ["ctrl", "alt", "shift"],
+  };
+  static "@shortcutKey" = { type: "string" };
 
   static collapsible = false;
 
@@ -37,7 +45,10 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   readonly buttonWidget: IWidget;
 
-  readonly widgetToData = new Map<IWidget, {comfy?: ComfyApp, node?: LGraphNode}>();
+  readonly widgetToData = new Map<
+    IWidget,
+    { comfy?: ComfyApp; node?: LGraphNode }
+  >();
   readonly nodeIdtoFunctionCache = new Map<number, string>();
 
   readonly keypressBound;
@@ -47,17 +58,22 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   constructor(title?: string) {
     super(title);
-    this.properties['buttonText'] = '🎬 Action!';
-    this.properties['shortcutModifier'] = 'alt';
-    this.properties['shortcutKey'] = '';
-    this.buttonWidget = this.addWidget('button', this.properties['buttonText'], null, () => {
-      this.executeConnectedNodes();
-    }, {serialize: false});
+    this.properties["buttonText"] = "🎬 Action!";
+    this.properties["shortcutModifier"] = "alt";
+    this.properties["shortcutKey"] = "";
+    this.buttonWidget = this.addWidget(
+      "button",
+      this.properties["buttonText"],
+      null,
+      () => {
+        this.executeConnectedNodes();
+      },
+      { serialize: false },
+    );
 
     this.keypressBound = this.onKeypress.bind(this);
     this.keyupBound = this.onKeyup.bind(this);
   }
-
 
   /** When we're given data to configure, like from a PNG or JSON. */
   override configure(info: SerializedLGraphNode<LGraphNode>): void {
@@ -68,9 +84,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       if (info.widgets_values) {
         for (let [index, value] of info.widgets_values.entries()) {
           if (index > 0) {
-            if (value.startsWith('comfy_action:')) {
-              this.addComfyActionWidget(index);
-              value = value.replace('comfy_action:', '');
+            if (value.startsWith("comfy_action:")) {
+              value = value.replace("comfy_action:", "")
+              this.addComfyActionWidget(index, value);
             }
             if (this.widgets[index]) {
               this.widgets[index]!.value = value;
@@ -83,32 +99,39 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   override clone() {
     const cloned = super.clone();
-    cloned.properties['buttonText'] = '🎬 Action!';
-    cloned.properties['shortcutKey'] = '';
+    cloned.properties["buttonText"] = "🎬 Action!";
+    cloned.properties["shortcutKey"] = "";
     return cloned;
   }
 
   override onAdded(graph: LGraph): void {
-    window.addEventListener('keydown', this.keypressBound);
-    window.addEventListener('keyup', this.keyupBound);
+    window.addEventListener("keydown", this.keypressBound);
+    window.addEventListener("keyup", this.keyupBound);
   }
 
   override onRemoved(): void {
-    window.removeEventListener('keydown', this.keypressBound);
-    window.removeEventListener('keyup', this.keyupBound);
+    window.removeEventListener("keydown", this.keypressBound);
+    window.removeEventListener("keyup", this.keyupBound);
   }
-
 
   async onKeypress(event: KeyboardEvent) {
     const target = (event.target as HTMLElement)!;
-    if (this.executingFromShortcut || target.localName == "input" || target.localName == "textarea") {
-        return;
+    if (
+      this.executingFromShortcut ||
+      target.localName == "input" ||
+      target.localName == "textarea"
+    ) {
+      return;
     }
-    if (this.properties['shortcutKey'].trim() && this.properties['shortcutKey'].toLowerCase() === event.key.toLowerCase()) {
-      let good = this.properties['shortcutModifier'] !== 'ctrl' || event.ctrlKey;
-      good = good && this.properties['shortcutModifier'] !== 'alt' || event.altKey;
-      good = good && this.properties['shortcutModifier'] !== 'shift' || event.shiftKey;
-      good = good && this.properties['shortcutModifier'] !== 'meta' || event.metaKey;
+    if (
+      this.properties["shortcutKey"].trim() &&
+      this.properties["shortcutKey"].toLowerCase() === event.key.toLowerCase()
+    ) {
+      const shortcutModifier = this.properties["shortcutModifier"];
+      let good = shortcutModifier === "ctrl" && event.ctrlKey;
+      good = good || (shortcutModifier === "alt" && event.altKey);
+      good = good || (shortcutModifier === "shift" && event.shiftKey);
+      good = good || (shortcutModifier === "meta" && event.metaKey);
       if (good) {
         setTimeout(() => {
           this.executeConnectedNodes();
@@ -126,72 +149,92 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   onKeyup(event: KeyboardEvent) {
     const target = (event.target as HTMLElement)!;
     if (target.localName == "input" || target.localName == "textarea") {
-        return;
+      return;
     }
     this.executingFromShortcut = false;
   }
 
-
-  override onPropertyChanged(property: string, value: any, _prevValue: any): boolean | void {
-    if (property == 'buttonText') {
+  override onPropertyChanged(
+    property: string,
+    value: any,
+    _prevValue: any,
+  ): boolean | void {
+    if (property == "buttonText") {
       this.buttonWidget.name = value;
     }
-    if (property == 'shortcutKey') {
+    if (property == "shortcutKey") {
       value = value.trim();
-      this.properties['shortcutKey'] = value && value[0].toLowerCase() || '';
+      this.properties["shortcutKey"] = (value && value[0].toLowerCase()) || "";
     }
   }
 
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
-    // Remove any widgets that are no longe linked;
-    // const deleteWidgets: IWidget[] = [];
-    // for (const [widget, data] of this.widgetToData.entries()) {
-    //   if (!data.node) {
-    //     continue;
-    //   }
-    //   if (!linkedNodes.includes(data.node)) {
-    //     const index = this.widgets.indexOf(widget);
-    //     if (index > -1) {
-    //       deleteWidgets.push(widget);
-    //     } else {
-    //       console.warn('Had a connected widget that is not in widgets... weird.');
-    //     }
-    //   }
-    // }
-    // deleteWidgets.forEach(w=>this.removeWidget(w));
 
+    // Remove any widgets and data for widgets that are no longer linked.
+    for (const [widget, data] of this.widgetToData.entries()) {
+      if (!data.node) {
+        continue;
+      }
+      if (!linkedNodes.includes(data.node)) {
+        const index = this.widgets.indexOf(widget);
+        if (index > -1) {
+          this.widgetToData.delete(widget);
+          this.removeWidget(widget);
+        } else {
+          rgthree.logger.debug('Fast Action Button - Connected widget is not in widgets... weird.');
+        }
+      }
+    }
+
+    const badNodes: LGraphNode[] = []; // Nodes that are deleted elsewhere may not exist in linkedNodes.
     let indexOffset = 1; // Start with button, increment when we hit a non-node widget (like comfy)
     for (const [index, node] of linkedNodes.entries()) {
+      // Sometimes linkedNodes is stale.
+      if (!node) {
+        rgthree.logger.debug('Fast Action Button - linkedNode provided that does not exist. ');
+        badNodes.push(node);
+        continue;
+      }
       let widgetAtSlot = this.widgets[index + indexOffset];
       if (widgetAtSlot && this.widgetToData.get(widgetAtSlot)?.comfy) {
         indexOffset++;
         widgetAtSlot = this.widgets[index + indexOffset];
       }
 
-      if (!widgetAtSlot || this.widgetToData.get(widgetAtSlot)!.node !== node) {
+      if (!widgetAtSlot || this.widgetToData.get(widgetAtSlot)?.node?.id !== node.id) {
         // Find the next widget that matches the node.
-        let widget: IWidget|null = null;
+        let widget: IWidget | null = null;
         for (let i = index + indexOffset; i < this.widgets.length; i++) {
-          if (this.widgetToData.get(this.widgets[i]!)!.node === node) {
+          if (this.widgetToData.get(this.widgets[i]!)?.node?.id === node.id) {
             widget = this.widgets.splice(i, 1)[0]!;
-            this.widgets.splice(index + indexOffset, 0, widget)
+            this.widgets.splice(index + indexOffset, 0, widget);
             break;
           }
         }
         if (!widget) {
           // Add a widget at this spot.
-          const exposedActions: string[] = (node.constructor as any).exposedActions || [];
-          widget = this.addWidget('combo', node.title, 'None', '', {values: ['None', 'Mute', 'Bypass', 'Enable', ...exposedActions]});
-          (widget as ComfyWidget).serializeValue = async (_node: SerializedLGraphNode, _index: number) => {
+          const exposedActions: string[] =
+            (node.constructor as any).exposedActions || [];
+          widget = this.addWidget("combo", node.title, "None", "", {
+            values: ["None", "Mute", "Bypass", "Enable", ...exposedActions],
+          });
+          (widget as ComfyWidget).serializeValue = async (
+            _node: SerializedLGraphNode,
+            _index: number,
+          ) => {
             return widget?.value;
-          }
-          this.widgetToData.set(widget, {node})
+          };
+          this.widgetToData.set(widget, { node });
         }
       }
     }
 
     // Go backwards through widgets, and remove any that are not in out widgetToData
-    for (let i = this.widgets.length - 1; i > linkedNodes.length + indexOffset - 1; i--) {
+    for (
+      let i = this.widgets.length - 1;
+      i > linkedNodes.length + indexOffset - 1;
+      i--
+    ) {
       const widgetAtSlot = this.widgets[i];
       if (widgetAtSlot && this.widgetToData.get(widgetAtSlot)?.comfy) {
         continue;
@@ -200,8 +243,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
   }
 
-  override removeWidget(widgetOrSlot?: number|IWidget): void {
-    const widget = typeof widgetOrSlot === 'number' ? this.widgets[widgetOrSlot] : widgetOrSlot;
+  override removeWidget(widgetOrSlot?: number | IWidget): void {
+    const widget =
+      typeof widgetOrSlot === "number"
+        ? this.widgets[widgetOrSlot]
+        : widgetOrSlot;
     if (widget && this.widgetToData.has(widget)) {
       this.widgetToData.delete(widget);
     }
@@ -217,19 +263,19 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         continue;
       }
       const action = widget.value;
-      const {comfy, node} = this.widgetToData.get(widget) ?? {};
+      const { comfy, node } = this.widgetToData.get(widget) ?? {};
       if (comfy) {
-        if (action === 'Queue Prompt') {
+        if (action === "Queue Prompt") {
           await comfy.queuePrompt();
         }
         continue;
       }
       if (node) {
-        if (action === 'Mute') {
+        if (action === "Mute") {
           node.mode = MODE_MUTE;
-        } else if (action === 'Bypass') {
+        } else if (action === "Bypass") {
           node.mode = MODE_BYPASS;
-        } else if (action === 'Enable') {
+        } else if (action === "Enable") {
           node.mode = MODE_ALWAYS;
         }
         // If there's a handleAction, always call it.
@@ -239,34 +285,49 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         app.graph.change();
         continue;
       }
-      console.warn('Fast Actions Button has a widget without correct data.')
+      console.warn("Fast Actions Button has a widget without correct data.");
     }
   }
 
   /**
    * Adds a ComfyActionWidget at the provided slot (or end).
    */
-  addComfyActionWidget(slot?: number) {
-    let widget = this.addWidget('combo', 'Comfy Action', 'None', () => {
-      if (widget.value.startsWith('MOVE ')) {
-        this.widgets.push(this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
-        widget.value = (widget as any)['lastValue_'];
-      } else  if (widget.value.startsWith('REMOVE ')) {
-        this.removeWidget(widget);
-      }
-      (widget as any)['lastValue_'] = widget.value;
-    }, {
-      values: ['None', 'Queue Prompt', 'REMOVE Comfy Action', 'MOVE to end']
-    });
-    (widget as any)['lastValue_'] = 'None';
+  addComfyActionWidget(slot?: number, value?: string) {
+    let widget = this.addWidget(
+      "combo",
+      "Comfy Action",
+      "None",
+      () => {
+        if (widget.value.startsWith("MOVE ")) {
+          this.widgets.push(
+            this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!,
+          );
+          widget.value = (widget as any)["lastValue_"];
+        } else if (widget.value.startsWith("REMOVE ")) {
+          this.removeWidget(widget);
+        }
+        (widget as any)["lastValue_"] = widget.value;
+      },
+      {
+        values: ["None", "Queue Prompt", "REMOVE Comfy Action", "MOVE to end"],
+      },
+    );
+    (widget as any)["lastValue_"] = value;
 
-    (widget as ComfyWidget).serializeValue = async (_node: SerializedLGraphNode, _index: number) => {
+    (widget as ComfyWidget).serializeValue = async (
+      _node: SerializedLGraphNode,
+      _index: number,
+    ) => {
       return `comfy_app:${widget?.value}`;
-    }
-    this.widgetToData.set(widget, {comfy: app});
+    };
+    this.widgetToData.set(widget, { comfy: app });
 
     if (slot != null) {
-      this.widgets.splice(slot, 0, this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
+      this.widgets.splice(
+        slot,
+        0,
+        this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!,
+      );
     }
     return widget;
   }
@@ -274,27 +335,23 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   override onSerialize(o: SerializedLGraphNode) {
     super.onSerialize && super.onSerialize(o);
     for (let [index, value] of (o.widgets_values || []).entries()) {
-      if (this.widgets[index]?.name === 'Comfy Action') {
+      if (this.widgets[index]?.name === "Comfy Action") {
         o.widgets_values![index] = `comfy_action:${value}`;
       }
     }
   }
 
-
-  static override setUp<T extends BaseAnyInputConnectedNode>(clazz: Constructor<T>) {
+  static override setUp<T extends RgthreeBaseNode>(clazz: Constructor<T>) {
     BaseAnyInputConnectedNode.setUp(clazz);
 
     addMenuItem(clazz, app, {
-      name: '➕ Append a Comfy Action',
+      name: "➕ Append a Comfy Action",
       callback: (nodeArg: LGraphNode) => {
         (nodeArg as FastActionsButton).addComfyActionWidget();
-      }
+      },
     });
-
   }
 }
-
-
 
 app.registerExtension({
   name: "rgthree.FastActionsButton",
@@ -305,5 +362,5 @@ app.registerExtension({
     if (node.type == FastActionsButton.title) {
       (node as FastActionsButton)._tempWidth = node.size[0];
     }
-  }
+  },
 });

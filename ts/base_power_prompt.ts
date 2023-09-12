@@ -27,6 +27,8 @@ export class PowerPrompt {
     this.node = node;
     this.node.properties = this.node.properties || {};
 
+    this.node.properties['combos_filter'] = '';
+
     this.nodeData = nodeData;
     this.isSimple = this.nodeData.name.includes('Simple');
 
@@ -57,6 +59,14 @@ export class PowerPrompt {
         canConnect = oldOnConnectOutput?.apply(this.node, [outputIndex, inputType, inputSlot, inputNode, inputIndex]);
       }
       return canConnect && !this.node.outputs[outputIndex]!.disabled;
+    }
+
+    const onPropertyChanged = this.node.onPropertyChanged;
+    this.node.onPropertyChanged = (property: string, value: any, prevValue: any) => {
+      onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
+      if (property === 'combos_filter') {
+        this.refreshCombos(this.nodeData);
+      }
     }
 
     // Strip all widgets but prompt (we'll re-add them in refreshCombos)
@@ -109,21 +119,31 @@ export class PowerPrompt {
   }
 
   shouldRemoveServerWidget(widget: IWidget) {
-    return widget.name?.startsWith('insert_') || widget.name?.startsWith('target_') || widget.name?.startsWith('crop_');
+    return widget.name?.startsWith('insert_') || widget.name?.startsWith('target_') || widget.name?.startsWith('crop_') || widget.name?.startsWith('values_');
   }
 
   refreshCombos(nodeData: ComfyObjectInfo) {
-
     this.nodeData = nodeData;
+    let filter: RegExp|null = null;
+    if (this.node.properties['combos_filter']?.trim()) {
+      try {
+        filter = new RegExp(this.node.properties['combos_filter'].trim(), 'i');
+      } catch(e) {
+        console.error(`Could not parse "${filter}" for Regular Expression`, e);
+        filter = null;
+      }
+    }
+
+
     // Add the combo for hidden inputs of nodeData
-    let data = this.nodeData.input?.optional || {};
-    data = Object.assign(data, this.nodeData.input?.hidden || {});
+    let data = Object.assign({}, this.nodeData.input?.optional || {}, this.nodeData.input?.hidden || {});
 
     for (const [key, value] of Object.entries(data)) {//Object.entries(this.nodeData.input?.hidden || {})) {
       if (Array.isArray(value[0])) {
-        const values = value[0] as string[];
+        let values = value[0] as string[];
         if (key.startsWith('insert')) {
-          const shouldShow = values.length > 2 || (values.length > 1 && !values[1]!.match(/^disable\s[a-z]/i))
+          values = filter ? values.filter((v, i) => i < 1 || (i == 1 && v.match(/^disable\s[a-z]/i)) || filter?.test(v)) : values;
+          const shouldShow = values.length > 2 || (values.length > 1 && !values[1]!.match(/^disable\s[a-z]/i));
           if (shouldShow) {
             if (!this.combos[key]) {
               this.combos[key] = this.node.addWidget('combo', key, values, (selected) => {

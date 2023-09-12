@@ -1,10 +1,11 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
-import { addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs } from "./utils.js";
 export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     constructor(title = BaseAnyInputConnectedNode.title) {
         super(title);
         this.isVirtualNode = true;
+        this.inputsPassThroughFollowing = PassThroughFollowing.NONE;
         this.debouncerTempWidth = 0;
         this.schedulePromise = null;
         this.addInput("", "*");
@@ -22,26 +23,28 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
         return this.schedulePromise;
     }
     stabilizeInputsOutputs() {
-        let hasEmptyInput = false;
-        for (let index = this.inputs.length - 1; index >= 0; index--) {
+        var _a;
+        const hasEmptyInput = !((_a = this.inputs[this.inputs.length - 1]) === null || _a === void 0 ? void 0 : _a.link);
+        if (!hasEmptyInput) {
+            this.addInput("", "*");
+        }
+        for (let index = this.inputs.length - 2; index >= 0; index--) {
             const input = this.inputs[index];
             if (!input.link) {
-                if (index < this.inputs.length - 1) {
-                    this.removeInput(index);
-                }
-                else {
-                    hasEmptyInput = true;
-                }
+                this.removeInput(index);
+            }
+            else {
+                const node = getConnectedInputNodesAndFilterPassThroughs(this, this, index, this.inputsPassThroughFollowing)[0];
+                input.name = (node === null || node === void 0 ? void 0 : node.title) || '';
             }
         }
-        !hasEmptyInput && this.addInput('', '*');
     }
     doStablization() {
         if (!this.graph) {
             return;
         }
         this._tempWidth = this.size[0];
-        const linkedNodes = getConnectedInputNodes(app, this);
+        const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
         this.stabilizeInputsOutputs();
         this.handleLinkedNodesStabilization(linkedNodes);
         app.graph.setDirtyCanvas(true, true);
@@ -56,6 +59,14 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     }
     onConnectionsChange(type, index, connected, linkInfo, ioSlot) {
         super.onConnectionsChange && super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
+        if (!linkInfo)
+            return;
+        const connectedNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
+        for (const node of connectedNodes) {
+            if (node.onConnectionsChainChange) {
+                node.onConnectionsChainChange();
+            }
+        }
         this.scheduleStabilizeWidgets();
     }
     removeInput(slot) {
@@ -93,6 +104,48 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
         }, 16);
         return size;
     }
+    onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
+        let canConnect = true;
+        if (super.onConnectOutput) {
+            canConnect = super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
+        }
+        if (canConnect) {
+            const nodes = getConnectedInputNodes(this);
+            if (nodes.includes(inputNode)) {
+                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
+                    + `an situation that could create a time paradox, the results of which could cause a `
+                    + `chain reaction that would unravel the very fabric of the space time continuum, `
+                    + `and destroy the entire universe!`);
+                canConnect = false;
+            }
+        }
+        return canConnect;
+    }
+    onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
+        let canConnect = true;
+        if (super.onConnectInput) {
+            canConnect = super.onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+        }
+        if (canConnect) {
+            const nodes = getConnectedOutputNodes(this);
+            if (nodes.includes(outputNode)) {
+                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
+                    + `an situation that could create a time paradox, the results of which could cause a `
+                    + `chain reaction that would unravel the very fabric of the space time continuum, `
+                    + `and destroy the entire universe!`);
+                canConnect = false;
+            }
+        }
+        return canConnect;
+    }
+    connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn) {
+        const lastInput = this.inputs[this.inputs.length - 1];
+        if (!(lastInput === null || lastInput === void 0 ? void 0 : lastInput.link) && (lastInput === null || lastInput === void 0 ? void 0 : lastInput.type) === '*') {
+            var sourceSlot = sourceNode.findOutputSlotByType(sourceSlotType, false, true);
+            return sourceNode.connect(sourceSlot, this, slot);
+        }
+        return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
+    }
     static setUp(clazz) {
         addConnectionLayoutSupport(clazz, app, [['Left', 'Right'], ['Right', 'Left']]);
         addMenuItem(clazz, app, {
@@ -105,3 +158,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
         clazz.category = clazz._category;
     }
 }
+const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
+LGraphNode.prototype.connectByType = function connectByType(slot, sourceNode, sourceSlotType, optsIn) {
+    for (const [index, input] of sourceNode.inputs.entries()) {
+        if (!input.link && input.type === '*') {
+            this.connect(slot, sourceNode, index);
+            return null;
+        }
+    }
+    return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null);
+};

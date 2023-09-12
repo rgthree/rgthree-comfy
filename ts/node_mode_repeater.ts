@@ -2,18 +2,29 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
-// @ts-ignore
-import { BaseCollectorNode } from './base_node_collector.js';
+import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 
-import type {INodeInputSlot, INodeOutputSlot, LGraphNode, LLink, LiteGraph as TLiteGraph,} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, addHelp, getConnectedInputNodes, getConnectedOutputNodes} from "./utils.js";
+import type {
+  INodeInputSlot,
+  INodeOutputSlot,
+  LGraphNode,
+  LLink,
+  LiteGraph as TLiteGraph,
+} from "./typings/litegraph.js";
+import {
+  PassThroughFollowing,
+  addConnectionLayoutSupport,
+  addHelp,
+  getConnectedInputNodesAndFilterPassThroughs,
+  getConnectedOutputNodesAndFilterPassThroughs,
+} from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
-
 class NodeModeRepeater extends BaseCollectorNode {
+
+  override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
 
   static override type = NodeTypesString.NODE_MODE_REPEATER;
   static override title = NodeTypesString.NODE_MODE_REPEATER;
@@ -22,13 +33,19 @@ class NodeModeRepeater extends BaseCollectorNode {
     `When this node's mode (Mute, Bypass, Active) changes, it will "repeat" that mode to all`,
     `connected input nodes.`,
     `\n`,
-    `\n- Optionally, connect this mode's output to a ${stripRgthree(NodeTypesString.FAST_MUTER)}`,
-    `or ${stripRgthree(NodeTypesString.FAST_BYPASSER)} for a single toggle to quickly`,
+    `\n- Optionally, connect this mode's output to a ${stripRgthree(
+      NodeTypesString.FAST_MUTER,
+    )}`,
+    `or ${stripRgthree(
+      NodeTypesString.FAST_BYPASSER,
+    )} for a single toggle to quickly`,
     `mute/bypass all its connected nodes.`,
-    `\n- Optionally, connect a ${stripRgthree(NodeTypesString.NODE_MODE_RELAY)} to this nodes'`,
+    `\n- Optionally, connect a ${stripRgthree(
+      NodeTypesString.NODE_MODE_RELAY,
+    )} to this nodes'`,
     `inputs to have it automatically toggle its mode. If connected, this will always take`,
     `precedence (and disconnect any connected fast togglers)`,
-  ].join(' ');
+  ].join(" ");
 
   private hasRelayInput = false;
   private hasTogglerOutput = false;
@@ -36,63 +53,100 @@ class NodeModeRepeater extends BaseCollectorNode {
   constructor(title?: string) {
     super(title);
     this.removeOutput(0);
-    this.addOutput('OPT_CONNECTION', '*', {
-      color_on: '#Fc0',
-      color_off: '#a80',
+    this.addOutput("OPT_CONNECTION", "*", {
+      color_on: "#Fc0",
+      color_off: "#a80",
     });
   }
 
-  override onConnectOutput(outputIndex: number, inputType: string | -1, inputSlot: INodeInputSlot, inputNode: LGraphNode, inputIndex: number): boolean {
+  override onConnectOutput(
+    outputIndex: number,
+    inputType: string | -1,
+    inputSlot: INodeInputSlot,
+    inputNode: LGraphNode,
+    inputIndex: number,
+  ): boolean {
     // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
     let canConnect = !this.hasRelayInput;
-    if (super.onConnectOutput) {
-      canConnect = canConnect && super.onConnectOutput?.(outputIndex, inputType, inputSlot, inputNode, inputIndex);
-    }
+    canConnect = canConnect && super.onConnectOutput(
+        outputIndex,
+        inputType,
+        inputSlot,
+        inputNode,
+        inputIndex,
+      );
     // Output can only connect to a FAST MUTER, FAST BYPASSER, NODE_COLLECTOR OR ACTION BUTTON
-    let nextNode = getConnectedOutputNodes(app, this, inputNode)[0] || inputNode;
-    return canConnect && [NodeTypesString.FAST_MUTER, NodeTypesString.FAST_BYPASSER, NodeTypesString.NODE_COLLECTOR, NodeTypesString.FAST_ACTIONS_BUTTON].includes(nextNode.type || '');
+    let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0] || inputNode;
+    return (
+      canConnect &&
+      [
+        NodeTypesString.FAST_MUTER,
+        NodeTypesString.FAST_BYPASSER,
+        NodeTypesString.NODE_COLLECTOR,
+        NodeTypesString.FAST_ACTIONS_BUTTON,
+        NodeTypesString.REROUTE,
+      ].includes(nextNode.type || "")
+    );
   }
 
-
-  override onConnectInput(inputIndex: number, outputType: string | -1, outputSlot: INodeOutputSlot, outputNode: LGraphNode, outputIndex: number): boolean {
+  override onConnectInput(
+    inputIndex: number,
+    outputType: string | -1,
+    outputSlot: INodeOutputSlot,
+    outputNode: LGraphNode,
+    outputIndex: number,
+  ): boolean {
     // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
-    let canConnect = true;
-    if (super.onConnectInput) {
-      canConnect = canConnect && super.onConnectInput?.(inputIndex, outputType, outputSlot, outputNode, outputIndex);
-    }
+    let canConnect = super.onConnectInput?.(
+        inputIndex,
+        outputType,
+        outputSlot,
+        outputNode,
+        outputIndex,
+      );
     // Output can only connect to a FAST MUTER or FAST BYPASSER
-    let nextNode = getConnectedOutputNodes(app, this, outputNode)[0] || outputNode;
+    let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, outputNode)[0] || outputNode;
     const isNextNodeRelay = nextNode.type === NodeTypesString.NODE_MODE_RELAY;
     return canConnect && (!isNextNodeRelay || !this.hasTogglerOutput);
   }
 
-
-  override onConnectionsChange(type: number, slotIndex: number, isConnected: boolean, linkInfo: LLink, ioSlot: INodeOutputSlot | INodeInputSlot): void {
+  override onConnectionsChange(
+    type: number,
+    slotIndex: number,
+    isConnected: boolean,
+    linkInfo: LLink,
+    ioSlot: INodeOutputSlot | INodeInputSlot,
+  ): void {
     super.onConnectionsChange(type, slotIndex, isConnected, linkInfo, ioSlot);
 
     let hasTogglerOutput = false;
     let hasRelayInput = false;
 
-    const outputNodes = getConnectedOutputNodes(app, this);
+    const outputNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
     for (const outputNode of outputNodes) {
-      if (outputNode?.type === NodeTypesString.FAST_MUTER || outputNode?.type === NodeTypesString.FAST_BYPASSER) {
+      if (
+        outputNode?.type === NodeTypesString.FAST_MUTER ||
+        outputNode?.type === NodeTypesString.FAST_BYPASSER
+      ) {
         hasTogglerOutput = true;
         break;
       }
     }
 
-    const inputNodes = getConnectedInputNodes(app, this);
+    const inputNodes = getConnectedInputNodesAndFilterPassThroughs(this);
     for (const [index, inputNode] of inputNodes.entries()) {
       if (inputNode?.type === NodeTypesString.NODE_MODE_RELAY) {
         // We can't be connected to a relay if we're connected to a toggler. Something has gone wrong.
         if (hasTogglerOutput) {
-          console.log(`Can't be connected to a Relay if also output to a toggler.`);
+          console.log(
+            `Can't be connected to a Relay if also output to a toggler.`,
+          );
           this.disconnectInput(index);
         } else {
           hasRelayInput = true;
           if (this.inputs[index]) {
-            this.inputs[index]!.color_on = '#FC0';
-            this.inputs[index]!.color_off = '#a80';
+            this.inputs[index]!.color_on = "#FC0";
+            this.inputs[index]!.color_off = "#a80";
           }
         }
       } else {
@@ -110,9 +164,9 @@ class NodeModeRepeater extends BaseCollectorNode {
         this.removeOutput(0);
       }
     } else if (!this.outputs[0]) {
-      this.addOutput('OPT_CONNECTION', '*', {
-        color_on: '#Fc0',
-        color_off: '#a80',
+      this.addOutput("OPT_CONNECTION", "*", {
+        color_on: "#Fc0",
+        color_off: "#a80",
       });
     }
   }
@@ -120,7 +174,7 @@ class NodeModeRepeater extends BaseCollectorNode {
   /** When a mode change, we want all connected nodes to match except for connected relays. */
   override onModeChange() {
     super.onModeChange();
-    const linkedNodes = getConnectedInputNodes(app, this);
+    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
     for (const node of linkedNodes) {
       if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
         node.mode = this.mode;
@@ -129,15 +183,16 @@ class NodeModeRepeater extends BaseCollectorNode {
   }
 }
 
-
 app.registerExtension({
-	name: "rgthree.NodeModeRepeater",
-	registerCustomNodes() {
-
-    addConnectionLayoutSupport(NodeModeRepeater, app, [['Left','Right'],['Right','Left']]);
+  name: "rgthree.NodeModeRepeater",
+  registerCustomNodes() {
+    addConnectionLayoutSupport(NodeModeRepeater, app, [
+      ["Left", "Right"],
+      ["Right", "Left"],
+    ]);
     addHelp(NodeModeRepeater, app);
 
-		LiteGraph.registerNodeType(NodeModeRepeater.type, NodeModeRepeater);
+    LiteGraph.registerNodeType(NodeModeRepeater.type, NodeModeRepeater);
     NodeModeRepeater.category = NodeModeRepeater._category;
-	},
+  },
 });

@@ -10,6 +10,10 @@ import { IComboWidget, IWidget, LGraph, LGraphCanvas, LGraphNode, SerializedLGra
 
 class ImageInsetCrop extends RgthreeBaseNode {
 
+  static override type = '__OVERRIDE_ME__';
+  static comfyClass = '__OVERRIDE_ME__';
+
+
   static override exposedActions = ['Reset Crop'];
   static maxResolution = 8192;
 
@@ -50,6 +54,15 @@ class ImageInsetCrop extends RgthreeBaseNode {
     }
   }
 
+  static override setUp<T extends RgthreeBaseNode>(clazz: any) {
+    ImageInsetCrop.title = clazz.title;
+    ImageInsetCrop.comfyClass = clazz.comfyClass;
+    setTimeout(() => {
+      ImageInsetCrop.category = clazz.category;
+    });
+
+    applyMixins(clazz, [RgthreeBaseNode, ImageInsetCrop]);
+  }
 }
 
 
@@ -57,7 +70,7 @@ app.registerExtension({
 	name: "rgthree.ImageInsetCrop",
 	async beforeRegisterNodeDef(nodeType: Constructor<LGraphNode>, nodeData: ComfyObjectInfo, _app: ComfyApp) {
     if (nodeData.name === "Image Inset Crop (rgthree)") {
-      applyMixins(nodeType, [RgthreeBaseNode, ImageInsetCrop]);
+      ImageInsetCrop.setUp(nodeType);
 		}
 	},
 });

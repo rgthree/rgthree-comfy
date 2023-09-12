@@ -6,6 +6,7 @@ export class PowerPrompt {
         this.combosValues = {};
         this.node = node;
         this.node.properties = this.node.properties || {};
+        this.node.properties['combos_filter'] = '';
         this.nodeData = nodeData;
         this.isSimple = this.nodeData.name.includes('Simple');
         this.promptEl = node.widgets[0].inputEl;
@@ -31,6 +32,13 @@ export class PowerPrompt {
                 canConnect = oldOnConnectOutput === null || oldOnConnectOutput === void 0 ? void 0 : oldOnConnectOutput.apply(this.node, [outputIndex, inputType, inputSlot, inputNode, inputIndex]);
             }
             return canConnect && !this.node.outputs[outputIndex].disabled;
+        };
+        const onPropertyChanged = this.node.onPropertyChanged;
+        this.node.onPropertyChanged = (property, value, prevValue) => {
+            onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
+            if (property === 'combos_filter') {
+                this.refreshCombos(this.nodeData);
+            }
         };
         for (let i = this.node.widgets.length - 1; i >= 0; i--) {
             if (this.shouldRemoveServerWidget(this.node.widgets[i])) {
@@ -71,18 +79,28 @@ export class PowerPrompt {
         this.refreshCombos(event.detail[this.nodeData.name]);
     }
     shouldRemoveServerWidget(widget) {
-        var _a, _b, _c;
-        return ((_a = widget.name) === null || _a === void 0 ? void 0 : _a.startsWith('insert_')) || ((_b = widget.name) === null || _b === void 0 ? void 0 : _b.startsWith('target_')) || ((_c = widget.name) === null || _c === void 0 ? void 0 : _c.startsWith('crop_'));
+        var _a, _b, _c, _d;
+        return ((_a = widget.name) === null || _a === void 0 ? void 0 : _a.startsWith('insert_')) || ((_b = widget.name) === null || _b === void 0 ? void 0 : _b.startsWith('target_')) || ((_c = widget.name) === null || _c === void 0 ? void 0 : _c.startsWith('crop_')) || ((_d = widget.name) === null || _d === void 0 ? void 0 : _d.startsWith('values_'));
     }
     refreshCombos(nodeData) {
-        var _a, _b;
+        var _a, _b, _c;
         this.nodeData = nodeData;
-        let data = ((_a = this.nodeData.input) === null || _a === void 0 ? void 0 : _a.optional) || {};
-        data = Object.assign(data, ((_b = this.nodeData.input) === null || _b === void 0 ? void 0 : _b.hidden) || {});
+        let filter = null;
+        if ((_a = this.node.properties['combos_filter']) === null || _a === void 0 ? void 0 : _a.trim()) {
+            try {
+                filter = new RegExp(this.node.properties['combos_filter'].trim(), 'i');
+            }
+            catch (e) {
+                console.error(`Could not parse "${filter}" for Regular Expression`, e);
+                filter = null;
+            }
+        }
+        let data = Object.assign({}, ((_b = this.nodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}, ((_c = this.nodeData.input) === null || _c === void 0 ? void 0 : _c.hidden) || {});
         for (const [key, value] of Object.entries(data)) {
             if (Array.isArray(value[0])) {
-                const values = value[0];
+                let values = value[0];
                 if (key.startsWith('insert')) {
+                    values = filter ? values.filter((v, i) => i < 1 || (i == 1 && v.match(/^disable\s[a-z]/i)) || (filter === null || filter === void 0 ? void 0 : filter.test(v))) : values;
                     const shouldShow = values.length > 2 || (values.length > 1 && !values[1].match(/^disable\s[a-z]/i));
                     if (shouldShow) {
                         if (!this.combos[key]) {

@@ -2,13 +2,16 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
+import { RgthreeBaseNode } from "./base_node.js";
 import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
-import { wait } from "./utils.js";
+import { PassThroughFollowing, wait } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
 
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
+
+  override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
 
   static collapsible = false;
   override isVirtualNode = true;
@@ -37,7 +40,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         (this as any)._tempWidth = this.size[0];
         widget = this.addWidget('toggle', '', false, '', {"on": 'yes', "off": 'no'});
       }
-      this.setWidget(widget, node);
+      node && this.setWidget(widget, node);
     }
     if (this.widgets && this.widgets.length > linkedNodes.length) {
       this.widgets.length = linkedNodes.length
@@ -67,7 +70,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   }
 
 
-  static override setUp<T extends BaseAnyInputConnectedNode>(clazz: new(...args: any[]) => T) {
+  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
     BaseAnyInputConnectedNode.setUp(clazz);
   }
 }

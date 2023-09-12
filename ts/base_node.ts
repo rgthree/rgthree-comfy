@@ -1,6 +1,6 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 import { NodeMode } from "./typings/comfy.js";
-import type {IWidget, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+import type {IWidget, SerializedLGraphNode, LGraphNode as TLGraphNode} from './typings/litegraph.js';
 
 declare const LGraphNode: typeof TLGraphNode;
 
@@ -20,14 +20,13 @@ export class RgthreeBaseNode extends LGraphNode {
   static category = 'rgthree';
   static _category = 'rgthree';
 
-  isVirtualNode = true;
-
   /** A temporary width value that can be used to ensure compute size operates correctly. */
   _tempWidth = 0;
 
   /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
   private mode_: NodeMode;
 
+  isVirtualNode = false;
 
   constructor(title = RgthreeBaseNode.title) {
     super(title);
@@ -35,6 +34,15 @@ export class RgthreeBaseNode extends LGraphNode {
       throw new Error('RgthreeBaseNode needs overrides.');
     }
     this.properties = this.properties || {};
+  }
+
+  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+    super.configure(info);
+    // Fix https://github.com/comfyanonymous/ComfyUI/issues/1448 locally.
+    // Can removed when fixed and adopted.
+    for (const w of (this.widgets || [])) {
+      w.last_y = w.last_y || 0;
+    }
   }
 
 
@@ -76,4 +84,8 @@ export class RgthreeBaseNode extends LGraphNode {
     }
   }
 
+
+  static setUp<T extends RgthreeBaseNode>(clazz: new(title?: any) => T) {
+    // No-op.
+  }
 }

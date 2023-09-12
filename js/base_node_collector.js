@@ -1,10 +1,10 @@
-import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
-import { getConnectedOutputNodes } from "./utils.js";
-export class BaseCollectorNode extends RgthreeBaseNode {
+import { rgthree } from "./rgthree.js";
+import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
+import { PassThroughFollowing, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, shouldPassThrough } from "./utils.js";
+export class BaseCollectorNode extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);
-        this.isVirtualNode = true;
+        this.inputsPassThroughFollowing = PassThroughFollowing.REROUTE_ONLY;
         this.addInput("", "*");
         this.addOutput("Output", "*");
     }
@@ -12,29 +12,35 @@ export class BaseCollectorNode extends RgthreeBaseNode {
         const cloned = super.clone();
         return cloned;
     }
-    onConnectionsChange(_type, _slotIndex, _isConnected, link_info, _ioSlot) {
-        if (!link_info)
-            return;
-        this.stabilizeInputsOutputs();
-        const connectedNodes = getConnectedOutputNodes(app, this);
-        for (const node of connectedNodes) {
-            if (node.onConnectionsChainChange) {
-                node.onConnectionsChainChange();
-            }
-        }
+    handleLinkedNodesStabilization(linkedNodes) {
     }
-    stabilizeInputsOutputs() {
-        var _a, _b;
-        for (let index = this.inputs.length - 1; index >= 0; index--) {
-            const input = this.inputs[index];
-            if (!input.link) {
-                this.removeInput(index);
+    onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
+        let canConnect = super.onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+        if (canConnect) {
+            const allConnectedNodes = getConnectedInputNodes(this);
+            const nodesAlreadyInSlot = getConnectedInputNodes(this, undefined, inputIndex);
+            if (allConnectedNodes.includes(outputNode)) {
+                rgthree.logger.debug(`BaseCollectorNode: ${outputNode.title} is already connected to ${this.title}.`);
+                if (nodesAlreadyInSlot.includes(outputNode)) {
+                    rgthree.logger.debug(`... but letting it slide since it's for the same slot.`);
+                }
+                else {
+                    canConnect = false;
+                }
+            }
+            if (canConnect && shouldPassThrough(outputNode, PassThroughFollowing.REROUTE_ONLY)) {
+                const connectedNode = getConnectedInputNodesAndFilterPassThroughs(outputNode, undefined, undefined, PassThroughFollowing.REROUTE_ONLY)[0];
+                if (connectedNode && allConnectedNodes.includes(connectedNode)) {
+                    rgthree.logger.debug(`BaseCollectorNode: ${connectedNode.title} is already connected to ${this.title}.`);
+                    if (nodesAlreadyInSlot.includes(connectedNode)) {
+                        rgthree.logger.debug(`... but letting it slide since it's for the same slot.`);
+                    }
+                    else {
+                        canConnect = false;
+                    }
+                }
             }
         }
-        this.addInput('', '*');
-        const outputLength = ((_b = (_a = this.outputs[0]) === null || _a === void 0 ? void 0 : _a.links) === null || _b === void 0 ? void 0 : _b.length) || 0;
-        if (outputLength > 1) {
-            this.outputs[0].links.length = 1;
-        }
+        return canConnect;
     }
 }

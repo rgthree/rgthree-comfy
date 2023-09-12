@@ -3,9 +3,10 @@
 import {app} from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes} from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, filterOutPassthroughNodes, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
+declare const LGraphNode: typeof TLGraphNode;
 
 /**
  * A Virtual Node that allows any node's output to connect to it.
@@ -13,6 +14,12 @@ declare const LiteGraph: typeof TLiteGraph;
 export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 
   override isVirtualNode = true;
+
+  /**
+   * Whether inputs show the immediate nodes, or follow and show connected nodes through
+   * passthrough nodes.
+   */
+  readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.NONE;
 
   debouncerTempWidth: number = 0;
   schedulePromise: Promise<void> | null = null;
@@ -40,19 +47,20 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
   /**
    * Ensures we have at least one empty input at the end.
    */
-  private stabilizeInputsOutputs() {
-    let hasEmptyInput = false;
-    for (let index = this.inputs.length - 1; index >= 0; index--) {
+  stabilizeInputsOutputs() {
+    const hasEmptyInput = !this.inputs[this.inputs.length - 1]?.link;
+    if (!hasEmptyInput) {
+      this.addInput("", "*");
+    }
+    for (let index = this.inputs.length - 2; index >= 0; index--) {
       const input = this.inputs[index]!;
       if (!input.link) {
-        if (index < this.inputs.length - 1) {
-          this.removeInput(index);
-        } else {
-          hasEmptyInput = true;
-        }
+        this.removeInput(index);
+      } else {
+        const node = getConnectedInputNodesAndFilterPassThroughs(this, this, index, this.inputsPassThroughFollowing)[0];
+        input.name = node?.title || '';
       }
     }
-    !hasEmptyInput && this.addInput('', '*');
   }
 
 
@@ -67,7 +75,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     // store it so we can retrieve it in computeSize. Hacky..
     (this as any)._tempWidth = this.size[0];
 
-    const linkedNodes = getConnectedInputNodes(app, this);
+    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
     this.stabilizeInputsOutputs();
 
     this.handleLinkedNodesStabilization(linkedNodes);
@@ -89,6 +97,14 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 
   override onConnectionsChange(type: number, index: number, connected: boolean, linkInfo: LLink, ioSlot: (INodeOutputSlot | INodeInputSlot)) {
     super.onConnectionsChange && super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
+    if (!linkInfo) return;
+    // Follow outputs to see if we need to trigger an onConnectionChange.
+    const connectedNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
+    for (const node of connectedNodes) {
+      if ((node as BaseAnyInputConnectedNode).onConnectionsChainChange) {
+        (node as BaseAnyInputConnectedNode).onConnectionsChainChange();
+      }
+    }
     this.scheduleStabilizeWidgets();
   }
 
@@ -136,7 +152,109 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     return size;
   }
 
-  static setUp<T extends BaseAnyInputConnectedNode>(clazz: new(...args: any[]) => T) {
+  /**
+   * When we connect our output, check our inputs and make sure we're not trying to connect a loop.
+   */
+  override onConnectOutput(outputIndex: number, inputType: string | -1, inputSlot: INodeInputSlot, inputNode: TLGraphNode, inputIndex: number): boolean {
+    let canConnect = true;
+    if (super.onConnectOutput) {
+      canConnect = super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
+    }
+    if (canConnect) {
+      const nodes = getConnectedInputNodes(this); // We want passthrough nodes, since they will loop.
+      if (nodes.includes(inputNode)) {
+        alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
+          + `an situation that could create a time paradox, the results of which could cause a `
+          + `chain reaction that would unravel the very fabric of the space time continuum, `
+          + `and destroy the entire universe!`);
+        canConnect = false;
+      }
+    }
+    return canConnect;
+  }
+
+  override onConnectInput(inputIndex: number, outputType: string | -1, outputSlot: INodeOutputSlot, outputNode: TLGraphNode, outputIndex: number): boolean {
+
+    let canConnect = true;
+    if (super.onConnectInput) {
+      canConnect = super.onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+    }
+    if (canConnect) {
+      const nodes = getConnectedOutputNodes(this); // We want passthrough nodes, since they will loop.
+      if (nodes.includes(outputNode)) {
+        alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
+          + `an situation that could create a time paradox, the results of which could cause a `
+          + `chain reaction that would unravel the very fabric of the space time continuum, `
+          + `and destroy the entire universe!`);
+        canConnect = false;
+      }
+    }
+    return canConnect;
+  }
+
+
+  /**
+   * If something is dropped on us, just add it to the bottom. onConnectInput should already cancel
+   * if it's disallowed.
+   */
+  override connectByTypeOutput<T = any>(
+    slot: string | number,
+    sourceNode: TLGraphNode,
+    sourceSlotType: string,
+    optsIn: string,
+  ): T | null {
+    const lastInput = this.inputs[this.inputs.length - 1];
+    if (!lastInput?.link && lastInput?.type === '*') {
+      var sourceSlot = sourceNode.findOutputSlotByType(sourceSlotType, false, true);
+      return sourceNode.connect(sourceSlot, this, slot);
+    }
+    return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
+
+    // return null;
+    // if (!super.connectByType) {
+    //   canConnect = LGraphNode.prototype.connectByType.call(
+    //     this,
+    //     slot,
+    //     sourceNode,
+    //     sourceSlotType,
+    //     optsIn,
+    //   );
+    // }
+    // if (!canConnect && slot === 0) {
+    //   const ctrlKey = rgthree.ctrlKey;
+    //   // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
+    //   // Unfortunately, we don't know which are null now, so we'll just connect any that are
+    //   // not already connected.
+    //   for (const [index, input] of (sourceNode.inputs || []).entries()) {
+    //     if (input.link && !ctrlKey) {
+    //       continue;
+    //     }
+    //     const inputType = input.type as string;
+    //     const inputName = input.name.toUpperCase();
+    //     let thisOutputSlot = -1;
+    //     if (["CONDITIONING", "INT"].includes(inputType)) {
+    //       thisOutputSlot = this.outputs.findIndex(
+    //         (o) =>
+    //           o.type === inputType &&
+    //           (o.name.toUpperCase() === inputName ||
+    //             (o.name.toUpperCase() === "SEED" &&
+    //               inputName.includes("SEED")) ||
+    //             (o.name.toUpperCase() === "STEP_REFINER" &&
+    //               inputName.includes("AT_STEP"))),
+    //       );
+    //     } else {
+    //       thisOutputSlot = this.outputs.map((s) => s.type).indexOf(input.type);
+    //     }
+    //     if (thisOutputSlot > -1) {
+    //       thisOutputSlot;
+    //       this.connect(thisOutputSlot, sourceNode, index);
+    //     }
+    //   }
+    // }
+    // return null;
+  }
+
+  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
     // @ts-ignore: Fix incorrect litegraph typings.
     addConnectionLayoutSupport(clazz, app, [['Left', 'Right'],['Right', 'Left']]);
 
@@ -155,3 +273,24 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 }
 
 
+
+// Ok, hack time! LGraphNode's connectByType is powerful, but for our nodes, that have multiple "*"
+// input types, it seems it just takes the first one, and disconnects it. I'd rather we don't do
+// that and instead take the next free one. If that doesn't work, then we'll give it to the old
+// method.
+const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
+LGraphNode.prototype.connectByType = function connectByType<T = any>(
+    slot: string | number,
+    sourceNode: TLGraphNode,
+    sourceSlotType: string,
+    optsIn: string): T | null {
+  // If we're droppiong on a node, and the last input is free and an "*" type, then connect there
+  // first...
+  for (const [index, input] of sourceNode.inputs.entries()) {
+    if (!input.link && input.type === '*') {
+      this.connect(slot, sourceNode, index);
+      return null;
+    }
+  }
+  return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null) as T;
+}

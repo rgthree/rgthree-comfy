@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport, addHelp, getConnectedInputNodes, getConnectedOutputNodes, wait } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, addHelp, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, wait } from "./utils.js";
 import { BaseCollectorNode } from './base_node_collector.js';
 import { NodeTypesString, stripRgthree } from "./constants.js";
 const MODE_ALWAYS = 0;
@@ -9,6 +9,7 @@ const MODE_REPEATS = [MODE_MUTE, MODE_BYPASS];
 class NodeModeRelay extends BaseCollectorNode {
     constructor(title) {
         super(title);
+        this.inputsPassThroughFollowing = PassThroughFollowing.ALL;
         setTimeout(() => { this.stabilize(); }, 500);
         this.removeOutput(0);
         this.addOutput('REPEATER', '_NODE_REPEATER_', {
@@ -19,11 +20,8 @@ class NodeModeRelay extends BaseCollectorNode {
     }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
         var _a, _b;
-        let canConnect = true;
-        if (super.onConnectOutput) {
-            canConnect = (_a = super.onConnectOutput) === null || _a === void 0 ? void 0 : _a.call(this, outputIndex, inputType, inputSlot, inputNode, inputIndex);
-        }
-        let nextNode = (_b = getConnectedOutputNodes(app, this, inputNode)[0]) !== null && _b !== void 0 ? _b : inputNode;
+        let canConnect = (_a = super.onConnectOutput) === null || _a === void 0 ? void 0 : _a.call(this, outputIndex, inputType, inputSlot, inputNode, inputIndex);
+        let nextNode = (_b = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0]) !== null && _b !== void 0 ? _b : inputNode;
         return canConnect && nextNode.type === NodeTypesString.NODE_MODE_REPEATER;
     }
     onConnectionsChange(type, slotIndex, isConnected, link_info, ioSlot) {
@@ -35,7 +33,7 @@ class NodeModeRelay extends BaseCollectorNode {
         if (!this.graph || !this.isAnyOutputConnected() || !this.isInputConnected(0)) {
             return;
         }
-        const inputNodes = getConnectedInputNodes(app, this);
+        const inputNodes = getConnectedInputNodesAndFilterPassThroughs(this, this, -1, this.inputsPassThroughFollowing);
         let mode = undefined;
         for (const inputNode of inputNodes) {
             if (mode === undefined) {
@@ -53,7 +51,7 @@ class NodeModeRelay extends BaseCollectorNode {
         }
         if (mode != null) {
             if ((_a = this.outputs) === null || _a === void 0 ? void 0 : _a.length) {
-                const outputNodes = getConnectedOutputNodes(app, this);
+                const outputNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
                 for (const outputNode of outputNodes) {
                     outputNode.mode = mode;
                     wait(16).then(() => {
