@@ -79,7 +79,7 @@ def log_node(node_name, message):
 
 
 def _log_node(color, node_name, message, prefix=''):
-  print(_get_log_msg(color, node_name, message, prefix=''))
+  print(_get_log_msg(color, node_name, message, prefix=prefix))
 
 
 def _get_log_msg(color, node_name, message, prefix=''):
