@@ -496,7 +496,7 @@ function getConnectedNodes(
   return rootNodes;
 }
 
-export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: string | TLGraphNode) {
+export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: string | TLGraphNode, inputMap?: Map<string, string>) {
   const existingCtor = existingNode.constructor as typeof TLGraphNode;
 
   const newNode =
@@ -506,8 +506,13 @@ export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: stri
     newNode.title = existingNode.title;
   }
   newNode.pos = [...existingNode.pos];
-  newNode.size = [...existingNode.size];
   newNode.properties = { ...existingNode.properties };
+  const size = [...existingNode.size] as Vector2;
+  newNode.size = size;
+  // Size gets messed up when ComfyUI adds the text widget, so reset after a delay.
+  setTimeout(() => {
+    newNode.size = size;
+  }, 128);
 
   // We now collect the links data, inputs and outputs, of the old node since these will be
   // lost when we remove it.
@@ -534,7 +539,7 @@ export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: stri
         node: originNode,
         slot: link.origin_slot,
         targetNode: newNode,
-        targetSlot: input.name,
+        targetSlot: inputMap?.has(input.name) ? inputMap.get(input.name)! : input.name || index,
       });
     }
   }

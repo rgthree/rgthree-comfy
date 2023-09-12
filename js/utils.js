@@ -343,15 +343,19 @@ function getConnectedNodes(startNode, dir = IoDirection.INPUT, currentNode, slot
     }
     return rootNodes;
 }
-export async function replaceNode(existingNode, typeOrNewNode) {
+export async function replaceNode(existingNode, typeOrNewNode, inputMap) {
     const existingCtor = existingNode.constructor;
     const newNode = typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
     if (existingNode.title != existingCtor.title) {
         newNode.title = existingNode.title;
     }
     newNode.pos = [...existingNode.pos];
-    newNode.size = [...existingNode.size];
     newNode.properties = { ...existingNode.properties };
+    const size = [...existingNode.size];
+    newNode.size = size;
+    setTimeout(() => {
+        newNode.size = size;
+    }, 128);
     const links = [];
     for (const [index, output] of existingNode.outputs.entries()) {
         for (const linkId of output.links || []) {
@@ -371,7 +375,7 @@ export async function replaceNode(existingNode, typeOrNewNode) {
                 node: originNode,
                 slot: link.origin_slot,
                 targetNode: newNode,
-                targetSlot: input.name,
+                targetSlot: (inputMap === null || inputMap === void 0 ? void 0 : inputMap.has(input.name)) ? inputMap.get(input.name) : input.name || index,
             });
         }
     }
