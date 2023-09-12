@@ -1,8 +1,9 @@
-import { api } from '../../scripts/api.js';
+import { app } from "../../scripts/app.js";
+import { api } from "../../scripts/api.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
     const defs = await oldApiGetNodeDefs.call(api);
-    this.dispatchEvent(new CustomEvent('fresh-node-defs', { detail: defs }));
+    this.dispatchEvent(new CustomEvent("fresh-node-defs", { detail: defs }));
     return defs;
 };
 export var IoDirection;
@@ -12,25 +13,29 @@ export var IoDirection;
 })(IoDirection || (IoDirection = {}));
 const PADDING = 0;
 export const LAYOUT_LABEL_TO_DATA = {
-    'Left': [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
-    'Right': [LiteGraph.RIGHT, [1, 0.5], [-PADDING, 0]],
-    'Top': [LiteGraph.UP, [0.5, 0], [0, PADDING]],
-    'Bottom': [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
+    Left: [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
+    Right: [LiteGraph.RIGHT, [1, 0.5], [-PADDING, 0]],
+    Top: [LiteGraph.UP, [0.5, 0], [0, PADDING]],
+    Bottom: [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
 };
 const OPPOSITE_LABEL = {
-    'Left': 'Right',
-    'Right': 'Left',
-    'Top': 'Bottom',
-    'Bottom': 'Top',
+    Left: "Right",
+    Right: "Left",
+    Top: "Bottom",
+    Bottom: "Top",
 };
+export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 export function addMenuItem(node, _app, config) {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
         var _a;
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-        let idx = menuOptions.slice().reverse().findIndex(option => option === null || option === void 0 ? void 0 : option.isRgthree);
+        let idx = menuOptions
+            .slice()
+            .reverse()
+            .findIndex((option) => option === null || option === void 0 ? void 0 : option.isRgthree);
         if (idx == -1) {
-            idx = menuOptions.findIndex(option => option === null || option === void 0 ? void 0 : option.content.includes('Shape')) + 1;
+            idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes("Shape")) + 1;
             if (!idx) {
                 idx = menuOptions.length - 1;
             }
@@ -41,41 +46,49 @@ export function addMenuItem(node, _app, config) {
             idx = menuOptions.length - idx;
         }
         menuOptions.splice(idx, 0, {
-            content: typeof config.name == 'function' ? config.name(this) : config.name,
+            content: typeof config.name == "function" ? config.name(this) : config.name,
             has_submenu: !!((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length),
             isRgthree: true,
-            callback: (_value, _options, event, parentMenu, _node) => {
+            callback: (value, _options, event, parentMenu, _node) => {
                 var _a;
                 if ((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length) {
-                    new LiteGraph.ContextMenu(config.subMenuOptions.map(option => ({ content: option })), {
+                    new LiteGraph.ContextMenu(config.subMenuOptions.map((option) => (option ? { content: option } : null)), {
                         event,
                         parentMenu,
                         callback: (subValue, _options, _event, _parentMenu, _node) => {
                             if (config.property) {
                                 this.properties = this.properties || {};
-                                this.properties[config.property] = config.prepareValue ? config.prepareValue(subValue.content, this) : subValue.content;
+                                this.properties[config.property] = config.prepareValue
+                                    ? config.prepareValue(subValue.content, this)
+                                    : subValue.content;
                             }
-                            config.callback && config.callback(this);
+                            config.callback && config.callback(this, subValue === null || subValue === void 0 ? void 0 : subValue.content);
                         },
                     });
+                    return;
                 }
                 if (config.property) {
                     this.properties = this.properties || {};
-                    this.properties[config.property] = config.prepareValue ? config.prepareValue(this.properties[config.property], this) : !this.properties[config.property];
+                    this.properties[config.property] = config.prepareValue
+                        ? config.prepareValue(this.properties[config.property], this)
+                        : !this.properties[config.property];
                 }
-                config.callback && config.callback(this);
-            }
+                config.callback && config.callback(this, value === null || value === void 0 ? void 0 : value.content);
+            },
         });
     };
 }
-export function addConnectionLayoutSupport(node, app, options = [['Left', 'Right'], ['Right', 'Left']], callback) {
+export function addConnectionLayoutSupport(node, app, options = [
+    ["Left", "Right"],
+    ["Right", "Left"],
+], callback) {
     addMenuItem(node, app, {
-        name: 'Connections Layout',
-        property: 'connections_layout',
-        subMenuOptions: options.map(option => option[0] + (option[1] ? ' -> ' + option[1] : '')),
+        name: "Connections Layout",
+        property: "connections_layout",
+        subMenuOptions: options.map((option) => option[0] + (option[1] ? " -> " + option[1] : "")),
         prepareValue: (value, node) => {
             var _a;
-            const values = value.split(' -> ');
+            const values = value.split(" -> ");
             if (!values[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
                 values[1] = OPPOSITE_LABEL[values[0]];
             }
@@ -93,7 +106,7 @@ export function addConnectionLayoutSupport(node, app, options = [['Left', 'Right
         return getConnectionPosForLayout(this, isInput, slotNumber, out);
     };
 }
-export function setConnectionsLayout(node, newLayout = ['Left', 'Right']) {
+export function setConnectionsLayout(node, newLayout = ["Left", "Right"]) {
     var _a;
     if (!newLayout[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
         newLayout[1] = OPPOSITE_LABEL[newLayout[0]];
@@ -102,72 +115,71 @@ export function setConnectionsLayout(node, newLayout = ['Left', 'Right']) {
         throw new Error(`New Layout invalid: [${newLayout[0]}, ${newLayout[1]}]`);
     }
     node.properties = node.properties || {};
-    node.properties['connections_layout'] = newLayout;
+    node.properties["connections_layout"] = newLayout;
 }
 export function setConnectionsCollapse(node, collapseConnections = null) {
     node.properties = node.properties || {};
-    collapseConnections = collapseConnections !== null ? collapseConnections : !node.properties['collapse_connections'];
-    node.properties['collapse_connections'] = collapseConnections;
+    collapseConnections =
+        collapseConnections !== null ? collapseConnections : !node.properties["collapse_connections"];
+    node.properties["collapse_connections"] = collapseConnections;
 }
 export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     var _a, _b, _c;
     out = out || new Float32Array(2);
     node.properties = node.properties || {};
-    const layout = node.properties['connections_layout'] || ['Left', 'Right'];
-    const collapseConnections = node.properties['collapse_connections'] || false;
-    const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : (LiteGraph.NODE_SLOT_HEIGHT * 0.5);
+    const layout = node.properties["connections_layout"] || ["Left", "Right"];
+    const collapseConnections = node.properties["collapse_connections"] || false;
+    const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : LiteGraph.NODE_SLOT_HEIGHT * 0.5;
     let side = isInput ? layout[0] : layout[1];
     const otherSide = isInput ? layout[1] : layout[0];
-    const data = LAYOUT_LABEL_TO_DATA[side];
-    const slotList = node[isInput ? 'inputs' : 'outputs'];
+    let data = LAYOUT_LABEL_TO_DATA[side];
+    const slotList = node[isInput ? "inputs" : "outputs"];
     const cxn = slotList[slotNumber];
     if (!cxn) {
-        console.log('No connection found.. weird', isInput, slotNumber);
+        console.log("No connection found.. weird", isInput, slotNumber);
         return out;
     }
     if (cxn.disabled) {
-        if (cxn.color_on !== '#666665') {
+        if (cxn.color_on !== "#666665") {
             cxn._color_on_org = cxn._color_on_org || cxn.color_on;
             cxn._color_off_org = cxn._color_off_org || cxn.color_off;
         }
-        cxn.color_on = '#666665';
-        cxn.color_off = '#666665';
+        cxn.color_on = "#666665";
+        cxn.color_off = "#666665";
     }
-    else if (cxn.color_on === '#666665') {
+    else if (cxn.color_on === "#666665") {
         cxn.color_on = cxn._color_on_org || undefined;
         cxn.color_off = cxn._color_off_org || undefined;
     }
-    const displaySlot = collapseConnections ? 0 : (slotNumber - slotList.reduce((count, ioput, index) => {
-        count += index < slotNumber && ioput.hidden ? 1 : 0;
-        return count;
-    }, 0));
+    const displaySlot = collapseConnections
+        ? 0
+        : slotNumber -
+            slotList.reduce((count, ioput, index) => {
+                count += index < slotNumber && ioput.hidden ? 1 : 0;
+                return count;
+            }, 0);
     cxn.dir = data[0];
-    if (node.size[0] == 10 && ['Left', 'Right'].includes(side) && ['Top', 'Bottom'].includes(otherSide)) {
-        side = otherSide === 'Top' ? 'Bottom' : 'Top';
+    if (node.size[0] == 10 &&
+        ["Left", "Right"].includes(side) &&
+        ["Top", "Bottom"].includes(otherSide)) {
+        side = otherSide === "Top" ? "Bottom" : "Top";
     }
-    else if (node.size[1] == 10 && ['Top', 'Bottom'].includes(side) && ['Left', 'Right'].includes(otherSide)) {
-        side = otherSide === 'Left' ? 'Right' : 'Left';
+    else if (node.size[1] == 10 &&
+        ["Top", "Bottom"].includes(side) &&
+        ["Left", "Right"].includes(otherSide)) {
+        side = otherSide === "Left" ? "Right" : "Left";
     }
-    if (side === 'Left') {
+    if (side === "Left") {
         if (node.flags.collapsed) {
             var w = node._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH;
             out[0] = node.pos[0];
             out[1] = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5;
         }
         else {
-            if (!isInput && !cxn.has_old_label) {
-                cxn.has_old_label = true;
-                cxn.old_label = cxn.label;
-                cxn.label = ' ';
-            }
-            else if (isInput && cxn.has_old_label) {
-                cxn.has_old_label = false;
-                cxn.label = cxn.old_label;
-                cxn.old_label = undefined;
-            }
+            toggleConnectionLabel(cxn, !isInput || collapseConnections);
             out[0] = node.pos[0] + offset;
-            if ((_b = node.constructor) === null || _b === void 0 ? void 0 : _b.type.includes('Reroute')) {
-                out[1] = node.pos[1] + (node.size[1] * .5);
+            if ((_b = node.constructor) === null || _b === void 0 ? void 0 : _b.type.includes("Reroute")) {
+                out[1] = node.pos[1] + node.size[1] * 0.5;
             }
             else {
                 out[1] =
@@ -177,26 +189,17 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
             }
         }
     }
-    else if (side === 'Right') {
+    else if (side === "Right") {
         if (node.flags.collapsed) {
             var w = node._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH;
             out[0] = node.pos[0] + w;
             out[1] = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5;
         }
         else {
-            if (isInput && !cxn.has_old_label) {
-                cxn.has_old_label = true;
-                cxn.old_label = cxn.label;
-                cxn.label = ' ';
-            }
-            else if (!isInput && cxn.has_old_label) {
-                cxn.has_old_label = false;
-                cxn.label = cxn.old_label;
-                cxn.old_label = undefined;
-            }
+            toggleConnectionLabel(cxn, isInput || collapseConnections);
             out[0] = node.pos[0] + node.size[0] + 1 - offset;
-            if ((_c = node.constructor) === null || _c === void 0 ? void 0 : _c.type.includes('Reroute')) {
-                out[1] = node.pos[1] + (node.size[1] * .5);
+            if ((_c = node.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute")) {
+                out[1] = node.pos[1] + node.size[1] * 0.5;
             }
             else {
                 out[1] =
@@ -206,67 +209,110 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
             }
         }
     }
-    else if (side === 'Top') {
+    else if (side === "Top") {
         if (!cxn.has_old_label) {
             cxn.has_old_label = true;
             cxn.old_label = cxn.label;
-            cxn.label = ' ';
+            cxn.label = " ";
         }
-        out[0] = node.pos[0] + (node.size[0] * .5);
+        out[0] = node.pos[0] + node.size[0] * 0.5;
         out[1] = node.pos[1] + offset;
     }
-    else if (side === 'Bottom') {
+    else if (side === "Bottom") {
         if (!cxn.has_old_label) {
             cxn.has_old_label = true;
             cxn.old_label = cxn.label;
-            cxn.label = ' ';
+            cxn.label = " ";
         }
-        out[0] = node.pos[0] + (node.size[0] * .5);
+        out[0] = node.pos[0] + node.size[0] * 0.5;
         out[1] = node.pos[1] + node.size[1] - offset;
     }
     return out;
 }
+function toggleConnectionLabel(cxn, hide = true) {
+    if (hide && !cxn.has_old_label) {
+        cxn.has_old_label = true;
+        cxn.old_label = cxn.label;
+        cxn.label = " ";
+    }
+    else if (!hide && cxn.has_old_label) {
+        cxn.has_old_label = false;
+        cxn.label = cxn.old_label;
+        cxn.old_label = undefined;
+    }
+    return cxn;
+}
 export function wait(ms = 16, value) {
     return new Promise((resolve) => {
-        setTimeout(() => { resolve(value); }, ms);
+        setTimeout(() => {
+            resolve(value);
+        }, ms);
     });
 }
 export function addHelp(node, app) {
     const help = node.help;
     if (help) {
         addMenuItem(node, app, {
-            name: '🛟 Node Help',
-            property: 'help',
-            callback: (_node) => { alert(help); }
+            name: "🛟 Node Help",
+            property: "help",
+            callback: (_node) => {
+                alert(help);
+            },
         });
     }
 }
-export function isPassThroughType(node) {
+export var PassThroughFollowing;
+(function (PassThroughFollowing) {
+    PassThroughFollowing[PassThroughFollowing["ALL"] = 0] = "ALL";
+    PassThroughFollowing[PassThroughFollowing["NONE"] = 1] = "NONE";
+    PassThroughFollowing[PassThroughFollowing["REROUTE_ONLY"] = 2] = "REROUTE_ONLY";
+})(PassThroughFollowing || (PassThroughFollowing = {}));
+export function shouldPassThrough(node, passThroughFollowing = PassThroughFollowing.ALL) {
     var _a;
     const type = (_a = node === null || node === void 0 ? void 0 : node.constructor) === null || _a === void 0 ? void 0 : _a.type;
-    return (type === null || type === void 0 ? void 0 : type.includes('Reroute'))
-        || (type === null || type === void 0 ? void 0 : type.includes('Node Combiner'))
-        || (type === null || type === void 0 ? void 0 : type.includes('Node Collector'));
+    if (!type || passThroughFollowing === PassThroughFollowing.NONE) {
+        return false;
+    }
+    if (passThroughFollowing === PassThroughFollowing.REROUTE_ONLY) {
+        return type.includes("Reroute");
+    }
+    return (type.includes("Reroute") || type.includes("Node Combiner") || type.includes("Node Collector"));
 }
-export function getConnectedInputNodes(app, startNode, currentNode) {
-    return getConnectedNodes(app, startNode, IoDirection.INPUT, currentNode);
+export function filterOutPassthroughNodes(nodes, passThroughFollowing = PassThroughFollowing.ALL) {
+    return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
 }
-export function getConnectedOutputNodes(app, startNode, currentNode) {
-    return getConnectedNodes(app, startNode, IoDirection.OUTPUT, currentNode);
+export function getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
+    return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing);
 }
-function getConnectedNodes(app, startNode, dir = IoDirection.INPUT, currentNode) {
+export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
+    return filterOutPassthroughNodes(getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
+}
+export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
+    return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing);
+}
+export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
+    return filterOutPassthroughNodes(getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
+}
+function getConnectedNodes(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     var _a, _b;
     currentNode = currentNode || startNode;
     let rootNodes = [];
     const slotsToRemove = [];
-    if (startNode === currentNode || isPassThroughType(currentNode)) {
-        const removeDups = startNode === currentNode;
+    if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
         let linkIds;
         if (dir == IoDirection.OUTPUT) {
-            linkIds = (_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a.flatMap(i => i.links);
+            linkIds = (_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a.flatMap((i) => i.links);
         }
         else {
-            linkIds = (_b = currentNode.inputs) === null || _b === void 0 ? void 0 : _b.map(i => i.link);
+            linkIds = (_b = currentNode.inputs) === null || _b === void 0 ? void 0 : _b.map((i) => i.link);
+        }
+        if (typeof slot == "number" && slot > -1) {
+            if (linkIds[slot]) {
+                linkIds = [linkIds[slot]];
+            }
+            else {
+                return [];
+            }
         }
         let graph = app.graph;
         for (const linkId of linkIds) {
@@ -277,40 +323,167 @@ function getConnectedNodes(app, startNode, dir = IoDirection.INPUT, currentNode)
             const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
             const originNode = graph.getNodeById(connectedId);
             if (!link) {
-                console.error('No connected node found... weird');
+                console.error("No connected node found... weird");
                 continue;
             }
-            if (isPassThroughType(originNode)) {
-                for (const foundNode of getConnectedNodes(app, startNode, dir, originNode)) {
-                    if (!rootNodes.includes(foundNode)) {
-                        rootNodes.push(foundNode);
-                    }
-                }
-            }
-            else if (rootNodes.includes(originNode)) {
-                const connectedSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
-                removeDups && (slotsToRemove.push(connectedSlot));
+            if (rootNodes.includes(originNode)) {
+                console.log(`${startNode.title} (${startNode.id}) seems to have two links to ${originNode.title} (${originNode.id}). One may be stale: ${linkIds.join(", ")}`);
             }
             else {
                 rootNodes.push(originNode);
-            }
-        }
-        for (const slot of slotsToRemove) {
-            if (dir == IoDirection.OUTPUT) {
-                startNode.disconnectOutput(slot);
-            }
-            else {
-                startNode.disconnectInput(slot);
+                if (shouldPassThrough(originNode, passThroughFollowing)) {
+                    for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
+                        if (!rootNodes.includes(foundNode)) {
+                            rootNodes.push(foundNode);
+                        }
+                    }
+                }
             }
         }
     }
     return rootNodes;
 }
+export async function replaceNode(existingNode, typeOrNewNode) {
+    const existingCtor = existingNode.constructor;
+    const newNode = typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
+    if (existingNode.title != existingCtor.title) {
+        newNode.title = existingNode.title;
+    }
+    newNode.pos = [...existingNode.pos];
+    newNode.size = [...existingNode.size];
+    newNode.properties = { ...existingNode.properties };
+    const links = [];
+    for (const [index, output] of existingNode.outputs.entries()) {
+        for (const linkId of output.links || []) {
+            const link = app.graph.links[linkId];
+            if (!link)
+                continue;
+            const targetNode = app.graph.getNodeById(link.target_id);
+            links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
+        }
+    }
+    for (const [index, input] of existingNode.inputs.entries()) {
+        const linkId = input.link;
+        if (linkId) {
+            const link = app.graph.links[linkId];
+            const originNode = app.graph.getNodeById(link.origin_id);
+            links.push({
+                node: originNode,
+                slot: link.origin_slot,
+                targetNode: newNode,
+                targetSlot: input.name,
+            });
+        }
+    }
+    app.graph.add(newNode);
+    await wait();
+    for (const link of links) {
+        link.node.connect(link.slot, link.targetNode, link.targetSlot);
+    }
+    await wait();
+    app.graph.remove(existingNode);
+    newNode.size = newNode.computeSize();
+    newNode.setDirtyCanvas(true, true);
+    return newNode;
+}
+export function getOriginNodeByLink(linkId) {
+    let node = null;
+    if (linkId != null) {
+        const link = app.graph.links[linkId];
+        node = link != null && app.graph.getNodeById(link.origin_id);
+    }
+    return node;
+}
 export function applyMixins(original, constructors) {
     constructors.forEach((baseCtor) => {
         Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
-            Object.defineProperty(original.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
-                Object.create(null));
+            Object.defineProperty(original.prototype, name, Object.getOwnPropertyDescriptor(baseCtor.prototype, name) || Object.create(null));
         });
     });
+}
+function getSlotLinks(inputOrOutput) {
+    var _a;
+    const links = [];
+    if ((_a = inputOrOutput.links) === null || _a === void 0 ? void 0 : _a.length) {
+        const output = inputOrOutput;
+        for (const linkId of output.links || []) {
+            const link = app.graph.links[linkId];
+            if (link) {
+                links.push({ id: linkId, link: link });
+            }
+        }
+    }
+    if (inputOrOutput.link) {
+        const input = inputOrOutput;
+        const link = app.graph.links[input.link];
+        if (link) {
+            links.push({ id: input.link, link: link });
+        }
+    }
+    return links;
+}
+export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
+    var _a, _b, _c;
+    const serverSlotNames = direction == IoDirection.INPUT
+        ? Object.keys(((_a = serverNodeData.input) === null || _a === void 0 ? void 0 : _a.optional) || {})
+        : serverNodeData.output_name;
+    const serverSlotTypes = direction == IoDirection.INPUT
+        ? Object.values(((_b = serverNodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}).map((i) => i[0])
+        : serverNodeData.output;
+    const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
+    let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
+    if (firstIndex > -1) {
+        const links = {};
+        slots.map((slot) => {
+            var _a;
+            links[slot.name] = links[slot.name] || [];
+            (_a = links[slot.name]) === null || _a === void 0 ? void 0 : _a.push(...getSlotLinks(slot));
+        });
+        for (const [index, serverSlotName] of serverSlotNames.entries()) {
+            const currentNodeSlot = slots.map((s) => s.name).indexOf(serverSlotName);
+            if (currentNodeSlot > -1) {
+                if (currentNodeSlot != index) {
+                    const splicedItem = slots.splice(currentNodeSlot, 1)[0];
+                    slots.splice(index, 0, splicedItem);
+                }
+            }
+            else if (currentNodeSlot === -1) {
+                const splicedItem = {
+                    name: serverSlotName,
+                    type: serverSlotTypes[index],
+                    links: [],
+                };
+                slots.splice(index, 0, splicedItem);
+            }
+        }
+        if (slots.length > serverSlotNames.length) {
+            for (let i = slots.length - 1; i > serverSlotNames.length - 1; i--) {
+                if (direction == IoDirection.INPUT) {
+                    node.disconnectInput(i);
+                    node.removeInput(i);
+                }
+                else {
+                    node.disconnectOutput(i);
+                    node.removeOutput(i);
+                }
+            }
+        }
+        for (const [name, slotLinks] of Object.entries(links)) {
+            let currentNodeSlot = slots.map((s) => s.name).indexOf(name);
+            if (currentNodeSlot > -1) {
+                for (const linkData of slotLinks) {
+                    if (direction == IoDirection.INPUT) {
+                        linkData.link.target_slot = currentNodeSlot;
+                    }
+                    else {
+                        linkData.link.origin_slot = currentNodeSlot;
+                        const nextNode = app.graph.getNodeById(linkData.link.target_id);
+                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
+                            nextNode.stabilize && nextNode.stabilize();
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

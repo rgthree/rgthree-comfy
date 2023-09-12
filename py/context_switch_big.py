@@ -1,17 +1,13 @@
-"""The original Context Switch."""
+"""The Context Switch (Big)."""
 from .constants import get_category, get_name
-from .context_utils import (ORIG_CTX_RETURN_TYPES, ORIG_CTX_RETURN_NAMES, is_context_empty,
-                            get_orig_context_return_tuple)
+from .context_utils import (ALL_CTX_RETURN_TYPES, ALL_CTX_RETURN_NAMES, is_context_empty,
+                            get_context_return_tuple)
 
 
-class RgthreeContextSwitch:
-  """The initial Context Switch node.
+class RgthreeContextSwitchBig:
+  """The Context Switch Big node."""
 
-  For now, this will remain as-is but is otherwise backwards compatible with other Context nodes
-  outputs.
-  """
-
-  NAME = get_name("Context Switch")
+  NAME = get_name("Context Switch Big")
   CATEGORY = get_category()
 
   @classmethod
@@ -27,15 +23,12 @@ class RgthreeContextSwitch:
       },
     }
 
-  RETURN_TYPES = ORIG_CTX_RETURN_TYPES
-  RETURN_NAMES = ORIG_CTX_RETURN_NAMES
+  RETURN_TYPES = ALL_CTX_RETURN_TYPES
+  RETURN_NAMES = ALL_CTX_RETURN_NAMES
   FUNCTION = "switch"
 
   def switch(self, ctx_01=None, ctx_02=None, ctx_03=None, ctx_04=None, ctx_05=None):
     """Chooses the first non-empty Context to output.
-
-    As of right now, this returns the "original" context. We could expand it, or create another
-    "Context Big Switch" and have all the outputs...
     """
     ctx = None
     if not is_context_empty(ctx_01):
@@ -48,4 +41,4 @@ class RgthreeContextSwitch:
       ctx = ctx_04
     elif not is_context_empty(ctx_05):
       ctx = ctx_05
-    return get_orig_context_return_tuple(ctx)
+    return get_context_return_tuple(ctx)
