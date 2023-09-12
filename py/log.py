@@ -83,5 +83,6 @@ def _log_node(color, node_name, message, prefix=''):
 
 
 def _get_log_msg(color, node_name, message, prefix=''):
-  return f'{COLORS_STYLE["BOLD"]}{color}{prefix}rgthree {node_name.replace(" (rgthree)", "")}" +
-        f':{COLORS_STYLE["RESET"]} {message}'
+  msg = f'{COLORS_STYLE["BOLD"]}{color}{prefix}rgthree {node_name.replace(" (rgthree)", "")}'
+  msg += f':{COLORS_STYLE["RESET"]} {message}'
+  return msg
