@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { IoDirection, addConnectionLayoutSupport, addMenuItem, applyMixins, matchLocalSlotsToServer, replaceNode, wait, } from "./utils.js";
+import { IoDirection, addConnectionLayoutSupport, addMenuItem, applyMixins, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 class BaseContextNode extends RgthreeBaseNode {
@@ -119,12 +119,24 @@ app.registerExtension({
             }
         }
     },
-    async loadedGraphNode(node) {
-        const serverDef = node.type && contextTypeToServerDef[node.type];
+    async nodeCreated(node) {
+        const type = node.type || node.constructor.type;
+        const serverDef = type && contextTypeToServerDef[type];
         if (serverDef) {
-            await wait(500);
+            setTimeout(() => {
+                matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
+                if (!type.includes("Switch")) {
+                    matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
+                }
+            }, 100);
+        }
+    },
+    async loadedGraphNode(node) {
+        const type = node.type || node.constructor.type;
+        const serverDef = type && contextTypeToServerDef[type];
+        if (serverDef) {
             matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
-            if (!node.type.includes("Switch")) {
+            if (!type.includes("Switch")) {
                 matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
             }
         }

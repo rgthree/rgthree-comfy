@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
-const LAST_SEED_BUTTON_LABEL = '♻️ (Use Last Queued Seed)';
+const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 const SPECIAL_SEED_RANDOM = -1;
 const SPECIAL_SEED_INCREMENT = -2;
 const SPECIAL_SEED_DECREMENT = -3;
@@ -11,14 +11,14 @@ class SeedControl {
         this.serializedCtx = {};
         this.lastSeedValue = null;
         this.node = node;
-        this.node.constructor.exposedActions = ['Randomize Each Time', 'Use Last Queued Seed'];
+        this.node.constructor.exposedActions = ["Randomize Each Time", "Use Last Queued Seed"];
         const handleAction = this.node.handleAction;
         this.node.handleAction = async (action) => {
             handleAction && handleAction.call(this.node, action);
-            if (action === 'Randomize Each Time') {
+            if (action === "Randomize Each Time") {
                 this.seedWidget.value = SPECIAL_SEED_RANDOM;
             }
-            else if (action === 'Use Last Queued Seed') {
+            else if (action === "Use Last Queued Seed") {
                 this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
                 this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
                 this.lastSeedButton.disabled = true;
@@ -26,24 +26,25 @@ class SeedControl {
         };
         this.node.properties = this.node.properties || {};
         for (const [i, w] of this.node.widgets.entries()) {
-            if (w.name === 'seed') {
+            if (w.name === "seed") {
                 this.seedWidget = w;
             }
-            else if (w.name === 'control_after_generate') {
+            else if (w.name === "control_after_generate") {
                 this.node.widgets.splice(i, 1);
             }
         }
         if (!this.seedWidget) {
-            throw new Error('Something\'s wrong; expected seed widget');
+            throw new Error("Something's wrong; expected seed widget");
         }
         const randMax = Math.min(1125899906842624, this.seedWidget.options.max);
         const randMin = Math.max(0, this.seedWidget.options.min);
         const randomRange = (randMax - Math.max(0, randMin)) / (this.seedWidget.options.step / 10);
-        this.node.addWidget('button', '🎲 Randomize Each Time', null, () => {
+        this.node.addWidget("button", "🎲 Randomize Each Time", null, () => {
             this.seedWidget.value = SPECIAL_SEED_RANDOM;
         }, { serialize: false });
-        this.node.addWidget('button', '🎲 New Fixed Random', null, () => {
-            this.seedWidget.value = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
+        this.node.addWidget("button", "🎲 New Fixed Random", null, () => {
+            this.seedWidget.value =
+                Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
         }, { serialize: false });
         this.lastSeedButton = this.node.addWidget("button", LAST_SEED_BUTTON_LABEL, null, () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
@@ -57,7 +58,7 @@ class SeedControl {
                 inputSeed: this.seedWidget.value,
             };
             if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed)) {
-                if (typeof this.lastSeed === 'number' && !SPECIAL_SEEDS.includes(this.lastSeed)) {
+                if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
                     if (inputSeed === SPECIAL_SEED_INCREMENT) {
                         this.serializedCtx.seedUsed = this.lastSeed + 1;
                     }
@@ -66,7 +67,8 @@ class SeedControl {
                     }
                 }
                 if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
-                    this.serializedCtx.seedUsed = Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
+                    this.serializedCtx.seedUsed =
+                        Math.floor(Math.random() * randomRange) * (this.seedWidget.options.step / 10) + randMin;
                 }
             }
             else {
@@ -98,14 +100,14 @@ class SeedControl {
             options.splice(options.length - 1, 0, {
                 content: "Show/Hide Last Seed Value",
                 callback: (_value, _options, _event, _parentMenu, _node) => {
-                    this.node.properties['showLastSeed'] = !this.node.properties['showLastSeed'];
-                    if (this.node.properties['showLastSeed']) {
+                    this.node.properties["showLastSeed"] = !this.node.properties["showLastSeed"];
+                    if (this.node.properties["showLastSeed"]) {
                         this.addLastSeedValue();
                     }
                     else {
                         this.removeLastSeedValue();
                     }
-                }
+                },
             });
         };
     }
@@ -114,11 +116,11 @@ class SeedControl {
             return;
         this.lastSeedValue = ComfyWidgets["STRING"](this.node, "last_seed", ["STRING", { multiline: true }], app).widget;
         this.lastSeedValue.inputEl.readOnly = true;
-        this.lastSeedValue.inputEl.style.fontSize = '0.75rem';
-        this.lastSeedValue.inputEl.style.textAlign = 'center';
+        this.lastSeedValue.inputEl.style.fontSize = "0.75rem";
+        this.lastSeedValue.inputEl.style.textAlign = "center";
         this.lastSeedValue.serializeValue = async (node, index) => {
-            node.widgets_values[index] = '';
-            return '';
+            node.widgets_values[index] = "";
+            return "";
         };
         this.node.computeSize();
     }

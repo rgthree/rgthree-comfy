@@ -31,8 +31,8 @@ app.registerExtension({
             if (!hasShownAlertForUpdatingInt) {
                 hasShownAlertForUpdatingInt = true;
                 setTimeout(() => {
-                    alert("Your Display Int nodes have been updated to Display Any nodes! " +
-                        "You can ignore the message underneath (for that node)." +
+                    alert("Don't worry, your 'Display Int' nodes have been updated to the new " +
+                        "'Display Any' nodes! You can ignore the error message underneath (for that node)." +
                         "\n\nThanks.\n- rgthree");
                 }, 128);
             }

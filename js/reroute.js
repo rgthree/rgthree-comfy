@@ -42,7 +42,6 @@ app.registerExtension({
                 this.stabilize();
             }
             disconnectOutput(slot, targetNode) {
-                console.log('reroute disconnectOutput!', this.id, arguments);
                 return super.disconnectOutput(slot, targetNode);
             }
             stabilize() {

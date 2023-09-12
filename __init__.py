@@ -29,39 +29,40 @@ from .py.sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
 
 NODE_CLASS_MAPPINGS = {
-    RgthreeBigContext.NAME: RgthreeBigContext,
-    RgthreeContext.NAME: RgthreeContext,
-    RgthreeContextSwitch.NAME: RgthreeContextSwitch,
-    RgthreeContextSwitchBig.NAME: RgthreeContextSwitchBig,
-    RgthreeDisplayAny.NAME: RgthreeDisplayAny,
-    RgthreeLoraLoaderStack.NAME: RgthreeLoraLoaderStack,
-    RgthreeSeed.NAME: RgthreeSeed,
-    RgthreeImageInsetCrop.NAME: RgthreeImageInsetCrop,
-    RgthreePowerPrompt.NAME: RgthreePowerPrompt,
-    RgthreePowerPromptSimple.NAME: RgthreePowerPromptSimple,
-    RgthreeSDXLConfig.NAME: RgthreeSDXLConfig,
-    RgthreeSDXLEmptyLatentImage.NAME: RgthreeSDXLEmptyLatentImage,
-    RgthreeSDXLPowerPromptPositive.NAME: RgthreeSDXLPowerPromptPositive,
-    RgthreeSDXLPowerPromptSimple.NAME: RgthreeSDXLPowerPromptSimple,
+  RgthreeBigContext.NAME: RgthreeBigContext,
+  RgthreeContext.NAME: RgthreeContext,
+  RgthreeContextSwitch.NAME: RgthreeContextSwitch,
+  RgthreeContextSwitchBig.NAME: RgthreeContextSwitchBig,
+  RgthreeDisplayAny.NAME: RgthreeDisplayAny,
+  RgthreeLoraLoaderStack.NAME: RgthreeLoraLoaderStack,
+  RgthreeSeed.NAME: RgthreeSeed,
+  RgthreeImageInsetCrop.NAME: RgthreeImageInsetCrop,
+  RgthreePowerPrompt.NAME: RgthreePowerPrompt,
+  RgthreePowerPromptSimple.NAME: RgthreePowerPromptSimple,
+  RgthreeSDXLConfig.NAME: RgthreeSDXLConfig,
+  RgthreeSDXLEmptyLatentImage.NAME: RgthreeSDXLEmptyLatentImage,
+  RgthreeSDXLPowerPromptPositive.NAME: RgthreeSDXLPowerPromptPositive,
+  RgthreeSDXLPowerPromptSimple.NAME: RgthreeSDXLPowerPromptSimple,
 }
 
-THIS_DIR=os.path.dirname(os.path.abspath(__file__))
-DIR_DEV_JS=os.path.abspath(f'{THIS_DIR}/js')
-DIR_PY=os.path.abspath(f'{THIS_DIR}/py')
-DIR_WEB_JS=os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
+THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+DIR_DEV_JS = os.path.abspath(f'{THIS_DIR}/js')
+DIR_PY = os.path.abspath(f'{THIS_DIR}/py')
+DIR_WEB_JS = os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
 if not os.path.exists(DIR_WEB_JS):
-    os.makedirs(DIR_WEB_JS)
+  os.makedirs(DIR_WEB_JS)
 
 shutil.copytree(DIR_DEV_JS, DIR_WEB_JS, dirs_exist_ok=True)
 
-nodes=[]
-NOT_NODES=['constants','log','utils']
+NOT_NODES = ['constants', 'log', 'utils', 'rgthree']
 
 __all__ = ['NODE_CLASS_MAPPINGS']
 
+nodes = []
 for file in glob.glob('*.py', root_dir=DIR_PY) + glob.glob('*.js', root_dir=DIR_DEV_JS):
-    name = os.path.splitext(file)[0]
-    if name not in nodes and name not in NOT_NODES and not name.startswith('_') and not name.startswith('base'):
-        nodes.append(name)
+  name = os.path.splitext(file)[0]
+  if name not in nodes and name not in NOT_NODES and not name.startswith(
+      '_') and not name.startswith('base') and not 'utils' in name:
+    nodes.append(name)
 
 log_welcome(num_nodes=len(nodes))

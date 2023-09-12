@@ -182,17 +182,34 @@ app.registerExtension({
     }
   },
 
+  async nodeCreated(node: TLGraphNode) {
+    const type = node.type || (node.constructor as any).type;
+    const serverDef = type && contextTypeToServerDef[type]
+    if (serverDef) {
+      // Because we need to wait for ComfyUI to take our forceInput widgets and make them actual
+      // inputs first. Could probably be removed if github.com/comfyanonymous/ComfyUI/issues/1404
+      // is fixed to skip forced widget generation.
+      setTimeout(() => {
+        matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
+        // Switches don't need to change inputs, only context outputs
+        if (!type!.includes("Switch")) {
+          matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
+        }
+      }, 100);
+    }
+  },
+
   /**
    * When we're loaded from the server, check if we're using an out of date version and update our
    * inputs / outputs to match. This also fixes a bug where we can't put forceInputs in the right spot.
    */
   async loadedGraphNode(node: TLGraphNode) {
-    const serverDef = node.type && contextTypeToServerDef[node.type];
+    const type = node.type || (node.constructor as any).type;
+    const serverDef = type && contextTypeToServerDef[type]
     if (serverDef) {
-      await wait(500);
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs
-      if (!node.type!.includes("Switch")) {
+      if (!type!.includes("Switch")) {
         matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
       }
     }

@@ -1,7 +1,12 @@
-"""Display any data node."""
 import json
 from .constants import get_category, get_name
 
+class AnyType(str):
+  """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
+  def __ne__(self, __value: object) -> bool:
+    return False
+
+any = AnyType("*")
 
 class RgthreeDisplayAny:
   """Display any data node."""
@@ -13,7 +18,7 @@ class RgthreeDisplayAny:
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
       "required": {
-        "source": ("*", {}),
+        "source": (any, {}),
       },
     }
 
@@ -22,7 +27,6 @@ class RgthreeDisplayAny:
   OUTPUT_NODE = True
 
   def main(self, source=None):
-    """Main."""
     value = 'None'
     if source is not None:
       try:

@@ -496,7 +496,11 @@ function getConnectedNodes(
   return rootNodes;
 }
 
-export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: string | TLGraphNode, inputMap?: Map<string, string>) {
+export async function replaceNode(
+  existingNode: TLGraphNode,
+  typeOrNewNode: string | TLGraphNode,
+  inputNameMap?: Map<string, string>,
+) {
   const existingCtor = existingNode.constructor as typeof TLGraphNode;
 
   const newNode =
@@ -507,12 +511,27 @@ export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: stri
   }
   newNode.pos = [...existingNode.pos];
   newNode.properties = { ...existingNode.properties };
-  const size = [...existingNode.size] as Vector2;
-  newNode.size = size;
-  // Size gets messed up when ComfyUI adds the text widget, so reset after a delay.
-  setTimeout(() => {
-    newNode.size = size;
-  }, 128);
+  const oldComputeSize = [...existingNode.computeSize()];
+  // oldSize to use. If we match the smallest size (computeSize) then don't record and we'll use
+  // the smalles side after conversion.
+  const oldSize = [
+    existingNode.size[0] === oldComputeSize[0] ? null : existingNode.size[0],
+    existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1]
+  ];
+
+  let setSizeIters = 0;
+  const setSizeFn = () => {
+    // Size gets messed up when ComfyUI adds the text widget, so reset after a delay.
+    // Since we could be adding many more slots, let's take the larger of the two.
+    const newComputesize  = newNode.computeSize();
+    newNode.size[0] = Math.max(oldSize[0] || 0, newComputesize[0]);
+    newNode.size[1] = Math.max(oldSize[1] || 0, newComputesize[1]);
+    setSizeIters++;
+    if (setSizeIters > 10) {
+      requestAnimationFrame(setSizeFn);
+    }
+  }
+  setSizeFn();
 
   // We now collect the links data, inputs and outputs, of the old node since these will be
   // lost when we remove it.
@@ -539,7 +558,9 @@ export async function replaceNode(existingNode: TLGraphNode, typeOrNewNode: stri
         node: originNode,
         slot: link.origin_slot,
         targetNode: newNode,
-        targetSlot: inputMap?.has(input.name) ? inputMap.get(input.name)! : input.name || index,
+        targetSlot: inputNameMap?.has(input.name)
+          ? inputNameMap.get(input.name)!
+          : input.name || index,
       });
     }
   }
@@ -629,8 +650,8 @@ export async function matchLocalSlotsToServer(
     // Have mismatches. First, let's go through and save all our links by name.
     const links: { [key: string]: { id: number; link: LLink }[] } = {};
     slots.map((slot) => {
-      // There's a chance we have duplicate names on an upgrade, so we'll collect all links to one name
-      // so we don't ovewrite our list per name.
+      // There's a chance we have duplicate names on an upgrade, so we'll collect all links to one
+      // name so we don't ovewrite our list per name.
       links[slot.name] = links[slot.name] || [];
       links[slot.name]?.push(...getSlotLinks(slot));
     });
@@ -676,7 +697,8 @@ export async function matchLocalSlotsToServer(
             linkData.link.origin_slot = currentNodeSlot;
             // If our next node is a Reroute, then let's get it to update the type.
             const nextNode = app.graph.getNodeById(linkData.link.target_id);
-            // (Check nextNode, as sometimes graphs seem to have very stale data and that node id doesn't exist).
+            // (Check nextNode, as sometimes graphs seem to have very stale data and that node id
+            //  doesn't exist).
             if (nextNode && nextNode.constructor?.type.includes("Reroute")) {
               nextNode.stabilize && nextNode.stabilize();
             }

@@ -343,7 +343,7 @@ function getConnectedNodes(startNode, dir = IoDirection.INPUT, currentNode, slot
     }
     return rootNodes;
 }
-export async function replaceNode(existingNode, typeOrNewNode, inputMap) {
+export async function replaceNode(existingNode, typeOrNewNode, inputNameMap) {
     const existingCtor = existingNode.constructor;
     const newNode = typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
     if (existingNode.title != existingCtor.title) {
@@ -351,11 +351,22 @@ export async function replaceNode(existingNode, typeOrNewNode, inputMap) {
     }
     newNode.pos = [...existingNode.pos];
     newNode.properties = { ...existingNode.properties };
-    const size = [...existingNode.size];
-    newNode.size = size;
-    setTimeout(() => {
-        newNode.size = size;
-    }, 128);
+    const oldComputeSize = [...existingNode.computeSize()];
+    const oldSize = [
+        existingNode.size[0] === oldComputeSize[0] ? null : existingNode.size[0],
+        existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1]
+    ];
+    let setSizeIters = 0;
+    const setSizeFn = () => {
+        const newComputesize = newNode.computeSize();
+        newNode.size[0] = Math.max(oldSize[0] || 0, newComputesize[0]);
+        newNode.size[1] = Math.max(oldSize[1] || 0, newComputesize[1]);
+        setSizeIters++;
+        if (setSizeIters > 10) {
+            requestAnimationFrame(setSizeFn);
+        }
+    };
+    setSizeFn();
     const links = [];
     for (const [index, output] of existingNode.outputs.entries()) {
         for (const linkId of output.links || []) {
@@ -375,7 +386,9 @@ export async function replaceNode(existingNode, typeOrNewNode, inputMap) {
                 node: originNode,
                 slot: link.origin_slot,
                 targetNode: newNode,
-                targetSlot: (inputMap === null || inputMap === void 0 ? void 0 : inputMap.has(input.name)) ? inputMap.get(input.name) : input.name || index,
+                targetSlot: (inputNameMap === null || inputNameMap === void 0 ? void 0 : inputNameMap.has(input.name))
+                    ? inputNameMap.get(input.name)
+                    : input.name || index,
             });
         }
     }
