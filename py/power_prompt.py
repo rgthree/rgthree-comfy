@@ -22,6 +22,7 @@ def get_and_strip_loras(prompt, silent=False):
         strength=float(match[1] if len(match) > 1 and len(match[1]) else 1.0)
         if strength == 0 and not silent:
             log_node_info(NODE_NAME, f'Skipping "{tag_filename}" with strength of zero')
+            continue
 
         # Let's be flexible. If the lora filename in the tag doesn't have the extension or
         # path prefix, let's still find and load it.
@@ -52,7 +53,7 @@ class RgthreePowerPrompt:
     CATEGORY = get_category()
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
         SAVED_PROMPTS_FILES=folder_paths.get_filename_list('saved_prompts')
         SAVED_PROMPTS_CONTENT=[]
         for filename in SAVED_PROMPTS_FILES:
