@@ -16,7 +16,6 @@ from .py.log import log_welcome
 from .py.context import RgthreeContext
 from .py.context_switch import RgthreeContextSwitch
 from .py.context_switch_big import RgthreeContextSwitchBig
-from .py.display_int import RgthreeDisplayInt
 from .py.display_any import RgthreeDisplayAny
 from .py.lora_stack import RgthreeLoraLoaderStack
 from .py.seed import RgthreeSeed
@@ -34,7 +33,6 @@ NODE_CLASS_MAPPINGS = {
     RgthreeContext.NAME: RgthreeContext,
     RgthreeContextSwitch.NAME: RgthreeContextSwitch,
     RgthreeContextSwitchBig.NAME: RgthreeContextSwitchBig,
-    RgthreeDisplayInt.NAME: RgthreeDisplayInt,
     RgthreeDisplayAny.NAME: RgthreeDisplayAny,
     RgthreeLoraLoaderStack.NAME: RgthreeLoraLoaderStack,
     RgthreeSeed.NAME: RgthreeSeed,

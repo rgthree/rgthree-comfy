@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
-import { addConnectionLayoutSupport } from "./utils.js";
+import { addConnectionLayoutSupport, replaceNode } from "./utils.js";
+let hasShownAlertForUpdatingInt = false;
 app.registerExtension({
     name: "rgthree.DisplayAny",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
@@ -12,16 +13,29 @@ app.registerExtension({
                 this.showValueWidget = ComfyWidgets["STRING"](this, "output", ["STRING", { multiline: true }], app).widget;
                 this.showValueWidget.inputEl.readOnly = true;
                 this.showValueWidget.serializeValue = async (node, index) => {
-                    node.widgets_values[index] = '';
-                    return '';
+                    node.widgets_values[index] = "";
+                    return "";
                 };
             };
-            addConnectionLayoutSupport(nodeType, app, [['Left'], ['Right']]);
+            addConnectionLayoutSupport(nodeType, app, [["Left"], ["Right"]]);
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
                 onExecuted === null || onExecuted === void 0 ? void 0 : onExecuted.apply(this, [message]);
                 this.showValueWidget.value = message.text[0];
             };
+        }
+    },
+    async loadedGraphNode(node) {
+        if (node.type === "Display Int (rgthree)") {
+            replaceNode(node, "Display Any (rgthree)", new Map([["input", "source"]]));
+            if (!hasShownAlertForUpdatingInt) {
+                hasShownAlertForUpdatingInt = true;
+                setTimeout(() => {
+                    alert("Your Display Int nodes have been updated to Display Any nodes! " +
+                        "You can ignore the message underneath (for that node)." +
+                        "\n\nThanks.\n- rgthree");
+                }, 128);
+            }
         }
     },
 });

@@ -9,10 +9,12 @@ import type {
   LiteGraph as TLiteGraph,
 } from "./typings/litegraph.js";
 import type { ComfyApp, ComfyObjectInfo } from "./typings/comfy.js";
-import { addConnectionLayoutSupport } from "./utils.js";
+import { addConnectionLayoutSupport, replaceNode } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
+
+let hasShownAlertForUpdatingInt = false;
 
 app.registerExtension({
   name: "rgthree.DisplayAny",
@@ -53,6 +55,23 @@ app.registerExtension({
         onExecuted?.apply(this, [message]);
         (this as any).showValueWidget.value = message.text[0];
       };
+    }
+  },
+
+  // Port our DisplayInt to the Display Any, since they do the same thing now.
+  async loadedGraphNode(node: TLGraphNode) {
+    if (node.type === "Display Int (rgthree)") {
+      replaceNode(node, "Display Any (rgthree)", new Map([["input", "source"]]));
+      if (!hasShownAlertForUpdatingInt) {
+        hasShownAlertForUpdatingInt = true;
+        setTimeout(() => {
+          alert(
+            "Your Display Int nodes have been updated to Display Any nodes! " +
+              "You can ignore the message underneath (for that node)." +
+              "\n\nThanks.\n- rgthree",
+          );
+        }, 128);
+      }
     }
   },
 });
