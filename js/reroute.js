@@ -7,7 +7,7 @@ app.registerExtension({
             constructor(title = RerouteNode.title) {
                 super(title);
                 this.isVirtualNode = true;
-                this.resizable = false;
+                this.resizable = true;
                 this.size = RerouteNode.size;
                 this.addInput("", "*");
                 this.addOutput("", "*");
