@@ -357,43 +357,43 @@ app.registerExtension({
       },
     });
 
-    addMenuItem(RerouteNode, app, {
-      name: "Connect New Reroute Node After",
-      callback: async (node) => {
-        const clone = node.clone();
-        const pos = [...node.pos];
-        clone.pos = [pos[0]! + 20, pos[1]! + 20];
-        app.graph.add(clone);
-        await wait();
-        const outputLinks = getSlotLinks(node.outputs[0]);
-        node.connect(0, clone, 0);
-        for (const outputLink of outputLinks) {
-          const link = outputLink.link;
-          const linkedNode = app.graph.getNodeById(link.target_id) as TLGraphNode;
-          if (linkedNode) {
-            clone.connect(0, linkedNode, link.target_slot);
-          }
-        }
-      },
-    });
 
     addMenuItem(RerouteNode, app, {
-      name: "Connect New Reroute Node Before",
-      callback: async (node) => {
+      name: "Clone New Reroute...",
+      subMenuOptions: [
+        "Before",
+        "After",
+      ],
+      callback: async (node, value) => {
         const clone = node.clone();
         const pos = [...node.pos];
-        clone.pos = [pos[0]! - 20, pos[1]! - 20];
-        app.graph.add(clone);
-        await wait();
-        const inputLinks = getSlotLinks(node.inputs[0]);
-        for (const inputLink of inputLinks) {
-          const link = inputLink.link;
-          const linkedNode = app.graph.getNodeById(link.origin_id) as TLGraphNode;
-          if (linkedNode) {
-            linkedNode.connect(0, clone, 0);
+        if (value === 'Before') {
+          clone.pos = [pos[0]! - 20, pos[1]! - 20];
+          app.graph.add(clone);
+          await wait();
+          const inputLinks = getSlotLinks(node.inputs[0]);
+          for (const inputLink of inputLinks) {
+            const link = inputLink.link;
+            const linkedNode = app.graph.getNodeById(link.origin_id) as TLGraphNode;
+            if (linkedNode) {
+              linkedNode.connect(0, clone, 0);
+            }
+          }
+          clone.connect(0, node, 0);
+        } else {
+          clone.pos = [pos[0]! + 20, pos[1]! + 20];
+          app.graph.add(clone);
+          await wait();
+          const outputLinks = getSlotLinks(node.outputs[0]);
+          node.connect(0, clone, 0);
+          for (const outputLink of outputLinks) {
+            const link = outputLink.link;
+            const linkedNode = app.graph.getNodeById(link.target_id) as TLGraphNode;
+            if (linkedNode) {
+              clone.connect(0, linkedNode, link.target_slot);
+            }
           }
         }
-        clone.connect(0, node, 0);
       },
     });
 
