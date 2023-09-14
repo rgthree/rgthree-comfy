@@ -41,6 +41,23 @@ app.registerExtension({
                 }
                 this.stabilize();
             }
+            onDrawForeground(ctx, canvas) {
+                var _a, _b, _c;
+                if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a['showOutputText']) {
+                    const low_quality = canvas.ds.scale < 0.6;
+                    if (low_quality || this.size[0] <= 10) {
+                        return;
+                    }
+                    const fontSize = Math.min(14, ((this.size[1] * 0.65) | 0));
+                    ctx.save();
+                    ctx.fillStyle = "#888";
+                    ctx.font = `${fontSize}px Arial`;
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(String(this.title !== RerouteNode.title ? this.title : ((_c = (_b = this.outputs) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.type) || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
+                    ctx.restore();
+                }
+            }
             disconnectOutput(slot, targetNode) {
                 return super.disconnectOutput(slot, targetNode);
             }
@@ -145,6 +162,17 @@ app.registerExtension({
                 }
                 app.graph.setDirtyCanvas(true, true);
             }
+            onResize(size) {
+                var _a;
+                if (((_a = app.canvas.resizing_node) === null || _a === void 0 ? void 0 : _a.id) === this.id) {
+                    this.properties["size"] = [
+                        size[0],
+                        size[1],
+                    ];
+                }
+                if (super.onResize)
+                    super.onResize(size);
+            }
             applyNodeSize() {
                 this.properties["size"] = this.properties["size"] || RerouteNode.size;
                 this.properties["size"] = [
@@ -162,6 +190,13 @@ app.registerExtension({
         RerouteNode.collapsable = false;
         RerouteNode.layout_slot_offset = 5;
         RerouteNode.size = [40, 30];
+        addMenuItem(RerouteNode, app, {
+            name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['showOutputText']) ? "Hide" : "Show"} Label/Title`; },
+            property: 'showOutputText',
+            callback: async (node, value) => {
+                app.graph.setDirtyCanvas(true, true);
+            },
+        });
         addConnectionLayoutSupport(RerouteNode, app, [
             ["Left", "Right"],
             ["Left", "Top"],

@@ -97,6 +97,23 @@ app.registerExtension({
         this.stabilize();
       }
 
+      override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: TLGraphCanvas): void {
+        if (this.properties?.['showOutputText']) {
+          const low_quality = canvas.ds.scale < 0.6;
+          if (low_quality || this.size[0] <= 10) {
+            return;
+          }
+          const fontSize = Math.min(14, ((this.size[1] * 0.65)|0));
+          ctx.save();
+          ctx.fillStyle = "#888";
+          ctx.font =  `${fontSize}px Arial`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(String(this.title !== RerouteNode.title ? this.title : this.outputs?.[0]?.type || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
+          ctx.restore();
+        }
+      }
+
       override disconnectOutput(slot: string | number, targetNode?: TLGraphNode | undefined): boolean {
         return super.disconnectOutput(slot, targetNode);
       }
@@ -223,6 +240,18 @@ app.registerExtension({
         app.graph.setDirtyCanvas(true, true);
       }
 
+      override onResize(size: Vector2) {
+        // If the canvas is currently resizing our node, then we want to save it to our properties.
+        if (app.canvas.resizing_node?.id === this.id) {
+          this.properties["size"] = [
+            size[0],
+            size[1],
+          ];
+        }
+        if (super.onResize)
+          super.onResize(size);
+      }
+
       applyNodeSize() {
         this.properties["size"] = this.properties["size"] || RerouteNode.size;
         this.properties["size"] = [
@@ -233,6 +262,14 @@ app.registerExtension({
         app.graph.setDirtyCanvas(true, true);
       }
     }
+
+    addMenuItem(RerouteNode, app, {
+      name: (node) => `${node.properties?.['showOutputText'] ? "Hide" : "Show"} Label/Title`,
+      property: 'showOutputText',
+      callback: async (node, value) => {
+        app.graph.setDirtyCanvas(true, true);
+      },
+    });
 
     addConnectionLayoutSupport(
       RerouteNode,

@@ -684,6 +684,9 @@ export declare class LGraphNode {
     /** if true, the node will show the bgcolor as 'red'  */
     has_errors?: boolean;
 
+    // @rgthree
+    setSize(size: Vector2): void;
+    onResize?(size: Vector2): void;
     /** configure a node from an object containing the serialized info */
     configure(info: SerializedLGraphNode): void;
     /** serialize the content */
@@ -952,11 +955,13 @@ export declare class LGraphNode {
     // https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#custom-node-appearance
     onDrawBackground?(
         ctx: CanvasRenderingContext2D,
-        canvas: HTMLCanvasElement
+        // @rgthree fixed
+        canvas: LGraphCanvas
     ): void;
     onDrawForeground?(
         ctx: CanvasRenderingContext2D,
-        canvas: HTMLCanvasElement
+        // @rgthree fixed
+        canvas: LGraphCanvas
     ): void;
 
     // https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#custom-node-behaviour
