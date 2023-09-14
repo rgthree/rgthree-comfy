@@ -1,6 +1,7 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
+import { rgthree } from "./rgthree.js";
 import type {
   Vector2,
   LLink,
@@ -44,7 +45,7 @@ app.registerExtension({
       constructor(title = RerouteNode.title) {
         super(title);
         this.isVirtualNode = true;
-        this.resizable = true;
+        this.setResizable(this.properties['resizable']);
         this.size = RerouteNode.size; // Starting size.
         this.addInput("", "*");
         this.addOutput("", "*");
@@ -53,7 +54,13 @@ app.registerExtension({
 
       override configure(info: SerializedLGraphNode) {
         super.configure(info);
+        this.setResizable(this.properties['resizable']);
         this.applyNodeSize();
+      }
+
+      setResizable(resizable: boolean) {
+        this.properties['resizable'] = !!resizable;
+        this.resizable = this.properties['resizable'];
       }
 
       override clone() {
@@ -240,6 +247,16 @@ app.registerExtension({
         app.graph.setDirtyCanvas(true, true);
       }
 
+
+      override computeSize(out?: Vector2 | undefined): Vector2 {
+        // Secret funcionality for me that I don't want to explain. Hold down ctrl while dragging
+        // to allow 10,10 dragging size.
+        if (app.canvas.resizing_node?.id === this.id && rgthree.ctrlKey) {
+          return [10, 10];
+        }
+        return super.computeSize(out);
+      }
+
       override onResize(size: Vector2) {
         // If the canvas is currently resizing our node, then we want to save it to our properties.
         if (app.canvas.resizing_node?.id === this.id) {
@@ -247,9 +264,15 @@ app.registerExtension({
             size[0],
             size[1],
           ];
+          // If we end up resizing under the minimum size (like, we're holding down the secret crtl)
+          // then let's no longer make us resizable. When we let go.
+          if (size[0] < 40 || size[0] < 30) {
+            this.setResizable(false);
+          }
         }
-        if (super.onResize)
+        if (super.onResize) {
           super.onResize(size);
+        }
       }
 
       applyNodeSize() {
@@ -268,6 +291,50 @@ app.registerExtension({
       property: 'showOutputText',
       callback: async (node, value) => {
         app.graph.setDirtyCanvas(true, true);
+      },
+    });
+
+    addMenuItem(RerouteNode, app, {
+      name: (node) => `${node.resizable ? 'No' : 'Allow'} Resizing`,
+      callback: (node) => {
+        (node as RerouteNode).setResizable(!node.resizable);
+        node.size[0] = Math.max(40, node.size[0]);
+        node.size[1] = Math.max(30, node.size[1]);
+        (node as RerouteNode).applyNodeSize();
+      },
+    });
+
+    addMenuItem(RerouteNode, app, {
+      name: "Static Width",
+      property: "size",
+      subMenuOptions: (() => {
+        const options = [];
+        for (let w = 8; w > 0; w--) {
+          options.push(`${w * 10}`);
+        }
+        return options;
+      })(),
+      prepareValue: (value, node) => [Number(value), node.size[1]],
+      callback: (node) => {
+        (node as RerouteNode).setResizable(false);
+        (node as RerouteNode).applyNodeSize();
+      },
+    });
+
+    addMenuItem(RerouteNode, app, {
+      name: "Static Height",
+      property: "size",
+      subMenuOptions: (() => {
+        const options = [];
+        for (let w = 8; w > 0; w--) {
+          options.push(`${w * 10}`);
+        }
+        return options;
+      })(),
+      prepareValue: (value, node) => [node.size[0], Number(value)],
+      callback: (node) => {
+        (node as RerouteNode).setResizable(false);
+        (node as RerouteNode).applyNodeSize();
       },
     });
 
@@ -292,34 +359,6 @@ app.registerExtension({
         (node as RerouteNode).applyNodeSize();
       },
     );
-
-    addMenuItem(RerouteNode, app, {
-      name: "Width",
-      property: "size",
-      subMenuOptions: (() => {
-        const options = [];
-        for (let w = 8; w > 0; w--) {
-          options.push(`${w * 10}`);
-        }
-        return options;
-      })(),
-      prepareValue: (value, node) => [Number(value), node.size[1]],
-      callback: (node) => (node as RerouteNode).applyNodeSize(),
-    });
-
-    addMenuItem(RerouteNode, app, {
-      name: "Height",
-      property: "size",
-      subMenuOptions: (() => {
-        const options = [];
-        for (let w = 8; w > 0; w--) {
-          options.push(`${w * 10}`);
-        }
-        return options;
-      })(),
-      prepareValue: (value, node) => [node.size[0], Number(value)],
-      callback: (node) => (node as RerouteNode).applyNodeSize(),
-    });
 
     addMenuItem(RerouteNode, app, {
       name: "Rotate",
