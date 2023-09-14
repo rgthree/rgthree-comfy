@@ -604,8 +604,11 @@ export function applyMixins(original: Constructor<TLGraphNode>, constructors: an
  *
  * Obviously, for an input, this will be a max of one.
  */
-function getSlotLinks(inputOrOutput: INodeInputSlot | INodeOutputSlot) {
-  const links = [];
+export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | null) {
+  const links : { id: number, link: LLink }[] = [];
+  if (!inputOrOutput) {
+    return links;
+  }
   if ((inputOrOutput as INodeOutputSlot).links?.length) {
     const output = inputOrOutput as INodeOutputSlot;
     for (const linkId of output.links || []) {

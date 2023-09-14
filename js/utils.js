@@ -418,9 +418,12 @@ export function applyMixins(original, constructors) {
         });
     });
 }
-function getSlotLinks(inputOrOutput) {
+export function getSlotLinks(inputOrOutput) {
     var _a;
     const links = [];
+    if (!inputOrOutput) {
+        return links;
+    }
     if ((_a = inputOrOutput.links) === null || _a === void 0 ? void 0 : _a.length) {
         const output = inputOrOutput;
         for (const linkId of output.links || []) {
