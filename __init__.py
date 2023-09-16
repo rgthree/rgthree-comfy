@@ -24,7 +24,7 @@ from .py.power_prompt import RgthreePowerPrompt
 from .py.power_prompt_simple import RgthreePowerPromptSimple
 from .py.image_inset_crop import RgthreeImageInsetCrop
 from .py.context_big import RgthreeBigContext
-from .py.sdxl_config import RgthreeSDXLConfig
+from .py.ksampler_config import RgthreeKSamplerConfig
 from .py.sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
 
@@ -40,7 +40,7 @@ NODE_CLASS_MAPPINGS = {
   RgthreeImageInsetCrop.NAME: RgthreeImageInsetCrop,
   RgthreePowerPrompt.NAME: RgthreePowerPrompt,
   RgthreePowerPromptSimple.NAME: RgthreePowerPromptSimple,
-  RgthreeSDXLConfig.NAME: RgthreeSDXLConfig,
+  RgthreeKSamplerConfig.NAME: RgthreeKSamplerConfig,
   RgthreeSDXLEmptyLatentImage.NAME: RgthreeSDXLEmptyLatentImage,
   RgthreeSDXLPowerPromptPositive.NAME: RgthreeSDXLPowerPromptPositive,
   RgthreeSDXLPowerPromptSimple.NAME: RgthreeSDXLPowerPromptSimple,

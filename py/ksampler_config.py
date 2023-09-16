@@ -5,10 +5,10 @@ from nodes import MAX_RESOLUTION
 import comfy.samplers
 
 
-class RgthreeSDXLConfig:
-  """Some basic config stuff I use for SDXL."""
+class RgthreeKSamplerConfig:
+  """Some basic config stuff I started using for SDXL, but useful in other spots too."""
 
-  NAME = get_name('SDXL Config')
+  NAME = get_name('KSampler Config')
   CATEGORY = get_category()
 
   @classmethod
@@ -18,12 +18,20 @@ class RgthreeSDXLConfig:
         "steps_total": ("INT", {
           "default": 30,
           "min": 1,
-          "max": MAX_RESOLUTION
+          "max": MAX_RESOLUTION,
+          "step": 1,
         }),
         "refiner_step": ("INT", {
           "default": 24,
           "min": 1,
-          "max": MAX_RESOLUTION
+          "max": MAX_RESOLUTION,
+          "step": 1,
+        }),
+        "cfg": ("INT", {
+          "default": 7,
+          "min": 1,
+          "max": MAX_RESOLUTION,
+          "step": 0.5,
         }),
         "sampler_name": (comfy.samplers.KSampler.SAMPLERS,),
         "scheduler": (comfy.samplers.KSampler.SCHEDULERS,),
@@ -32,16 +40,17 @@ class RgthreeSDXLConfig:
       },
     }
 
-  RETURN_TYPES = ("INT", "INT", comfy.samplers.KSampler.SAMPLERS,
+  RETURN_TYPES = ("INT", "INT", "INT", comfy.samplers.KSampler.SAMPLERS,
                   comfy.samplers.KSampler.SCHEDULERS)
-  RETURN_NAMES = ("STEPS", "REFINER_STEP", "SAMPLER", "SCHEDULER")
+  RETURN_NAMES = ("STEPS", "REFINER_STEP", "CFG", "SAMPLER", "SCHEDULER")
   FUNCTION = "main"
 
-  def main(self, steps_total, refiner_step, sampler_name, scheduler):
+  def main(self, steps_total, refiner_step, cfg, sampler_name, scheduler):
     """main"""
     return (
       steps_total,
       refiner_step,
+      cfg,
       sampler_name,
       scheduler,
     )
