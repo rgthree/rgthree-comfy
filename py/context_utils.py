@@ -17,6 +17,7 @@ _all_context_input_output_data = {
   "seed": ("seed", "INT", "SEED"),
   "steps": ("steps", "INT", "STEPS"),
   "step_refiner": ("step_refiner", "INT", "STEP_REFINER"),
+  "cfg": ("cfg", "FLOAT", "CFG"),
   "sampler": ("sampler", comfy.samplers.KSampler.SAMPLERS, "SAMPLER"),
   "scheduler": ("scheduler", comfy.samplers.KSampler.SCHEDULERS, "SCHEDULER"),
   "clip_width": ("clip_width", "INT", "CLIP_WIDTH"),
@@ -29,7 +30,7 @@ _all_context_input_output_data = {
   "control_net": ("control_net", "CONTROL_NET", "CONTROL_NET"),
 }
 
-force_input_types = ["INT", "STRING"]
+force_input_types = ["INT", "STRING", "FLOAT"]
 force_input_names = ["sampler", "scheduler"]
 
 

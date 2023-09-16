@@ -27,10 +27,10 @@ class RgthreeKSamplerConfig:
           "max": MAX_RESOLUTION,
           "step": 1,
         }),
-        "cfg": ("INT", {
-          "default": 7,
-          "min": 1,
-          "max": MAX_RESOLUTION,
+        "cfg": ("FLOAT", {
+          "default": 8.0,
+          "min": 0.0,
+          "max": 100.0,
           "step": 0.5,
         }),
         "sampler_name": (comfy.samplers.KSampler.SAMPLERS,),
@@ -40,7 +40,7 @@ class RgthreeKSamplerConfig:
       },
     }
 
-  RETURN_TYPES = ("INT", "INT", "INT", comfy.samplers.KSampler.SAMPLERS,
+  RETURN_TYPES = ("INT", "INT", "FLOAT", comfy.samplers.KSampler.SAMPLERS,
                   comfy.samplers.KSampler.SCHEDULERS)
   RETURN_NAMES = ("STEPS", "REFINER_STEP", "CFG", "SAMPLER", "SCHEDULER")
   FUNCTION = "main"
