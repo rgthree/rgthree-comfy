@@ -56,8 +56,9 @@ class LinkPage {
             return;
         }
         this.graphFinalResults = graphFinalResults;
-        this.updateUi("✅ Workflow fixed.");
-        this.saveFixedWorkflow();
+        if (await this.saveFixedWorkflow()) {
+            this.updateUi("✅ Workflow fixed.<br><br><small>Please load new saved workflow json and double check linking and execution.</small>");
+        }
     }
     async onDrop(event) {
         var _a, _b, _c, _d;
@@ -112,11 +113,13 @@ class LinkPage {
                 this.outputeMessageEl.innerHTML = "✅ No bad links detected in the workflow.";
             }
             else {
+                this.containerEl.classList.add("-has-fixable-results");
                 this.outputeMessageEl.innerHTML = `⚠️ Found ${this.graphResults.patched} links to fix, and ${this.graphResults.deleted} to be removed.`;
             }
         }
         else {
             this.containerEl.classList.remove("-has-results");
+            this.containerEl.classList.remove("-has-fixable-results");
         }
         if (msg) {
             this.outputeMessageEl.innerHTML = msg;
@@ -165,7 +168,7 @@ class LinkPage {
     async saveFixedWorkflow() {
         if (!this.graphFinalResults) {
             this.updateUi("⛔ Save w/o final graph patched.");
-            return;
+            return false;
         }
         let filename = this.file.name || 'workflow.json';
         let filenames = filename.split('.');
@@ -174,7 +177,7 @@ class LinkPage {
         filename += '_fixed.json';
         filename = prompt("Save workflow as:", filename);
         if (!filename)
-            return;
+            return false;
         if (!filename.toLowerCase().endsWith(".json")) {
             filename += ".json";
         }
@@ -191,6 +194,7 @@ class LinkPage {
         await wait();
         anchor.remove();
         window.URL.revokeObjectURL(url);
+        return true;
     }
 }
 new LinkPage();
