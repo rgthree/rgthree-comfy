@@ -23,7 +23,7 @@ app.registerExtension({
     nodeData: ComfyObjectInfo,
     app: ComfyApp,
   ) {
-    if (nodeData.name === "Display Any (rgthree)") {
+    if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {
       (nodeType as any).title_mode = LiteGraph.NO_TITLE;
 
       const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -58,20 +58,21 @@ app.registerExtension({
     }
   },
 
-  // Port our DisplayInt to the Display Any, since they do the same thing now.
-  async loadedGraphNode(node: TLGraphNode) {
-    if (node.type === "Display Int (rgthree)") {
-      replaceNode(node, "Display Any (rgthree)", new Map([["input", "source"]]));
-      if (!hasShownAlertForUpdatingInt) {
-        hasShownAlertForUpdatingInt = true;
-        setTimeout(() => {
-          alert(
-            "Don't worry, your 'Display Int' nodes have been updated to the new " +
-              "'Display Any' nodes! You can ignore the error message underneath (for that node)." +
-              "\n\nThanks.\n- rgthree",
-          );
-        }, 128);
-      }
-    }
-  },
+  // This ports Display Int to DisplayAny, but ComfyUI still shows an error.
+  // If https://github.com/comfyanonymous/ComfyUI/issues/1527 is fixed, this could work.
+  // async loadedGraphNode(node: TLGraphNode) {
+  //   if (node.type === "Display Int (rgthree)") {
+  //     replaceNode(node, "Display Any (rgthree)", new Map([["input", "source"]]));
+  //     if (!hasShownAlertForUpdatingInt) {
+  //       hasShownAlertForUpdatingInt = true;
+  //       setTimeout(() => {
+  //         alert(
+  //           "Don't worry, your 'Display Int' nodes have been updated to the new " +
+  //             "'Display Any' nodes! You can ignore the error message underneath (for that node)." +
+  //             "\n\nThanks.\n- rgthree",
+  //         );
+  //       }, 128);
+  //     }
+  //   }
+  // },
 });
