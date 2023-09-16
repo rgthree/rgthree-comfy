@@ -1099,6 +1099,8 @@ export declare class LGraphGroup {
     private _bounding: Vector4;
     color: string;
     font: string;
+    // @rgthree
+    _nodes: LGraphNode[];
 
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;

@@ -64,7 +64,7 @@ interface MenuConfig {
   property?: string;
   prepareValue?: (value: string, node: TLGraphNode) => any;
   callback?: (node: TLGraphNode, value?: string) => void;
-  subMenuOptions?: (string | null)[];
+  subMenuOptions?: (string | null)[] | ((node: TLGraphNode) => (string | null)[]);
 }
 
 export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, config: MenuConfig) {
@@ -91,9 +91,11 @@ export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, conf
       idx = menuOptions.length - idx;
     }
 
+    const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(this) : config.subMenuOptions;
+
     menuOptions.splice(idx, 0, {
       content: typeof config.name == "function" ? config.name(this) : config.name,
-      has_submenu: !!config.subMenuOptions?.length,
+      has_submenu: !!subMenuOptions?.length,
       isRgthree: true, // Mark it, so we can find it.
       callback: (
         value: ContextMenuItem,
@@ -102,9 +104,9 @@ export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, conf
         parentMenu: ContextMenu | undefined,
         _node: TLGraphNode,
       ) => {
-        if (config.subMenuOptions?.length) {
+        if (!!subMenuOptions?.length) {
           new LiteGraph.ContextMenu(
-            config.subMenuOptions.map((option) => (option ? { content: option } : null)),
+            subMenuOptions.map((option) => (option ? { content: option } : null)),
             {
               event,
               parentMenu,

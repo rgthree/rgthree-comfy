@@ -81,11 +81,24 @@ class NodeModeRepeater extends BaseCollectorNode {
         }
     }
     onModeChange() {
+        var _a, _b;
         super.onModeChange();
-        const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
-        for (const node of linkedNodes) {
-            if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
-                node.mode = this.mode;
+        const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
+        if (linkedNodes.length) {
+            for (const node of linkedNodes) {
+                if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
+                    node.mode = this.mode;
+                }
+            }
+        }
+        else if ((_a = app.graph._groups) === null || _a === void 0 ? void 0 : _a.length) {
+            for (const group of app.graph._groups) {
+                group.recomputeInsideNodes();
+                if ((_b = group._nodes) === null || _b === void 0 ? void 0 : _b.includes(this)) {
+                    for (const node of group._nodes) {
+                        node.mode = this.mode;
+                    }
+                }
             }
         }
     }
@@ -94,7 +107,8 @@ NodeModeRepeater.type = NodeTypesString.NODE_MODE_REPEATER;
 NodeModeRepeater.title = NodeTypesString.NODE_MODE_REPEATER;
 NodeModeRepeater.help = [
     `When this node's mode (Mute, Bypass, Active) changes, it will "repeat" that mode to all`,
-    `connected input nodes.`,
+    `connected input nodes, or, if there are no connected nodes AND it is overlapping a group,`,
+    `"repeat" it's mode to all nodes in that group.`,
     `\n`,
     `\n- Optionally, connect this mode's output to a ${stripRgthree(NodeTypesString.FAST_MUTER)}`,
     `or ${stripRgthree(NodeTypesString.FAST_BYPASSER)} for a single toggle to quickly`,

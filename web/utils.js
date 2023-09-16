@@ -28,7 +28,6 @@ export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 export function addMenuItem(node, _app, config) {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
-        var _a;
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
         let idx = menuOptions
             .slice()
@@ -45,14 +44,14 @@ export function addMenuItem(node, _app, config) {
         else {
             idx = menuOptions.length - idx;
         }
+        const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(this) : config.subMenuOptions;
         menuOptions.splice(idx, 0, {
             content: typeof config.name == "function" ? config.name(this) : config.name,
-            has_submenu: !!((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length),
+            has_submenu: !!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length),
             isRgthree: true,
             callback: (value, _options, event, parentMenu, _node) => {
-                var _a;
-                if ((_a = config.subMenuOptions) === null || _a === void 0 ? void 0 : _a.length) {
-                    new LiteGraph.ContextMenu(config.subMenuOptions.map((option) => (option ? { content: option } : null)), {
+                if (!!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length)) {
+                    new LiteGraph.ContextMenu(subMenuOptions.map((option) => (option ? { content: option } : null)), {
                         event,
                         parentMenu,
                         callback: (subValue, _options, _event, _parentMenu, _node) => {

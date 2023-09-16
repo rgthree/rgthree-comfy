@@ -8,6 +8,7 @@ import { NodeTypesString, stripRgthree } from "./constants.js";
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  LGraphGroup,
   LGraphNode,
   LLink,
   LiteGraph as TLiteGraph,
@@ -31,7 +32,8 @@ class NodeModeRepeater extends BaseCollectorNode {
 
   static help = [
     `When this node's mode (Mute, Bypass, Active) changes, it will "repeat" that mode to all`,
-    `connected input nodes.`,
+    `connected input nodes, or, if there are no connected nodes AND it is overlapping a group,`,
+    `"repeat" it's mode to all nodes in that group.`,
     `\n`,
     `\n- Optionally, connect this mode's output to a ${stripRgthree(
       NodeTypesString.FAST_MUTER,
@@ -174,10 +176,22 @@ class NodeModeRepeater extends BaseCollectorNode {
   /** When a mode change, we want all connected nodes to match except for connected relays. */
   override onModeChange() {
     super.onModeChange();
-    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
-    for (const node of linkedNodes) {
-      if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
-        node.mode = this.mode;
+    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
+    if (linkedNodes.length) {
+      for (const node of linkedNodes) {
+        if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
+          node.mode = this.mode;
+        }
+      }
+    } else if (app.graph._groups?.length) {
+      // No linked nodes.. check if we're in a group.
+      for (const group of app.graph._groups as LGraphGroup[]) {
+        group.recomputeInsideNodes();
+        if (group._nodes?.includes(this)) {
+          for (const node of group._nodes) {
+            node.mode = this.mode;
+          }
+        }
       }
     }
   }
