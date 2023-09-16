@@ -4,3 +4,4 @@ wildcards/**
 .vscode/
 .idea/
 node_modules/
+rgthree_config.json

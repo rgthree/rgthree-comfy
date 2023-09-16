@@ -1,15 +1,18 @@
 import subprocess
 import os
 import shutil
+import glob
 
 THIS_DIR=os.path.dirname(os.path.abspath(__file__))
-DIR_DEV_JS=os.path.abspath(f'{THIS_DIR}/js')
-DIR_WEB_JS=os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
+DIR_DEV=os.path.abspath(f'{THIS_DIR}/web')
+DIR_WEB=os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree-comfy')
 
-shutil.rmtree(DIR_DEV_JS)
+js_files = glob.glob(os.path.join(THIS_DIR, '*.js'))
+for file in js_files:
+  os.remove(file)
 
-subprocess.run(["tsc"])
+subprocess.run(["./node_modules/typescript/bin/tsc"])
 
-
-shutil.rmtree(DIR_WEB_JS)
-shutil.copytree(DIR_DEV_JS, DIR_WEB_JS, dirs_exist_ok=True)
+if os.path.exists(DIR_WEB):
+  shutil.rmtree(DIR_WEB)
+shutil.copytree(DIR_DEV, DIR_WEB, dirs_exist_ok=True)

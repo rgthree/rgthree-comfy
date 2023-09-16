@@ -10,6 +10,8 @@ const MODE_ALWAYS = 0;
 
 class MuterNode extends BaseNodeModeChanger {
 
+  static override exposedActions = ['Mute all', 'Enable all'];
+
   static override type = NodeTypesString.FAST_MUTER;
   static override title = NodeTypesString.FAST_MUTER;
   override readonly modeOn = MODE_ALWAYS;
@@ -17,6 +19,18 @@ class MuterNode extends BaseNodeModeChanger {
 
   constructor(title = MuterNode.title) {
     super(title);
+  }
+
+  override async handleAction(action: string) {
+    if (action === 'Mute all') {
+      for (const widget of this.widgets) {
+        this.forceWidgetOff(widget);
+      }
+    } else if (action === 'Enable all') {
+      for (const widget of this.widgets) {
+        this.forceWidgetOn(widget);
+      }
+    }
   }
 }
 

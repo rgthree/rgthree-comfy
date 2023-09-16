@@ -56,7 +56,7 @@ export type WidgetCallback<T extends IWidget = IWidget> = (
     event?: MouseEvent
 ) => void;
 
-// #rgthree
+// @rgthree
 export type WidgetComboCallback<T extends IWidget = IWidget> = (
     this: T,
     value: T["value"][0],
@@ -612,6 +612,13 @@ export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
 
 /** https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#lgraphnode */
 export declare class LGraphNode {
+
+    // @rgthree added
+    findInputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+    findOutputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+
+    // end @rgthree added
+
     static title_color: string;
     static title: string;
     static type: null | string;
@@ -677,6 +684,9 @@ export declare class LGraphNode {
     /** if true, the node will show the bgcolor as 'red'  */
     has_errors?: boolean;
 
+    // @rgthree
+    setSize(size: Vector2): void;
+    onResize?(size: Vector2): void;
     /** configure a node from an object containing the serialized info */
     configure(info: SerializedLGraphNode): void;
     /** serialize the content */
@@ -886,6 +896,22 @@ export declare class LGraphNode {
         targetNode: LGraphNode,
         targetSlot: number | string
     ): T | null;
+
+    connectByTypeOutput<T = any>(
+        slot: number | string,
+        sourceNode: LGraphNode,
+        sourceSlotType: string,
+        optsIn: string
+    ): T | null;
+
+    connectByType<T = any>(
+        slot: number | string,
+        sourceNode: LGraphNode,
+        sourceSlotType: string,
+        optsIn: string
+    ): T | null;
+
+
     /**
      * disconnect one output to an specific node
      * @param slot (could be the number of the slot or the string with the name of the slot)
@@ -929,11 +955,13 @@ export declare class LGraphNode {
     // https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#custom-node-appearance
     onDrawBackground?(
         ctx: CanvasRenderingContext2D,
-        canvas: HTMLCanvasElement
+        // @rgthree fixed
+        canvas: LGraphCanvas
     ): void;
     onDrawForeground?(
         ctx: CanvasRenderingContext2D,
-        canvas: HTMLCanvasElement
+        // @rgthree fixed
+        canvas: LGraphCanvas
     ): void;
 
     // https://github.com/jagenjo/litegraph.js/blob/master/guides/README.md#custom-node-behaviour
@@ -1071,6 +1099,8 @@ export declare class LGraphGroup {
     private _bounding: Vector4;
     color: string;
     font: string;
+    // @rgthree
+    _nodes: LGraphNode[];
 
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;

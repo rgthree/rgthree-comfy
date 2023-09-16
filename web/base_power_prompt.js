@@ -1,12 +1,12 @@
-import { app } from '../../scripts/app.js';
 import { api } from '../../scripts/api.js';
-import { addConnectionLayoutSupport, wait } from './utils.js';
-class PowerPrompt {
+import { wait } from './utils.js';
+export class PowerPrompt {
     constructor(node, nodeData) {
         this.combos = {};
         this.combosValues = {};
         this.node = node;
         this.node.properties = this.node.properties || {};
+        this.node.properties['combos_filter'] = '';
         this.nodeData = nodeData;
         this.isSimple = this.nodeData.name.includes('Simple');
         this.promptEl = node.widgets[0].inputEl;
@@ -33,7 +33,18 @@ class PowerPrompt {
             }
             return canConnect && !this.node.outputs[outputIndex].disabled;
         };
-        this.node.widgets.splice(1);
+        const onPropertyChanged = this.node.onPropertyChanged;
+        this.node.onPropertyChanged = (property, value, prevValue) => {
+            onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
+            if (property === 'combos_filter') {
+                this.refreshCombos(this.nodeData);
+            }
+        };
+        for (let i = this.node.widgets.length - 1; i >= 0; i--) {
+            if (this.shouldRemoveServerWidget(this.node.widgets[i])) {
+                this.node.widgets.splice(i, 1);
+            }
+        }
         this.refreshCombos(nodeData);
         setTimeout(() => {
             this.stabilizeInputsOutputs();
@@ -67,17 +78,29 @@ class PowerPrompt {
     onFreshNodeDefs(event) {
         this.refreshCombos(event.detail[this.nodeData.name]);
     }
-    findAndPatchCombos() {
+    shouldRemoveServerWidget(widget) {
+        var _a, _b, _c, _d;
+        return ((_a = widget.name) === null || _a === void 0 ? void 0 : _a.startsWith('insert_')) || ((_b = widget.name) === null || _b === void 0 ? void 0 : _b.startsWith('target_')) || ((_c = widget.name) === null || _c === void 0 ? void 0 : _c.startsWith('crop_')) || ((_d = widget.name) === null || _d === void 0 ? void 0 : _d.startsWith('values_'));
     }
     refreshCombos(nodeData) {
-        var _a, _b;
+        var _a, _b, _c;
         this.nodeData = nodeData;
-        let data = ((_a = this.nodeData.input) === null || _a === void 0 ? void 0 : _a.optional) || {};
-        data = Object.assign(data, ((_b = this.nodeData.input) === null || _b === void 0 ? void 0 : _b.hidden) || {});
+        let filter = null;
+        if ((_a = this.node.properties['combos_filter']) === null || _a === void 0 ? void 0 : _a.trim()) {
+            try {
+                filter = new RegExp(this.node.properties['combos_filter'].trim(), 'i');
+            }
+            catch (e) {
+                console.error(`Could not parse "${filter}" for Regular Expression`, e);
+                filter = null;
+            }
+        }
+        let data = Object.assign({}, ((_b = this.nodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}, ((_c = this.nodeData.input) === null || _c === void 0 ? void 0 : _c.hidden) || {});
         for (const [key, value] of Object.entries(data)) {
             if (Array.isArray(value[0])) {
-                const values = value[0];
+                let values = value[0];
                 if (key.startsWith('insert')) {
+                    values = filter ? values.filter((v, i) => i < 1 || (i == 1 && v.match(/^disable\s[a-z]/i)) || (filter === null || filter === void 0 ? void 0 : filter.test(v))) : values;
                     const shouldShow = values.length > 2 || (values.length > 1 && !values[1].match(/^disable\s[a-z]/i));
                     if (shouldShow) {
                         if (!this.combos[key]) {
@@ -153,7 +176,7 @@ class PowerPrompt {
             let fullText = this.promptEl.value;
             let selectedText = fullText.substring(start, end);
             if (!selectedText) {
-                const stopOn = "<>() \r\n\t";
+                const stopOn = "<>()\r\n\t";
                 if (fullText[start] == '>') {
                     start -= 2;
                     end -= 2;
@@ -191,38 +214,3 @@ class PowerPrompt {
         };
     }
 }
-let nodeData = null;
-app.registerExtension({
-    name: 'rgthree.PowerPrompt',
-    async beforeRegisterNodeDef(nodeType, passedNodeData, _app) {
-        if (passedNodeData.name.startsWith('Power Prompt') && passedNodeData.name.includes('rgthree')) {
-            nodeData = passedNodeData;
-            const onNodeCreated = nodeType.prototype.onNodeCreated;
-            nodeType.prototype.onNodeCreated = function () {
-                onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
-                this.powerPrompt = new PowerPrompt(this, passedNodeData);
-            };
-            addConnectionLayoutSupport(nodeType, app, [['Left', 'Right'], ['Right', 'Left']]);
-        }
-    },
-    async loadedGraphNode(node) {
-        if (node.type === 'Power Prompt (rgthree)') {
-            setTimeout(() => {
-                if (node.outputs[0].type === 'STRING') {
-                    if (node.outputs[0].links) {
-                        node.outputs[3].links = node.outputs[3].links || [];
-                        for (const link of node.outputs[0].links) {
-                            node.outputs[3].links.push(link);
-                            app.graph.links[link].origin_slot = 3;
-                        }
-                        node.outputs[0].links = null;
-                    }
-                    node.outputs[0].type = nodeData.output[0];
-                    node.outputs[0].name = nodeData.output_name[0] || node.outputs[0].type;
-                    node.outputs[0].color_on = undefined;
-                    node.outputs[0].color_off = undefined;
-                }
-            }, 50);
-        }
-    }
-});

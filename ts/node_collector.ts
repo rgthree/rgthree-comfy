@@ -7,24 +7,31 @@ import { addConnectionLayoutSupport, wait } from "./utils.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore
 import { BaseCollectorNode } from './base_node_collector.js';
+import { NodeTypesString } from "./constants.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
 
-/** Legacy "Combiner" */
+/**
+ * The Collector Node. Takes any number of inputs as connections for nodes and collects them into
+ * one outputs. The next node will decide what to do with them.
+ *
+ * Currently only works with the Fast Muter, Fast Bypasser, and Fast Actions Button.
+ */
 class CollectorNode extends BaseCollectorNode {
 
-  static override type = "Node Collector (rgthree)";
-  static override title = "Node Collector (rgthree)";
+  static override type = NodeTypesString.NODE_COLLECTOR;
+  static override title = NodeTypesString.NODE_COLLECTOR;
 
-  static legacyType = "Node Combiner (rgthree)";
-
+  constructor(title = CollectorNode.title) {
+    super(title);
+  }
 }
 
 
 /** Legacy "Combiner" */
 class CombinerNode extends CollectorNode {
-  static override legacyType = "Node Combiner (rgthree)";
+  static legacyType = "Node Combiner (rgthree)";
   static override title = "‼️ Node Combiner [DEPRECATED]";
 
   constructor(title = CombinerNode.title) {
@@ -63,7 +70,7 @@ class CombinerNode extends CollectorNode {
  * Updates a Node Combiner to a Node Collector.
  */
 async function updateCombinerToCollector(node: TLGraphNode) {
-  if (node.type === CollectorNode.legacyType) {
+  if (node.type === CombinerNode.legacyType) {
     // Create a new CollectorNode.
     const newNode = new CollectorNode();
     if (node.title != CombinerNode.title) {

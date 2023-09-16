@@ -1,10 +1,11 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { addConnectionLayoutSupport } from "./utils.js";
+let hasShownAlertForUpdatingInt = false;
 app.registerExtension({
-    name: "rgthree.DisplayInt",
+    name: "rgthree.DisplayAny",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        if (nodeData.name === "Display Int (rgthree)") {
+        if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {
             nodeType.title_mode = LiteGraph.NO_TITLE;
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
@@ -12,16 +13,15 @@ app.registerExtension({
                 this.showValueWidget = ComfyWidgets["STRING"](this, "output", ["STRING", { multiline: true }], app).widget;
                 this.showValueWidget.inputEl.readOnly = true;
                 this.showValueWidget.serializeValue = async (node, index) => {
-                    node.widgets_values[index] = '';
-                    return '';
+                    node.widgets_values[index] = "";
+                    return "";
                 };
             };
-            addConnectionLayoutSupport(nodeType, app, [['Left'], ['Right']]);
+            addConnectionLayoutSupport(nodeType, app, [["Left"], ["Right"]]);
             const onExecuted = nodeType.prototype.onExecuted;
             nodeType.prototype.onExecuted = function (message) {
-                var _a;
                 onExecuted === null || onExecuted === void 0 ? void 0 : onExecuted.apply(this, [message]);
-                (_a = this.showValueWidget) === null || _a === void 0 ? void 0 : _a.value = message.text[0];
+                this.showValueWidget.value = message.text[0];
             };
         }
     },

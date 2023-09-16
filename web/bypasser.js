@@ -9,7 +9,20 @@ class BypasserNode extends BaseNodeModeChanger {
         this.modeOn = MODE_ALWAYS;
         this.modeOff = MODE_BYPASS;
     }
+    async handleAction(action) {
+        if (action === 'Bypass all') {
+            for (const widget of this.widgets) {
+                this.forceWidgetOff(widget);
+            }
+        }
+        else if (action === 'Enable all') {
+            for (const widget of this.widgets) {
+                this.forceWidgetOn(widget);
+            }
+        }
+    }
 }
+BypasserNode.exposedActions = ['Bypass all', 'Enable all'];
 BypasserNode.type = NodeTypesString.FAST_BYPASSER;
 BypasserNode.title = NodeTypesString.FAST_BYPASSER;
 app.registerExtension({

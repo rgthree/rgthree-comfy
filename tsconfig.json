@@ -2,10 +2,14 @@
   "compilerOptions": {
     "target": "es2019",
     "module": "ESNext",
-    "typeRoots": [
-      "./ts/typings",
-    ],
-    "outDir": "./js/",
+    // "typeRoots": [
+    //   "./ts/typings",
+    // ],
+    "baseUrl": "./",
+    "paths": {
+        "*": ["ts/typings/*"],
+    },
+    "outDir": "web/",
     "removeComments": true,
     "strict": true,
     "noImplicitAny": true,
@@ -16,8 +20,8 @@
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // "noUnusedLocals": true,
+    // "noUnusedParameters": true,
     "exactOptionalPropertyTypes": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
@@ -28,7 +32,7 @@
     "skipLibCheck": true,
   },
   "include": [
-    "ts/*.ts",
+    "ts/*.ts", "ts/**/*.ts", "ts/typings/index.d.ts",
   ],
   "exclude": [
     "**/*.spec.ts",

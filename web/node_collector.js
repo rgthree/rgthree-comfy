@@ -2,11 +2,14 @@ import { app } from "../../scripts/app.js";
 import { addConnectionLayoutSupport, wait } from "./utils.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { BaseCollectorNode } from './base_node_collector.js';
+import { NodeTypesString } from "./constants.js";
 class CollectorNode extends BaseCollectorNode {
+    constructor(title = CollectorNode.title) {
+        super(title);
+    }
 }
-CollectorNode.type = "Node Collector (rgthree)";
-CollectorNode.title = "Node Collector (rgthree)";
-CollectorNode.legacyType = "Node Combiner (rgthree)";
+CollectorNode.type = NodeTypesString.NODE_COLLECTOR;
+CollectorNode.title = NodeTypesString.NODE_COLLECTOR;
 class CombinerNode extends CollectorNode {
     constructor(title = CombinerNode.title) {
         super(title);
@@ -36,7 +39,7 @@ class CombinerNode extends CollectorNode {
 CombinerNode.legacyType = "Node Combiner (rgthree)";
 CombinerNode.title = "‼️ Node Combiner [DEPRECATED]";
 async function updateCombinerToCollector(node) {
-    if (node.type === CollectorNode.legacyType) {
+    if (node.type === CombinerNode.legacyType) {
         const newNode = new CollectorNode();
         if (node.title != CombinerNode.title) {
             newNode.title = node.title.replace('‼️ ', '');

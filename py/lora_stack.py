@@ -9,7 +9,7 @@ class RgthreeLoraLoaderStack:
     CATEGORY = get_category()
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
         return {
             "required": {
                 "model": ("MODEL",),

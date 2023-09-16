@@ -10,7 +10,7 @@ class RgthreePowerPromptSimple(RgthreePowerPrompt):
     CATEGORY = get_category()
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
         SAVED_PROMPTS_FILES=folder_paths.get_filename_list('saved_prompts')
         SAVED_PROMPTS_CONTENT=[]
         for filename in SAVED_PROMPTS_FILES:

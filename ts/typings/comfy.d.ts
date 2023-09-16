@@ -1,4 +1,5 @@
-import { LGraphNode, IWidget, SerializedLGraphNode } from "./litegraph";
+import type { LGraphNode, IWidget, SerializedLGraphNode } from "./litegraph";
+import type {Constructor} from './index';
 import { ComfyApp } from "../../../../web/scripts/app";
 export { ComfyApp } from "../../../../web/scripts/app";
 
@@ -14,6 +15,14 @@ export interface ComfyGraphNode extends LGraphNode {
 	onExecuted(message: any): void;
 }
 
+export interface ComfyNode extends LGraphNode {
+	comfyClass: string;
+}
+
+export interface ComfyNodeConstructor extends Constructor<ComfyNode> {
+	static title: string;
+	static comfyClass: string;
+}
 
 export type NodeMode = 0|1|2|3|4|undefined;
 
