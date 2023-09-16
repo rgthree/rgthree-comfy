@@ -9,7 +9,7 @@
     "paths": {
         "*": ["ts/typings/*"],
     },
-    "outDir": "js/",
+    "outDir": "web/",
     "removeComments": true,
     "strict": true,
     "noImplicitAny": true,
@@ -32,7 +32,7 @@
     "skipLibCheck": true,
   },
   "include": [
-    "ts/*.ts", "ts/typings/index.d.ts",
+    "ts/*.ts", "ts/**/*.ts", "ts/typings/index.d.ts",
   ],
   "exclude": [
     "**/*.spec.ts",
