@@ -1,4 +1,7 @@
 import { getPngMetadata } from "/scripts/pnginfo.js";
+if (!document.title.includes('rgthree')) {
+    throw new Error('rgthree: Skipping loading of js file not meant for app.');
+}
 var IoDirection;
 (function (IoDirection) {
     IoDirection[IoDirection["INPUT"] = 0] = "INPUT";
