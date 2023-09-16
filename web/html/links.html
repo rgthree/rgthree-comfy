@@ -51,6 +51,7 @@
       .box > p {
         margin: 0 0 .6em;
         text-align: left;
+        line-height: 1.25;
       }
 
       picture > img {
@@ -117,6 +118,9 @@
 
     </div>
 
-    <script  type="module" src="links.js"></script>
+    <script type="module">
+      import {LinkPage} from './links.js';
+      new LinkPage();
+    </script>
   </body>
 </html>

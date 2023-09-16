@@ -71,6 +71,8 @@ class LogSession {
   }
 }
 
+
+
 /**
  * A global class as 'rgthree'; exposed on wiindow. Lots can go in here.
  */
@@ -82,6 +84,8 @@ class Rgthree {
   shiftKey = false;
 
   logger = new LogSession("[rgthree]");
+
+  monitorBadLinksAlerted = false;
 
   constructor() {
     window.addEventListener("keydown", (e) => {
@@ -97,6 +101,59 @@ class Rgthree {
       this.metaKey = !!e.metaKey;
       this.shiftKey = !!e.shiftKey;
     });
+
+    // Override the loadGraphData so we can check for bad links and ask the user to fix them.
+    const that = this;
+    const loadGraphData = app.loadGraphData;
+    app.loadGraphData = function() {
+      document.querySelector('.rgthree-bad-links-alerts-container')?.remove();
+      loadGraphData && loadGraphData.call(app, ...arguments);
+      if (that.findBadLinks()) {
+        const div = document.createElement('div');
+        div.classList.add('rgthree-bad-links-alerts');
+        div.innerHTML = `
+          <span style="font-size: 18px; margin-right: 4px; display: inline-block; line-height:1">⚠️</span>
+          <span style="flex; 1 1 auto; ">
+            The workflow you've loaded may have connection/linking data that could be fixed.
+          </span>
+          <a target="_blank"
+              style="color: #fc0; margin-left: 4px; display: inline-block; line-height:1"
+              href="/extensions/rgthree-comfy/html/links.html">Open fixer<a>
+        `;
+        div.style.background = '#353535';
+        div.style.color = '#fff';
+        div.style.display = 'flex';
+        div.style.flexDirection = 'row';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.style.height = 'fit-content';
+        div.style.boxShadow = '0 0 10px rgba(0,0,0,0.88)';
+        div.style.padding = '6px 12px';
+        div.style.borderRadius = '0 0 4px 4px';
+        div.style.fontFamily = 'Arial, sans-serif';
+        div.style.fontSize = '14px';
+        div.style.transform = 'translateY(-100%)';
+        div.style.transition = 'transform 0.5s ease-in-out';
+        const container = document.createElement('div');
+        container.classList.add('rgthree-bad-links-alerts-container');
+        container.appendChild(div);
+        container.style.position = 'fixed';
+        container.style.zIndex = '9999';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.width = '100%';
+        container.style.height = '0';
+        container.style.display = 'flex';
+        container.style.justifyContent = 'center';
+        document.body.appendChild(container);
+
+        setTimeout(() => {
+          const container = document.querySelector('.rgthree-bad-links-alerts') as HTMLElement;
+          container && (container.style.transform = 'translateY(0%)');
+        }, 2000);
+
+      }
+    }
   }
 
   setLogLevel(level: LogLevel) {
@@ -114,9 +171,13 @@ class Rgthree {
   monitorBadLinks() {
     this.logger.debug('Starting a monitor for bad links.');
     setInterval(() => {
-      if (this.findBadLinks()) {
-        this.logger.error('Bad Links Found!');
-        alert('links found, what did you just do?')
+      const badLinksFound = this.findBadLinks();
+      if (badLinksFound && !this.monitorBadLinksAlerted) {
+        this.monitorBadLinksAlerted = true;
+        alert(`Problematic links just found in data. Can you file a bug with what you've just done at https://github.com/rgthree/rgthree-comfy/issues. Thank you!`)
+      } else if (!badLinksFound) {
+        // Clear the alert once fixed so we can alert again.
+        this.monitorBadLinksAlerted = false;
       }
     }, 1000);
   }
@@ -420,6 +481,7 @@ class Rgthree {
       `${fix ? "Made" : "Would make"} ${
         data.patchedNodes.length || "no"
       } node link patches, and ${data.deletedLinks.length || "no"} stale link removals.`,
+      !fix && `Head to ${location.origin}/extensions/rgthree-comfy/html/links.html to fix workflows.`
     );
     return true;
   }

@@ -1,7 +1,4 @@
 import { getPngMetadata } from "/scripts/pnginfo.js";
-if (!document.title.includes('rgthree')) {
-    throw new Error('rgthree: Skipping loading of js file not meant for app.');
-}
 var IoDirection;
 (function (IoDirection) {
     IoDirection[IoDirection["INPUT"] = 0] = "INPUT";
@@ -27,7 +24,7 @@ const findBadLinksLogger = {
         logger.log(...args);
     },
 };
-class LinkPage {
+export class LinkPage {
     constructor() {
         this.containerEl = document.querySelector(".box");
         this.figcaptionEl = document.querySelector("figcaption");
@@ -200,7 +197,6 @@ class LinkPage {
         return true;
     }
 }
-new LinkPage();
 function getNodeById(graph, id) {
     return graph.nodes.find((n) => n.id === id);
 }

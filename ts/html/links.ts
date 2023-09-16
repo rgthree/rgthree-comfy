@@ -1,10 +1,6 @@
 // @ts-ignore
 import { getPngMetadata } from "/scripts/pnginfo.js";
 
-if (!document.title.includes('rgthree')) {
-  throw new Error('rgthree: Skipping loading of js file not meant for app.');
-}
-
 type SerializedLink = [
   number, // this.id,
   number, // this.origin_id,
@@ -85,7 +81,7 @@ const findBadLinksLogger = {
   },
 };
 
-class LinkPage {
+export class LinkPage {
   private containerEl: HTMLDivElement;
   private figcaptionEl: HTMLElement;
   private btnFix: HTMLButtonElement;
@@ -290,7 +286,6 @@ class LinkPage {
   }
 }
 
-new LinkPage();
 
 function getNodeById(graph: SerializedGraph, id: number) {
   return graph.nodes.find((n) => n.id === id)!;
