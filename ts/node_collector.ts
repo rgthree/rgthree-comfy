@@ -22,6 +22,10 @@ class CollectorNode extends BaseCollectorNode {
 
   static override type = NodeTypesString.NODE_COLLECTOR;
   static override title = NodeTypesString.NODE_COLLECTOR;
+
+  constructor(title = CollectorNode.title) {
+    super(title);
+  }
 }
 
 

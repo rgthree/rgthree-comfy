@@ -4,6 +4,9 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 import { BaseCollectorNode } from './base_node_collector.js';
 import { NodeTypesString } from "./constants.js";
 class CollectorNode extends BaseCollectorNode {
+    constructor(title = CollectorNode.title) {
+        super(title);
+    }
 }
 CollectorNode.type = NodeTypesString.NODE_COLLECTOR;
 CollectorNode.title = NodeTypesString.NODE_COLLECTOR;
