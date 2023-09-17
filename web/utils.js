@@ -175,7 +175,7 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
             out[1] = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5;
         }
         else {
-            toggleConnectionLabel(cxn, !isInput || collapseConnections || node.hideSlotLabels);
+            toggleConnectionLabel(cxn, !isInput || collapseConnections || !!node.hideSlotLabels);
             out[0] = node.pos[0] + offset;
             if ((_b = node.constructor) === null || _b === void 0 ? void 0 : _b.type.includes("Reroute")) {
                 out[1] = node.pos[1] + node.size[1] * 0.5;
@@ -195,7 +195,7 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
             out[1] = node.pos[1] - LiteGraph.NODE_TITLE_HEIGHT * 0.5;
         }
         else {
-            toggleConnectionLabel(cxn, isInput || collapseConnections || node.hideSlotLabels);
+            toggleConnectionLabel(cxn, isInput || collapseConnections || !!node.hideSlotLabels);
             out[0] = node.pos[0] + node.size[0] + 1 - offset;
             if ((_c = node.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute")) {
                 out[1] = node.pos[1] + node.size[1] * 0.5;
