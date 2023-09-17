@@ -1,6 +1,8 @@
 import type { LGraphNode, SerializedLGraphNode, serializedLGraph } from "litegraph.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
+// @ts-ignore
+import {rgthreeConfig} from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
 
 export enum LogLevel {
@@ -86,6 +88,7 @@ class Rgthree {
   logger = new LogSession("[rgthree]");
 
   monitorBadLinksAlerted = false;
+  monitorLinkTimeout: number|null = null;
 
   constructor() {
     window.addEventListener("keydown", (e) => {
@@ -111,6 +114,10 @@ class Rgthree {
     };
     const loadGraphData = app.loadGraphData;
     app.loadGraphData = function(graph: serializedLGraph) {
+      if (this.monitorLinkTimeout) {
+        clearTimeout(this.monitorLinkTimeout);
+        this.monitorLinkTimeout = null;
+      }
       document.querySelector('.rgthree-bad-links-alerts-container')?.remove();
       // Try to make a copy to use, because ComfyUI's loadGraphData will modify it.
       let graphCopy: serializedLGraph|null;
@@ -175,6 +182,11 @@ class Rgthree {
                 alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
                 wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
                 container.remove();
+                if (rgthreeConfig['monitor_bad_links']) {
+                  that.monitorLinkTimeout = setTimeout(() => {
+                    that.monitorBadLinks();
+                  }, 5000);
+                }
               }
             }
 
@@ -184,11 +196,15 @@ class Rgthree {
             const container = document.querySelector('.rgthree-bad-links-alerts') as HTMLElement;
             container && (container.style.transform = 'translateY(0%)');
           }, 500);
-
+        } else if (rgthreeConfig['monitor_bad_links']) {
+          that.monitorLinkTimeout = setTimeout(() => {
+            that.monitorBadLinks();
+          }, 5000);
         }
       }, 100);
       loadGraphData && loadGraphData.call(app, ...arguments);
     }
+
   }
 
   setLogLevel(level: LogLevel) {
@@ -204,17 +220,17 @@ class Rgthree {
   }
 
   monitorBadLinks() {
-    this.logger.debug('Starting a monitor for bad links.');
-    setInterval(() => {
-      const badLinksFound = fixBadLinks(app.graph);
-      // if (badLinksFound && !this.monitorBadLinksAlerted) {
-      //   this.monitorBadLinksAlerted = true;
-      //   alert(`Problematic links just found in data. Can you file a bug with what you've just done at https://github.com/rgthree/rgthree-comfy/issues. Thank you!`)
-      // } else if (!badLinksFound) {
-      //   // Clear the alert once fixed so we can alert again.
-      //   this.monitorBadLinksAlerted = false;
-      // }
-    }, 1000);
+    const badLinksFound = fixBadLinks(app.graph);
+    if (badLinksFound.hasBadLinks && !this.monitorBadLinksAlerted) {
+      this.monitorBadLinksAlerted = true;
+      alert(`Problematic links just found in live data. Can you save your workflow and file a bug with the last few steps you took to trigger this at https://github.com/rgthree/rgthree-comfy/issues. Thank you!`)
+    } else if (!badLinksFound.hasBadLinks) {
+      // Clear the alert once fixed so we can alert again.
+      this.monitorBadLinksAlerted = false;
+    }
+    this.monitorLinkTimeout = setTimeout(() => {
+      this.monitorBadLinks();
+    }, 5000);
   }
 }
 

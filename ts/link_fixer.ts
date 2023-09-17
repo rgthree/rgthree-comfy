@@ -376,9 +376,10 @@ export function fixBadLinks(
       } stale link removals.`,
     );
 
-  // Let's run it again and check.
+
   let hasBadLinks: boolean = !!(data.patchedNodes.length || data.deletedLinks.length);
-  if (!silent) {
+  // If we're fixing, then let's run it again to see if there are no more bad links.
+  if (fix && !silent) {
     const rerun = fixBadLinks(graph, false, true);
     hasBadLinks = rerun.hasBadLinks;
   }

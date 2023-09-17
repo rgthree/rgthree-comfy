@@ -1,4 +1,5 @@
 {
-  "patch_recursive_execution": true
+  "patch_recursive_execution": true,
+  "monitor_bad_links": false
 }
 

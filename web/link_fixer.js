@@ -275,7 +275,7 @@ export function fixBadLinks(graph, fix = false, silent = false, logger = console
     !silent &&
         logger.log(`${fix ? "Made" : "Would make"} ${data.patchedNodes.length || "no"} node link patches, and ${data.deletedLinks.length || "no"} stale link removals.`);
     let hasBadLinks = !!(data.patchedNodes.length || data.deletedLinks.length);
-    if (!silent) {
+    if (fix && !silent) {
         const rerun = fixBadLinks(graph, false, true);
         hasBadLinks = rerun.hasBadLinks;
     }

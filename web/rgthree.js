@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
 export var LogLevel;
 (function (LogLevel) {
@@ -64,6 +65,7 @@ class Rgthree {
         this.shiftKey = false;
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
+        this.monitorLinkTimeout = null;
         window.addEventListener("keydown", (e) => {
             this.ctrlKey = !!e.ctrlKey;
             this.altKey = !!e.altKey;
@@ -86,6 +88,10 @@ class Rgthree {
         const loadGraphData = app.loadGraphData;
         app.loadGraphData = function (graph) {
             var _a;
+            if (this.monitorLinkTimeout) {
+                clearTimeout(this.monitorLinkTimeout);
+                this.monitorLinkTimeout = null;
+            }
             (_a = document.querySelector('.rgthree-bad-links-alerts-container')) === null || _a === void 0 ? void 0 : _a.remove();
             let graphCopy;
             try {
@@ -150,6 +156,11 @@ class Rgthree {
                                 alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
                                 wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
                                 container.remove();
+                                if (rgthreeConfig['monitor_bad_links']) {
+                                    that.monitorLinkTimeout = setTimeout(() => {
+                                        that.monitorBadLinks();
+                                    }, 5000);
+                                }
                             }
                         }
                     });
@@ -157,6 +168,11 @@ class Rgthree {
                         const container = document.querySelector('.rgthree-bad-links-alerts');
                         container && (container.style.transform = 'translateY(0%)');
                     }, 500);
+                }
+                else if (rgthreeConfig['monitor_bad_links']) {
+                    that.monitorLinkTimeout = setTimeout(() => {
+                        that.monitorBadLinks();
+                    }, 5000);
                 }
             }, 100);
             loadGraphData && loadGraphData.call(app, ...arguments);
@@ -172,10 +188,17 @@ class Rgthree {
         return this.logger.newSession(name);
     }
     monitorBadLinks() {
-        this.logger.debug('Starting a monitor for bad links.');
-        setInterval(() => {
-            const badLinksFound = fixBadLinks(app.graph);
-        }, 1000);
+        const badLinksFound = fixBadLinks(app.graph);
+        if (badLinksFound.hasBadLinks && !this.monitorBadLinksAlerted) {
+            this.monitorBadLinksAlerted = true;
+            alert(`Problematic links just found in live data. Can you save your workflow and file a bug with the last few steps you took to trigger this at https://github.com/rgthree/rgthree-comfy/issues. Thank you!`);
+        }
+        else if (!badLinksFound.hasBadLinks) {
+            this.monitorBadLinksAlerted = false;
+        }
+        this.monitorLinkTimeout = setTimeout(() => {
+            this.monitorBadLinks();
+        }, 5000);
     }
 }
 export const rgthree = new Rgthree();

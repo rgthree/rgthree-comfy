@@ -6,7 +6,7 @@
 """
 
 import glob
-import inspect
+import json
 import os
 import shutil
 
@@ -65,6 +65,17 @@ if os.path.exists(DIR_WEB):
 os.makedirs(DIR_WEB)
 
 shutil.copytree(DIR_DEV_WEB, DIR_WEB, dirs_exist_ok=True)
+
+
+CONFIG_FILE = os.path.join(THIS_DIR, 'rgthree_config.json')
+with open(CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
+  rgthree_config = json.load(file)
+
+with open(os.path.join(DIR_WEB, 'rgthree_config.js'), 'w', encoding = 'UTF-8') as file:
+  file.write('export const rgthreeConfig = ' + json.dumps(rgthree_config))
+
+# shutil.copy(os.path.join(THIS_DIR, 'rgthree_config.json'), os.path.join(DIR_WEB, 'rgthree_config.js'))
+
 
 NOT_NODES = ['constants', 'log', 'utils', 'rgthree']
 
