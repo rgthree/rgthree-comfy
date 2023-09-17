@@ -286,10 +286,12 @@ LGraphNode.prototype.connectByType = function connectByType<T = any>(
     optsIn: string): T | null {
   // If we're droppiong on a node, and the last input is free and an "*" type, then connect there
   // first...
-  for (const [index, input] of sourceNode.inputs.entries()) {
-    if (!input.link && input.type === '*') {
-      this.connect(slot, sourceNode, index);
-      return null;
+  if (sourceNode.inputs) {
+    for (const [index, input] of sourceNode.inputs.entries()) {
+      if (!input.link && input.type === '*') {
+        this.connect(slot, sourceNode, index);
+        return null;
+      }
     }
   }
   return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null) as T;

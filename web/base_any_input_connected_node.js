@@ -160,10 +160,12 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 }
 const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
 LGraphNode.prototype.connectByType = function connectByType(slot, sourceNode, sourceSlotType, optsIn) {
-    for (const [index, input] of sourceNode.inputs.entries()) {
-        if (!input.link && input.type === '*') {
-            this.connect(slot, sourceNode, index);
-            return null;
+    if (sourceNode.inputs) {
+        for (const [index, input] of sourceNode.inputs.entries()) {
+            if (!input.link && input.type === '*') {
+                this.connect(slot, sourceNode, index);
+                return null;
+            }
         }
     }
     return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null);
