@@ -8,6 +8,7 @@ app.registerExtension({
             constructor(title = RerouteNode.title) {
                 super(title);
                 this.isVirtualNode = true;
+                this.hideSlotLabels = true;
                 this.setResizable(this.properties['resizable']);
                 this.size = RerouteNode.size;
                 this.addInput("", "*");
@@ -49,7 +50,7 @@ app.registerExtension({
             }
             onDrawForeground(ctx, canvas) {
                 var _a, _b, _c;
-                if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a['showOutputText']) {
+                if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a['showLabel']) {
                     const low_quality = canvas.ds.scale < 0.6;
                     if (low_quality || this.size[0] <= 10) {
                         return;
@@ -60,7 +61,7 @@ app.registerExtension({
                     ctx.font = `${fontSize}px Arial`;
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
-                    ctx.fillText(String(this.title !== RerouteNode.title ? this.title : ((_c = (_b = this.outputs) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.type) || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
+                    ctx.fillText(String(this.title && this.title !== RerouteNode.title ? this.title : ((_c = (_b = this.outputs) === null || _b === void 0 ? void 0 : _b[0]) === null || _c === void 0 ? void 0 : _c.type) || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
                     ctx.restore();
                 }
             }
@@ -148,9 +149,7 @@ app.registerExtension({
                 for (const node of updateNodes) {
                     node.outputs[0].type = inputType || "*";
                     node.__outputType = displayType;
-                    node.outputs[0].name = node.properties.showOutputText
-                        ? displayType
-                        : "";
+                    node.outputs[0].name = "";
                     node.size = node.computeSize();
                     (_c = node.applyNodeSize) === null || _c === void 0 ? void 0 : _c.call(node);
                     for (const l of node.outputs[0].links || []) {
@@ -208,8 +207,8 @@ app.registerExtension({
         RerouteNode.layout_slot_offset = 5;
         RerouteNode.size = [40, 30];
         addMenuItem(RerouteNode, app, {
-            name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['showOutputText']) ? "Hide" : "Show"} Label/Title`; },
-            property: 'showOutputText',
+            name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['showLabel']) ? "Hide" : "Show"} Label/Title`; },
+            property: 'showLabel',
             callback: async (node, value) => {
                 app.graph.setDirtyCanvas(true, true);
             },

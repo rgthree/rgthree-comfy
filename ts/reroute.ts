@@ -41,10 +41,12 @@ app.registerExtension({
       static size: Vector2 = [40, 30]; // Starting size, read from within litegraph.core
 
       readonly isVirtualNode?: boolean;
+      readonly hideSlotLabels: boolean;
 
       constructor(title = RerouteNode.title) {
         super(title);
         this.isVirtualNode = true;
+        this.hideSlotLabels = true;
         this.setResizable(this.properties['resizable']);
         this.size = RerouteNode.size; // Starting size.
         this.addInput("", "*");
@@ -105,7 +107,7 @@ app.registerExtension({
       }
 
       override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: TLGraphCanvas): void {
-        if (this.properties?.['showOutputText']) {
+        if (this.properties?.['showLabel']) {
           const low_quality = canvas.ds.scale < 0.6;
           if (low_quality || this.size[0] <= 10) {
             return;
@@ -116,7 +118,7 @@ app.registerExtension({
           ctx.font =  `${fontSize}px Arial`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillText(String(this.title !== RerouteNode.title ? this.title : this.outputs?.[0]?.type || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
+          ctx.fillText(String(this.title && this.title !== RerouteNode.title ? this.title : this.outputs?.[0]?.type || ''), this.size[0] / 2, (this.size[1] / 2), this.size[0] - 30);
           ctx.restore();
         }
       }
@@ -224,9 +226,7 @@ app.registerExtension({
           // This lets you change the output link to a different type and all nodes will update
           node.outputs[0].type = inputType || "*";
           node.__outputType = displayType;
-          node.outputs[0].name = node.properties.showOutputText
-            ? displayType
-            : "";
+          node.outputs[0].name = "";
           node.size = node.computeSize();
           node.applyNodeSize?.();
 
@@ -287,8 +287,8 @@ app.registerExtension({
     }
 
     addMenuItem(RerouteNode, app, {
-      name: (node) => `${node.properties?.['showOutputText'] ? "Hide" : "Show"} Label/Title`,
-      property: 'showOutputText',
+      name: (node) => `${node.properties?.['showLabel'] ? "Hide" : "Show"} Label/Title`,
+      property: 'showLabel',
       callback: async (node, value) => {
         app.graph.setDirtyCanvas(true, true);
       },

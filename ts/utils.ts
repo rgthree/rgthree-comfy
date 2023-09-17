@@ -276,7 +276,7 @@ export function getConnectionPosForLayout(
     } else {
       // If we're an output, then the litegraph.core hates us; we need to blank out the name
       // because it's not flexible enough to put the text on the inside.
-      toggleConnectionLabel(cxn, !isInput || collapseConnections);
+      toggleConnectionLabel(cxn, !isInput || collapseConnections || (node as any).hideSlotLabels);
       out[0] = node.pos[0] + offset;
       if ((node.constructor as any)?.type.includes("Reroute")) {
         out[1] = node.pos[1] + node.size[1] * 0.5;
@@ -295,7 +295,7 @@ export function getConnectionPosForLayout(
     } else {
       // If we're an input, then the litegraph.core hates us; we need to blank out the name
       // because it's not flexible enough to put the text on the inside.
-      toggleConnectionLabel(cxn, isInput || collapseConnections);
+      toggleConnectionLabel(cxn, isInput || collapseConnections || (node as any).hideSlotLabels);
       out[0] = node.pos[0] + node.size[0] + 1 - offset;
       if ((node.constructor as any)?.type.includes("Reroute")) {
         out[1] = node.pos[1] + node.size[1] * 0.5;
@@ -330,9 +330,11 @@ export function getConnectionPosForLayout(
 }
 
 function toggleConnectionLabel(cxn: any, hide = true) {
-  if (hide && !(cxn as any).has_old_label) {
-    (cxn as any).has_old_label = true;
-    (cxn as any).old_label = cxn.label;
+  if (hide) {
+    if (!(cxn as any).has_old_label) {
+      (cxn as any).has_old_label = true;
+      (cxn as any).old_label = cxn.label;
+    }
     cxn.label = " ";
   } else if (!hide && (cxn as any).has_old_label) {
     (cxn as any).has_old_label = false;
