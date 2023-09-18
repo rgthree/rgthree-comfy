@@ -25,7 +25,8 @@ if 'patch_recursive_execution' in rgthree_config and rgthree_config['patch_recur
   # Alright, I don't like doing this, but until https://github.com/comfyanonymous/ComfyUI/issues/1502
   # and/or https://github.com/comfyanonymous/ComfyUI/pull/1503 is pulled into ComfyUI, we need a way
   # to optimize the recursion that happens on prompt eval. This is particularly important for
-  # rgnodes because workflows can contain many context nodes. With `Context Big`` nodes being
+  # rgthree nodes because workflows can contain many context nodes, but the problem would exist for
+  # other nodes' (like "pipe" nodes, efficieny nodes). With `Context Big` nodes being
   # introduced, the number of input recursion that happens in these methods is exponential with a
   # saving of 1000's of percentage points over.
 
@@ -134,3 +135,6 @@ if 'patch_recursive_execution' in rgthree_config and rgthree_config['patch_recur
 
   execution.old_recursive_output_delete_if_changed = execution.recursive_output_delete_if_changed
   execution.recursive_output_delete_if_changed = rgthree_recursive_output_delete_if_changed
+
+  execution.old_recursive_will_execute = execution.recursive_will_execute
+  execution.recursive_will_execute = rgthree_recursive_will_execute
