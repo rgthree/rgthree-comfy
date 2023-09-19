@@ -43,6 +43,9 @@ app.registerExtension({
       readonly isVirtualNode?: boolean;
       readonly hideSlotLabels: boolean;
 
+      private configuring = true;
+      private schedulePromise: Promise<void> | null = null;
+
       constructor(title = RerouteNode.title) {
         super(title);
         this.isVirtualNode = true;
@@ -55,9 +58,11 @@ app.registerExtension({
       }
 
       override configure(info: SerializedLGraphNode) {
+        this.configuring = true;
         super.configure(info);
         this.setResizable(this.properties['resizable']);
         this.applyNodeSize();
+        this.configuring = false;
       }
 
       setResizable(resizable: boolean) {
@@ -103,7 +108,7 @@ app.registerExtension({
             }
           }
         }
-        this.stabilize();
+        this.scheduleStabilize();
       }
 
       override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: TLGraphCanvas): void {
@@ -127,7 +132,26 @@ app.registerExtension({
         return super.disconnectOutput(slot, targetNode);
       }
 
+
+      scheduleStabilize(ms = 64) {
+        if (!this.schedulePromise) {
+          this.schedulePromise = new Promise((resolve) => {
+            setTimeout(() => {
+              this.schedulePromise = null
+              this.stabilize();
+              resolve();
+            }, ms);
+          });
+        }
+        return this.schedulePromise;
+      }
+
       stabilize() {
+        // If we are currently "configuring" then skip this stabilization. The connected nodes may
+        // not yet be configured.
+        if (this.configuring) {
+          return;
+        }
         // Find root input
         let currentNode: TLGraphNode | null = this;
         let updateNodes = [];
@@ -194,18 +218,16 @@ app.registerExtension({
                 updateNodes.push(node);
               } else {
                 // We've found an output
-                const nodeOutType =
-                  node.inputs &&
-                  node.inputs[link?.target_slot] &&
-                  node.inputs[link.target_slot].type
-                    ? node.inputs[link.target_slot].type
-                    : null;
-                if (
+                const nodeOutType = node.inputs?.[link.target_slot]?.type;
+                if (nodeOutType == null) {
+                  console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for slot ${link.target_slot}. Skipping connection enforcement, but something is odd with that node.`);
+                } else if (
                   inputType &&
                   String(nodeOutType) !== String(inputType) && // Sometimes these are arrays, so see if the strings match.
                   nodeOutType !== "*"
                 ) {
                   // The output doesnt match our input so disconnect it
+                  console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
                   node.disconnectInput(link.target_slot);
                 } else {
                   outputType = nodeOutType;

@@ -7,6 +7,8 @@ app.registerExtension({
         class RerouteNode extends LGraphNode {
             constructor(title = RerouteNode.title) {
                 super(title);
+                this.configuring = true;
+                this.schedulePromise = null;
                 this.isVirtualNode = true;
                 this.hideSlotLabels = true;
                 this.setResizable(this.properties['resizable']);
@@ -16,9 +18,11 @@ app.registerExtension({
                 setTimeout(() => this.applyNodeSize(), 20);
             }
             configure(info) {
+                this.configuring = true;
                 super.configure(info);
                 this.setResizable(this.properties['resizable']);
                 this.applyNodeSize();
+                this.configuring = false;
             }
             setResizable(resizable) {
                 this.properties['resizable'] = !!resizable;
@@ -46,7 +50,7 @@ app.registerExtension({
                         }
                     }
                 }
-                this.stabilize();
+                this.scheduleStabilize();
             }
             onDrawForeground(ctx, canvas) {
                 var _a, _b, _c;
@@ -68,8 +72,23 @@ app.registerExtension({
             disconnectOutput(slot, targetNode) {
                 return super.disconnectOutput(slot, targetNode);
             }
+            scheduleStabilize(ms = 64) {
+                if (!this.schedulePromise) {
+                    this.schedulePromise = new Promise((resolve) => {
+                        setTimeout(() => {
+                            this.schedulePromise = null;
+                            this.stabilize();
+                            resolve();
+                        }, ms);
+                    });
+                }
+                return this.schedulePromise;
+            }
             stabilize() {
-                var _a, _b, _c;
+                var _a, _b, _c, _d, _e;
+                if (this.configuring) {
+                    return;
+                }
                 let currentNode = this;
                 let updateNodes = [];
                 let inputType = null;
@@ -125,14 +144,14 @@ app.registerExtension({
                                 updateNodes.push(node);
                             }
                             else {
-                                const nodeOutType = node.inputs &&
-                                    node.inputs[link === null || link === void 0 ? void 0 : link.target_slot] &&
-                                    node.inputs[link.target_slot].type
-                                    ? node.inputs[link.target_slot].type
-                                    : null;
-                                if (inputType &&
+                                const nodeOutType = (_d = (_c = node.inputs) === null || _c === void 0 ? void 0 : _c[link.target_slot]) === null || _d === void 0 ? void 0 : _d.type;
+                                if (nodeOutType == null) {
+                                    console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for slot ${link.target_slot}. Skipping connection enforcement, but something is odd with that node.`);
+                                }
+                                else if (inputType &&
                                     String(nodeOutType) !== String(inputType) &&
                                     nodeOutType !== "*") {
+                                    console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
                                     node.disconnectInput(link.target_slot);
                                 }
                                 else {
@@ -151,7 +170,7 @@ app.registerExtension({
                     node.__outputType = displayType;
                     node.outputs[0].name = "";
                     node.size = node.computeSize();
-                    (_c = node.applyNodeSize) === null || _c === void 0 ? void 0 : _c.call(node);
+                    (_e = node.applyNodeSize) === null || _e === void 0 ? void 0 : _e.call(node);
                     for (const l of node.outputs[0].links || []) {
                         const link = app.graph.links[l];
                         if (link) {
