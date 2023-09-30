@@ -4,6 +4,7 @@ Sets up the inputs and outputs for the Context going forward, with additional fu
 creating and exporting context objects.
 """
 import comfy.samplers
+import folder_paths
 
 _all_context_input_output_data = {
   "base_ctx": ("base_ctx", "RGTHREE_CONTEXT", "CONTEXT"),
@@ -18,6 +19,7 @@ _all_context_input_output_data = {
   "steps": ("steps", "INT", "STEPS"),
   "step_refiner": ("step_refiner", "INT", "STEP_REFINER"),
   "cfg": ("cfg", "FLOAT", "CFG"),
+  "ckpt_name": ("ckpt_name", folder_paths.get_filename_list("checkpoints"), "CKPT_NAME"),
   "sampler": ("sampler", comfy.samplers.KSampler.SAMPLERS, "SAMPLER"),
   "scheduler": ("scheduler", comfy.samplers.KSampler.SCHEDULERS, "SCHEDULER"),
   "clip_width": ("clip_width", "INT", "CLIP_WIDTH"),
@@ -31,7 +33,7 @@ _all_context_input_output_data = {
 }
 
 force_input_types = ["INT", "STRING", "FLOAT"]
-force_input_names = ["sampler", "scheduler"]
+force_input_names = ["sampler", "scheduler", "ckpt_name"]
 
 
 def _create_context_data(input_list=None):
