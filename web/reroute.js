@@ -149,8 +149,9 @@ app.registerExtension({
                                     console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for slot ${link.target_slot}. Skipping connection enforcement, but something is odd with that node.`);
                                 }
                                 else if (inputType &&
-                                    String(nodeOutType) !== String(inputType) &&
-                                    nodeOutType !== "*") {
+                                    inputType !== "*" &&
+                                    nodeOutType !== "*" &&
+                                    !LiteGraph.isValidConnection(String(inputType), String(nodeOutType))) {
                                     console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
                                     node.disconnectInput(link.target_slot);
                                 }
