@@ -25,6 +25,7 @@ class NodeModeRepeater extends BaseCollectorNode {
                 NodeTypesString.NODE_COLLECTOR,
                 NodeTypesString.FAST_ACTIONS_BUTTON,
                 NodeTypesString.REROUTE,
+                NodeTypesString.RANDOM_UNMUTER,
             ].includes(nextNode.type || ""));
     }
     onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex) {

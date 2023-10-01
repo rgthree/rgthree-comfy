@@ -15,4 +15,5 @@ export const NodeTypesString = {
   FAST_ACTIONS_BUTTON: addRgthree('Fast Actions Button'),
   NODE_COLLECTOR: addRgthree('Node Collector'),
   REROUTE: addRgthree('Reroute'),
+  RANDOM_UNMUTER: addRgthree('Random Unmuter'),
 }

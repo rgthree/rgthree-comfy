@@ -22,6 +22,16 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
         }
         return this.schedulePromise;
     }
+    clone() {
+        const cloned = super.clone();
+        while (cloned.inputs.length > 1) {
+            cloned.removeInput(cloned.inputs.length - 1);
+        }
+        if (cloned.inputs[0]) {
+            cloned.inputs[0].label = '';
+        }
+        return cloned;
+    }
     stabilizeInputsOutputs() {
         var _a;
         const hasEmptyInput = !((_a = this.inputs[this.inputs.length - 1]) === null || _a === void 0 ? void 0 : _a.link);

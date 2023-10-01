@@ -44,6 +44,16 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     return this.schedulePromise;
   }
 
+  override clone() {
+    const cloned = super.clone();
+    while (cloned.inputs.length > 1) {
+      cloned.removeInput(cloned.inputs.length - 1);
+    }
+    if (cloned.inputs[0]) {
+      cloned.inputs[0].label = '';
+    }
+    return cloned;
+  }
   /**
    * Ensures we have at least one empty input at the end.
    */

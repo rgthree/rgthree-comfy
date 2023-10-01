@@ -66,6 +66,7 @@ class Rgthree {
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
+        this.eventsToFns = new Map();
         window.addEventListener("keydown", (e) => {
             this.ctrlKey = !!e.ctrlKey;
             this.altKey = !!e.altKey;
@@ -79,6 +80,21 @@ class Rgthree {
             this.shiftKey = !!e.shiftKey;
         });
         const that = this;
+        const queuePrompt = app.queuePrompt;
+        app.queuePrompt = async function () {
+            that.fireEvent('queue', {});
+            let promise = queuePrompt.apply(app, [...arguments]);
+            that.fireEvent('queue-end', {});
+            return promise;
+        };
+        const graphToPrompt = app.graphToPrompt;
+        app.graphToPrompt = async function () {
+            that.fireEvent('graph-to-prompt', {});
+            let promise = graphToPrompt.apply(app, [...arguments]);
+            await promise;
+            that.fireEvent('graph-to-prompt-end', {});
+            return promise;
+        };
         const clean = app.clean;
         app.clean = function () {
             var _a;
@@ -177,6 +193,25 @@ class Rgthree {
             }, 100);
             loadGraphData && loadGraphData.call(app, ...arguments);
         };
+    }
+    addEventListener(event, fn) {
+        if (!this.eventsToFns.has(event)) {
+            this.eventsToFns.set(event, new Set());
+        }
+        this.eventsToFns.get(event).add(fn);
+    }
+    removeEventListener(event, fn) {
+        if (this.eventsToFns.has(event)) {
+            this.eventsToFns.get(event).delete(fn);
+        }
+    }
+    fireEvent(event, data) {
+        if (this.eventsToFns.has(event)) {
+            for (let fn of this.eventsToFns.get(event)) {
+                const event = new Event(data);
+                fn(event);
+            }
+        }
     }
     setLogLevel(level) {
         GLOBAL_LOG_LEVEL = level;

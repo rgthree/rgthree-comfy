@@ -107,11 +107,30 @@ class Rgthree {
 
     // Override the loadGraphData so we can check for bad links and ask the user to fix them.
     const that = this;
+
+    const queuePrompt = app.queuePrompt as Function;
+    app.queuePrompt = async function() {
+      that.fireEvent('queue', {});
+      let promise = queuePrompt.apply(app, [...arguments]);
+      that.fireEvent('queue-end', {});
+      return promise;
+    }
+
+    const graphToPrompt = app.graphToPrompt as Function;
+    app.graphToPrompt = async function() {
+      that.fireEvent('graph-to-prompt', {});
+      let promise = graphToPrompt.apply(app, [...arguments]);
+      await promise;
+      that.fireEvent('graph-to-prompt-end', {});
+      return promise;
+    }
+
     const clean = app.clean;
     app.clean = function() {
       document.querySelector('.rgthree-bad-links-alerts-container')?.remove();
       clean && clean.call(app, ...arguments);
     };
+
     const loadGraphData = app.loadGraphData;
     app.loadGraphData = function(graph: serializedLGraph) {
       if (this.monitorLinkTimeout) {
@@ -204,7 +223,30 @@ class Rgthree {
       }, 100);
       loadGraphData && loadGraphData.call(app, ...arguments);
     }
+  }
 
+  private readonly eventsToFns = new Map<string, Set<(ev: Event) => void>>();
+
+  addEventListener(event: string, fn: (ev: Event) => void) {
+    if (!this.eventsToFns.has(event)) {
+      this.eventsToFns.set(event, new Set());
+    }
+    this.eventsToFns.get(event)!.add(fn);
+  }
+
+  removeEventListener(event: string, fn: (ev: Event) => void) {
+    if (this.eventsToFns.has(event)) {
+      this.eventsToFns.get(event)!.delete(fn);
+    }
+  }
+
+  fireEvent(event: string, data: any) {
+    if (this.eventsToFns.has(event)) {
+      for (let fn of this.eventsToFns.get(event)!) {
+        const event = new Event(data);
+        fn(event);
+      }
+    }
   }
 
   setLogLevel(level: LogLevel) {
@@ -237,3 +279,4 @@ class Rgthree {
 export const rgthree = new Rgthree();
 // @ts-ignore. Expose it on window because, why not.
 window.rgthree = rgthree;
+
