@@ -2,10 +2,11 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
+import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";
 import type {LGraphNode} from './typings/litegraph.js';
-import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
+import { addHelp, getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
 
 const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;
@@ -21,6 +22,17 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
 
   tempEnabledNode: LGraphNode | null = null;
   processingQueue: boolean = false;
+
+  static help = [
+    `Use this node to unmute on of its inputs randomly when the graph is queued (and, immediately`,
+    `mute it back).`,
+    `\n`,
+    `\n- NOTE: All input nodes MUST be muted to start; if not this node will not randomly unmute another.`,
+    `\n(This is powerful, as the generated image can be dragged in and the chosen input will `,
+    `already by unmuted and work w/o any further action.)`,
+    `\n- TIP: Connect a Repeater's output to this nodes input and place that Repeater on a group`,
+    `without any other inputs, and it will mute/unmute the entire group.`,
+  ].join(" ");
 
   onQueueBound = this.onQueue.bind(this);
   onQueueEndBound = this.onQueueEnd.bind(this);
@@ -50,7 +62,6 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     this.processingQueue = false;
   }
   onGraphtoPrompt(event: Event) {
-    console.log('onQueue', event);
     if (!this.processingQueue) {
       return;
     }
@@ -74,24 +85,19 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     }
   }
   onGraphtoPromptEnd(event: Event) {
-    console.log('onQueueEnd', event);
     if (this.tempEnabledNode) {
       this.tempEnabledNode.mode = this.modeOff;
       this.tempEnabledNode = null;
     }
   }
+  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
+    BaseAnyInputConnectedNode.setUp(clazz);
+    addHelp(clazz)
+  }
 
-  // override async handleAction(action: string) {
-  //   if (action === 'Mute all') {
-  //     for (const widget of this.widgets) {
-  //       this.forceWidgetOff(widget);
-  //     }
-  //   } else if (action === 'Enable all') {
-  //     for (const widget of this.widgets) {
-  //       this.forceWidgetOn(widget);
-  //     }
-  //   }
-  // }
+  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]): void {
+    // No-op, no widgets.
+  }
 }
 
 app.registerExtension({

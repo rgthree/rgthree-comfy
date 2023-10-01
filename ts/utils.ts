@@ -352,17 +352,14 @@ export function wait(ms = 16, value?: any) {
   });
 }
 
-export function addHelp(node: typeof LGraphNode, app: ComfyApp) {
-  const help = (node as any).help as string;
-  if (help) {
-    addMenuItem(node, app, {
-      name: "🛟 Node Help",
-      property: "help",
-      callback: (_node) => {
-        alert(help);
-      },
-    });
-  }
+export function addHelp(nodeCtor: Constructor<TLGraphNode>, comfyApp?: ComfyApp) {
+  addMenuItem(nodeCtor, comfyApp || app, {
+    name: "🛟 Node Help",
+    property: "help",
+    callback: (node) => {
+      alert((node as any).help || (nodeCtor as any).help);
+    },
+  });
 }
 
 export enum PassThroughFollowing {

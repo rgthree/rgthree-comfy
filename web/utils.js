@@ -250,17 +250,14 @@ export function wait(ms = 16, value) {
         }, ms);
     });
 }
-export function addHelp(node, app) {
-    const help = node.help;
-    if (help) {
-        addMenuItem(node, app, {
-            name: "🛟 Node Help",
-            property: "help",
-            callback: (_node) => {
-                alert(help);
-            },
-        });
-    }
+export function addHelp(nodeCtor, comfyApp) {
+    addMenuItem(nodeCtor, comfyApp || app, {
+        name: "🛟 Node Help",
+        property: "help",
+        callback: (node) => {
+            alert(node.help || nodeCtor.help);
+        },
+    });
 }
 export var PassThroughFollowing;
 (function (PassThroughFollowing) {
