@@ -157,6 +157,7 @@ app.registerExtension({
         let updateNodes = [];
         let inputType = null;
         let inputNode = null;
+        let inputNodeOutputSlot = null;
         while (currentNode) {
           updateNodes.unshift(currentNode);
           const linkId: number | null = currentNode.inputs[0]!.link;
@@ -183,8 +184,9 @@ app.registerExtension({
               }
             } else {
               // We've found the end
-              inputNode = currentNode;
-              inputType = node.outputs[link.origin_slot]?.type ?? null;
+              inputNode = node;
+              inputNodeOutputSlot = link.origin_slot;
+              inputType = node.outputs[inputNodeOutputSlot]?.type ?? null;
               break;
             }
           } else {
@@ -196,6 +198,7 @@ app.registerExtension({
 
         // Find all outputs
         const nodes: TLGraphNode[] = [this];
+        let outputNode = null;
         let outputType = null;
         while (nodes.length) {
           currentNode = nodes.pop()!;
@@ -232,6 +235,7 @@ app.registerExtension({
                   node.disconnectInput(link.target_slot);
                 } else {
                   outputType = nodeOutType;
+                  outputNode = node;
                 }
               }
             }
@@ -261,12 +265,17 @@ app.registerExtension({
           }
         }
 
-        if (inputNode) {
-          const link = app.graph.links[inputNode.inputs[0]!.link];
-          if (link) {
-            link.color = color;
+        if (inputNode && inputNodeOutputSlot != null) {
+          const links = inputNode.outputs[inputNodeOutputSlot]!.links;
+          for (const l of links || []) {
+            const link = app.graph.links[l];
+            if (link) {
+              link.color = color;
+            }
           }
         }
+        (inputNode as any)?.onConnectionsChainChange?.();
+        (outputNode as any)?.onConnectionsChainChange?.();
         app.graph.setDirtyCanvas(true, true);
       }
 

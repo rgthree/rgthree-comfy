@@ -85,7 +85,7 @@ app.registerExtension({
                 return this.schedulePromise;
             }
             stabilize() {
-                var _a, _b, _c, _d, _e;
+                var _a, _b, _c, _d, _e, _f, _g;
                 if (this.configuring) {
                     return;
                 }
@@ -93,6 +93,7 @@ app.registerExtension({
                 let updateNodes = [];
                 let inputType = null;
                 let inputNode = null;
+                let inputNodeOutputSlot = null;
                 while (currentNode) {
                     updateNodes.unshift(currentNode);
                     const linkId = currentNode.inputs[0].link;
@@ -115,8 +116,9 @@ app.registerExtension({
                             }
                         }
                         else {
-                            inputNode = currentNode;
-                            inputType = (_b = (_a = node.outputs[link.origin_slot]) === null || _a === void 0 ? void 0 : _a.type) !== null && _b !== void 0 ? _b : null;
+                            inputNode = node;
+                            inputNodeOutputSlot = link.origin_slot;
+                            inputType = (_b = (_a = node.outputs[inputNodeOutputSlot]) === null || _a === void 0 ? void 0 : _a.type) !== null && _b !== void 0 ? _b : null;
                             break;
                         }
                     }
@@ -126,6 +128,7 @@ app.registerExtension({
                     }
                 }
                 const nodes = [this];
+                let outputNode = null;
                 let outputType = null;
                 while (nodes.length) {
                     currentNode = nodes.pop();
@@ -157,6 +160,7 @@ app.registerExtension({
                                 }
                                 else {
                                     outputType = nodeOutType;
+                                    outputNode = node;
                                 }
                             }
                         }
@@ -179,12 +183,17 @@ app.registerExtension({
                         }
                     }
                 }
-                if (inputNode) {
-                    const link = app.graph.links[inputNode.inputs[0].link];
-                    if (link) {
-                        link.color = color;
+                if (inputNode && inputNodeOutputSlot != null) {
+                    const links = inputNode.outputs[inputNodeOutputSlot].links;
+                    for (const l of links || []) {
+                        const link = app.graph.links[l];
+                        if (link) {
+                            link.color = color;
+                        }
                     }
                 }
+                (_f = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _f === void 0 ? void 0 : _f.call(inputNode);
+                (_g = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(outputNode);
                 app.graph.setDirtyCanvas(true, true);
             }
             computeSize(out) {

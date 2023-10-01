@@ -622,7 +622,7 @@ export declare class LGraphNode {
 
     // end @rgthree added
 
-    static title_color: string;
+    static title_color?: string;
     static title: string;
     static type: null | string;
     static widgets_up: boolean;
@@ -1089,6 +1089,17 @@ export declare class LGraphNode {
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {
     new (): T;
+
+    // @rgthree
+    title_mode?:
+        typeof LiteGraph.NORMAL_TITLE |
+        typeof LiteGraph.TRANSPARENT_TITLE |
+        typeof LiteGraph.AUTOHIDE_TITLE |
+        typeof LiteGraph.NO_TITLE;
+    title: string;
+    category: string;
+    type: string;
+    comfyClass?: string;
 };
 
 export type SerializedLGraphGroup = {

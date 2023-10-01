@@ -407,15 +407,15 @@ export function getConnectedInputNodes(
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) {
-  return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing);
+) : TLGraphNode[] {
+  return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
   startNode: TLGraphNode,
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) {
+  ) : TLGraphNode[] {
   return filterOutPassthroughNodes(
     getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
@@ -426,38 +426,39 @@ export function getConnectedOutputNodes(
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) {
-  return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing);
+) : TLGraphNode[] {
+  return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(
   startNode: TLGraphNode,
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) {
+) : TLGraphNode[] {
   return filterOutPassthroughNodes(
     getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
   );
 }
 
-function getConnectedNodes(
+
+export function getConnectedNodes(
   startNode: TLGraphNode,
   dir = IoDirection.INPUT,
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) {
+) : {node:TLGraphNode, slot: number}[] {
   currentNode = currentNode || startNode;
-  let rootNodes: TLGraphNode[] = [];
+  let rootNodes: {node:TLGraphNode, slot: number}[] = [];
   const slotsToRemove = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
     // const removeDups = startNode === currentNode;
     let linkIds: Array<number | null>;
     if (dir == IoDirection.OUTPUT) {
-      linkIds = currentNode.outputs?.flatMap((i) => i.links);
+      linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
     } else {
-      linkIds = currentNode.inputs?.map((i) => i.link);
+      linkIds = currentNode.inputs?.map((i) => i.link) || [];
     }
     if (typeof slot == "number" && slot > -1) {
       if (linkIds[slot]) {
@@ -473,12 +474,13 @@ function getConnectedNodes(
         continue;
       }
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
+      const originSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
       const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
       if (!link) {
         console.error("No connected node found... weird");
         continue;
       }
-      if (rootNodes.includes(originNode)) {
+      if (rootNodes.some((n) => n.node == originNode)) {
         console.log(
           `${startNode.title} (${startNode.id}) seems to have two links to ${originNode.title} (${
             originNode.id
@@ -486,7 +488,7 @@ function getConnectedNodes(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push(originNode);
+        rootNodes.push({node: originNode, slot: originSlot});
         if (shouldPassThrough(originNode, passThroughFollowing)) {
           for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
             if (!rootNodes.includes(foundNode)) {
@@ -498,6 +500,76 @@ function getConnectedNodes(
     }
   }
   return rootNodes;
+}
+
+type ConnectionType = { type: string | string[]; label: string | undefined };
+
+/**
+ * Follows a connection until we find a type associated with a slot.
+ * `skipSelf` skips the current slot, useful when we may have a dynamic slot that we want to start
+ * from, but find a type _after_ it (in case it needs to change).
+ */
+export function followConnectionUntilType(
+  node: TLGraphNode,
+  dir: IoDirection,
+  slotNum?: number,
+  skipSelf = false,
+): ConnectionType | null {
+  const slots = dir === IoDirection.OUTPUT ? node.outputs : node.inputs;
+  if (!slots || !slots.length) {
+    return null;
+  }
+  let type: ConnectionType | null = null;
+  if (slotNum) {
+    if (!slots[slotNum]) {
+      return null;
+    }
+    type = getTypeFromSlot(slots[slotNum], dir, skipSelf);
+  } else {
+    for (const slot of slots) {
+      type = getTypeFromSlot(slot, dir, skipSelf);
+      if (type) {
+        break;
+      }
+    }
+  }
+  return type;
+}
+
+/**
+ * Gets the type from a slot. If the type is '*' then it will follow the node to find the next slot.
+ */
+function getTypeFromSlot(
+  slot: INodeInputSlot | INodeOutputSlot | undefined,
+  dir: IoDirection,
+  skipSelf = false,
+): ConnectionType | null {
+  let graph = app.graph as LGraph;
+  let type = slot?.type;
+  if (!skipSelf && type != null && type != "*") {
+    return { type: type as string, label: slot?.label || slot?.name };
+  }
+  const links = getSlotLinks(slot);
+  for (const link of links) {
+    const connectedId = dir == IoDirection.OUTPUT ? link.link.target_id : link.link.origin_id;
+    const connectedSlotNum =
+      dir == IoDirection.OUTPUT ? link.link.target_slot : link.link.origin_slot;
+    const connectedNode: TLGraphNode = graph.getNodeById(connectedId)!;
+    // Reversed since if we're traveling down the output we want the connected node's input, etc.
+    const connectedSlots =
+      dir === IoDirection.OUTPUT ? connectedNode.inputs : connectedNode.outputs;
+    let connectedSlot = connectedSlots[connectedSlotNum];
+    console.log(connectedSlot);
+    if (connectedSlot?.type != null && connectedSlot?.type != "*") {
+      return {
+        type: connectedSlot.type as string,
+        label: connectedSlot?.label || connectedSlot?.name,
+      };
+    } else if (connectedSlot?.type == "*") {
+      return followConnectionUntilType(connectedNode, dir);
+    }
+  }
+  return null;
 }
 
 export async function replaceNode(
