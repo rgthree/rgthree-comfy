@@ -18,7 +18,7 @@ export const LAYOUT_LABEL_TO_DATA = {
     Top: [LiteGraph.UP, [0.5, 0], [0, PADDING]],
     Bottom: [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
 };
-const OPPOSITE_LABEL = {
+export const LAYOUT_LABEL_OPPOSITES = {
     Left: "Right",
     Right: "Left",
     Top: "Bottom",
@@ -89,7 +89,7 @@ export function addConnectionLayoutSupport(node, app, options = [
             var _a;
             const values = value.split(" -> ");
             if (!values[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
-                values[1] = OPPOSITE_LABEL[values[0]];
+                values[1] = LAYOUT_LABEL_OPPOSITES[values[0]];
             }
             if (!LAYOUT_LABEL_TO_DATA[values[0]] || !LAYOUT_LABEL_TO_DATA[values[1]]) {
                 throw new Error(`New Layout invalid: [${values[0]}, ${values[1]}]`);
@@ -105,10 +105,11 @@ export function addConnectionLayoutSupport(node, app, options = [
         return getConnectionPosForLayout(this, isInput, slotNumber, out);
     };
 }
-export function setConnectionsLayout(node, newLayout = ["Left", "Right"]) {
+export function setConnectionsLayout(node, newLayout) {
     var _a;
+    newLayout = newLayout || node.defaultConnectionsLayout || ["Left", "Right"];
     if (!newLayout[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
-        newLayout[1] = OPPOSITE_LABEL[newLayout[0]];
+        newLayout[1] = LAYOUT_LABEL_OPPOSITES[newLayout[0]];
     }
     if (!LAYOUT_LABEL_TO_DATA[newLayout[0]] || !LAYOUT_LABEL_TO_DATA[newLayout[1]]) {
         throw new Error(`New Layout invalid: [${newLayout[0]}, ${newLayout[1]}]`);
@@ -126,7 +127,7 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     var _a, _b, _c;
     out = out || new Float32Array(2);
     node.properties = node.properties || {};
-    const layout = node.properties["connections_layout"] || ["Left", "Right"];
+    const layout = node.properties["connections_layout"] || node.defaultConnectionsLayout || ["Left", "Right"];
     const collapseConnections = node.properties["collapse_connections"] || false;
     const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : LiteGraph.NODE_SLOT_HEIGHT * 0.5;
     let side = isInput ? layout[0] : layout[1];

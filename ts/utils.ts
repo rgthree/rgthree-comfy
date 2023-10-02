@@ -51,7 +51,7 @@ export const LAYOUT_LABEL_TO_DATA: { [label: string]: [LiteGraphDir, Vector2, Ve
   Top: [LiteGraph.UP, [0.5, 0], [0, PADDING]],
   Bottom: [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
 };
-const OPPOSITE_LABEL: { [label: string]: string } = {
+export const LAYOUT_LABEL_OPPOSITES: { [label: string]: string } = {
   Left: "Right",
   Right: "Left",
   Top: "Bottom",
@@ -157,7 +157,7 @@ export function addConnectionLayoutSupport(
     prepareValue: (value, node) => {
       const values = value.split(" -> ");
       if (!values[1] && !node.outputs?.length) {
-        values[1] = OPPOSITE_LABEL[values[0]!]!;
+        values[1] = LAYOUT_LABEL_OPPOSITES[values[0]!]!;
       }
       if (!LAYOUT_LABEL_TO_DATA[values[0]!] || !LAYOUT_LABEL_TO_DATA[values[1]!]) {
         throw new Error(`New Layout invalid: [${values[0]}, ${values[1]}]`);
@@ -180,12 +180,13 @@ export function addConnectionLayoutSupport(
 
 export function setConnectionsLayout(
   node: TLGraphNode,
-  newLayout: [string, string] = ["Left", "Right"],
+  newLayout: [string, string],
 ) {
+  newLayout = newLayout || (node as any).defaultConnectionsLayout || ["Left", "Right"];
   // If we didn't supply an output layout, and there's no outputs, then just choose the opposite of the
   // input as a safety.
   if (!newLayout[1] && !node.outputs?.length) {
-    newLayout[1] = OPPOSITE_LABEL[newLayout[0]!]!;
+    newLayout[1] = LAYOUT_LABEL_OPPOSITES[newLayout[0]!]!;
   }
   if (!LAYOUT_LABEL_TO_DATA[newLayout[0]] || !LAYOUT_LABEL_TO_DATA[newLayout[1]]) {
     throw new Error(`New Layout invalid: [${newLayout[0]}, ${newLayout[1]}]`);
@@ -213,7 +214,7 @@ export function getConnectionPosForLayout(
 ) {
   out = out || new Float32Array(2);
   node.properties = node.properties || {};
-  const layout = node.properties["connections_layout"] || ["Left", "Right"];
+  const layout = node.properties["connections_layout"] || (node as any).defaultConnectionsLayout || ["Left", "Right"];
   const collapseConnections = node.properties["collapse_connections"] || false;
   const offset = (node.constructor as any).layout_slot_offset ?? LiteGraph.NODE_SLOT_HEIGHT * 0.5;
   let side = isInput ? layout[0] : layout[1];

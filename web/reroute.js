@@ -1,26 +1,46 @@
+var _a;
 import { app } from "../../scripts/app.js";
+import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
-import { LAYOUT_CLOCKWISE, addConnectionLayoutSupport, addMenuItem, getSlotLinks, wait, } from "./utils.js";
+import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, wait, } from "./utils.js";
+const rerouteConfig = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig['nodes']) === null || _a === void 0 ? void 0 : _a['reroute']) || {};
+let configWidth = Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10;
+let configHeight = Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10;
+const configDefaultSize = [configWidth, configHeight];
+const configResizable = !!rerouteConfig['default_resizable'];
+let configLayout = rerouteConfig['default_layout'];
+if (!Array.isArray(configLayout)) {
+    configLayout = ['Left', 'Right'];
+}
+if (!LAYOUT_LABEL_TO_DATA[configLayout[0]]) {
+    configLayout[0] = 'Left';
+}
+if (!LAYOUT_LABEL_TO_DATA[configLayout[1]] || configLayout[0] == configLayout[1]) {
+    configLayout[1] = LAYOUT_LABEL_OPPOSITES[configLayout[0]];
+}
 app.registerExtension({
     name: "rgthree.Reroute",
     registerCustomNodes() {
         class RerouteNode extends LGraphNode {
             constructor(title = RerouteNode.title) {
+                var _a;
                 super(title);
                 this.configuring = true;
                 this.schedulePromise = null;
+                this.defaultConnectionsLayout = configLayout;
                 this.isVirtualNode = true;
                 this.hideSlotLabels = true;
-                this.setResizable(this.properties['resizable']);
+                this.setResizable((_a = this.properties['resizable']) !== null && _a !== void 0 ? _a : configResizable);
                 this.size = RerouteNode.size;
                 this.addInput("", "*");
                 this.addOutput("", "*");
                 setTimeout(() => this.applyNodeSize(), 20);
             }
             configure(info) {
+                var _a;
                 this.configuring = true;
                 super.configure(info);
-                this.setResizable(this.properties['resizable']);
+                this.setResizable((_a = this.properties['resizable']) !== null && _a !== void 0 ? _a : configResizable);
                 this.applyNodeSize();
                 this.configuring = false;
             }
@@ -234,7 +254,7 @@ app.registerExtension({
         RerouteNode.title_mode = LiteGraph.NO_TITLE;
         RerouteNode.collapsable = false;
         RerouteNode.layout_slot_offset = 5;
-        RerouteNode.size = [40, 30];
+        RerouteNode.size = configDefaultSize;
         addMenuItem(RerouteNode, app, {
             name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['showLabel']) ? "Hide" : "Show"} Label/Title`; },
             property: 'showLabel',
@@ -312,7 +332,7 @@ app.registerExtension({
             callback: (node, value) => {
                 const w = node.size[0];
                 const h = node.size[1];
-                node.properties["connections_layout"] = node.properties["connections_layout"] || ["Left", "Right"];
+                node.properties["connections_layout"] = node.properties["connections_layout"] || this.defaultConnectionsLayout;
                 const inputDirIndex = LAYOUT_CLOCKWISE.indexOf(node.properties["connections_layout"][0]);
                 const outputDirIndex = LAYOUT_CLOCKWISE.indexOf(node.properties["connections_layout"][1]);
                 if (value === null || value === void 0 ? void 0 : value.startsWith("Rotate 90°")) {

@@ -1,6 +1,8 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
+// @ts-ignore
+import {rgthreeConfig} from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import type {
   Vector2,
@@ -15,6 +17,8 @@ import type {
 } from "./typings/litegraph.js";
 import {
   LAYOUT_CLOCKWISE,
+  LAYOUT_LABEL_OPPOSITES,
+  LAYOUT_LABEL_TO_DATA,
   addConnectionLayoutSupport,
   addMenuItem,
   getSlotLinks,
@@ -24,6 +28,22 @@ import {
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
 declare const LGraphCanvas: typeof TLGraphCanvas;
+
+const rerouteConfig = rgthreeConfig?.['nodes']?.['reroute'] || {};
+let configWidth = Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10;
+let configHeight = Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10;
+const configDefaultSize = [configWidth, configHeight] as Vector2;
+const configResizable = !!rerouteConfig['default_resizable'];
+let configLayout: [string, string] = rerouteConfig['default_layout'];
+if (!Array.isArray(configLayout)) {
+  configLayout = ['Left', 'Right'];
+}
+if (!LAYOUT_LABEL_TO_DATA[configLayout[0]]) {
+  configLayout[0] = 'Left';
+}
+if (!LAYOUT_LABEL_TO_DATA[configLayout[1]] || configLayout[0] == configLayout[1]) {
+  configLayout[1] = LAYOUT_LABEL_OPPOSITES[configLayout[0]]!;
+}
 
 app.registerExtension({
   name: "rgthree.Reroute",
@@ -38,7 +58,7 @@ app.registerExtension({
       static readonly title_mode = LiteGraph.NO_TITLE;
       static collapsable = false;
       static layout_slot_offset = 5;
-      static size: Vector2 = [40, 30]; // Starting size, read from within litegraph.core
+      static size: Vector2 = configDefaultSize; // Starting size, read from within litegraph.core
 
       readonly isVirtualNode?: boolean;
       readonly hideSlotLabels: boolean;
@@ -46,11 +66,13 @@ app.registerExtension({
       private configuring = true;
       private schedulePromise: Promise<void> | null = null;
 
+      defaultConnectionsLayout = configLayout;
+
       constructor(title = RerouteNode.title) {
         super(title);
         this.isVirtualNode = true;
         this.hideSlotLabels = true;
-        this.setResizable(this.properties['resizable']);
+        this.setResizable(this.properties['resizable'] ?? configResizable);
         this.size = RerouteNode.size; // Starting size.
         this.addInput("", "*");
         this.addOutput("", "*");
@@ -60,7 +82,7 @@ app.registerExtension({
       override configure(info: SerializedLGraphNode) {
         this.configuring = true;
         super.configure(info);
-        this.setResizable(this.properties['resizable']);
+        this.setResizable(this.properties['resizable'] ?? configResizable);
         this.applyNodeSize();
         this.configuring = false;
       }
@@ -407,7 +429,7 @@ app.registerExtension({
         const h = node.size[1];
         node.properties["connections_layout"] = node.properties[
           "connections_layout"
-        ] || ["Left", "Right"];
+        ] || this.defaultConnectionsLayout;
         const inputDirIndex = LAYOUT_CLOCKWISE.indexOf(
           node.properties["connections_layout"][0],
         );
