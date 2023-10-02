@@ -11,6 +11,8 @@ import os
 import shutil
 import re
 
+from .config import RGTHREE_CONFIG
+
 # from .server import server
 
 from .py.log import log_welcome
@@ -82,19 +84,8 @@ def extend_config(default_config, user_config):
   return cfg
 
 
-DEFAULT_CONFIG_FILE = os.path.join(THIS_DIR, 'rgthree_config.json.default')
-with open(DEFAULT_CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
-  config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
-  rgthree_config_default = json.loads(config)
-
-CONFIG_FILE = os.path.join(THIS_DIR, 'rgthree_config.json')
-with open(CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
-  rgthree_config_user = json.load(file)
-
-rgthree_config = extend_config(rgthree_config_default, rgthree_config_user)
-
 with open(os.path.join(DIR_WEB, 'rgthree_config.js'), 'w', encoding = 'UTF-8') as file:
-  file.write('export const rgthreeConfig = ' + json.dumps(rgthree_config))
+  file.write('export const rgthreeConfig = ' + json.dumps(RGTHREE_CONFIG))
 
 # shutil.copy(os.path.join(THIS_DIR, 'rgthree_config.json'), os.path.join(DIR_WEB, 'rgthree_config.js'))
 

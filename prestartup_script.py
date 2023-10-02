@@ -5,23 +5,13 @@ import shutil
 import folder_paths
 import execution
 
+from .config import RGTHREE_CONFIG
+
 # Add 'saved_prompts' as a folder for Power Prompt node.
 folder_paths.folder_names_and_paths['saved_prompts'] = ([], set(['.txt']))
 
 
-THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-CONFIG_FILE = os.path.join(THIS_DIR, 'rgthree_config.json')
-if not os.path.exists(CONFIG_FILE):
-  shutil.copyfile(f'{CONFIG_FILE}.default', CONFIG_FILE)
-
-
-with open(f'{CONFIG_FILE}.default', 'r', encoding = 'UTF-8') as file:
-  rgthree_config = json.load(file)
-
-with open(CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
-  rgthree_config.update(json.load(file))
-
-if 'patch_recursive_execution' in rgthree_config and rgthree_config['patch_recursive_execution']:
+if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recursive_execution']:
   # Alright, I don't like doing this, but until https://github.com/comfyanonymous/ComfyUI/issues/1502
   # and/or https://github.com/comfyanonymous/ComfyUI/pull/1503 is pulled into ComfyUI, we need a way
   # to optimize the recursion that happens on prompt eval. This is particularly important for
