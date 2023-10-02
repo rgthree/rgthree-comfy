@@ -4,8 +4,12 @@ import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, wait, } from "./utils.js";
 const rerouteConfig = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig['nodes']) === null || _a === void 0 ? void 0 : _a['reroute']) || {};
-let configWidth = Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10;
-let configHeight = Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10;
+let configWidth = Math.max(Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10, 10);
+let configHeight = Math.max(Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10, 10);
+while (configWidth * configHeight < 400) {
+    configWidth += 10;
+    configHeight += 10;
+}
 const configDefaultSize = [configWidth, configHeight];
 const configResizable = !!rerouteConfig['default_resizable'];
 let configLayout = rerouteConfig['default_layout'];

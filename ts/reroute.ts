@@ -30,8 +30,14 @@ declare const LGraphNode: typeof TLGraphNode;
 declare const LGraphCanvas: typeof TLGraphCanvas;
 
 const rerouteConfig = rgthreeConfig?.['nodes']?.['reroute'] || {};
-let configWidth = Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10;
-let configHeight = Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10;
+let configWidth = Math.max(Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10, 10);
+let configHeight = Math.max(Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10, 10);
+// Don't allow too small sizes. Granted, 400 is too small, but at least you can right click and
+// resize... 10x10 you cannot.
+while(configWidth * configHeight < 400) {
+  configWidth += 10;
+  configHeight += 10;
+}
 const configDefaultSize = [configWidth, configHeight] as Vector2;
 const configResizable = !!rerouteConfig['default_resizable'];
 let configLayout: [string, string] = rerouteConfig['default_layout'];
