@@ -435,7 +435,7 @@ app.registerExtension({
         const h = node.size[1];
         node.properties["connections_layout"] = node.properties[
           "connections_layout"
-        ] || this.defaultConnectionsLayout;
+        ] || (node as RerouteNode).defaultConnectionsLayout;
         const inputDirIndex = LAYOUT_CLOCKWISE.indexOf(
           node.properties["connections_layout"][0],
         );

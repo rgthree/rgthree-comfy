@@ -336,7 +336,7 @@ app.registerExtension({
             callback: (node, value) => {
                 const w = node.size[0];
                 const h = node.size[1];
-                node.properties["connections_layout"] = node.properties["connections_layout"] || this.defaultConnectionsLayout;
+                node.properties["connections_layout"] = node.properties["connections_layout"] || node.defaultConnectionsLayout;
                 const inputDirIndex = LAYOUT_CLOCKWISE.indexOf(node.properties["connections_layout"][0]);
                 const outputDirIndex = LAYOUT_CLOCKWISE.indexOf(node.properties["connections_layout"][1]);
                 if (value === null || value === void 0 ? void 0 : value.startsWith("Rotate 90°")) {
