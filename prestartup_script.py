@@ -1,4 +1,3 @@
-
 import os
 import json
 import shutil
@@ -51,6 +50,50 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
   msg += "broken, change \"patch_recursive_execution\" to false in rgthree_config.json \33[0m"
   print(msg)
 
+  class RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working:
+    """A fake 'list' that the caller for recursive_will_execute expects but we override such that
+    `len(inst)` will return the count number, and `inst[-1]` will return the unique_id. Since that
+    all the caller cares about, we can save several minutes and many MB of ram by simply counting
+    numbers instead of concatenating a list of millions (only to count it). However the caller
+    expects such a list, so we fake it with this.
+
+    This mimics the enhancement from https://github.com/rgthree/ComfyUI/commit/50b3fb1 but without
+    modifying the execution.py
+    """
+    def __init__(self, unique_id):
+      self.unique_id = unique_id
+      self.count = 0
+
+    def add(self, value):
+      self.count += value
+
+    def __getitem__(self, key):
+      """Returns the `unique_id` with '-1' since that's what the caller expects."""
+      if key == -1:
+        return self.unique_id
+      # This one would future proof the proposed changes, in that case "0" is the count
+      if key == 0:
+        return self.count
+      else:
+        return -1
+
+    def __len__(self):
+      """Returns the "count" of the "list" as if we were building up a list instea of just
+      incrementing `count`.
+      """
+      return self.count
+
+    # The following (hopefully) future proofs if https://github.com/rgthree/ComfyUI/commit/50b3fb1
+    # goes in, which changes from using `len` on a list, to sort directly (and, thus "<" and ">").
+    def __gt__(self, other):
+      return self.count > other
+
+    def __lt__(self, other):
+      return self.count < other
+
+    def __str__(self):
+      return str((self.count, self.unique_id,))
+
 
   execution.rgthree_cache_recursive_output_delete_if_changed_output = {}
   execution.rgthree_cache_recursive_will_execute = {}
@@ -65,24 +108,27 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
   def rgthree_recursive_will_execute(prompt, outputs, current_item, *args, **kwargs):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
-    will_execute = []
+    will_execute = RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working(unique_id)
     if unique_id in outputs:
-      return []
+        return will_execute
 
+    will_execute.add(1)
     for x in inputs:
-      input_data = inputs[x]
-      if isinstance(input_data, list):
-        input_unique_id = input_data[0]
-        output_index = input_data[1]
-        node_output_cache_key = f'{input_unique_id}.{output_index}'
-        # If this node's output has already been recursively evaluated, then we can reuse.
-        if node_output_cache_key in execution.rgthree_cache_recursive_will_execute:
-          will_execute = execution.rgthree_cache_recursive_will_execute[node_output_cache_key]
-        elif input_unique_id not in outputs:
-          will_execute += execution.recursive_will_execute(prompt, outputs, input_unique_id, *args, **kwargs)
-          execution.rgthree_cache_recursive_will_execute[node_output_cache_key] = will_execute
-
-    return will_execute + [unique_id]
+        input_data = inputs[x]
+        if isinstance(input_data, list):
+          input_unique_id = input_data[0]
+          output_index = input_data[1]
+          node_output_cache_key = f'{input_unique_id}.{output_index}'
+          will_execute_value = None
+          # If this node's output has already been recursively evaluated, then we can reuse.
+          if node_output_cache_key in execution.rgthree_cache_recursive_will_execute:
+            will_execute_value = execution.rgthree_cache_recursive_will_execute[node_output_cache_key]
+          elif input_unique_id not in outputs:
+            will_execute_value = execution.recursive_will_execute(prompt, outputs, input_unique_id, *args, **kwargs)
+            execution.rgthree_cache_recursive_will_execute[node_output_cache_key] = will_execute_value
+          if will_execute_value is not None:
+            will_execute.add(len(will_execute_value))
+    return will_execute
 
 
   def rgthree_recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item, *args, **kwargs):
