@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
+import { wait } from "./utils.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -193,6 +194,16 @@ class Rgthree {
             }, 100);
             loadGraphData && loadGraphData.call(app, ...arguments);
         };
+        wait(100).then(() => {
+            this.injectRgthreeCss();
+        });
+    }
+    injectRgthreeCss() {
+        let link = document.createElement("link");
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = 'extensions/rgthree-comfy/rgthree.css';
+        document.head.appendChild(link);
     }
     addEventListener(event, fn) {
         if (!this.eventsToFns.has(event)) {

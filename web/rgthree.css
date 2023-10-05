@@ -1,0 +1,15 @@
+
+/* Fix node selector being crazy long b/c of array types. */
+.litegraph.litesearchbox input,
+.litegraph.litesearchbox select {
+  max-width: 250px;
+}
+
+/* There's no reason for this z-index to be so high. It layers on top of things it shouldn't,
+  (like pythongssss' image gallery, etc.) */
+.comfy-multiline-input {
+  z-index: 2 !important;
+}
+.comfy-multiline-input:focus {
+  z-index: 3 !important;
+}

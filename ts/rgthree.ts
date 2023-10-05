@@ -4,6 +4,7 @@ import { app } from "../../scripts/app.js";
 // @ts-ignore
 import {rgthreeConfig} from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
+import { wait } from "./utils.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -223,6 +224,18 @@ class Rgthree {
       }, 100);
       loadGraphData && loadGraphData.call(app, ...arguments);
     }
+
+    wait(100).then(() => {
+      this.injectRgthreeCss();
+    });
+  }
+
+  private injectRgthreeCss() {
+    let link = document.createElement("link");
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = 'extensions/rgthree-comfy/rgthree.css';
+    document.head.appendChild(link);
   }
 
   private readonly eventsToFns = new Map<string, Set<(ev: Event) => void>>();
