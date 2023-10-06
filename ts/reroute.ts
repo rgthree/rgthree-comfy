@@ -22,6 +22,7 @@ import {
   addConnectionLayoutSupport,
   addMenuItem,
   getSlotLinks,
+  isValidConnection,
   wait,
 } from "./utils.js";
 
@@ -183,6 +184,7 @@ app.registerExtension({
         // Find root input
         let currentNode: TLGraphNode | null = this;
         let updateNodes = [];
+        let input = null;
         let inputType = null;
         let inputNode = null;
         let inputNodeOutputSlot = null;
@@ -214,7 +216,8 @@ app.registerExtension({
               // We've found the end
               inputNode = node;
               inputNodeOutputSlot = link.origin_slot;
-              inputType = node.outputs[inputNodeOutputSlot]?.type ?? null;
+              input = node.outputs[inputNodeOutputSlot] ?? null;
+              inputType = input?.type ?? null;
               break;
             }
           } else {
@@ -239,24 +242,25 @@ app.registerExtension({
               // When disconnecting sometimes the link is still registered
               if (!link) continue;
 
-              const node = app.graph.getNodeById(link.target_id);
+              const node = app.graph.getNodeById(link.target_id) as TLGraphNode;
               // Don't know why this ever happens.. but it did around the repeater..
               if (!node) continue;
-              const type = node.constructor.type;
+              const type = (node.constructor as any).type;
               if (type?.includes("Reroute")) {
                 // Follow reroute nodes
                 nodes.push(node);
                 updateNodes.push(node);
               } else {
                 // We've found an output
-                const nodeOutType = node.inputs?.[link.target_slot]?.type;
+                const output = node.inputs?.[link.target_slot] ?? null;
+                const nodeOutType = output?.type;
                 if (nodeOutType == null) {
                   console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for slot ${link.target_slot}. Skipping connection enforcement, but something is odd with that node.`);
                 } else if (
                   inputType &&
                   inputType !== "*" &&
                   nodeOutType !== "*" &&
-                  !LiteGraph.isValidConnection(String(inputType), String(nodeOutType))
+                  !isValidConnection(input, output)
                 ) {
                   // The output doesnt match our input so disconnect it
                   console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
@@ -279,13 +283,13 @@ app.registerExtension({
         for (const node of updateNodes) {
           // If we dont have an input type we are always wildcard but we'll show the output type
           // This lets you change the output link to a different type and all nodes will update
-          node.outputs[0].type = inputType || "*";
-          node.__outputType = displayType;
-          node.outputs[0].name = "";
+          node.outputs[0]!.type = inputType || "*";
+          (node as any).__outputType = displayType;
+          node.outputs[0]!.name = input?.name || "";
           node.size = node.computeSize();
-          node.applyNodeSize?.();
+          (node as any).applyNodeSize?.();
 
-          for (const l of node.outputs[0].links || []) {
+          for (const l of node.outputs[0]!.links || []) {
             const link = app.graph.links[l];
             if (link) {
               link.color = color;
@@ -306,7 +310,6 @@ app.registerExtension({
         (outputNode as any)?.onConnectionsChainChange?.();
         app.graph.setDirtyCanvas(true, true);
       }
-
 
       override computeSize(out?: Vector2 | undefined): Vector2 {
         // Secret funcionality for me that I don't want to explain. Hold down ctrl while dragging

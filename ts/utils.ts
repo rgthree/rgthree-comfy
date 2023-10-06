@@ -9,6 +9,7 @@ import type {
   ContextMenu,
   LGraphNode as TLGraphNode,
   LiteGraph as TLiteGraph,
+  INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
 } from "./typings/litegraph.js";
@@ -784,4 +785,28 @@ export async function matchLocalSlotsToServer(
       }
     }
   }
+}
+
+export function isValidConnection(ioA?: INodeSlot|null, ioB?: INodeSlot|null) {
+  if (!ioA || !ioB) {
+    return false;
+  }
+  const typeA = String(ioA.type);
+  const typeB = String(ioB.type);
+  // What does litegraph think, which includes looking at array values.
+  let isValid = LiteGraph.isValidConnection(typeA, typeB);
+
+  // This is here to fix the churn happening in list types in comfyui itself..
+  // https://github.com/comfyanonymous/ComfyUI/issues/1674
+  if (!isValid) {
+    let areCombos = (typeA.includes(',') && typeB === 'COMBO') || (typeA === 'COMBO' && typeB.includes(','));
+    // We don't want to let any old combo connect to any old combo, so we'll look at the names too.
+    if (areCombos) {
+      // Some nodes use "_name" and some use "model" and "ckpt", so normalize
+      const nameA = ioA.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL')
+      const nameB = ioB.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL')
+      isValid = nameA.includes(nameB) || nameB.includes(nameA);
+    }
+  }
+  return isValid;
 }

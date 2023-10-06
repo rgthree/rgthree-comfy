@@ -2,7 +2,7 @@ var _a;
 import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
-import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, wait, } from "./utils.js";
+import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, wait, } from "./utils.js";
 const rerouteConfig = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig['nodes']) === null || _a === void 0 ? void 0 : _a['reroute']) || {};
 let configWidth = Math.max(Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10, 10);
 let configHeight = Math.max(Math.round((Number(rerouteConfig['default_height']) || 30) / 10) * 10, 10);
@@ -109,12 +109,13 @@ app.registerExtension({
                 return this.schedulePromise;
             }
             stabilize() {
-                var _a, _b, _c, _d, _e, _f, _g;
+                var _a, _b, _c, _d, _e, _f, _g, _h;
                 if (this.configuring) {
                     return;
                 }
                 let currentNode = this;
                 let updateNodes = [];
+                let input = null;
                 let inputType = null;
                 let inputNode = null;
                 let inputNodeOutputSlot = null;
@@ -142,7 +143,8 @@ app.registerExtension({
                         else {
                             inputNode = node;
                             inputNodeOutputSlot = link.origin_slot;
-                            inputType = (_b = (_a = node.outputs[inputNodeOutputSlot]) === null || _a === void 0 ? void 0 : _a.type) !== null && _b !== void 0 ? _b : null;
+                            input = (_a = node.outputs[inputNodeOutputSlot]) !== null && _a !== void 0 ? _a : null;
+                            inputType = (_b = input === null || input === void 0 ? void 0 : input.type) !== null && _b !== void 0 ? _b : null;
                             break;
                         }
                     }
@@ -171,14 +173,15 @@ app.registerExtension({
                                 updateNodes.push(node);
                             }
                             else {
-                                const nodeOutType = (_d = (_c = node.inputs) === null || _c === void 0 ? void 0 : _c[link.target_slot]) === null || _d === void 0 ? void 0 : _d.type;
+                                const output = (_d = (_c = node.inputs) === null || _c === void 0 ? void 0 : _c[link.target_slot]) !== null && _d !== void 0 ? _d : null;
+                                const nodeOutType = output === null || output === void 0 ? void 0 : output.type;
                                 if (nodeOutType == null) {
                                     console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for slot ${link.target_slot}. Skipping connection enforcement, but something is odd with that node.`);
                                 }
                                 else if (inputType &&
                                     inputType !== "*" &&
                                     nodeOutType !== "*" &&
-                                    !LiteGraph.isValidConnection(String(inputType), String(nodeOutType))) {
+                                    !isValidConnection(input, output)) {
                                     console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
                                     node.disconnectInput(link.target_slot);
                                 }
@@ -197,9 +200,9 @@ app.registerExtension({
                 for (const node of updateNodes) {
                     node.outputs[0].type = inputType || "*";
                     node.__outputType = displayType;
-                    node.outputs[0].name = "";
+                    node.outputs[0].name = (input === null || input === void 0 ? void 0 : input.name) || "";
                     node.size = node.computeSize();
-                    (_e = node.applyNodeSize) === null || _e === void 0 ? void 0 : _e.call(node);
+                    (_f = (_e = node).applyNodeSize) === null || _f === void 0 ? void 0 : _f.call(_e);
                     for (const l of node.outputs[0].links || []) {
                         const link = app.graph.links[l];
                         if (link) {
@@ -216,8 +219,8 @@ app.registerExtension({
                         }
                     }
                 }
-                (_f = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _f === void 0 ? void 0 : _f.call(inputNode);
-                (_g = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(outputNode);
+                (_g = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(inputNode);
+                (_h = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _h === void 0 ? void 0 : _h.call(outputNode);
                 app.graph.setDirtyCanvas(true, true);
             }
             computeSize(out) {
