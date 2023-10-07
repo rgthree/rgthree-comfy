@@ -572,3 +572,15 @@ export function isValidConnection(ioA, ioB) {
     }
     return isValid;
 }
+const oldIsValidConnection = LiteGraph.isValidConnection;
+LiteGraph.isValidConnection = function (typeA, typeB) {
+    let isValid = oldIsValidConnection.call(LiteGraph, typeA, typeB);
+    if (!isValid) {
+        typeA = String(typeA);
+        typeB = String(typeB);
+        let areCombos = (typeA.includes(',') && typeB === 'COMBO')
+            || (typeA === 'COMBO' && typeB.includes(','));
+        isValid = areCombos;
+    }
+    return isValid;
+};

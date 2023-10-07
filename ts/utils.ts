@@ -810,3 +810,26 @@ export function isValidConnection(ioA?: INodeSlot|null, ioB?: INodeSlot|null) {
   }
   return isValid;
 }
+
+/**
+ * Patches the LiteGraph.isValidConnection so old nodes can connect to this new COMBO type for all
+ * lists (without users needing to go through and re-create all their nodes one by one).
+ */
+const oldIsValidConnection = LiteGraph.isValidConnection;
+LiteGraph.isValidConnection = function(typeA: string|string[], typeB: string|string[]) {
+  let isValid = oldIsValidConnection.call(LiteGraph, typeA, typeB);
+  if (!isValid) {
+    typeA = String(typeA);
+    typeB = String(typeB);
+    // This is waaaay too liberal and now any combos can connect to any combos. But we only have the
+    // types (not names like my util above), and connecting too liberally is better than old nodes
+    // with lists not being able to connect to this new COMBO type. And, anyway, it matches the
+    // current behavior today with new nodes anyway, where all lists are COMBO types.
+    // Refs: https://github.com/comfyanonymous/ComfyUI/issues/1674
+    //       https://github.com/comfyanonymous/ComfyUI/pull/1675
+    let areCombos = (typeA.includes(',') && typeB === 'COMBO')
+        || (typeA === 'COMBO' && typeB.includes(','));
+    isValid = areCombos;
+  }
+  return isValid;
+}

@@ -254,7 +254,7 @@ export const LiteGraph: {
     >;
 
     //@rgthree
-    isValidConnection(type: string, type: string):boolean;
+    isValidConnection(type: string|string[], type: string|string[]):boolean;
 
     createNode<T extends LGraphNode = LGraphNode>(type: string): T;
     /** Register a node class so it can be listed when the user wants to create a new one */
