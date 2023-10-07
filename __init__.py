@@ -149,7 +149,6 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
       """Returns the "count" of the "list" as if we were building up a list instea of just
       incrementing `count`.
       """
-      print('yoyo')
       return self.count
 
     # The following (hopefully) future proofs if https://github.com/rgthree/ComfyUI/commit/50b3fb1
