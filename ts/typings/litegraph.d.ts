@@ -200,7 +200,7 @@ export const LiteGraph: {
     CIRCLE_SHAPE: 3;
     CARD_SHAPE: 4;
     ARROW_SHAPE: 5;
-    SQUARE_SHAPE: 6;
+    GRID_SHAPE: 6;
 
     //enums
     INPUT: 1;

@@ -1,8 +1,11 @@
 import { app } from "../../scripts/app.js";
-import { IoDirection, addConnectionLayoutSupport, addMenuItem, applyMixins, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
+import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
-class BaseContextNode extends RgthreeBaseNode {
+class BaseContextNode extends RgthreeBaseServerNode {
+    constructor(title) {
+        super(title);
+    }
     connectByType(slot, sourceNode, sourceSlotType, optsIn) {
         let canConnect = super.connectByType &&
             super.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
@@ -35,26 +38,24 @@ class BaseContextNode extends RgthreeBaseNode {
         }
         return null;
     }
-    static setUp(clazz, selfClazz) {
-        selfClazz.title = clazz.title;
-        selfClazz.comfyClass = clazz.comfyClass;
-        setTimeout(() => {
-            selfClazz.category = clazz.category;
-        });
-        applyMixins(clazz, [RgthreeBaseNode, BaseContextNode, selfClazz]);
-        addConnectionLayoutSupport(clazz, app, [
+    static setUp(comfyClass, ctxClass) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, ctxClass);
+        addConnectionLayoutSupport(ctxClass, app, [
             ["Left", "Right"],
             ["Right", "Left"],
         ]);
+        setTimeout(() => {
+            ctxClass.category = comfyClass.category;
+        });
     }
 }
 class ContextNode extends BaseContextNode {
     constructor(title = ContextNode.title) {
         super(title);
     }
-    static setUp(clazz) {
-        BaseContextNode.setUp(clazz, ContextNode);
-        addMenuItem(clazz, app, {
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextNode);
+        addMenuItem(ContextNode, app, {
             name: "Convert To Context Big",
             callback: (node) => {
                 replaceNode(node, ContextBigNode.type);
@@ -66,9 +67,12 @@ ContextNode.title = "Context (rgthree)";
 ContextNode.type = "Context (rgthree)";
 ContextNode.comfyClass = "Context (rgthree)";
 class ContextBigNode extends BaseContextNode {
-    static setUp(clazz) {
-        BaseContextNode.setUp(clazz, ContextBigNode);
-        addMenuItem(clazz, app, {
+    constructor(title = ContextBigNode.title) {
+        super(title);
+    }
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextBigNode);
+        addMenuItem(ContextBigNode, app, {
             name: "Convert To Context (Original)",
             callback: (node) => {
                 replaceNode(node, ContextNode.type);
@@ -76,12 +80,16 @@ class ContextBigNode extends BaseContextNode {
         });
     }
 }
+ContextBigNode.title = "Context Big (rgthree)";
 ContextBigNode.type = "Context Big (rgthree)";
 ContextBigNode.comfyClass = "Context Big (rgthree)";
 class ContextSwitchNode extends BaseContextNode {
-    static setUp(clazz) {
-        BaseContextNode.setUp(clazz, ContextSwitchNode);
-        addMenuItem(clazz, app, {
+    constructor(title = ContextSwitchNode.title) {
+        super(title);
+    }
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextSwitchNode);
+        addMenuItem(ContextSwitchNode, app, {
             name: "Convert To Context Switch Big",
             callback: (node) => {
                 replaceNode(node, ContextSwitchBigNode.type);
@@ -89,12 +97,16 @@ class ContextSwitchNode extends BaseContextNode {
         });
     }
 }
+ContextSwitchNode.title = "Context Switch (rgthree)";
 ContextSwitchNode.type = "Context Switch (rgthree)";
 ContextSwitchNode.comfyClass = "Context Switch (rgthree)";
 class ContextSwitchBigNode extends BaseContextNode {
-    static setUp(clazz) {
-        BaseContextNode.setUp(clazz, ContextSwitchBigNode);
-        addMenuItem(clazz, app, {
+    constructor(title = ContextSwitchBigNode.title) {
+        super(title);
+    }
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextSwitchBigNode);
+        addMenuItem(ContextSwitchBigNode, app, {
             name: "Convert To Context Switch",
             callback: (node) => {
                 replaceNode(node, ContextSwitchNode.type);
@@ -102,19 +114,21 @@ class ContextSwitchBigNode extends BaseContextNode {
         });
     }
 }
+ContextSwitchBigNode.title = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
 const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode];
 const contextTypeToServerDef = {};
 app.registerExtension({
     name: "rgthree.Context",
-    async beforeRegisterNodeDef(nodeType, nodeData, app) {
-        let override = false;
-        for (const clazz of contextNodes) {
-            if (nodeData.name === clazz.type) {
-                contextTypeToServerDef[clazz.type] = nodeData;
-                clazz.setUp(nodeType);
-                override = true;
+    async beforeRegisterNodeDef(nodeType, nodeData) {
+        if (nodeData.name === ContextNode.type) {
+        }
+        for (const ctxClass of contextNodes) {
+            if (nodeData.name === ctxClass.type) {
+                ctxClass.nodeData = nodeData;
+                contextTypeToServerDef[ctxClass.type] = nodeData;
+                ctxClass.setUp(nodeType);
                 break;
             }
         }
@@ -123,12 +137,10 @@ app.registerExtension({
         const type = node.type || node.constructor.type;
         const serverDef = type && contextTypeToServerDef[type];
         if (serverDef) {
-            setTimeout(() => {
-                matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
-                if (!type.includes("Switch")) {
-                    matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
-                }
-            }, 100);
+            matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
+            if (!type.includes("Switch")) {
+                matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
+            }
         }
     },
     async loadedGraphNode(node) {

@@ -4,6 +4,7 @@ import type {
   INodeOutputSlot,
   LGraph,
   LLink,
+  LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
 } from "./typings/litegraph.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "./typings/comfy.js";
@@ -18,15 +19,20 @@ import {
   replaceNode,
   wait,
 } from "./utils.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseNode, RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 
 declare const LGraphNode: typeof TLGraphNode;
+declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * A Base Context node for other context based nodes to extend.
  */
-class BaseContextNode extends RgthreeBaseNode {
+class BaseContextNode extends RgthreeBaseServerNode {
+  constructor(title: string) {
+    super(title);
+  }
+
   override connectByType<T = any>(
     slot: string | number,
     sourceNode: TLGraphNode,
@@ -77,24 +83,21 @@ class BaseContextNode extends RgthreeBaseNode {
     return null;
   }
 
-  static override setUp<T extends BaseContextNode>(clazz: any, selfClazz?: any) {
-    selfClazz.title = clazz.title;
-    selfClazz.comfyClass = clazz.comfyClass;
-    setTimeout(() => {
-      selfClazz.category = clazz.category;
-    });
-
-    applyMixins(clazz, [RgthreeBaseNode, BaseContextNode, selfClazz]);
-
-    // This isn't super useful, because R->L removes the names in order to work with
-    // litegraph's hardcoded L->R math.. but, ¯\_(ツ)_/¯
-    addConnectionLayoutSupport(clazz, app, [
+  static override setUp(comfyClass: any, ctxClass: any) {
+    RgthreeBaseServerNode.registerForOverride(comfyClass, ctxClass);
+    addConnectionLayoutSupport(ctxClass, app, [
       ["Left", "Right"],
       ["Right", "Left"],
     ]);
+    setTimeout(() => {
+      ctxClass.category = comfyClass.category;
+    });
   }
 }
 
+/**
+ * The original Context node.
+ */
 class ContextNode extends BaseContextNode {
   static override title = "Context (rgthree)";
   static override type = "Context (rgthree)";
@@ -104,10 +107,9 @@ class ContextNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(clazz: any) {
-    BaseContextNode.setUp(clazz, ContextNode);
-
-    addMenuItem(clazz, app, {
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextNode);
+    addMenuItem(ContextNode, app, {
       name: "Convert To Context Big",
       callback: (node) => {
         replaceNode(node, ContextBigNode.type);
@@ -116,13 +118,21 @@ class ContextNode extends BaseContextNode {
   }
 }
 
+/**
+ * The Context Big node.
+ */
 class ContextBigNode extends BaseContextNode {
+  static override title = "Context Big (rgthree)";
   static override type = "Context Big (rgthree)";
   static comfyClass = "Context Big (rgthree)";
 
-  static override setUp(clazz: any) {
-    BaseContextNode.setUp(clazz, ContextBigNode);
-    addMenuItem(clazz, app, {
+  constructor(title = ContextBigNode.title) {
+    super(title);
+  }
+
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextBigNode);
+    addMenuItem(ContextBigNode, app, {
       name: "Convert To Context (Original)",
       callback: (node) => {
         replaceNode(node, ContextNode.type);
@@ -131,13 +141,21 @@ class ContextBigNode extends BaseContextNode {
   }
 }
 
+/**
+ * The Context Switch (original) node.
+ */
 class ContextSwitchNode extends BaseContextNode {
+  static override title = "Context Switch (rgthree)";
   static override type = "Context Switch (rgthree)";
   static comfyClass = "Context Switch (rgthree)";
 
-  static override setUp(clazz: any) {
-    BaseContextNode.setUp(clazz, ContextSwitchNode);
-    addMenuItem(clazz, app, {
+  constructor(title = ContextSwitchNode.title) {
+    super(title);
+  }
+
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextSwitchNode);
+    addMenuItem(ContextSwitchNode, app, {
       name: "Convert To Context Switch Big",
       callback: (node) => {
         replaceNode(node, ContextSwitchBigNode.type);
@@ -146,13 +164,21 @@ class ContextSwitchNode extends BaseContextNode {
   }
 }
 
+/**
+ * The Context Switch Big node.
+ */
 class ContextSwitchBigNode extends BaseContextNode {
+  static override title = "Context Switch Big (rgthree)";
   static override type = "Context Switch Big (rgthree)";
   static comfyClass = "Context Switch Big (rgthree)";
 
-  static override setUp(clazz: any) {
-    BaseContextNode.setUp(clazz, ContextSwitchBigNode);
-    addMenuItem(clazz, app, {
+  constructor(title = ContextSwitchBigNode.title) {
+    super(title);
+  }
+
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextSwitchBigNode);
+    addMenuItem(ContextSwitchBigNode, app, {
       name: "Convert To Context Switch",
       callback: (node) => {
         replaceNode(node, ContextSwitchNode.type);
@@ -166,17 +192,16 @@ const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
 
 app.registerExtension({
   name: "rgthree.Context",
-  async beforeRegisterNodeDef(
-    nodeType: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
-    app: ComfyApp,
-  ) {
-    let override = false;
-    for (const clazz of contextNodes) {
-      if (nodeData.name === clazz.type) {
-        contextTypeToServerDef[clazz.type] = nodeData;
-        clazz.setUp(nodeType as any);
-        override = true;
+  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    // Loop over out context nodes and see if any match the server data.
+    if (nodeData.name === ContextNode.type) {
+    }
+
+    for (const ctxClass of contextNodes) {
+      if (nodeData.name === ctxClass.type) {
+        ctxClass.nodeData = nodeData;
+        contextTypeToServerDef[ctxClass.type] = nodeData;
+        ctxClass.setUp(nodeType as any);
         break;
       }
     }
@@ -184,28 +209,28 @@ app.registerExtension({
 
   async nodeCreated(node: TLGraphNode) {
     const type = node.type || (node.constructor as any).type;
-    const serverDef = type && contextTypeToServerDef[type]
+    const serverDef = type && contextTypeToServerDef[type];
     if (serverDef) {
       // Because we need to wait for ComfyUI to take our forceInput widgets and make them actual
       // inputs first. Could probably be removed if github.com/comfyanonymous/ComfyUI/issues/1404
       // is fixed to skip forced widget generation.
-      setTimeout(() => {
-        matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
-        // Switches don't need to change inputs, only context outputs
-        if (!type!.includes("Switch")) {
-          matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
-        }
-      }, 100);
+      // setTimeout(() => {
+      matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
+      // Switches don't need to change inputs, only context outputs
+      if (!type!.includes("Switch")) {
+        matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
+      }
+      // }, 100);
     }
   },
 
   /**
    * When we're loaded from the server, check if we're using an out of date version and update our
-   * inputs / outputs to match. This also fixes a bug where we can't put forceInputs in the right spot.
+   * inputs / outputs to match.
    */
   async loadedGraphNode(node: TLGraphNode) {
     const type = node.type || (node.constructor as any).type;
-    const serverDef = type && contextTypeToServerDef[type]
+    const serverDef = type && contextTypeToServerDef[type];
     if (serverDef) {
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs

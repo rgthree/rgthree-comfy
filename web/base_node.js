@@ -1,3 +1,6 @@
+import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "../../scripts/app.js";
+import { rgthree } from "./rgthree.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
@@ -39,10 +42,93 @@ export class RgthreeBaseNode extends LGraphNode {
             }
         }
     }
-    static setUp(clazz) {
+    static setUp(...args) {
     }
 }
 RgthreeBaseNode.exposedActions = [];
 RgthreeBaseNode.title = "__NEED_NAME__";
 RgthreeBaseNode.category = 'rgthree';
 RgthreeBaseNode._category = 'rgthree';
+const WIDGETS = ComfyWidgets;
+const overriddenServerNodes = new Map();
+export class RgthreeBaseServerNode extends RgthreeBaseNode {
+    constructor(title) {
+        super(title);
+        this.serialize_widgets = true;
+        this.setupFromServerNodeData();
+    }
+    setupFromServerNodeData() {
+        var _a, _b, _c;
+        const nodeData = this.constructor.nodeData;
+        if (!nodeData) {
+            throw Error('No node data');
+        }
+        this.comfyClass = nodeData.name;
+        let inputs = nodeData["input"]["required"];
+        if (nodeData["input"]["optional"] != undefined) {
+            inputs = Object.assign({}, inputs, nodeData["input"]["optional"]);
+        }
+        const config = { minWidth: 1, minHeight: 1, widget: null };
+        for (const inputName in inputs) {
+            const inputData = inputs[inputName];
+            const type = inputData[0];
+            if ((_a = inputData[1]) === null || _a === void 0 ? void 0 : _a.forceInput) {
+                this.addInput(inputName, type);
+            }
+            else {
+                let widgetCreated = true;
+                if (Array.isArray(type)) {
+                    Object.assign(config, WIDGETS.COMBO(this, inputName, inputData, app) || {});
+                }
+                else if (`${type}:${inputName}` in WIDGETS) {
+                    Object.assign(config, WIDGETS[`${type}:${inputName}`](this, inputName, inputData, app) || {});
+                }
+                else if (type in WIDGETS) {
+                    Object.assign(config, WIDGETS[type](this, inputName, inputData, app) || {});
+                }
+                else {
+                    this.addInput(inputName, type);
+                    widgetCreated = false;
+                }
+                if (widgetCreated && ((_b = inputData[1]) === null || _b === void 0 ? void 0 : _b.forceInput) && (config === null || config === void 0 ? void 0 : config.widget)) {
+                    if (!config.widget.options)
+                        config.widget.options = {};
+                    config.widget.options.forceInput = inputData[1].forceInput;
+                }
+                if (widgetCreated && ((_c = inputData[1]) === null || _c === void 0 ? void 0 : _c.defaultInput) && (config === null || config === void 0 ? void 0 : config.widget)) {
+                    if (!config.widget.options)
+                        config.widget.options = {};
+                    config.widget.options.defaultInput = inputData[1].defaultInput;
+                }
+            }
+        }
+        for (const o in nodeData["output"]) {
+            let output = nodeData["output"][o];
+            if (output instanceof Array)
+                output = "COMBO";
+            const outputName = nodeData["output_name"][o] || output;
+            const outputShape = nodeData["output_is_list"][o] ? LiteGraph.GRID_SHAPE : LiteGraph.CIRCLE_SHAPE;
+            this.addOutput(outputName, output, { shape: outputShape });
+        }
+        const s = this.computeSize();
+        s[0] = Math.max(config.minWidth, s[0] * 1.5);
+        s[1] = Math.max(config.minHeight, s[1]);
+        this.size = s;
+        this.serialize_widgets = true;
+    }
+    static registerForOverride(comfyClass, rgthreeClass) {
+        if (overriddenServerNodes.has(comfyClass)) {
+            throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
+        }
+        overriddenServerNodes.set(comfyClass, rgthreeClass);
+    }
+}
+RgthreeBaseServerNode.nodeData = null;
+const oldregisterNodeType = LiteGraph.registerNodeType;
+LiteGraph.registerNodeType = function (nodeId, baseClass) {
+    const clazz = overriddenServerNodes.get(baseClass) || baseClass;
+    if (clazz !== baseClass) {
+        rgthree.logger.debug(`For "${nodeId}", replacing default ComfyNode implementation with custom ${clazz.type || clazz.name || clazz.title} class.`);
+    }
+    return oldregisterNodeType.call(LiteGraph, nodeId, clazz);
+};

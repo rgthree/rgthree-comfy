@@ -1,11 +1,19 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 import { NodeMode } from "./typings/comfy.js";
-import type {IWidget, SerializedLGraphNode, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+// @ts-ignore
+import { ComfyWidgets } from "../../scripts/widgets.js";
+// @ts-ignore
+import { app } from "../../scripts/app.js";
+
+import { rgthree } from "./rgthree.js";
 
 declare const LGraphNode: typeof TLGraphNode;
+declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * A base node with standard methods, extending the LGraphNode.
+ * This can be used for ui-nodes and a further base for server nodes.
  */
 export class RgthreeBaseNode extends LGraphNode {
 
@@ -85,7 +93,128 @@ export class RgthreeBaseNode extends LGraphNode {
   }
 
 
-  static setUp<T extends RgthreeBaseNode>(clazz: new(title?: any) => T) {
+  static setUp<T extends RgthreeBaseNode>(...args: any[]) {
     // No-op.
   }
+}
+
+
+
+const WIDGETS = ComfyWidgets;
+const overriddenServerNodes = new Map<any, any>();
+
+/**
+ * A base node with standard methods, extending the LGraphNode.
+ * This is somewhat experimental, but if comfyui is going to keep breaking widgets and inputs, it
+ * seems safer than NOT overriding.
+ */
+export class RgthreeBaseServerNode extends RgthreeBaseNode {
+
+  static nodeData: any|null = null;
+
+  comfyClass!: string;
+
+  constructor(title: string) {
+    super(title);
+    this.serialize_widgets = true;
+    this.setupFromServerNodeData();
+  }
+
+  /**
+   * This takes the server data and builds out the inputs, outputs and widgets. It's similar to the
+   * ComfyNode constructor in registerNodes in ComfyUI's app.js, but is more stable and thus
+   * shouldn't break as often when it modifyies widgets and types.
+   */
+  setupFromServerNodeData() {
+    const nodeData = (this.constructor as any).nodeData;
+    if (!nodeData) {
+      throw Error('No node data');
+    }
+
+    // Necessary for serialization so Comfy backend can check types.
+    // Serialized as `class_type`. See app.js#graphToPrompt
+    this.comfyClass = nodeData.name;
+
+    let inputs = nodeData["input"]["required"];
+    if (nodeData["input"]["optional"] != undefined){
+        inputs = Object.assign({}, inputs, nodeData["input"]["optional"])
+    }
+
+    const config: {minWidth: number, minHeight: number, widget?: null|{options: any}} = { minWidth: 1, minHeight: 1, widget: null };
+    for (const inputName in inputs) {
+      const inputData = inputs[inputName];
+      const type = inputData[0];
+      // If we're forcing the input, just do it now and forget all that widget stuff.
+      // This is one of the differences from ComfyNode and provides smoother experience for inputs
+      // that are going to remain inputs anyway.
+      // Also, it fixes https://github.com/comfyanonymous/ComfyUI/issues/1404 (for rgthree nodes)
+      if (inputData[1]?.forceInput) {
+        this.addInput(inputName, type);
+      } else {
+        let widgetCreated = true;
+        if (Array.isArray(type)) {
+          // Enums
+          Object.assign(config, WIDGETS.COMBO(this, inputName, inputData, app) || {});
+        } else if (`${type}:${inputName}` in WIDGETS) {
+          // Support custom widgets by Type:Name
+          Object.assign(config, WIDGETS[`${type}:${inputName}`](this, inputName, inputData, app) || {});
+        } else if (type in WIDGETS) {
+          // Standard type widgets
+          Object.assign(config, WIDGETS[type](this, inputName, inputData, app) || {});
+        } else {
+          // Node connection inputs
+          this.addInput(inputName, type);
+          widgetCreated = false;
+        }
+
+        // Don't actually need this right now, but ported it over from ComfyWidget.
+        if(widgetCreated && inputData[1]?.forceInput && config?.widget) {
+          if (!config.widget.options) config.widget.options = {};
+          config.widget.options.forceInput = inputData[1].forceInput;
+        }
+        if(widgetCreated && inputData[1]?.defaultInput && config?.widget) {
+          if (!config.widget.options) config.widget.options = {};
+          config.widget.options.defaultInput = inputData[1].defaultInput;
+        }
+      }
+    }
+
+    for (const o in nodeData["output"]) {
+      let output = nodeData["output"][o];
+      if(output instanceof Array) output = "COMBO";
+      const outputName = nodeData["output_name"][o] || output;
+      const outputShape = nodeData["output_is_list"][o] ? LiteGraph.GRID_SHAPE : LiteGraph.CIRCLE_SHAPE ;
+      this.addOutput(outputName, output, { shape: outputShape });
+    }
+
+    const s = this.computeSize();
+    s[0] = Math.max(config.minWidth, s[0] * 1.5);
+    s[1] = Math.max(config.minHeight, s[1]);
+    this.size = s;
+    this.serialize_widgets = true;
+  }
+
+
+  static registerForOverride(comfyClass: any, rgthreeClass: any) {
+    if (overriddenServerNodes.has(comfyClass)) {
+      throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
+    }
+    overriddenServerNodes.set(comfyClass, rgthreeClass);
+  }
+}
+
+
+const oldregisterNodeType = LiteGraph.registerNodeType;
+/**
+ * ComfyUI calls registerNodeType with its ComfyNode, but we don't trust that will remain stable, so
+ * we need to identify it, intercept it, and supply our own class for the node.
+ */
+LiteGraph.registerNodeType = function(nodeId: string, baseClass: any) {
+  const clazz = overriddenServerNodes.get(baseClass) || baseClass;
+  if (clazz !== baseClass) {
+    rgthree.logger.debug(`For "${nodeId}", replacing default ComfyNode implementation with custom ${
+        clazz.type || clazz.name || clazz.title} class.`);
+  }
+
+  return oldregisterNodeType.call(LiteGraph, nodeId, clazz);
 }
