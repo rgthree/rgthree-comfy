@@ -1,7 +1,7 @@
 import os
 import re
 from nodes import MAX_RESOLUTION
-from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL, CLIPTextEncodeSDXLRefiner
+from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL
 
 from .log import log_node_warn, log_node_info, log_node_success
 from .constants import get_category, get_name
@@ -103,6 +103,7 @@ class RgthreeSDXLPowerPromptPositive:
            crop_width=-1,
            crop_height=-1,
            values_insert_saved=None):
+
     if insert_lora == 'DISABLE LORAS':
       prompt_g, loras_g = get_and_strip_loras(prompt_g, True)
       prompt_l, loras_l = get_and_strip_loras(prompt_l, True)
@@ -129,15 +130,31 @@ class RgthreeSDXLPowerPromptPositive:
           NODE_NAME, f'Found {len(loras)} lora tags in prompt but model & clip were not supplied!')
         log_node_info(NODE_NAME, 'Loras not processed, keeping for TEXT output.')
 
-    conditioning_base = None
-    if opt_clip_width and opt_clip_height:
-      target_width = target_width if target_width and target_width > 0 else opt_clip_width
-      target_height = target_height if target_height and target_height > 0 else opt_clip_height
-      crop_width = crop_width if crop_width and crop_width > 0 else 0
-      crop_height = crop_height if crop_height and crop_height > 0 else 0
-      if opt_clip:
-        conditioning_base = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
-                                                        crop_width, crop_height, target_width,
-                                                        target_height, prompt_g, prompt_l)[0]
+    conditioning = self.get_conditioning(prompt_g, prompt_l, opt_clip, opt_clip_width,
+                                         opt_clip_height, target_width, target_height, crop_width,
+                                         crop_height)
 
-    return (conditioning_base, opt_model, opt_clip, prompt_g, prompt_l)
+    return (conditioning, opt_model, opt_clip, prompt_g, prompt_l)
+
+  def get_conditioning(self, prompt_g, prompt_l, opt_clip, opt_clip_width, opt_clip_height,
+                       target_width, target_height, crop_width, crop_height):
+    """Checks the inputs and gets the conditioning."""
+    conditioning = None
+    if opt_clip is not None:
+      if opt_clip_width and opt_clip_height:
+        target_width = target_width if target_width and target_width > 0 else opt_clip_width
+        target_height = target_height if target_height and target_height > 0 else opt_clip_height
+        crop_width = crop_width if crop_width and crop_width > 0 else 0
+        crop_height = crop_height if crop_height and crop_height > 0 else 0
+        conditioning = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
+                                                   crop_width, crop_height, target_width,
+                                                   target_height, prompt_g, prompt_l)[0]
+      else:
+        # If we got an opt_clip, but no clip_width or _height, then use normal CLIPTextEncode
+        log_node_info(
+          self.NAME,
+          'CLIP supplied, but not CLIP_WIDTH and CLIP_HEIGHT. Text encoding will use standard encoding with prompt_g and prompt_l concatenated.'
+        )
+        conditioning = CLIPTextEncode().encode(
+          opt_clip, f'{prompt_g if prompt_g else ""}\n{prompt_l if prompt_l else ""}')[0]
+    return conditioning

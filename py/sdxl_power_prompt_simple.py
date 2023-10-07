@@ -4,6 +4,7 @@ import re
 import folder_paths
 from nodes import MAX_RESOLUTION, LoraLoader
 from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL
+from .sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 
 from .log import log_node_warn, log_node_info, log_node_success
 
@@ -12,7 +13,7 @@ from .constants import get_category, get_name
 NODE_NAME = get_name('SDXL Power Prompt - Simple / Negative')
 
 
-class RgthreeSDXLPowerPromptSimple:
+class RgthreeSDXLPowerPromptSimple(RgthreeSDXLPowerPromptPositive):
   """A simpler SDXL Power Prompt that doesn't handle Loras."""
 
   NAME = NODE_NAME
@@ -99,15 +100,7 @@ class RgthreeSDXLPowerPromptSimple:
            crop_width=-1,
            crop_height=-1,
            values_insert_saved=None):
-    conditioning_base = None
-    if opt_clip_width and opt_clip_height:
-      target_width = target_width if target_width and target_width > 0 else opt_clip_width
-      target_height = target_height if target_height and target_height > 0 else opt_clip_height
-      crop_width = crop_width if crop_width and crop_width > 0 else 0
-      crop_height = crop_height if crop_height and crop_height > 0 else 0
-      if opt_clip:
-        conditioning_base = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
-                                                        crop_width, crop_height, target_width,
-                                                        target_height, prompt_g, prompt_l)[0]
 
-    return (conditioning_base, prompt_g, prompt_l)
+    conditioning = self.get_conditioning(prompt_g, prompt_l, opt_clip, opt_clip_width,
+                                         opt_clip_height, target_width, target_height, crop_width, crop_height)
+    return (conditioning, prompt_g, prompt_l)
