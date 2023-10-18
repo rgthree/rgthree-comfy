@@ -1,18 +1,5 @@
 # rgthree's Comfy Nodes
 
-> **IMPORTANT:** Recent changes to ComfyUI have broken some nodes in rgthree-comfy. I believe the
-> affected nodes are mostly all the Context nodes, and Config nodes. Until comfy can fix the
-> breakages (or revert them) I am forced to suggest that you use a ComfyUI checkpoint that worked
-> by running changing the last working commit from your ComfyUI directory:
-> ````
-> git reset --hard 4103f7f
-> ````
-> Note 1: You can undo this change at any time by pulling the latest with `git pull` from the same
-> directory.
->
-> Note 2: If you use Comfy-Manager, there's a pretty good chance it may update and re-break comfyui.
->
-
 A collection of nodes I've created while messing around with Stable Diffusion. I made them for myself to make my workflow easier and cleaner. You're welcome to try them out, but do so at your own risk. Since I made them for myself, I didn't battle test them much outside of my specific use cases.
 
 ![Context Node](./docs/rgthree_advanced.png)
