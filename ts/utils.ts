@@ -558,7 +558,6 @@ function getTypeFromSlot(
     const connectedSlots =
       dir === IoDirection.OUTPUT ? connectedNode.inputs : connectedNode.outputs;
     let connectedSlot = connectedSlots[connectedSlotNum];
-    console.log(connectedSlot);
     if (connectedSlot?.type != null && connectedSlot?.type != "*") {
       return {
         type: connectedSlot.type as string,
