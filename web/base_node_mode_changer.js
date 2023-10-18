@@ -1,5 +1,6 @@
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { PassThroughFollowing, wait } from "./utils.js";
+import { PassThroughFollowing } from "./utils.js";
+import { wait } from "./shared_utils.js";
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);

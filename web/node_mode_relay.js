@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, addHelp, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, wait, } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, addHelp, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
+import { wait } from "./shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 const MODE_ALWAYS = 0;

@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
-import { addConnectionLayoutSupport, wait } from "./utils.js";
+import { addConnectionLayoutSupport } from "./utils.js";
+import { wait } from "./shared_utils.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { BaseCollectorNode } from './base_node_collector.js';
 import { NodeTypesString } from "./constants.js";

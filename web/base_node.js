@@ -49,7 +49,6 @@ RgthreeBaseNode.exposedActions = [];
 RgthreeBaseNode.title = "__NEED_NAME__";
 RgthreeBaseNode.category = 'rgthree';
 RgthreeBaseNode._category = 'rgthree';
-const WIDGETS = ComfyWidgets;
 const overriddenServerNodes = new Map();
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {
@@ -57,7 +56,10 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         this.serialize_widgets = true;
         this.setupFromServerNodeData();
     }
-    setupFromServerNodeData() {
+    getWidgets() {
+        return ComfyWidgets;
+    }
+    async setupFromServerNodeData() {
         var _a, _b, _c;
         const nodeData = this.constructor.nodeData;
         if (!nodeData) {
@@ -68,6 +70,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         if (nodeData["input"]["optional"] != undefined) {
             inputs = Object.assign({}, inputs, nodeData["input"]["optional"]);
         }
+        const WIDGETS = this.getWidgets();
         const config = { minWidth: 1, minHeight: 1, widget: null };
         for (const inputName in inputs) {
             const inputData = inputs[inputName];

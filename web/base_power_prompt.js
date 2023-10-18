@@ -1,5 +1,5 @@
 import { api } from '../../scripts/api.js';
-import { wait } from './utils.js';
+import { wait } from "./shared_utils.js";
 export class PowerPrompt {
     constructor(node, nodeData) {
         this.combos = {};

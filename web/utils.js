@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { wait } from "./shared_utils.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
     const defs = await oldApiGetNodeDefs.call(api);
@@ -243,13 +244,6 @@ function toggleConnectionLabel(cxn, hide = true) {
         cxn.old_label = undefined;
     }
     return cxn;
-}
-export function wait(ms = 16, value) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve(value);
-        }, ms);
-    });
 }
 export function addHelp(nodeCtor, comfyApp) {
     addMenuItem(nodeCtor, comfyApp || app, {

@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
-import { wait } from "./utils.js";
+import { wait } from "./shared_utils.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -24,7 +24,7 @@ const LogLevelToCSS = {
     [LogLevel.INFO]: "",
     [LogLevel.DEBUG]: "font-style: italic;",
 };
-let GLOBAL_LOG_LEVEL = LogLevel.WARN;
+let GLOBAL_LOG_LEVEL = LogLevel.DEBUG;
 class Logger {
     log(level, message, ...args) {
         if (level <= GLOBAL_LOG_LEVEL) {
