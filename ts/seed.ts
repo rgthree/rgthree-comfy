@@ -132,7 +132,7 @@ class SeedControl {
         if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
           if (inputSeed === SPECIAL_SEED_INCREMENT) {
             this.serializedCtx.seedUsed = this.lastSeed + 1;
-          } else if (inputSeed === SPECIAL_SEED_INCREMENT) {
+          } else if (inputSeed === SPECIAL_SEED_DECREMENT) {
             this.serializedCtx.seedUsed = this.lastSeed - 1;
           }
         }
