@@ -378,7 +378,6 @@ function getTypeFromSlot(slot, dir, skipSelf = false) {
         const connectedNode = graph.getNodeById(connectedId);
         const connectedSlots = dir === IoDirection.OUTPUT ? connectedNode.inputs : connectedNode.outputs;
         let connectedSlot = connectedSlots[connectedSlotNum];
-        console.log(connectedSlot);
         if ((connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.type) != null && (connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.type) != "*") {
             return {
                 type: connectedSlot.type,
