@@ -23,7 +23,7 @@ _all_context_input_output_data = {
   "sampler": ("sampler", comfy.samplers.KSampler.SAMPLERS, "SAMPLER"),
   "scheduler": ("scheduler", comfy.samplers.KSampler.SCHEDULERS, "SCHEDULER"),
   "clip_width": ("clip_width", "INT", "CLIP_WIDTH"),
-  "clip_height": ("clip_height", "INT", "CLIP_HEIGTH"),
+  "clip_height": ("clip_height", "INT", "CLIP_HEIGHT"),
   "text_pos_g": ("text_pos_g", "STRING", "TEXT_POS_G"),
   "text_pos_l": ("text_pos_l", "STRING", "TEXT_POS_L"),
   "text_neg_g": ("text_neg_g", "STRING", "TEXT_NEG_G"),

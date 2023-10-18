@@ -2,6 +2,51 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
+function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
+    const otherNodeType = (otherNode.type || '').toUpperCase();
+    const otherNodeName = (otherNode.title || '').toUpperCase();
+    let otherSlotType = otherSlot.type;
+    if (Array.isArray(otherSlotType) || otherSlotType.includes(',')) {
+        otherSlotType = 'COMBO';
+    }
+    const otherSlotName = otherSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+    let ctxSlotIndex = -1;
+    if (["CONDITIONING", "INT", "STRING", "FLOAT", "COMBO"].includes(otherSlotType)) {
+        ctxSlotIndex = ctxSlots.findIndex((ctxSlot) => {
+            const ctxSlotName = ctxSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+            let ctxSlotType = ctxSlot.type;
+            if (Array.isArray(ctxSlotType) || ctxSlotType.includes(',')) {
+                ctxSlotType = 'COMBO';
+            }
+            if (ctxSlotType !== otherSlotType) {
+                return false;
+            }
+            if (ctxSlotName === otherSlotName
+                || (ctxSlotName === "SEED" && otherSlotName.includes("SEED"))
+                || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP"))
+                || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))) {
+                return true;
+            }
+            if ((otherNodeType.includes('POSITIVE') || otherNodeName.includes('POSITIVE')) &&
+                ((ctxSlotName === 'POSITIVE' && otherSlotType === 'CONDITIONING')
+                    || (ctxSlotName === 'TEXT_POS_G' && otherSlotName.includes("TEXT_G"))
+                    || (ctxSlotName === 'TEXT_POS_L' && otherSlotName.includes("TEXT_L")))) {
+                return true;
+            }
+            if ((otherNodeType.includes('NEGATIVE') || otherNodeName.includes('NEGATIVE')) &&
+                ((ctxSlotName === 'NEGATIVE' && otherSlotType === 'CONDITIONING')
+                    || (ctxSlotName === 'TEXT_NEG_G' && otherSlotName.includes("TEXT_G"))
+                    || (ctxSlotName === 'TEXT_NEG_L' && otherSlotName.includes("TEXT_L")))) {
+                return true;
+            }
+            return false;
+        });
+    }
+    else {
+        ctxSlotIndex = ctxSlots.map((s) => s.type).indexOf(otherSlotType);
+    }
+    return ctxSlotIndex;
+}
 class BaseContextNode extends RgthreeBaseServerNode {
     constructor(title) {
         super(title);
@@ -18,21 +63,30 @@ class BaseContextNode extends RgthreeBaseServerNode {
                 if (input.link && !ctrlKey) {
                     continue;
                 }
-                const inputType = input.type;
-                const inputName = input.name.toUpperCase();
-                let thisOutputSlot = -1;
-                if (["CONDITIONING", "INT"].includes(inputType)) {
-                    thisOutputSlot = this.outputs.findIndex((o) => o.type === inputType &&
-                        (o.name.toUpperCase() === inputName ||
-                            (o.name.toUpperCase() === "SEED" && inputName.includes("SEED")) ||
-                            (o.name.toUpperCase() === "STEP_REFINER" && inputName.includes("AT_STEP"))));
-                }
-                else {
-                    thisOutputSlot = this.outputs.map((s) => s.type).indexOf(input.type);
-                }
+                const thisOutputSlot = findMatchingIndexByTypeOrName(sourceNode, input, this.outputs);
                 if (thisOutputSlot > -1) {
-                    thisOutputSlot;
                     this.connect(thisOutputSlot, sourceNode, index);
+                }
+            }
+        }
+        return null;
+    }
+    connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn) {
+        var _a;
+        let canConnect = super.connectByTypeOutput &&
+            super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+        if (!super.connectByType) {
+            canConnect = LGraphNode.prototype.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+        }
+        if (!canConnect && slot === 0) {
+            const ctrlKey = rgthree.ctrlKey;
+            for (const [index, output] of (sourceNode.outputs || []).entries()) {
+                if (((_a = output.links) === null || _a === void 0 ? void 0 : _a.length) && !ctrlKey) {
+                    continue;
+                }
+                const thisInputSlot = findMatchingIndexByTypeOrName(sourceNode, output, this.inputs);
+                if (thisInputSlot > -1) {
+                    sourceNode.connect(index, this, thisInputSlot);
                 }
             }
         }
@@ -119,6 +173,12 @@ ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
 const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode];
 const contextTypeToServerDef = {};
+function fixBadConfigs(node) {
+    const wrongName = node.outputs.find((o, i) => o.name === 'CLIP_HEIGTH');
+    if (wrongName) {
+        wrongName.name = 'CLIP_HEIGHT';
+    }
+}
 app.registerExtension({
     name: "rgthree.Context",
     async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -137,6 +197,7 @@ app.registerExtension({
         const type = node.type || node.constructor.type;
         const serverDef = type && contextTypeToServerDef[type];
         if (serverDef) {
+            fixBadConfigs(node);
             matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
             if (!type.includes("Switch")) {
                 matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
@@ -147,6 +208,7 @@ app.registerExtension({
         const type = node.type || node.constructor.type;
         const serverDef = type && contextTypeToServerDef[type];
         if (serverDef) {
+            fixBadConfigs(node);
             matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
             if (!type.includes("Switch")) {
                 matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);

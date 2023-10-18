@@ -26,6 +26,64 @@ declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
 
 /**
+ * Takes a non-context node and determins for its input or output slot, if there is a valid
+ * connection for an opposite context output or input slot.
+ */
+function findMatchingIndexByTypeOrName(otherNode: TLGraphNode, otherSlot: INodeInputSlot|INodeOutputSlot, ctxSlots: INodeInputSlot[]|INodeOutputSlot[]) {
+  const otherNodeType = (otherNode.type || '').toUpperCase();
+  const otherNodeName = (otherNode.title || '').toUpperCase();
+  let otherSlotType = otherSlot.type as string;
+  if (Array.isArray(otherSlotType) || otherSlotType.includes(',')) {
+    otherSlotType = 'COMBO';
+  }
+  const otherSlotName = otherSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+  let ctxSlotIndex = -1;
+  if (["CONDITIONING", "INT", "STRING", "FLOAT", "COMBO"].includes(otherSlotType)) {
+    ctxSlotIndex = ctxSlots.findIndex((ctxSlot) => {
+      const ctxSlotName = ctxSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+      let ctxSlotType = ctxSlot.type as string;
+      if (Array.isArray(ctxSlotType) || ctxSlotType.includes(',')) {
+        ctxSlotType = 'COMBO';
+      }
+      if (ctxSlotType !== otherSlotType) {
+        return false;
+      }
+      // Straightforward matches.
+      if(ctxSlotName === otherSlotName
+            || (ctxSlotName === "SEED" && otherSlotName.includes("SEED"))
+            || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP"))
+            || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))) {
+        return true;
+      }
+      // If postive other node, try to match conditining and text.
+      if ((otherNodeType.includes('POSITIVE') || otherNodeName.includes('POSITIVE')) &&
+          (
+            (ctxSlotName === 'POSITIVE' && otherSlotType === 'CONDITIONING')
+            || (ctxSlotName === 'TEXT_POS_G' && otherSlotName.includes("TEXT_G"))
+            || (ctxSlotName === 'TEXT_POS_L' && otherSlotName.includes("TEXT_L"))
+          )
+          ) {
+        return true;
+      }
+      if ((otherNodeType.includes('NEGATIVE') || otherNodeName.includes('NEGATIVE')) &&
+          (
+            (ctxSlotName === 'NEGATIVE' && otherSlotType === 'CONDITIONING')
+            || (ctxSlotName === 'TEXT_NEG_G' && otherSlotName.includes("TEXT_G"))
+            || (ctxSlotName === 'TEXT_NEG_L' && otherSlotName.includes("TEXT_L"))
+          )
+          ) {
+        return true;
+      }
+      return false;
+    });
+  } else {
+    ctxSlotIndex = ctxSlots.map((s) => s.type).indexOf(otherSlotType);
+  }
+  return ctxSlotIndex;
+}
+
+
+/**
  * A Base Context node for other context based nodes to extend.
  */
 class BaseContextNode extends RgthreeBaseServerNode {
@@ -60,23 +118,40 @@ class BaseContextNode extends RgthreeBaseServerNode {
         if (input.link && !ctrlKey) {
           continue;
         }
-        const inputType = input.type as string;
-        const inputName = input.name.toUpperCase();
-        let thisOutputSlot = -1;
-        if (["CONDITIONING", "INT"].includes(inputType)) {
-          thisOutputSlot = this.outputs.findIndex(
-            (o) =>
-              o.type === inputType &&
-              (o.name.toUpperCase() === inputName ||
-                (o.name.toUpperCase() === "SEED" && inputName.includes("SEED")) ||
-                (o.name.toUpperCase() === "STEP_REFINER" && inputName.includes("AT_STEP"))),
-          );
-        } else {
-          thisOutputSlot = this.outputs.map((s) => s.type).indexOf(input.type);
-        }
+        const thisOutputSlot = findMatchingIndexByTypeOrName(sourceNode, input, this.outputs);
         if (thisOutputSlot > -1) {
-          thisOutputSlot;
           this.connect(thisOutputSlot, sourceNode, index);
+        }
+      }
+    }
+    return null;
+  }
+
+  override connectByTypeOutput<T = any>(slot: string | number, sourceNode: TLGraphNode, sourceSlotType: string, optsIn: string): T | null {
+    let canConnect =
+      super.connectByTypeOutput &&
+      super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+    if (!super.connectByType) {
+      canConnect = LGraphNode.prototype.connectByTypeOutput.call(
+        this,
+        slot,
+        sourceNode,
+        sourceSlotType,
+        optsIn,
+      );
+    }
+    if (!canConnect && slot === 0) {
+      const ctrlKey = rgthree.ctrlKey;
+      // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
+      // Unfortunately, we don't know which are null now, so we'll just connect any that are
+      // not already connected.
+      for (const [index, output] of (sourceNode.outputs || []).entries()) {
+        if (output.links?.length && !ctrlKey) {
+          continue;
+        }
+        const thisInputSlot = findMatchingIndexByTypeOrName(sourceNode, output, this.inputs);
+        if (thisInputSlot > -1) {
+          sourceNode.connect(index, this, thisInputSlot);
         }
       }
     }
@@ -190,6 +265,15 @@ class ContextSwitchBigNode extends BaseContextNode {
 const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode];
 const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
 
+function fixBadConfigs(node: ContextNode) {
+  // Dumb mistake, but let's fix our mispelling. This will probably need to stay in perpetuity to
+  // keep any old workflows operating.
+  const wrongName = node.outputs.find((o, i) => o.name === 'CLIP_HEIGTH');
+  if (wrongName) {
+    wrongName.name = 'CLIP_HEIGHT';
+  }
+}
+
 app.registerExtension({
   name: "rgthree.Context",
   async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
@@ -211,10 +295,7 @@ app.registerExtension({
     const type = node.type || (node.constructor as any).type;
     const serverDef = type && contextTypeToServerDef[type];
     if (serverDef) {
-      // Because we need to wait for ComfyUI to take our forceInput widgets and make them actual
-      // inputs first. Could probably be removed if github.com/comfyanonymous/ComfyUI/issues/1404
-      // is fixed to skip forced widget generation.
-      // setTimeout(() => {
+      fixBadConfigs(node as ContextNode);
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs
       if (!type!.includes("Switch")) {
@@ -232,6 +313,7 @@ app.registerExtension({
     const type = node.type || (node.constructor as any).type;
     const serverDef = type && contextTypeToServerDef[type];
     if (serverDef) {
+      fixBadConfigs(node as ContextNode);
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs
       if (!type!.includes("Switch")) {
