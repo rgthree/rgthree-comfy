@@ -17,7 +17,6 @@ import {
   applyMixins,
   matchLocalSlotsToServer,
   replaceNode,
-  wait,
 } from "./utils.js";
 import { RgthreeBaseNode, RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";

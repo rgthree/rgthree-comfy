@@ -18,8 +18,8 @@ import {
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodes,
   getConnectedOutputNodesAndFilterPassThroughs,
-  wait,
 } from "./utils.js";
+import { wait } from "./shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 

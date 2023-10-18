@@ -97,6 +97,7 @@ export interface IWidget<TValue = any, TOptions = any> {
     ): boolean;
     /** Called by `LGraphNode.computeSize` */
     computeSize?(width: number): [number, number];
+    serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number): TValue;
 }
 export interface IButtonWidget extends IWidget<null, {}> {
     type: "button";
@@ -690,6 +691,10 @@ export declare class LGraphNode {
     // @rgthree
     setSize(size: Vector2): void;
     onResize?(size: Vector2): void;
+    onInputClick(slot: number, event: MouseEvent): void;
+    onOutputClick(slot: number, event: MouseEvent): void;
+    getConnectionPos(isInput: boolean, slotNumber: number, out: Vector2): Vector2;
+
     /** configure a node from an object containing the serialized info */
     configure(info: SerializedLGraphNode): void;
     /** serialize the content */

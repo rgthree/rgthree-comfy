@@ -6,8 +6,8 @@ import {api} from '../../scripts/api.js';
 // @ts-ignore
 import { ComfyWidgets } from '../../scripts/widgets.js';
 import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, IWidget} from './typings/litegraph.js';
-import type {ComfyObjectInfo, ComfyGraphNode} from './typings/comfy.js'
-import {wait} from './utils.js';
+import type {ComfyObjectInfo, ComfyGraphNode} from './typings/comfy.js';
+import { wait } from "./shared_utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;

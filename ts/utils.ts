@@ -18,6 +18,7 @@ import type { Constructor } from "./typings/index.js";
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
+import { wait } from "./shared_utils.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -344,14 +345,6 @@ function toggleConnectionLabel(cxn: any, hide = true) {
     (cxn as any).old_label = undefined;
   }
   return cxn;
-}
-
-export function wait(ms = 16, value?: any) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(value);
-    }, ms);
-  });
 }
 
 export function addHelp(nodeCtor: Constructor<TLGraphNode>, comfyApp?: ComfyApp) {

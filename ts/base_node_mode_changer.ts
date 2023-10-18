@@ -4,7 +4,8 @@ import {app} from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
-import { PassThroughFollowing, addMenuItem, wait } from "./utils.js";
+import { PassThroughFollowing } from "./utils.js";
+import { wait } from "./shared_utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;

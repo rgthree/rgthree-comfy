@@ -100,7 +100,6 @@ export class RgthreeBaseNode extends LGraphNode {
 
 
 
-const WIDGETS = ComfyWidgets;
 const overriddenServerNodes = new Map<any, any>();
 
 /**
@@ -120,12 +119,16 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     this.setupFromServerNodeData();
   }
 
+  getWidgets() {
+    return ComfyWidgets;
+  }
+
   /**
    * This takes the server data and builds out the inputs, outputs and widgets. It's similar to the
    * ComfyNode constructor in registerNodes in ComfyUI's app.js, but is more stable and thus
    * shouldn't break as often when it modifyies widgets and types.
    */
-  setupFromServerNodeData() {
+  async setupFromServerNodeData() {
     const nodeData = (this.constructor as any).nodeData;
     if (!nodeData) {
       throw Error('No node data');
@@ -139,6 +142,8 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     if (nodeData["input"]["optional"] != undefined){
         inputs = Object.assign({}, inputs, nodeData["input"]["optional"])
     }
+
+    const WIDGETS = this.getWidgets();
 
     const config: {minWidth: number, minHeight: number, widget?: null|{options: any}} = { minWidth: 1, minHeight: 1, widget: null };
     for (const inputName in inputs) {

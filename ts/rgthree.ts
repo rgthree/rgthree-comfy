@@ -4,7 +4,7 @@ import { app } from "../../scripts/app.js";
 // @ts-ignore
 import {rgthreeConfig} from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
-import { wait } from "./utils.js";
+import { wait } from "./shared_utils.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -30,7 +30,7 @@ const LogLevelToCSS: { [key in LogLevel]: string } = {
   [LogLevel.DEBUG]: "font-style: italic;",
 };
 
-let GLOBAL_LOG_LEVEL = LogLevel.WARN;
+let GLOBAL_LOG_LEVEL = LogLevel.DEBUG;
 
 /** A basic wrapper around logger. */
 class Logger {

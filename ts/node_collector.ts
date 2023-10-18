@@ -2,7 +2,8 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from './typings/litegraph.js';
-import { addConnectionLayoutSupport, wait } from "./utils.js";
+import { addConnectionLayoutSupport } from "./utils.js";
+import { wait } from "./shared_utils.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore

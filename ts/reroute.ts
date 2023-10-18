@@ -23,8 +23,8 @@ import {
   addMenuItem,
   getSlotLinks,
   isValidConnection,
-  wait,
 } from "./utils.js";
+import { wait } from "./shared_utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
