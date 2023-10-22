@@ -74,7 +74,18 @@ class LogSession {
   }
 }
 
-
+export type RgthreeUiMessage = {
+  id: string;
+  message: string;
+  type?: 'warn'|null;
+  timeout?: number;
+  // closeable?: boolean; // TODO
+  actions?: Array<{
+    label: string;
+    href?: string;
+    callback?: (event: MouseEvent) => void;
+  }>;
+}
 
 /**
  * A global class as 'rgthree'; exposed on wiindow. Lots can go in here.
@@ -90,6 +101,77 @@ class Rgthree {
 
   monitorBadLinksAlerted = false;
   monitorLinkTimeout: number|null = null;
+
+  async clearAllMessages() {
+    let container = document.querySelector('.rgthree-top-messages-container');
+    container && (container.innerHTML = '');
+  }
+
+  async showMessage(data: RgthreeUiMessage) {
+    let container = document.querySelector('.rgthree-top-messages-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.classList.add('rgthree-top-messages-container');
+      document.body.appendChild(container);
+    }
+    // Hide if we exist.
+    await this.hideMessage(data.id);
+
+    const messageContainer = document.createElement('div');
+    messageContainer.setAttribute('type', data.type || 'info');
+
+    const message = document.createElement('span');
+    message.innerText = data.message;
+    messageContainer.appendChild(message);
+
+    for (let a = 0; a < (data.actions || []).length; a++) {
+      const action = data.actions![a]!;
+      if (a > 0) {
+        const sep = document.createElement('span');
+        sep.innerHTML = '&nbsp;|&nbsp;';
+        messageContainer.appendChild(sep);
+      }
+
+      const actionEl = document.createElement('a');
+      actionEl.innerText = action.label;
+      if (action.href) {
+        actionEl.target = '_blank';
+        actionEl.href = action.href;
+      }
+      if (action.callback) {
+        actionEl.onclick = (e) => {
+          return action.callback!(e);
+        }
+      }
+      messageContainer.appendChild(actionEl);
+    }
+
+    const messageAnimContainer = document.createElement('div');
+    messageAnimContainer.setAttribute('msg-id', data.id);
+    messageAnimContainer.appendChild(messageContainer);
+    container.appendChild(messageAnimContainer);
+
+    // Add. Wait. Measure. Wait. Anim.
+    await wait(64);
+    messageAnimContainer.style.marginTop = `-${messageAnimContainer.offsetHeight}px`;
+    await wait(64);
+    messageAnimContainer.classList.add('-show');
+
+    if (data.timeout) {
+      await wait(data.timeout);
+      this.hideMessage(data.id);
+    }
+
+  }
+
+  async hideMessage(id: string) {
+    const msg = document.querySelector(`.rgthree-top-messages-container > [msg-id="${id}"]`);
+    if (msg?.classList.contains('-show')) {
+      msg.classList.remove('-show');
+      await wait(750);
+    }
+    msg && msg.remove();
+  }
 
   constructor() {
     window.addEventListener("keydown", (e) => {
@@ -128,17 +210,17 @@ class Rgthree {
 
     const clean = app.clean;
     app.clean = function() {
-      document.querySelector('.rgthree-bad-links-alerts-container')?.remove();
+      that.clearAllMessages();
       clean && clean.call(app, ...arguments);
     };
 
     const loadGraphData = app.loadGraphData;
     app.loadGraphData = function(graph: serializedLGraph) {
-      if (this.monitorLinkTimeout) {
-        clearTimeout(this.monitorLinkTimeout);
-        this.monitorLinkTimeout = null;
+      if (that.monitorLinkTimeout) {
+        clearTimeout(that.monitorLinkTimeout);
+        that.monitorLinkTimeout = null;
       }
-      document.querySelector('.rgthree-bad-links-alerts-container')?.remove();
+      that.clearAllMessages();
       // Try to make a copy to use, because ComfyUI's loadGraphData will modify it.
       let graphCopy: serializedLGraph|null;
       try {
@@ -151,71 +233,38 @@ class Rgthree {
         const graphToUse = wasLoadingAborted ? (graphCopy || graph) : app.graph
         const fixBadLinksResult = fixBadLinks(graphToUse);
         if (fixBadLinksResult.hasBadLinks) {
-          const div = document.createElement('div');
-          div.classList.add('rgthree-bad-links-alerts');
-          div.innerHTML = `
-            <span style="font-size: 18px; margin-right: 4px; display: inline-block; line-height:1">⚠️</span>
-            <span style="flex; 1 1 auto; ">
-              The workflow you've loaded may have connection/linking data that could be fixed.
-            </span>
-            <a target="_blank"
-                style="color: #fc0; margin-left: 4px; display: inline-block; line-height:1"
-                href="/extensions/rgthree-comfy/html/links.html">Open fixer<a>
-            <span>&nbsp;|&nbsp;</span>
-            <a class="fix-in-place" target="_blank"
-                style="cursor: pointer; text-decoration: underline; color: #fc0; margin-left: 4px; display: inline-block; line-height:1"
-                >Fix in place<a>
-          `;
-          div.style.background = '#353535';
-          div.style.color = '#fff';
-          div.style.display = 'flex';
-          div.style.flexDirection = 'row';
-          div.style.alignItems = 'center';
-          div.style.justifyContent = 'center';
-          div.style.height = 'fit-content';
-          div.style.boxShadow = '0 0 10px rgba(0,0,0,0.88)';
-          div.style.padding = '6px 12px';
-          div.style.borderRadius = '0 0 4px 4px';
-          div.style.fontFamily = 'Arial, sans-serif';
-          div.style.fontSize = '14px';
-          div.style.transform = 'translateY(-100%)';
-          div.style.transition = 'transform 0.5s ease-in-out';
-          const container = document.createElement('div');
-          container.classList.add('rgthree-bad-links-alerts-container');
-          container.appendChild(div);
-          container.style.position = 'fixed';
-          container.style.zIndex = '9999';
-          container.style.top = '0';
-          container.style.left = '0';
-          container.style.width = '100%';
-          container.style.height = '0';
-          container.style.display = 'flex';
-          container.style.justifyContent = 'center';
-          document.body.appendChild(container);
-
-          div.querySelector('.fix-in-place')?.addEventListener('click', (event) => {
-            event.stopPropagation();
-            event.preventDefault();
-            if (confirm('This will attempt to fix in place. Please make sure to have a saved copy of your workflow.')) {
-              const fixBadLinksResult = fixBadLinks(graphToUse, true);
-              if (!fixBadLinksResult.hasBadLinks) {
-                alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
-                wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
-                container.remove();
-                if (rgthreeConfig['monitor_bad_links']) {
-                  that.monitorLinkTimeout = setTimeout(() => {
-                    that.monitorBadLinks();
-                  }, 5000);
+          that.showMessage({
+            id: 'bad-links',
+            type: 'warn',
+            message: 'The workflow you\'ve loaded may have connection/linking data that could be fixed.',
+            actions: [
+              {
+                label: 'Open fixer',
+                href: '/extensions/rgthree-comfy/html/links.html',
+              },
+              {
+                label: 'Fix in place',
+                href: '/extensions/rgthree-comfy/html/links.html',
+                callback: (event) => {
+                  event.stopPropagation();
+                  event.preventDefault();
+                  if (confirm('This will attempt to fix in place. Please make sure to have a saved copy of your workflow.')) {
+                    const fixBadLinksResult = fixBadLinks(graphToUse, true);
+                    if (!fixBadLinksResult.hasBadLinks) {
+                      that.hideMessage('bad-links');
+                      alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
+                      wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
+                      if (rgthreeConfig['monitor_bad_links']) {
+                        that.monitorLinkTimeout = setTimeout(() => {
+                          that.monitorBadLinks();
+                        }, 5000);
+                      }
+                    }
+                  }
                 }
-              }
-            }
-
+              },
+            ]
           });
-
-          setTimeout(() => {
-            const container = document.querySelector('.rgthree-bad-links-alerts') as HTMLElement;
-            container && (container.style.transform = 'translateY(0%)');
-          }, 500);
         } else if (rgthreeConfig['monitor_bad_links']) {
           that.monitorLinkTimeout = setTimeout(() => {
             that.monitorBadLinks();
