@@ -187,6 +187,7 @@ app.registerExtension({
         for (const ctxClass of contextNodes) {
             if (nodeData.name === ctxClass.type) {
                 ctxClass.nodeData = nodeData;
+                ctxClass.nodeType = nodeType;
                 contextTypeToServerDef[ctxClass.type] = nodeData;
                 ctxClass.setUp(nodeType);
                 break;

@@ -1,6 +1,6 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 import { NodeMode } from "./typings/comfy.js";
-import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode} from './typings/litegraph.js';
+import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode, LGraphCanvas} from './typings/litegraph.js';
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore
@@ -92,7 +92,6 @@ export class RgthreeBaseNode extends LGraphNode {
     }
   }
 
-
   static setUp<T extends RgthreeBaseNode>(...args: any[]) {
     // No-op.
   }
@@ -110,6 +109,7 @@ const overriddenServerNodes = new Map<any, any>();
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
   static nodeData: any|null = null;
+  static nodeType: any|null = null;
 
   comfyClass!: string;
 
@@ -121,6 +121,14 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
   getWidgets() {
     return ComfyWidgets;
+  }
+
+  override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: LGraphCanvas): void {
+    const nodeType = (this.constructor as any).nodeType;
+    // This is specifically for ComfyUi-Manager to draw the badge... though could have other
+    // side-effects if other extensions override. If it gets messy, may have to remove.
+    nodeType?.prototype?.onDrawForeground?.apply(this, [ctx, canvas]);
+    super.onDrawForeground && super.onDrawForeground(ctx, canvas);
   }
 
   /**

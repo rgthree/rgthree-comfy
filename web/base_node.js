@@ -59,6 +59,12 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     getWidgets() {
         return ComfyWidgets;
     }
+    onDrawForeground(ctx, canvas) {
+        var _a, _b;
+        const nodeType = this.constructor.nodeType;
+        (_b = (_a = nodeType === null || nodeType === void 0 ? void 0 : nodeType.prototype) === null || _a === void 0 ? void 0 : _a.onDrawForeground) === null || _b === void 0 ? void 0 : _b.apply(this, [ctx, canvas]);
+        super.onDrawForeground && super.onDrawForeground(ctx, canvas);
+    }
     async setupFromServerNodeData() {
         var _a, _b, _c;
         const nodeData = this.constructor.nodeData;
@@ -127,6 +133,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     }
 }
 RgthreeBaseServerNode.nodeData = null;
+RgthreeBaseServerNode.nodeType = null;
 const oldregisterNodeType = LiteGraph.registerNodeType;
 LiteGraph.registerNodeType = function (nodeId, baseClass) {
     const clazz = overriddenServerNodes.get(baseClass) || baseClass;
