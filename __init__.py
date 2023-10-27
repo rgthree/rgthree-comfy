@@ -104,7 +104,7 @@ def search_file(extension,rootdir):
     return file_list
 
 nodes = []
-for file in search_file('*.py', root_dir=DIR_PY) + search_file('*.js', root_dir=os.path.join(DIR_DEV_WEB, 'js')):
+for file in search_file('*.py', DIR_PY) + search_file('*.js', os.path.join(DIR_DEV_WEB, 'js')):
   name = os.path.splitext(file)[0]
   if name not in nodes and name not in NOT_NODES and not name.startswith(
       '_') and not name.startswith('base') and not 'utils' in name:
