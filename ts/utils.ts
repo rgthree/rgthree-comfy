@@ -494,7 +494,7 @@ export function getConnectedNodes(
   return rootNodes;
 }
 
-type ConnectionType = { type: string | string[]; label: string | undefined };
+export type ConnectionType = { type: string | string[]; name: string | undefined; label: string | undefined; };
 
 /**
  * Follows a connection until we find a type associated with a slot.
@@ -539,7 +539,7 @@ function getTypeFromSlot(
   let graph = app.graph as LGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
-    return { type: type as string, label: slot?.label || slot?.name };
+    return { type: type as string, label: slot?.label, name: slot?.name};
   }
   const links = getSlotLinks(slot);
   for (const link of links) {
@@ -554,7 +554,8 @@ function getTypeFromSlot(
     if (connectedSlot?.type != null && connectedSlot?.type != "*") {
       return {
         type: connectedSlot.type as string,
-        label: connectedSlot?.label || connectedSlot?.name,
+        label: connectedSlot?.label,
+        name: connectedSlot?.name
       };
     } else if (connectedSlot?.type == "*") {
       return followConnectionUntilType(connectedNode, dir);

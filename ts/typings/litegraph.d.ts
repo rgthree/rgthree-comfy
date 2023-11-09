@@ -38,6 +38,8 @@ export interface INodeSlot {
     hidden?: boolean;
     // @rgthree
     disabled?: boolean;
+    // @rgthree
+    removable?: boolean;
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -1087,7 +1089,8 @@ export declare class LGraphNode {
 
     /** Called by `LGraphCanvas.processContextMenu` */
     getMenuOptions?(graphCanvas: LGraphCanvas): ContextMenuItem[];
-    getSlotMenuOptions?(slot: INodeSlot): ContextMenuItem[];
+    // rgthree
+    getSlotMenuOptions?(slotItem: {slot: number, input?: INodeInputSlot, output?: INodeOutputSlot, link_pos: Vector2}): ContextMenuItem[];
 
     getExtraMenuOptions?(canvas: LGraphCanvas, options: ContextMenuItem[]): void;
 }

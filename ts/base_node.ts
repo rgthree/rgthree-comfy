@@ -34,6 +34,8 @@ export class RgthreeBaseNode extends LGraphNode {
   /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
   private mode_: NodeMode;
 
+  configuring = false;
+
   isVirtualNode = false;
 
   constructor(title = RgthreeBaseNode.title) {
@@ -45,12 +47,14 @@ export class RgthreeBaseNode extends LGraphNode {
   }
 
   override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+    this.configuring = true;
     super.configure(info);
     // Fix https://github.com/comfyanonymous/ComfyUI/issues/1448 locally.
     // Can removed when fixed and adopted.
     for (const w of (this.widgets || [])) {
       w.last_y = w.last_y || 0;
     }
+    this.configuring = false;
   }
 
 

@@ -363,7 +363,7 @@ function getTypeFromSlot(slot, dir, skipSelf = false) {
     let graph = app.graph;
     let type = slot === null || slot === void 0 ? void 0 : slot.type;
     if (!skipSelf && type != null && type != "*") {
-        return { type: type, label: (slot === null || slot === void 0 ? void 0 : slot.label) || (slot === null || slot === void 0 ? void 0 : slot.name) };
+        return { type: type, label: slot === null || slot === void 0 ? void 0 : slot.label, name: slot === null || slot === void 0 ? void 0 : slot.name };
     }
     const links = getSlotLinks(slot);
     for (const link of links) {
@@ -375,7 +375,8 @@ function getTypeFromSlot(slot, dir, skipSelf = false) {
         if ((connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.type) != null && (connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.type) != "*") {
             return {
                 type: connectedSlot.type,
-                label: (connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.label) || (connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.name),
+                label: connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.label,
+                name: connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.name
             };
         }
         else if ((connectedSlot === null || connectedSlot === void 0 ? void 0 : connectedSlot.type) == "*") {

@@ -5,6 +5,7 @@ export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
         this._tempWidth = 0;
+        this.configuring = false;
         this.isVirtualNode = false;
         if (title == '__NEED_NAME__') {
             throw new Error('RgthreeBaseNode needs overrides.');
@@ -12,10 +13,12 @@ export class RgthreeBaseNode extends LGraphNode {
         this.properties = this.properties || {};
     }
     configure(info) {
+        this.configuring = true;
         super.configure(info);
         for (const w of (this.widgets || [])) {
             w.last_y = w.last_y || 0;
         }
+        this.configuring = false;
     }
     set mode(mode) {
         if (this.mode_ != mode) {

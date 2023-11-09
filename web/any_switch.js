@@ -42,7 +42,7 @@ class AnySwitchforMixin extends RgthreeBaseNode {
             output.label =
                 output.type === 'RGTHREE_CONTEXT' ? 'CONTEXT' :
                     Array.isArray(this.nodeType) || this.nodeType.includes(",")
-                        ? (connectedType === null || connectedType === void 0 ? void 0 : connectedType.label) || String(this.nodeType)
+                        ? (connectedType === null || connectedType === void 0 ? void 0 : connectedType.label) || (connectedType === null || connectedType === void 0 ? void 0 : connectedType.name) || String(this.nodeType)
                         : String(this.nodeType);
         }
     }
