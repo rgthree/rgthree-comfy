@@ -28,14 +28,10 @@ class RgthreeDynamicContext:
   RETURN_NAMES = ByPassTypeTuple(("CONTEXT",))
   FUNCTION = "main"
 
-  def main(self,
-           base_ctx=None,
-           output_keys=None,
-           **kwargs):  # pylint: disable = missing-function-docstring
+  def main(self, base_ctx=None, output_keys=None, **kwargs):
     """Creates a new context from the provided data, with an optional base ctx to start."""
     new_ctx = base_ctx.copy() if base_ctx is not None else {}
 
-    output_keys = output_keys.split(',') if output_keys is not None else []
 
     for key_raw, value in kwargs.items():
       key = key_raw.upper()

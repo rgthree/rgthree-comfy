@@ -28,6 +28,7 @@ from .py.power_prompt_simple import RgthreePowerPromptSimple
 from .py.image_inset_crop import RgthreeImageInsetCrop
 from .py.context_big import RgthreeBigContext
 from .py.context_dynamic import RgthreeDynamicContext
+from .py.context_dynamic_switch import RgthreeContextDynamicSwitch
 from .py.ksampler_config import RgthreeKSamplerConfig
 from .py.sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
@@ -35,6 +36,7 @@ from .py.any_switch import RgthreeAnySwitch
 
 NODE_CLASS_MAPPINGS = {
   RgthreeDynamicContext.NAME: RgthreeDynamicContext,
+  RgthreeContextDynamicSwitch.NAME: RgthreeContextDynamicSwitch,
   RgthreeBigContext.NAME: RgthreeBigContext,
   RgthreeContext.NAME: RgthreeContext,
   RgthreeContextSwitch.NAME: RgthreeContextSwitch,
