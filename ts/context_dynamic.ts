@@ -1,4 +1,16 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
+/**
+ * @fileoverview this file containst the classes, logic, and initilization of the Dynamic Context nodes, including the
+ * Dynamic Context Node, and the Dynamic context Switch.
+ *
+ * These nodes are in active development.
+ *
+ * TODOS:
+ *   [ ] Handle (or disallow) a context to be added as a regular input to another context
+ *   [ ] When a Context is connected to another, the latter context node should append the ".1" counters.
+ *   [x] Renaming a node needs to proporagte downstream through a switch
+ *   [ ] Disconnecting a node from a switch may disconnect a latter context node if an input is fully removed.
+ */
+
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -219,6 +231,25 @@ class ContextDynamicNodeBase extends BaseContextNode {
       this.updateDownstream("connect", {index: slot, name});
     }
   }
+
+  /**
+   * Goes through the inputs and fixes the links associated with them after moving/removing inputs.
+   */
+  fixInputsLinkSlots() {
+    if (!this.hasShadowInputs) {
+      const inputs = this.inputs;
+      for (let index = inputs.length - 1; index > 0; index--) {
+        const input = inputs[index];
+        if (input?.link != null) {
+          app.graph.links[input.link].target_slot = index;
+        }
+        const output = this.outputs[index];
+        for (const link of output?.links || []) {
+          app.graph.links[link].origin_slot = index;
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -263,6 +294,78 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
     return defaultLabel.toLocaleLowerCase();
   }
 
+  override handleInputConnected(slotIndex: number) {
+    const inputs = this.getContextInputsList() as INodeInputSlot[];
+    const ioSlot = inputs[slotIndex]!;
+
+    if (slotIndex === 0) {
+      const baseNodes = getConnectedInputNodesAndFilterPassThroughs(this, this, 0);
+      const baseNodesDynamicCtx = baseNodes[0] as ContextDynamicNode | null;
+      if (baseNodesDynamicCtx?.provideInputsData) {
+        for (const input of baseNodesDynamicCtx.provideInputsData()) {
+          if (input.name === "base_ctx" || input.name === "+") {
+            continue;
+          }
+          // this.updateFromUpstream("connect", baseNodesDynamicCtx, {
+          //   name: input.name,
+          //   index: input.index,
+          // });
+          this.addContextInput(input.name, input.type, input.index);
+          this.stabilizeNames();
+        }
+      }
+    } else if (ioSlot.type === "*") {
+      // If our type is a "*" and we have a link, then try to find the correct type.
+      let cxn: ConnectionType | null = null;
+      if (ioSlot.link) {
+        cxn = followConnectionUntilType(this, IoDirection.INPUT, slotIndex, true);
+      }
+      if (cxn?.type) {
+        let name = cxn.name!;
+        // If we're all uppercase, then make the input lowercase (semi-standard).
+        if (name.match(/^(\+\s*)?[A-Z_]+$/)) {
+          name = name.toLowerCase();
+        }
+        name = this.getNextUniqueNameForThisNode(name);
+        inputs[slotIndex]!.type = cxn.type as string;
+        inputs[slotIndex]!.name = this.addOwnedPrefix(name);
+        inputs[slotIndex]!.removable = true;
+
+        if (!this.outputs[slotIndex]) {
+          this.addOutput("*", "*");
+        }
+        this.outputs[slotIndex]!.type = cxn.type as string;
+        this.outputs[slotIndex]!.name = this.stripOwnedPrefix(name).toLocaleUpperCase();
+        if (cxn.type === "COMBO" || cxn.type.includes(",") || Array.isArray(cxn.type)) {
+          // TODO: This is a hack to get around the absurd restrictions in widgetInput and COMBOS
+          (this.outputs[slotIndex] as any)!.widget = true;
+        }
+
+        this.addInput("+", "*");
+        this.updateDownstream("connect", {index: slotIndex, name: this.stripOwnedPrefix(name)});
+      }
+    }
+  }
+
+  override handleInputDisconnected(slotIndex: number) {
+    const inputs = this.getContextInputsList() as INodeInputSlot[];
+    if (slotIndex === 0) {
+      // Disconnect all non-"+" inputs
+      for (let index = inputs.length - 1; index > 0; index--) {
+        if (index === 0 || index === inputs.length - 1) {
+          continue;
+        }
+        if (!this.isOwnedInput(this.inputs[index]?.name)) {
+          this.removeContextInput(index);
+        }
+      }
+      // We should have to fix, but I guess LuteGraph doesn't do so after removeInput, so we can.
+      this.fixInputsLinkSlots();
+      this.setSize(this.computeSize());
+      this.setDirtyCanvas(true, true);
+    }
+  }
+
   override updateFromUpstream(
     update: "connect" | "disconnect" | "move" | "update",
     node: ContextDynamicNodeBase,
@@ -298,17 +401,8 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
       this.stabilizeNames();
     }
 
-    // Since we just spliced in a bunch, we need to clean the links
-    for (let index = inputs.length - 1; index > 0; index--) {
-      const input = inputs[index];
-      if (input?.link != null) {
-        app.graph.links[input.link].target_slot = index;
-      }
-      const output = this.outputs[index];
-      for (const link of output?.links || []) {
-        app.graph.links[link].origin_slot = index;
-      }
-    }
+    // Since we just spliced in a bunch, we need to clean the links.
+    this.fixInputsLinkSlots();
     this.setSize(this.computeSize());
     this.setDirtyCanvas(true, true);
   }
@@ -417,72 +511,6 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
     }
 
     return opts;
-  }
-
-  override handleInputConnected(slotIndex: number) {
-    const inputs = this.getContextInputsList() as INodeInputSlot[];
-    const ioSlot = inputs[slotIndex]!;
-
-    if (slotIndex === 0) {
-      const baseNodes = getConnectedInputNodesAndFilterPassThroughs(this, this, 0);
-      const baseNodesDynamicCtx = baseNodes[0] as ContextDynamicNode | null;
-      if (baseNodesDynamicCtx?.provideInputsData) {
-        for (const input of baseNodesDynamicCtx.provideInputsData()) {
-          if (input.name === "base_ctx" || input.name === "+") {
-            continue;
-          }
-          this.updateFromUpstream("connect", baseNodesDynamicCtx, {
-            name: input.name,
-            index: input.index,
-          });
-        }
-      }
-    } else if (ioSlot.type === "*") {
-      // If our type is a "*" and we have a link, then try to find the correct type.
-      let cxn: ConnectionType | null = null;
-      if (ioSlot.link) {
-        cxn = followConnectionUntilType(this, IoDirection.INPUT, slotIndex, true);
-      }
-      if (cxn?.type) {
-        let name = cxn.name!;
-        // If we're all uppercase, then make the input lowercase (semi-standard).
-        if (name.match(/^(\+\s*)?[A-Z_]+$/)) {
-          name = name.toLowerCase();
-        }
-        name = this.getNextUniqueNameForThisNode(name);
-        inputs[slotIndex]!.type = cxn.type as string;
-        inputs[slotIndex]!.name = this.addOwnedPrefix(name);
-        inputs[slotIndex]!.removable = true;
-
-        if (!this.outputs[slotIndex]) {
-          this.addOutput("*", "*");
-        }
-        this.outputs[slotIndex]!.type = cxn.type as string;
-        this.outputs[slotIndex]!.name = this.stripOwnedPrefix(name).toLocaleUpperCase();
-        if (cxn.type === "COMBO" || cxn.type.includes(",") || Array.isArray(cxn.type)) {
-          // TODO: This is a hack to get around the absurd restrictions in widgetInput and COMBOS
-          (this.outputs[slotIndex] as any)!.widget = true;
-        }
-
-        this.addInput("+", "*");
-        this.updateDownstream("connect", {index: slotIndex, name: this.stripOwnedPrefix(name)});
-      }
-    }
-  }
-
-  override handleInputDisconnected(slotIndex: number) {
-    const inputs = this.getContextInputsList() as INodeInputSlot[];
-    if (slotIndex === 0) {
-      // Disconnect all non-"+" inputs
-      for (let index = inputs.length - 1; index > 0; index--) {
-        if (index === 0 || index === inputs.length - 1) {
-          continue;
-        }
-        if (!this.isOwnedInput(this.inputs[index]?.name)) {
-          this.removeInput(index);
-        }
-      }
-    }
   }
 }
 
@@ -666,65 +694,6 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
     }
   }
 
-  /** Handles an upstream change. */
-  override updateFromUpstream(
-    update: "connect" | "disconnect" | "move" | "update",
-    node: ContextDynamicNodeBase,
-    updatedSlotData: {index: number; name: string; from?: number},
-  ) {
-    console.log("----- ContextDynamicSwitchNode :: updateFromUpstream", update);
-    const preInputsList = [...this.lastInputsList];
-    const postInputsList = [...this.getAllInputsList()];
-
-    // If the upstream change came from a reroute, then we need to treat it as a direct
-    // connect/disconnect.
-    if (shouldPassThrough(node)) {
-      const connectedNodes = getConnectedNodesInfo(this, IoDirection.INPUT);
-      const foundRerouteInfo = connectedNodes.find((n) => n.node === node);
-      if (update == "connect") {
-        this.handleInputConnected(foundRerouteInfo!.originTravelFromSlot);
-      } else if (update == "disconnect") {
-        this.handleInputDisconnected(foundRerouteInfo!.originTravelFromSlot);
-      } else {
-        throw new Error("Unexpected update type from pass through node: " + update);
-      }
-      return;
-    }
-
-    switch (update) {
-      case "connect":
-        const data = postInputsList.find((d) => {
-          return d.node == node && d.nodeIndex === updatedSlotData.index;
-        });
-        if (!data) {
-          throw new Error("Hmmm.. unfound input slot when connecting upstream.");
-        }
-        this.connectSlotFromUpdateOrInput(data);
-        break;
-
-      case "disconnect":
-        const preInputData = preInputsList.find((i) => {
-          return i.node === node && i.nodeIndex == updatedSlotData.index;
-        });
-        if (!preInputData) {
-          throw new Error("Hmmm... no matching input found in existing input list for disconnect.");
-        }
-
-        if (preInputData.duplicatesBefore.length) {
-          console.log(`[Do Nothing] It was already duplicated before.`);
-          this.updateLastInputsList();
-        } else if (preInputData?.duplicatesAfter?.[0] != null) {
-          console.log(`[Move after] Not duplicated before, but is after.`);
-          this.moveContextInput(preInputData!.shadowIndex, preInputData.duplicatesAfter[0]!);
-        } else {
-          console.log(`[Remove] ${preInputData!.shadowIndex}.`, preInputData);
-          this.removeContextInput(preInputData!.shadowIndex);
-        }
-        break;
-    }
-    console.log(this.shadowInputs);
-  }
-
   override handleInputConnected(slotIndex: number) {
     console.log("--- handleInputConnected", slotIndex);
     // const node = getConnectedInputNodesAndFilterPassThroughs(this, this, slotIndex)?.[0];
@@ -782,6 +751,101 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
     this.addContextInput("+", "*");
 
     console.log([...this.shadowInputs]);
+  }
+
+  /** Handles an upstream change. */
+  override updateFromUpstream(
+    update: "connect" | "disconnect" | "move" | "update",
+    node: ContextDynamicNodeBase,
+    updatedSlotData: {index: number; name: string; from?: number},
+  ) {
+    console.log("----- ContextDynamicSwitchNode :: updateFromUpstream", update, updatedSlotData);
+    const preInputsList = [...this.lastInputsList];
+    const postInputsList = [...this.getAllInputsList()];
+
+    // If the upstream change came from a reroute, then we need to treat it as a direct
+    // connect/disconnect.
+    if (shouldPassThrough(node)) {
+      const connectedNodes = getConnectedNodesInfo(this, IoDirection.INPUT);
+      const foundRerouteInfo = connectedNodes.find((n) => n.node === node);
+      if (update == "connect") {
+        this.handleInputConnected(foundRerouteInfo!.originTravelFromSlot);
+      } else if (update == "disconnect") {
+        this.handleInputDisconnected(foundRerouteInfo!.originTravelFromSlot);
+      } else {
+        throw new Error("Unexpected update type from pass through node: " + update);
+      }
+      return;
+    }
+
+    switch (update) {
+      case "connect": {
+        const data = postInputsList.find((d) => {
+          return d.node == node && d.nodeIndex === updatedSlotData.index;
+        });
+        if (!data) {
+          throw new Error("Hmmm.. unfound input slot when connecting upstream.");
+        }
+        this.connectSlotFromUpdateOrInput(data);
+        break;
+      }
+
+      case "disconnect":
+        const preInputData = preInputsList.find((i) => {
+          return i.node === node && i.nodeIndex == updatedSlotData.index;
+        });
+        if (!preInputData) {
+          throw new Error("Hmmm... no matching input found in existing input list for disconnect.");
+        }
+
+        if (preInputData.duplicatesBefore.length) {
+          console.log(`[Do Nothing] It was already duplicated before.`);
+          this.updateLastInputsList();
+        } else if (preInputData?.duplicatesAfter?.[0] != null) {
+          console.log(`[Move after] Not duplicated before, but is after.`);
+          this.moveContextInput(preInputData!.shadowIndex, preInputData.duplicatesAfter[0]!);
+        } else {
+          console.log(`[Remove] ${preInputData!.shadowIndex}.`, preInputData);
+          this.removeContextInput(preInputData!.shadowIndex);
+        }
+        break;
+
+      case "move":
+        // I don't think we need to handle this...
+        break;
+
+      case "update":
+        const index = postInputsList.findIndex((d) => {
+          return d.node == node && d.nodeIndex === updatedSlotData.index;
+        });
+        // Since we're renaming, nothing is moving, so we can compare the same index from pre and
+        // post.
+        const pre = preInputsList[index]!;
+        const post = postInputsList[index]!;
+        console.log("preData", {...pre});
+        console.log("postData", {...post});
+        if (pre.shadowIndex == -1 && post.shadowIndex !== -1) {
+          console.log(`[Add] Old name wasn't shown, but new is.`, post.name, post.shadowIndex);
+          // Adding it.
+          this.addContextInput(post.name, post.type, post.shadowIndex);
+        } else if (pre.shadowIndex !== -1 && post.shadowIndex === -1) {
+          console.log(`[Remove] Old name was shown, but new isn;t.`, post.name, post.shadowIndex);
+          this.removeContextInput(pre.shadowIndex);
+        } else if (post.shadowIndex > -1) {
+          console.log(`[Rename] It's shown and has a new name.`, post.name, post.shadowIndex);
+          this.shadowInputs[post.shadowIndex]!.name = this.stripOwnedPrefix(post.name);
+          this.outputs[post.shadowIndex]!.name = this.stripOwnedPrefix(post.name).toUpperCase();
+          this.updateDownstream("update", {
+            index: post.shadowIndex,
+            name: this.stripOwnedPrefix(post.name),
+          });
+        } else {
+          console.log(`[Do Nothing] It's shown and has a new name.`, post.name, post.shadowIndex);
+          this.updateLastInputsList();
+        }
+        break;
+    }
+    console.log(this.shadowInputs);
   }
 
   /**
