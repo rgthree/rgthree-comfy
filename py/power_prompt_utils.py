@@ -16,14 +16,18 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
   matches = re.findall(pattern, prompt)
 
   loras = []
+  unfound_loras = []
+  skipped_loras = []
   for match in matches:
     tag_path = match[0]
     tag_path_no_ext = os.path.splitext(match[0])[0]
     tag_filename_no_ext = os.path.splitext(os.path.basename(match[0]))[0]
 
     strength = float(match[1] if len(match) > 1 and len(match[1]) else 1.0)
-    if strength == 0 and not silent:
-      log_node_info(log_node, f'Skipping "{tag_path}" with strength of zero')
+    if strength == 0:
+      if not silent:
+        log_node_info(log_node, f'Skipping "{tag_path}" with strength of zero')
+      skipped_loras.append({'lora': tag_path, 'strength': strength})
       continue
 
     if tag_path not in lora_paths:
@@ -49,8 +53,9 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
         else:
           if not silent:
             log_node_warn(log_node, f'Lora "{tag_path}" not found, skipping.')
+          unfound_loras.append({'lora': tag_path, 'strength': strength})
           continue
 
     loras.append({'lora': tag_path, 'strength': strength})
 
-  return (re.sub(pattern, '', prompt), loras)
+  return (re.sub(pattern, '', prompt), loras, skipped_loras, unfound_loras)

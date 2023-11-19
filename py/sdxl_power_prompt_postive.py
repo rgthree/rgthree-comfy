@@ -105,15 +105,15 @@ class RgthreeSDXLPowerPromptPositive:
            values_insert_saved=None):
 
     if insert_lora == 'DISABLE LORAS':
-      prompt_g, loras_g = get_and_strip_loras(prompt_g, True)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l, True)
+      prompt_g, loras_g, skipped_g, unfound_g = get_and_strip_loras(prompt_g, True)
+      prompt_l, loras_l, skipped_l, unfound_l = get_and_strip_loras(prompt_l, True)
       loras = loras_g + loras_l
       log_node_info(
         NODE_NAME,
         f'Disabling all found loras ({len(loras)}) and stripping lora tags for TEXT output.')
     elif opt_model != None and opt_clip != None:
-      prompt_g, loras_g = get_and_strip_loras(prompt_g)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l)
+      prompt_g, loras_g, skipped_g, unfound_g = get_and_strip_loras(prompt_g)
+      prompt_l, loras_l, skipped_l, unfound_l = get_and_strip_loras(prompt_l)
       loras = loras_g + loras_l
       if len(loras):
         for lora in loras:
@@ -122,13 +122,16 @@ class RgthreeSDXLPowerPromptPositive:
           log_node_success(NODE_NAME, f'Loaded "{lora["lora"]}" from prompt')
         log_node_info(NODE_NAME, f'{len(loras)} Loras processed; stripping tags for TEXT output.')
     elif '<lora:' in prompt_g or '<lora:' in prompt_l:
-      _prompt_stripped_g, loras_g = get_and_strip_loras(prompt_g, True)
-      _prompt_stripped_l, loras_l = get_and_strip_loras(prompt_l, True)
-      loras = loras_g + loras_l
-      if len(loras):
-        log_node_warn(
-          NODE_NAME, f'Found {len(loras)} lora tags in prompt but model & clip were not supplied!')
-        log_node_info(NODE_NAME, 'Loras not processed, keeping for TEXT output.')
+      _prompt_stripped_g, loras_g, skipped_g, unfound_g = get_and_strip_loras(prompt_g, True)
+      _prompt_stripped_l, loras_l, skipped_l, unfound_l = get_and_strip_loras(prompt_l, True)
+      loras = len(loras_g) + len(loras_l)
+      unfound_loras = len(unfound_g) + len(unfound_l)
+      total_loras = loras + unfound_loras + len(skipped_g) + len(skipped_l)
+      if total_loras:
+        log_node_warn(NODE_NAME, f'Found {total_loras} lora tags in prompt but model & clip were not supplied!')
+        if unfound_loras:
+          log_node_warn(NODE_NAME, f'Note: {unfound_loras} lora tags were not found!')
+        log_node_info(NODE_NAME, 'Loras not processed but NOT stripped. Keeping in case used for TEXT output.')
 
     conditioning = self.get_conditioning(prompt_g, prompt_l, opt_clip, opt_clip_width,
                                          opt_clip_height, target_width, target_height, crop_width,

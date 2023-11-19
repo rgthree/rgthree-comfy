@@ -81,8 +81,9 @@ class RgthreePowerPrompt:
           log_node_success(NODE_NAME, f'Loaded "{lora["lora"]}" from prompt')
         log_node_info(NODE_NAME, f'{len(loras)} Loras processed; stripping tags for TEXT output.')
     elif '<lora:' in prompt:
-      _prompt_stripped, loras = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
-      if len(loras):
+      _prompt_stripped, loras, skipped, unfound = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
+      total_loras = len(loras) + len(skipped) + len(unfound)
+      if total_loras:
         log_node_warn(
           NODE_NAME, f'Found {len(loras)} lora tags in prompt but model & clip were not supplied!')
         log_node_info(NODE_NAME, 'Loras not processed, keeping for TEXT output.')
