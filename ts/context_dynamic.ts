@@ -5,8 +5,9 @@
  * These nodes are in active development.
  *
  * TODOS:
- *   [ ] Handle (or disallow) a context to be added as a regular input to another context
- *   [ ] When a Context is connected to another, the latter context node should append the ".1" counters.
+ *   [ ] Fast-fix to disallow a context to be added as a regular input to another context.
+ *   [ ] Actually handle passing a context down through as a child input.
+ *   [x] When a Context is connected to another as a base, the latter context node should append the ".1" counters.
  *   [x] Renaming a node needs to proporagte downstream through a switch
  *   [ ] Disconnecting a node from a switch may disconnect a latter context node if an input is fully removed.
  */
