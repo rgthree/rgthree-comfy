@@ -275,46 +275,53 @@ export function filterOutPassthroughNodes(nodes, passThroughFollowing = PassThro
     return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
 }
 export function getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return filterOutPassthroughNodes(getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
 }
 export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return filterOutPassthroughNodes(getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
 }
-export function getConnectedNodes(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    var _a, _b;
+export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
+    var _a, _b, _c, _d, _e, _f;
     currentNode = currentNode || startNode;
     let rootNodes = [];
     const slotsToRemove = [];
     if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
         let linkIds;
         if (dir == IoDirection.OUTPUT) {
-            linkIds = ((_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a.flatMap((i) => i.links)) || [];
-        }
-        else {
-            linkIds = ((_b = currentNode.inputs) === null || _b === void 0 ? void 0 : _b.map((i) => i.link)) || [];
-        }
-        if (typeof slot == "number" && slot > -1) {
-            if (linkIds[slot]) {
-                linkIds = [linkIds[slot]];
+            if (slot != null && slot > -1) {
+                linkIds = (_b = (_a = currentNode.outputs[slot]) === null || _a === void 0 ? void 0 : _a.links) !== null && _b !== void 0 ? _b : [];
             }
             else {
-                return [];
+                linkIds = ((_c = currentNode.outputs) === null || _c === void 0 ? void 0 : _c.flatMap((i) => i.links)) || [];
+            }
+        }
+        else {
+            if (slot != null && slot > -1) {
+                linkIds = [(_e = (_d = currentNode.inputs[slot]) === null || _d === void 0 ? void 0 : _d.link) !== null && _e !== void 0 ? _e : -1].filter(i => i > -1);
+            }
+            else {
+                linkIds = ((_f = currentNode.inputs) === null || _f === void 0 ? void 0 : _f.map((i) => i.link)) || [];
             }
         }
         let graph = app.graph;
         for (const linkId of linkIds) {
-            const link = (linkId != null && graph.links[linkId]);
+            let link = null;
+            if (typeof linkId == "number") {
+                link = graph.links[linkId];
+            }
             if (!link) {
                 continue;
             }
+            const travelFromSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
             const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
-            const originSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+            const travelToSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+            originTravelFromSlot = originTravelFromSlot != null ? originTravelFromSlot : travelFromSlot;
             const originNode = graph.getNodeById(connectedId);
             if (!link) {
                 console.error("No connected node found... weird");
@@ -324,10 +331,10 @@ export function getConnectedNodes(startNode, dir = IoDirection.INPUT, currentNod
                 console.log(`${startNode.title} (${startNode.id}) seems to have two links to ${originNode.title} (${originNode.id}). One may be stale: ${linkIds.join(", ")}`);
             }
             else {
-                rootNodes.push({ node: originNode, slot: originSlot });
+                rootNodes.push({ node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot });
                 if (shouldPassThrough(originNode, passThroughFollowing)) {
-                    for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
-                        if (!rootNodes.includes(foundNode)) {
+                    for (const foundNode of getConnectedNodesInfo(startNode, dir, originNode, undefined, undefined, originTravelFromSlot)) {
+                        if (!rootNodes.map(n => n.node).includes(foundNode.node)) {
                             rootNodes.push(foundNode);
                         }
                     }

@@ -400,7 +400,7 @@ export function getConnectedInputNodes(
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ) : TLGraphNode[] {
-  return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+  return getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
   startNode: TLGraphNode,
@@ -413,14 +413,16 @@ export function getConnectedInputNodesAndFilterPassThroughs(
     passThroughFollowing,
   );
 }
+
 export function getConnectedOutputNodes(
   startNode: TLGraphNode,
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ) : TLGraphNode[] {
-  return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+  return getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
+
 export function getConnectedOutputNodesAndFilterPassThroughs(
   startNode: TLGraphNode,
   currentNode?: TLGraphNode,
@@ -434,39 +436,48 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
 }
 
 
-export function getConnectedNodes(
+export type ConnectedNodeInfo = {node: TLGraphNode, travelFromSlot: number, travelToSlot: number, originTravelFromSlot: number};
+
+export function getConnectedNodesInfo(
   startNode: TLGraphNode,
   dir = IoDirection.INPUT,
   currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) : {node:TLGraphNode, slot: number}[] {
+  originTravelFromSlot?: number
+) : ConnectedNodeInfo[] {
   currentNode = currentNode || startNode;
-  let rootNodes: {node:TLGraphNode, slot: number}[] = [];
+  let rootNodes: ConnectedNodeInfo[] = [];
   const slotsToRemove = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
-    // const removeDups = startNode === currentNode;
     let linkIds: Array<number | null>;
+
     if (dir == IoDirection.OUTPUT) {
-      linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
-    } else {
-      linkIds = currentNode.inputs?.map((i) => i.link) || [];
-    }
-    if (typeof slot == "number" && slot > -1) {
-      if (linkIds[slot]) {
-        linkIds = [linkIds[slot]!];
+      if (slot != null && slot > -1) {
+        linkIds = currentNode.outputs[slot]?.links ?? [];
       } else {
-        return [];
+        linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
+      }
+    } else {
+      if (slot != null && slot > -1) {
+        linkIds = [currentNode.inputs[slot]?.link ?? -1].filter(i => i > -1);
+      } else {
+        linkIds = currentNode.inputs?.map((i) => i.link) || [];
       }
     }
     let graph = app.graph as LGraph;
     for (const linkId of linkIds) {
-      const link: LLink = (linkId != null && graph.links[linkId]) as LLink;
+      let link: LLink | null = null;
+      if (typeof linkId == "number") {
+        link = graph.links[linkId] as LLink;
+      }
       if (!link) {
         continue;
       }
+      const travelFromSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
-      const originSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+      const travelToSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+      originTravelFromSlot = originTravelFromSlot != null ? originTravelFromSlot : travelFromSlot;
       const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
       if (!link) {
         console.error("No connected node found... weird");
@@ -480,10 +491,10 @@ export function getConnectedNodes(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push({node: originNode, slot: originSlot});
+        rootNodes.push({node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot});
         if (shouldPassThrough(originNode, passThroughFollowing)) {
-          for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
-            if (!rootNodes.includes(foundNode)) {
+          for (const foundNode of getConnectedNodesInfo(startNode, dir, originNode, undefined, undefined, originTravelFromSlot)) {
+            if (!rootNodes.map(n => n.node).includes(foundNode.node)) {
               rootNodes.push(foundNode);
             }
           }

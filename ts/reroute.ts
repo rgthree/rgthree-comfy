@@ -21,6 +21,7 @@ import {
   LAYOUT_LABEL_TO_DATA,
   addConnectionLayoutSupport,
   addMenuItem,
+  getConnectedOutputNodesAndFilterPassThroughs,
   getSlotLinks,
   isValidConnection,
 } from "./utils.js";
@@ -71,7 +72,6 @@ app.registerExtension({
       readonly hideSlotLabels: boolean;
 
       private configuring = true;
-      private schedulePromise: Promise<void> | null = null;
 
       defaultConnectionsLayout = configLayout;
 
@@ -137,7 +137,26 @@ app.registerExtension({
             }
           }
         }
-        this.scheduleStabilize();
+        if (this.configuring) {
+          return;
+        }
+        this.stabilize();
+        if (type === LiteGraph.INPUT) {
+          this.updateDownstream(connected ? 'connect' : 'disconnect', {index: 0, name: this.inputs[0]!.name});
+        }
+      }
+
+      /**
+       * Updates connected nodes of a change (checking and calling updateFromUpstream). Used for Dynamic Context.
+       */
+      private updateDownstream(
+        update: "connect" | "disconnect" | "move" | "update",
+        updatedIndexes: {index: number; name: string; from?: number},
+      ) {
+        const nodes = getConnectedOutputNodesAndFilterPassThroughs(this, this, 0);
+        for (const node of nodes) {
+          (node as any)?.updateFromUpstream?.(update, this, updatedIndexes);
+        }
       }
 
       override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: TLGraphCanvas): void {
@@ -159,20 +178,6 @@ app.registerExtension({
 
       override disconnectOutput(slot: string | number, targetNode?: TLGraphNode | undefined): boolean {
         return super.disconnectOutput(slot, targetNode);
-      }
-
-
-      scheduleStabilize(ms = 64) {
-        if (!this.schedulePromise) {
-          this.schedulePromise = new Promise((resolve) => {
-            setTimeout(() => {
-              this.schedulePromise = null
-              this.stabilize();
-              resolve();
-            }, ms);
-          });
-        }
-        return this.schedulePromise;
       }
 
       stabilize() {
@@ -229,7 +234,7 @@ app.registerExtension({
 
         // Find all outputs
         const nodes: TLGraphNode[] = [this];
-        let outputNode = null;
+        let outputNodes: TLGraphNode[] = [];
         let outputType = null;
         while (nodes.length) {
           currentNode = nodes.pop()!;
@@ -266,8 +271,11 @@ app.registerExtension({
                   console.warn(`[rgthree] Reroute - Disconnecting connected node's input (${node.id}.${link.target_slot}) (${node.type}) because its type (${String(nodeOutType)}) does not match the reroute type (${String(inputType)})`);
                   node.disconnectInput(link.target_slot);
                 } else {
+                  if (outputType != null && outputType !== nodeOutType) {
+                    console.warn(`[rgthree] Reroute - Mismatching output types..`);
+                  }
                   outputType = nodeOutType;
-                  outputNode = node;
+                  outputNodes.push(node);
                 }
               }
             }
@@ -306,8 +314,10 @@ app.registerExtension({
             }
           }
         }
-        (inputNode as any)?.onConnectionsChainChange?.();
-        (outputNode as any)?.onConnectionsChainChange?.();
+        // (inputNode as any)?.onConnectionsChainChange?.(this);
+        // for (const outputNode of outputNodes) {
+        //   (outputNode as any)?.onConnectionsChainChange?.(this);
+        // }
         app.graph.setDirtyCanvas(true, true);
       }
 

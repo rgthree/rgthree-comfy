@@ -77,7 +77,7 @@ class LogSession {
 export type RgthreeUiMessage = {
   id: string;
   message: string;
-  type?: 'warn'|null;
+  type?: 'warn'|'info'|null;
   timeout?: number;
   // closeable?: boolean; // TODO
   actions?: Array<{
@@ -305,8 +305,8 @@ class Rgthree {
   fireEvent(event: string, data: any) {
     if (this.eventsToFns.has(event)) {
       for (let fn of this.eventsToFns.get(event)!) {
-        const event = new Event(data);
-        fn(event);
+        const e = new CustomEvent(event, {detail:data});
+        fn(e);
       }
     }
   }

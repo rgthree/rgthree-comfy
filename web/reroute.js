@@ -2,7 +2,7 @@ var _a;
 import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
-import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, } from "./utils.js";
+import { LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getConnectedOutputNodesAndFilterPassThroughs, getSlotLinks, isValidConnection, } from "./utils.js";
 import { wait } from "./shared_utils.js";
 const rerouteConfig = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig['nodes']) === null || _a === void 0 ? void 0 : _a['reroute']) || {};
 let configWidth = Math.max(Math.round((Number(rerouteConfig['default_width']) || 40) / 10) * 10, 10);
@@ -31,7 +31,6 @@ app.registerExtension({
                 var _a;
                 super(title);
                 this.configuring = true;
-                this.schedulePromise = null;
                 this.defaultConnectionsLayout = configLayout;
                 this.isVirtualNode = true;
                 this.hideSlotLabels = true;
@@ -75,7 +74,20 @@ app.registerExtension({
                         }
                     }
                 }
-                this.scheduleStabilize();
+                if (this.configuring) {
+                    return;
+                }
+                this.stabilize();
+                if (type === LiteGraph.INPUT) {
+                    this.updateDownstream(connected ? 'connect' : 'disconnect', { index: 0, name: this.inputs[0].name });
+                }
+            }
+            updateDownstream(update, updatedIndexes) {
+                var _a;
+                const nodes = getConnectedOutputNodesAndFilterPassThroughs(this, this, 0);
+                for (const node of nodes) {
+                    (_a = node === null || node === void 0 ? void 0 : node.updateFromUpstream) === null || _a === void 0 ? void 0 : _a.call(node, update, this, updatedIndexes);
+                }
             }
             onDrawForeground(ctx, canvas) {
                 var _a, _b, _c;
@@ -97,20 +109,8 @@ app.registerExtension({
             disconnectOutput(slot, targetNode) {
                 return super.disconnectOutput(slot, targetNode);
             }
-            scheduleStabilize(ms = 64) {
-                if (!this.schedulePromise) {
-                    this.schedulePromise = new Promise((resolve) => {
-                        setTimeout(() => {
-                            this.schedulePromise = null;
-                            this.stabilize();
-                            resolve();
-                        }, ms);
-                    });
-                }
-                return this.schedulePromise;
-            }
             stabilize() {
-                var _a, _b, _c, _d, _e, _f, _g, _h;
+                var _a, _b, _c, _d, _e, _f;
                 if (this.configuring) {
                     return;
                 }
@@ -155,7 +155,7 @@ app.registerExtension({
                     }
                 }
                 const nodes = [this];
-                let outputNode = null;
+                let outputNodes = [];
                 let outputType = null;
                 while (nodes.length) {
                     currentNode = nodes.pop();
@@ -187,8 +187,11 @@ app.registerExtension({
                                     node.disconnectInput(link.target_slot);
                                 }
                                 else {
+                                    if (outputType != null && outputType !== nodeOutType) {
+                                        console.warn(`[rgthree] Reroute - Mismatching output types..`);
+                                    }
                                     outputType = nodeOutType;
-                                    outputNode = node;
+                                    outputNodes.push(node);
                                 }
                             }
                         }
@@ -220,8 +223,6 @@ app.registerExtension({
                         }
                     }
                 }
-                (_g = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(inputNode);
-                (_h = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _h === void 0 ? void 0 : _h.call(outputNode);
                 app.graph.setDirtyCanvas(true, true);
             }
             computeSize(out) {

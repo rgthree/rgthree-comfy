@@ -245,8 +245,8 @@ class Rgthree {
     fireEvent(event, data) {
         if (this.eventsToFns.has(event)) {
             for (let fn of this.eventsToFns.get(event)) {
-                const event = new Event(data);
-                fn(event);
+                const e = new CustomEvent(event, { detail: data });
+                fn(e);
             }
         }
     }
