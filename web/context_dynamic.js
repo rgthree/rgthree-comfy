@@ -168,6 +168,7 @@ class ContextDynamicNodeBase extends BaseContextNode {
             newName = this.addOwnedPrefix(newName);
         }
         input.name = newName;
+        this.outputs[index].name = this.stripOwnedPrefix(inputs[index].name).toUpperCase();
         this.updateDownstream("update", { index, name: newName });
     }
     fixInputsOutputsLinkSlots() {
@@ -256,19 +257,18 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
                     name = name.toLowerCase();
                 }
                 name = this.getNextUniqueNameForThisNode(name);
-                inputs[slotIndex].type = cxn.type;
-                inputs[slotIndex].name = this.addOwnedPrefix(name);
-                inputs[slotIndex].removable = true;
                 if (!this.outputs[slotIndex]) {
                     this.addOutput("*", "*");
                 }
+                inputs[slotIndex].type = cxn.type;
+                inputs[slotIndex].removable = true;
                 this.outputs[slotIndex].type = cxn.type;
-                this.outputs[slotIndex].name = this.stripOwnedPrefix(name).toLocaleUpperCase();
+                this.updateDownstream("connect", { index: slotIndex, name: this.stripOwnedPrefix(name) });
+                this.renameContextInput(slotIndex, name, true);
                 if (cxn.type === "COMBO" || cxn.type.includes(",") || Array.isArray(cxn.type)) {
                     this.outputs[slotIndex].widget = true;
                 }
                 this.addInput("+", "*");
-                this.updateDownstream("connect", { index: slotIndex, name: this.stripOwnedPrefix(name) });
             }
         }
     }
@@ -329,9 +329,7 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
             const baseInputsData = node.provideInputsData();
             const baseIndex = updatedSlotData.index;
             const baseInput = baseInputsData[baseIndex];
-            inputs[baseIndex].name = this.stripOwnedPrefix(baseInput.name);
-            this.outputs[baseIndex].name = inputs[baseIndex].name.toUpperCase();
-            this.updateDownstream(update, updatedSlotData);
+            this.renameContextInput(baseIndex, baseInput.name);
             this.stabilizeNames();
         }
         this.setSize(this.computeSize());
@@ -378,9 +376,9 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
     getSlotMenuOptions(info) {
         const opts = [];
         if (info.input) {
-            if (this.isOwnedInput(info.input.name)) {
+            if (this.isOwnedInput(info.input.name) && info.input.type !== '*') {
                 opts.push({
-                    content: "Rename Label",
+                    content: "✏️ Rename Input",
                     callback: () => {
                         var dialog = app.canvas.createDialog("<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>", {});
                         var dialogInput = dialog.querySelector("input");
@@ -415,7 +413,7 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
                     },
                 });
                 opts.push({
-                    content: "Delete Input",
+                    content: "🗑️ Delete Input",
                     callback: () => {
                         this.removeInput(info.slot);
                     },
@@ -548,7 +546,7 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
             console.error("hmmm... no node foun to handle connect.");
             return;
         }
-        const inputsDataLists = postInputsList.filter((d) => d.slot == slotIndex && d.nodeIndex > 0);
+        const inputsDataLists = postInputsList.filter((d) => d.slot == slotIndex && d.nodeIndex > 0 && d.type !== '*');
         for (const data of inputsDataLists) {
             this.connectSlotFromUpdateOrInput(data);
         }
@@ -578,11 +576,12 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
                 this.moveContextInput(foundIndex, data.shadowIndex);
             }
         }
-        while (this.shadowInputs[lastIndex + 1]) {
-            console.log("remving", lastIndex + 1);
-            this.removeContextInput(lastIndex + 1);
+        for (let index = inputs.length - 1; index > lastIndex; index--) {
+            const input = this.shadowInputs[index];
+            if (input.type !== '*') {
+                this.removeContextInput(index);
+            }
         }
-        this.addContextInput("+", "*");
         console.log([...this.shadowInputs]);
     }
     updateFromUpstream(update, node, updatedSlotData) {
