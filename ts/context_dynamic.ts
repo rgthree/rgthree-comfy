@@ -5,11 +5,27 @@
  * These nodes are in active development.
  *
  * TODOS:
- *   [ ] Fast-fix to disallow a context to be added as a regular input to another context.
- *   [ ] Actually handle passing a context down through as a child input.
- *   [x] When a Context is connected to another as a base, the latter context node should append the ".1" counters.
- *   [x] Renaming a node needs to proporagte downstream through a switch
- *   [ ] Disconnecting a node from a switch may disconnect a latter context node if an input is fully removed.
+ *   [x] Fast-fix to disallow a context to be added as a regular input to another context.
+ *   [ ] (Stretch) Actually handle passing a context down through as a child input.
+ *   [x] When a Context is connected to another as a base, the latter context node should append the
+ *       ".1" counters.
+ *   [x] Renaming a node needs to propagate downstream through a switch
+ *   [x] Clear Switch data when cloning.
+ *   [x] When an upstream context node is added, move any owned inputs with the same into the
+ *       unowned section, preserving their links.
+ *   [x] When an upstream context node is removed, if any unowned inputs are currenty linked, do not
+ *       remove them, but keep them linked, and make them owned by the current context node.
+ *   [x] Also, keep them if they have an output connected at the downstream node that has the
+ *       connection.
+ *   [ ] Also, do the above 3 through Switches..
+ *   [ ] If keeping nodes with outputs connected that may not have an owned input, alert the user.
+ *   [ ] Better handle combo support in weird ComfyUI way, rather than hacking it right now.
+ *   [ ] Allow reording of inputs (and, thus, outputs)?
+ *   [x] Fix outputs issue in py.
+ *   [ ] Make current Context and Context Big nodes compatible with Dynamic Context
+ *   [ ] Add option to convert old Context nodes to Dynamic Context nodes.
+ *   [ ] Add a Dynamic Context Merger, like a switch, but merges in all data, not passes first None.
+ *   [ ] Fix Reroute regression not having a correct type when connecting one-way
  */
 
 import type {
@@ -47,6 +63,8 @@ declare const LiteGraph: typeof TLiteGraph;
  * A base node for the Dynamic Context nodes.
  */
 class ContextDynamicNodeBase extends BaseContextNode {
+  static readonly logger = rgthree.newLogSession("[Dynamic Context]");
+
   hasShadowInputs = false;
 
   getContextInputsList(): {name: string; type: string | -1}[] {
@@ -105,7 +123,7 @@ class ContextDynamicNodeBase extends BaseContextNode {
 
   isOwnedInput(inputOrName: INodeInputSlot | string | undefined) {
     const name = typeof inputOrName == "string" ? inputOrName : inputOrName?.name || "";
-    return name.startsWith("+ ");
+    return name.startsWith("+ ") || name === "+";
   }
 
   getNextUniqueNameForThisNode(desiredName: string) {
@@ -152,7 +170,7 @@ class ContextDynamicNodeBase extends BaseContextNode {
   updateFromUpstream(
     update: "connect" | "disconnect" | "move" | "update",
     node: ContextDynamicNodeBase,
-    updatedIndexes: {index: number; name: string; from?: number},
+    updatedSlotData: {index: number; name: string; from?: number},
   ) {
     // To be implemented.
   }
@@ -170,39 +188,11 @@ class ContextDynamicNodeBase extends BaseContextNode {
 
   protected updateDownstream(
     update: "connect" | "disconnect" | "move" | "update",
-    updatedIndexes: {index: number; name: string; from?: number},
+    updatedSlotData: {index: number; name: string; from?: number},
   ) {
     const nodes = getConnectedOutputNodesAndFilterPassThroughs(this, this, 0);
     for (const node of nodes) {
-      (node as ContextDynamicNodeBase)?.updateFromUpstream?.(update, this, updatedIndexes);
-    }
-  }
-
-  moveContextInput(slotFrom: number, slotTo: number) {
-    if (slotFrom === slotTo) {
-      return;
-    }
-    const inputs = this.getContextInputsList();
-    let newIndex = slotTo + (slotFrom < slotTo ? -1 : 0);
-    const input = inputs.splice(slotFrom, 1)[0]!;
-    inputs.splice(newIndex, 0, input);
-
-    this.outputs.splice(newIndex, 0, ...this.outputs.splice(slotFrom, 1));
-
-    this.updateDownstream("move", {index: slotTo, from: slotFrom, name: input.name});
-  }
-
-  removeContextInput(slot: number) {
-    if (this.hasShadowInputs) {
-      const inputs = this.getContextInputsList();
-      const input = inputs.splice(slot, 1)[0]!;
-      if (this.outputs[slot]) {
-        this.removeOutput(slot);
-      }
-      this.updateDownstream("disconnect", {index: slot, name: input.name});
-    } else {
-      // Remove Input triggers the disconnect updateDownstream
-      this.removeInput(slot);
+      (node as ContextDynamicNodeBase)?.updateFromUpstream?.(update, this, updatedSlotData);
     }
   }
 
@@ -229,14 +219,62 @@ class ContextDynamicNodeBase extends BaseContextNode {
       if (slot > -1) {
         this.outputs.splice(slot, 0, this.outputs.splice(this.outputs.length - 1, 1)[0]!);
       }
+      this.fixInputsOutputsLinkSlots();
       this.updateDownstream("connect", {index: slot, name});
     }
+  }
+
+  removeContextInput(slot: number) {
+    if (this.hasShadowInputs) {
+      const inputs = this.getContextInputsList();
+      const input = inputs.splice(slot, 1)[0]!;
+      if (this.outputs[slot]) {
+        this.removeOutput(slot);
+      }
+      this.updateDownstream("disconnect", {index: slot, name: input.name});
+      this.fixInputsOutputsLinkSlots();
+    } else {
+      // Remove Input triggers the disconnect updateDownstream, and fix links, etc.
+      this.removeInput(slot);
+    }
+  }
+
+  moveContextInput(slotFrom: number, slotTo: number|'bottom') {
+    const inputs = this.getContextInputsList();
+    if (slotTo === 'bottom') {
+      slotTo = inputs.length - 1;
+    }
+    if (slotFrom === slotTo) {
+      return;
+    }
+    let newIndex = slotTo + (slotFrom < slotTo ? -1 : 0);
+    const input = inputs.splice(slotFrom, 1)[0]!;
+    inputs.splice(newIndex, 0, input);
+
+    this.outputs.splice(newIndex, 0, ...this.outputs.splice(slotFrom, 1));
+
+    this.fixInputsOutputsLinkSlots();
+    this.updateDownstream("move", {index: slotTo, from: slotFrom, name: input.name});
+  }
+
+  renameContextInput(index: number, newName: string, forceOwnBool: boolean|null = null) {
+    // We may rename inputs as part of a upstream update, so allow any input to be renamed.
+    // Check if it's "owned" simply if it has the "+" prefix.
+    const inputs = this.getContextInputsList();
+    const input = inputs[index]!;
+    const oldName = input.name;
+    newName = this.stripOwnedPrefix(newName.trim() || this.getSlotDefaultInputLabel(index));
+    if (forceOwnBool === true || (this.isOwnedInput(oldName) && forceOwnBool !== false)) {
+      newName = this.addOwnedPrefix(newName);
+    }
+    input.name = newName;
+    this.updateDownstream("update", {index, name: newName});
   }
 
   /**
    * Goes through the inputs and fixes the links associated with them after moving/removing inputs.
    */
-  fixInputsLinkSlots() {
+  fixInputsOutputsLinkSlots() {
     if (!this.hasShadowInputs) {
       const inputs = this.inputs;
       for (let index = inputs.length - 1; index > 0; index--) {
@@ -244,13 +282,24 @@ class ContextDynamicNodeBase extends BaseContextNode {
         if (input?.link != null) {
           app.graph.links[input.link].target_slot = index;
         }
-        const output = this.outputs[index];
-        for (const link of output?.links || []) {
-          app.graph.links[link].origin_slot = index;
-        }
+      }
+    }
+    const outputs = this.outputs;
+    for (let index = outputs.length - 1; index > 0; index--) {
+      const output = outputs[index];
+      for (const link of output?.links || []) {
+        app.graph.links[link].origin_slot = index;
       }
     }
   }
+
+  private getSlotDefaultInputLabel(slot: number) {
+    const inputs = this.getContextInputsList();
+    const input = inputs[slot]!;
+    let defaultLabel = this.stripOwnedPrefix(input.name).toLowerCase();
+    return defaultLabel.toLocaleLowerCase();
+  }
+
 }
 
 /**
@@ -278,23 +327,23 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
     return cloned;
   }
 
+  /**
+   * Override the "native" removeInput to also remove the corresponing output and update the removal
+   * for downstream nodes and fix the links when doing so (because LiteGraph doesn't fix it itself
+   * for some reason).
+   */
   override removeInput(slot: number): void {
     const input = this.inputs[slot]!;
     super.removeInput(slot);
     if (this.outputs[slot]) {
       this.removeOutput(slot);
     }
+    this.fixInputsOutputsLinkSlots();
     this.updateDownstream("disconnect", {index: slot, name: input.name});
     this.stabilizeNames();
   }
 
-  private getSlotDefaultInputLabel(slot: number) {
-    const inputs = this.getContextInputsList();
-    const input = inputs[slot]!;
-    let defaultLabel = this.stripOwnedPrefix(input.name).toLowerCase();
-    return defaultLabel.toLocaleLowerCase();
-  }
-
+  /** Handles an input being connected. */
   override handleInputConnected(slotIndex: number) {
     const inputs = this.getContextInputsList() as INodeInputSlot[];
     const ioSlot = inputs[slotIndex]!;
@@ -304,15 +353,19 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
       const baseNodesDynamicCtx = baseNodes[0] as ContextDynamicNode | null;
       if (baseNodesDynamicCtx?.provideInputsData) {
         for (const input of baseNodesDynamicCtx.provideInputsData()) {
+          const inputs = this.getContextInputsList() as INodeInputSlot[];
           if (input.name === "base_ctx" || input.name === "+") {
             continue;
           }
-          // this.updateFromUpstream("connect", baseNodesDynamicCtx, {
-          //   name: input.name,
-          //   index: input.index,
-          // });
-          this.addContextInput(input.name, input.type, input.index);
-          this.stabilizeNames();
+          // Look ahead and if the same name already exists, then move it up. Otherwise, we'll add.
+          const foundIndex = inputs.findIndex(i => this.stripOwnedPrefix(i.name)  === input.name);
+          if (foundIndex > -1) {
+            this.moveContextInput(foundIndex, input.index);
+            this.renameContextInput(input.index, input.name, false);
+          } else {
+            this.addContextInput(input.name, input.type, input.index);
+            this.stabilizeNames();
+          }
         }
       }
     } else if (ioSlot.type === "*") {
@@ -348,62 +401,80 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
     }
   }
 
+  /** Handles an input being disconnected. */
   override handleInputDisconnected(slotIndex: number) {
     const inputs = this.getContextInputsList() as INodeInputSlot[];
     if (slotIndex === 0) {
-      // Disconnect all non-"+" inputs
+      // Go through all inputs to find ones unowned (no "+" prefix).
       for (let index = inputs.length - 1; index > 0; index--) {
         if (index === 0 || index === inputs.length - 1) {
           continue;
         }
-        if (!this.isOwnedInput(this.inputs[index]?.name)) {
-          this.removeContextInput(index);
+        const input = inputs[index]!;
+        if (!this.isOwnedInput(input.name)) {
+          // If it's linked, then keep it and add a "+" otherwise remove it.
+          if (input.link || this.outputs[index]?.links?.length) {
+            this.renameContextInput(index, input.name, true);
+            // TODO: Alert the user there is likely no data here? Maybe prefix with "! " ?
+          } else {
+            this.removeContextInput(index);
+          }
         }
       }
-      // We should have to fix, but I guess LuteGraph doesn't do so after removeInput, so we can.
-      this.fixInputsLinkSlots();
       this.setSize(this.computeSize());
       this.setDirtyCanvas(true, true);
     }
   }
 
+
+  /** Handles an upstream change. */
   override updateFromUpstream(
     update: "connect" | "disconnect" | "move" | "update",
     node: ContextDynamicNodeBase,
-    updatedIndexes: {index: number; name: string; from?: number},
+    updatedSlotData: {index: number; name: string; from?: number},
   ) {
     console.log("----- ContextDynamicNode :: updateFromUpstream", arguments);
     const inputs = this.getContextInputsList() as INodeInputSlot[];
 
     if (update == "connect") {
       const baseInputsData = node.provideInputsData();
-      const baseIndex = updatedIndexes.index;
+      const baseIndex = updatedSlotData.index;
       const baseInputData = baseInputsData[baseIndex]!;
       const name = this.getNextUniqueNameForThisNode(baseInputData.name);
-      this.addContextInput(name, baseInputData.type, baseIndex);
-    } else if (update == "disconnect") {
-      for (let index = inputs.length - 1; index > 0; index--) {
-        if (index == 0) {
-          continue;
-        }
-        if (updatedIndexes.index === index) {
-          this.removeContextInput(index);
-        }
+      // this.addContextInput(name, baseInputData.type, baseIndex);
+
+      // Look ahead and if the same name already exists, then move it up. Otherwise, we'll add.
+      const foundIndex = inputs.findIndex(i => this.stripOwnedPrefix(i.name)  === baseInputData.name);
+      if (foundIndex > -1) {
+        this.moveContextInput(foundIndex, baseIndex);
+        this.renameContextInput(baseIndex, baseInputData.name, false);
+      } else {
+        this.addContextInput(baseInputData.name, baseInputData.type, baseInputData.index);
+        this.stabilizeNames();
       }
+
+    } else if (update == "disconnect") {
+      // Remove the item, unless it's connected, then keep it so to not auto-disconnect.
+      if (this.outputs[updatedSlotData.index]?.links?.length) {
+        this.renameContextInput(updatedSlotData.index, updatedSlotData.name, true);
+        this.moveContextInput(updatedSlotData.index, 'bottom');
+        // TODO: Alert the user there is likely no data here? Maybe prefix with "! " ?
+      } else {
+        this.removeContextInput(updatedSlotData.index);
+      }
+
     } else if (update === "move") {
-      this.moveContextInput(updatedIndexes.from!, updatedIndexes.index);
+      this.moveContextInput(updatedSlotData.from!, updatedSlotData.index);
     } else if (update == "update") {
       const baseInputsData = node.provideInputsData();
-      const baseIndex = updatedIndexes.index;
+      const baseIndex = updatedSlotData.index;
       const baseInput = baseInputsData[baseIndex]!;
       inputs[baseIndex]!.name = this.stripOwnedPrefix(baseInput.name);
       this.outputs[baseIndex]!.name = inputs[baseIndex]!.name.toUpperCase();
-      this.updateDownstream(update, updatedIndexes);
+      this.updateDownstream(update, updatedSlotData);
       this.stabilizeNames();
     }
 
-    // Since we just spliced in a bunch, we need to clean the links.
-    this.fixInputsLinkSlots();
     this.setSize(this.computeSize());
     this.setDirtyCanvas(true, true);
   }
@@ -411,7 +482,6 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
   private stabilizeNames() {
     const inputs = this.getContextInputsList() as INodeInputSlot[];
     const names: string[] = [];
-    // const indexesChanged: {index: number; name: string}[] = [];
     for (const [index, input] of inputs.entries()) {
       if (index === 0 || index === inputs.length - 1) {
         continue;
@@ -433,12 +503,33 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
         }
         names.push(this.stripOwnedPrefix(name).toLocaleUpperCase());
         if (input.name !== name) {
-          input.name = name;
-          this.outputs[index]!.name = this.stripOwnedPrefix(name).toLocaleUpperCase();
-          this.updateDownstream("update", {index, name});
+          this.renameContextInput(index, name);
         }
       }
     }
+  }
+
+  /**
+   * Disallows a dynamic context node being added to a non-zero slot.
+   */
+  override onConnectInput(
+    inputIdx: number,
+    outputType: string | -1,
+    outputSlot: INodeOutputSlot,
+    outputNode: TLGraphNode,
+    outputIndex: number,
+  ): boolean {
+    let canConnect = true;
+    if (super.onConnectInput) {
+      canConnect = super.onConnectInput(inputIdx, outputType, outputSlot, outputNode, outputIndex);
+    }
+    if (canConnect && outputNode instanceof ContextDynamicNode && outputIndex === 0 && inputIdx !== 0) {
+      ContextDynamicNodeBase.logger.error(
+        "Currently, you can only connect a context node in the first slot.",
+      );
+      canConnect = false;
+    }
+    return canConnect;
   }
 
   override getSlotMenuOptions(info: {
@@ -460,25 +551,11 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
             );
             var dialogInput = dialog.querySelector("input");
             if (dialogInput) {
-              dialogInput.value = info.input!.label || "";
+              dialogInput.value = this.stripOwnedPrefix(info.input!.name || "");
             }
             var inner = () => {
               app.graph.beforeChange();
-              let newName = dialogInput.value.trim() || this.getSlotDefaultInputLabel(info.slot);
-              const oldName = info.input!.name;
-              info.input!.name = newName;
-              if (this.isOwnedInput(oldName)) {
-                info.input!.name = this.addOwnedPrefix(info.input!.name);
-              } else if (this.isOwnedInput(info.input!.name)) {
-                info.input!.name = this.stripOwnedPrefix(info.input!.name);
-              }
-              this.outputs[info.slot]!.name = this.stripOwnedPrefix(
-                info.input!.name,
-              ).toLocaleUpperCase();
-              this.updateDownstream("update", {
-                index: info.slot,
-                name: this.stripOwnedPrefix(info.input!.name),
-              });
+              this.renameContextInput(info.slot, dialogInput.value);
               this.stabilizeNames();
               this.setDirtyCanvas(true, true);
               dialog.close();
@@ -583,6 +660,14 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
     // });
   }
 
+  override clone() {
+    const cloned = super.clone();
+    while (cloned.outputs.length > 1) {
+      cloned.removeOutput(cloned.outputs.length - 1);
+    }
+    return cloned;
+  }
+
   override getContextInputsList() {
     return this.shadowInputs;
   }
@@ -613,7 +698,6 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
     }
     const allConnectedNodes = getConnectedInputNodes(this); // We want passthrough nodes, since they will loop.
     if (canConnect && allConnectedNodes.includes(outputNode)) {
-      alert(`You may not connect the same context node to a switch.`);
       rgthree.showMessage({
         id: "dynamic-context-looped",
         type: "warn",
@@ -834,12 +918,7 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
           this.removeContextInput(pre.shadowIndex);
         } else if (post.shadowIndex > -1) {
           console.log(`[Rename] It's shown and has a new name.`, post.name, post.shadowIndex);
-          this.shadowInputs[post.shadowIndex]!.name = this.stripOwnedPrefix(post.name);
-          this.outputs[post.shadowIndex]!.name = this.stripOwnedPrefix(post.name).toUpperCase();
-          this.updateDownstream("update", {
-            index: post.shadowIndex,
-            name: this.stripOwnedPrefix(post.name),
-          });
+          this.renameContextInput(post.shadowIndex, post.name);
         } else {
           console.log(`[Do Nothing] It's shown and has a new name.`, post.name, post.shadowIndex);
           this.updateLastInputsList();
@@ -896,6 +975,7 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
         }
       }
     }
+    // No, go through the currentS
     return allConnectedInputsData;
   }
 

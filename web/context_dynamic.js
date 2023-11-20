@@ -53,7 +53,7 @@ class ContextDynamicNodeBase extends BaseContextNode {
     }
     isOwnedInput(inputOrName) {
         const name = typeof inputOrName == "string" ? inputOrName : (inputOrName === null || inputOrName === void 0 ? void 0 : inputOrName.name) || "";
-        return name.startsWith("+ ");
+        return name.startsWith("+ ") || name === "+";
     }
     getNextUniqueNameForThisNode(desiredName) {
         const inputs = this.getContextInputsList();
@@ -85,7 +85,7 @@ class ContextDynamicNodeBase extends BaseContextNode {
     }
     handleInputDisconnected(slotIndex) {
     }
-    updateFromUpstream(update, node, updatedIndexes) {
+    updateFromUpstream(update, node, updatedSlotData) {
     }
     provideInputsData() {
         const inputs = this.getContextInputsList();
@@ -97,35 +97,11 @@ class ContextDynamicNodeBase extends BaseContextNode {
         }))
             .filter((i) => i.type !== "*");
     }
-    updateDownstream(update, updatedIndexes) {
+    updateDownstream(update, updatedSlotData) {
         var _a;
         const nodes = getConnectedOutputNodesAndFilterPassThroughs(this, this, 0);
         for (const node of nodes) {
-            (_a = node === null || node === void 0 ? void 0 : node.updateFromUpstream) === null || _a === void 0 ? void 0 : _a.call(node, update, this, updatedIndexes);
-        }
-    }
-    moveContextInput(slotFrom, slotTo) {
-        if (slotFrom === slotTo) {
-            return;
-        }
-        const inputs = this.getContextInputsList();
-        let newIndex = slotTo + (slotFrom < slotTo ? -1 : 0);
-        const input = inputs.splice(slotFrom, 1)[0];
-        inputs.splice(newIndex, 0, input);
-        this.outputs.splice(newIndex, 0, ...this.outputs.splice(slotFrom, 1));
-        this.updateDownstream("move", { index: slotTo, from: slotFrom, name: input.name });
-    }
-    removeContextInput(slot) {
-        if (this.hasShadowInputs) {
-            const inputs = this.getContextInputsList();
-            const input = inputs.splice(slot, 1)[0];
-            if (this.outputs[slot]) {
-                this.removeOutput(slot);
-            }
-            this.updateDownstream("disconnect", { index: slot, name: input.name });
-        }
-        else {
-            this.removeInput(slot);
+            (_a = node === null || node === void 0 ? void 0 : node.updateFromUpstream) === null || _a === void 0 ? void 0 : _a.call(node, update, this, updatedSlotData);
         }
     }
     addContextInput(name, type, slot = -1) {
@@ -150,10 +126,51 @@ class ContextDynamicNodeBase extends BaseContextNode {
             if (slot > -1) {
                 this.outputs.splice(slot, 0, this.outputs.splice(this.outputs.length - 1, 1)[0]);
             }
+            this.fixInputsOutputsLinkSlots();
             this.updateDownstream("connect", { index: slot, name });
         }
     }
-    fixInputsLinkSlots() {
+    removeContextInput(slot) {
+        if (this.hasShadowInputs) {
+            const inputs = this.getContextInputsList();
+            const input = inputs.splice(slot, 1)[0];
+            if (this.outputs[slot]) {
+                this.removeOutput(slot);
+            }
+            this.updateDownstream("disconnect", { index: slot, name: input.name });
+            this.fixInputsOutputsLinkSlots();
+        }
+        else {
+            this.removeInput(slot);
+        }
+    }
+    moveContextInput(slotFrom, slotTo) {
+        const inputs = this.getContextInputsList();
+        if (slotTo === 'bottom') {
+            slotTo = inputs.length - 1;
+        }
+        if (slotFrom === slotTo) {
+            return;
+        }
+        let newIndex = slotTo + (slotFrom < slotTo ? -1 : 0);
+        const input = inputs.splice(slotFrom, 1)[0];
+        inputs.splice(newIndex, 0, input);
+        this.outputs.splice(newIndex, 0, ...this.outputs.splice(slotFrom, 1));
+        this.fixInputsOutputsLinkSlots();
+        this.updateDownstream("move", { index: slotTo, from: slotFrom, name: input.name });
+    }
+    renameContextInput(index, newName, forceOwnBool = null) {
+        const inputs = this.getContextInputsList();
+        const input = inputs[index];
+        const oldName = input.name;
+        newName = this.stripOwnedPrefix(newName.trim() || this.getSlotDefaultInputLabel(index));
+        if (forceOwnBool === true || (this.isOwnedInput(oldName) && forceOwnBool !== false)) {
+            newName = this.addOwnedPrefix(newName);
+        }
+        input.name = newName;
+        this.updateDownstream("update", { index, name: newName });
+    }
+    fixInputsOutputsLinkSlots() {
         if (!this.hasShadowInputs) {
             const inputs = this.inputs;
             for (let index = inputs.length - 1; index > 0; index--) {
@@ -161,14 +178,24 @@ class ContextDynamicNodeBase extends BaseContextNode {
                 if ((input === null || input === void 0 ? void 0 : input.link) != null) {
                     app.graph.links[input.link].target_slot = index;
                 }
-                const output = this.outputs[index];
-                for (const link of (output === null || output === void 0 ? void 0 : output.links) || []) {
-                    app.graph.links[link].origin_slot = index;
-                }
+            }
+        }
+        const outputs = this.outputs;
+        for (let index = outputs.length - 1; index > 0; index--) {
+            const output = outputs[index];
+            for (const link of (output === null || output === void 0 ? void 0 : output.links) || []) {
+                app.graph.links[link].origin_slot = index;
             }
         }
     }
+    getSlotDefaultInputLabel(slot) {
+        const inputs = this.getContextInputsList();
+        const input = inputs[slot];
+        let defaultLabel = this.stripOwnedPrefix(input.name).toLowerCase();
+        return defaultLabel.toLocaleLowerCase();
+    }
 }
+ContextDynamicNodeBase.logger = rgthree.newLogSession("[Dynamic Context]");
 class ContextDynamicNode extends ContextDynamicNodeBase {
     static setUp(comfyClass) {
         BaseContextNode.setUp(comfyClass, ContextDynamicNode);
@@ -190,14 +217,9 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
         if (this.outputs[slot]) {
             this.removeOutput(slot);
         }
+        this.fixInputsOutputsLinkSlots();
         this.updateDownstream("disconnect", { index: slot, name: input.name });
         this.stabilizeNames();
-    }
-    getSlotDefaultInputLabel(slot) {
-        const inputs = this.getContextInputsList();
-        const input = inputs[slot];
-        let defaultLabel = this.stripOwnedPrefix(input.name).toLowerCase();
-        return defaultLabel.toLocaleLowerCase();
     }
     handleInputConnected(slotIndex) {
         const inputs = this.getContextInputsList();
@@ -207,11 +229,19 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
             const baseNodesDynamicCtx = baseNodes[0];
             if (baseNodesDynamicCtx === null || baseNodesDynamicCtx === void 0 ? void 0 : baseNodesDynamicCtx.provideInputsData) {
                 for (const input of baseNodesDynamicCtx.provideInputsData()) {
+                    const inputs = this.getContextInputsList();
                     if (input.name === "base_ctx" || input.name === "+") {
                         continue;
                     }
-                    this.addContextInput(input.name, input.type, input.index);
-                    this.stabilizeNames();
+                    const foundIndex = inputs.findIndex(i => this.stripOwnedPrefix(i.name) === input.name);
+                    if (foundIndex > -1) {
+                        this.moveContextInput(foundIndex, input.index);
+                        this.renameContextInput(input.index, input.name, false);
+                    }
+                    else {
+                        this.addContextInput(input.name, input.type, input.index);
+                        this.stabilizeNames();
+                    }
                 }
             }
         }
@@ -243,55 +273,67 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
         }
     }
     handleInputDisconnected(slotIndex) {
-        var _a;
+        var _a, _b;
         const inputs = this.getContextInputsList();
         if (slotIndex === 0) {
             for (let index = inputs.length - 1; index > 0; index--) {
                 if (index === 0 || index === inputs.length - 1) {
                     continue;
                 }
-                if (!this.isOwnedInput((_a = this.inputs[index]) === null || _a === void 0 ? void 0 : _a.name)) {
-                    this.removeContextInput(index);
+                const input = inputs[index];
+                if (!this.isOwnedInput(input.name)) {
+                    if (input.link || ((_b = (_a = this.outputs[index]) === null || _a === void 0 ? void 0 : _a.links) === null || _b === void 0 ? void 0 : _b.length)) {
+                        this.renameContextInput(index, input.name, true);
+                    }
+                    else {
+                        this.removeContextInput(index);
+                    }
                 }
             }
-            this.fixInputsLinkSlots();
             this.setSize(this.computeSize());
             this.setDirtyCanvas(true, true);
         }
     }
-    updateFromUpstream(update, node, updatedIndexes) {
+    updateFromUpstream(update, node, updatedSlotData) {
+        var _a, _b;
         console.log("----- ContextDynamicNode :: updateFromUpstream", arguments);
         const inputs = this.getContextInputsList();
         if (update == "connect") {
             const baseInputsData = node.provideInputsData();
-            const baseIndex = updatedIndexes.index;
+            const baseIndex = updatedSlotData.index;
             const baseInputData = baseInputsData[baseIndex];
             const name = this.getNextUniqueNameForThisNode(baseInputData.name);
-            this.addContextInput(name, baseInputData.type, baseIndex);
+            const foundIndex = inputs.findIndex(i => this.stripOwnedPrefix(i.name) === baseInputData.name);
+            if (foundIndex > -1) {
+                this.moveContextInput(foundIndex, baseIndex);
+                this.renameContextInput(baseIndex, baseInputData.name, false);
+            }
+            else {
+                this.addContextInput(baseInputData.name, baseInputData.type, baseInputData.index);
+                this.stabilizeNames();
+            }
         }
         else if (update == "disconnect") {
-            for (let index = inputs.length - 1; index > 0; index--) {
-                if (index == 0) {
-                    continue;
-                }
-                if (updatedIndexes.index === index) {
-                    this.removeContextInput(index);
-                }
+            if ((_b = (_a = this.outputs[updatedSlotData.index]) === null || _a === void 0 ? void 0 : _a.links) === null || _b === void 0 ? void 0 : _b.length) {
+                this.renameContextInput(updatedSlotData.index, updatedSlotData.name, true);
+                this.moveContextInput(updatedSlotData.index, 'bottom');
+            }
+            else {
+                this.removeContextInput(updatedSlotData.index);
             }
         }
         else if (update === "move") {
-            this.moveContextInput(updatedIndexes.from, updatedIndexes.index);
+            this.moveContextInput(updatedSlotData.from, updatedSlotData.index);
         }
         else if (update == "update") {
             const baseInputsData = node.provideInputsData();
-            const baseIndex = updatedIndexes.index;
+            const baseIndex = updatedSlotData.index;
             const baseInput = baseInputsData[baseIndex];
             inputs[baseIndex].name = this.stripOwnedPrefix(baseInput.name);
             this.outputs[baseIndex].name = inputs[baseIndex].name.toUpperCase();
-            this.updateDownstream(update, updatedIndexes);
+            this.updateDownstream(update, updatedSlotData);
             this.stabilizeNames();
         }
-        this.fixInputsLinkSlots();
         this.setSize(this.computeSize());
         this.setDirtyCanvas(true, true);
     }
@@ -317,12 +359,21 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
                 }
                 names.push(this.stripOwnedPrefix(name).toLocaleUpperCase());
                 if (input.name !== name) {
-                    input.name = name;
-                    this.outputs[index].name = this.stripOwnedPrefix(name).toLocaleUpperCase();
-                    this.updateDownstream("update", { index, name });
+                    this.renameContextInput(index, name);
                 }
             }
         }
+    }
+    onConnectInput(inputIdx, outputType, outputSlot, outputNode, outputIndex) {
+        let canConnect = true;
+        if (super.onConnectInput) {
+            canConnect = super.onConnectInput(inputIdx, outputType, outputSlot, outputNode, outputIndex);
+        }
+        if (canConnect && outputNode instanceof ContextDynamicNode && outputIndex === 0 && inputIdx !== 0) {
+            ContextDynamicNodeBase.logger.error("Currently, you can only connect a context node in the first slot.");
+            canConnect = false;
+        }
+        return canConnect;
     }
     getSlotMenuOptions(info) {
         const opts = [];
@@ -334,24 +385,11 @@ class ContextDynamicNode extends ContextDynamicNodeBase {
                         var dialog = app.canvas.createDialog("<span class='name'>Name</span><input autofocus type='text'/><button>OK</button>", {});
                         var dialogInput = dialog.querySelector("input");
                         if (dialogInput) {
-                            dialogInput.value = info.input.label || "";
+                            dialogInput.value = this.stripOwnedPrefix(info.input.name || "");
                         }
                         var inner = () => {
                             app.graph.beforeChange();
-                            let newName = dialogInput.value.trim() || this.getSlotDefaultInputLabel(info.slot);
-                            const oldName = info.input.name;
-                            info.input.name = newName;
-                            if (this.isOwnedInput(oldName)) {
-                                info.input.name = this.addOwnedPrefix(info.input.name);
-                            }
-                            else if (this.isOwnedInput(info.input.name)) {
-                                info.input.name = this.stripOwnedPrefix(info.input.name);
-                            }
-                            this.outputs[info.slot].name = this.stripOwnedPrefix(info.input.name).toLocaleUpperCase();
-                            this.updateDownstream("update", {
-                                index: info.slot,
-                                name: this.stripOwnedPrefix(info.input.name),
-                            });
+                            this.renameContextInput(info.slot, dialogInput.value);
                             this.stabilizeNames();
                             this.setDirtyCanvas(true, true);
                             dialog.close();
@@ -420,6 +458,13 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
     static setUp(comfyClass) {
         BaseContextNode.setUp(comfyClass, ContextDynamicSwitchNode);
     }
+    clone() {
+        const cloned = super.clone();
+        while (cloned.outputs.length > 1) {
+            cloned.removeOutput(cloned.outputs.length - 1);
+        }
+        return cloned;
+    }
     getContextInputsList() {
         return this.shadowInputs;
     }
@@ -432,7 +477,6 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
         }
         const allConnectedNodes = getConnectedInputNodes(this);
         if (canConnect && allConnectedNodes.includes(outputNode)) {
-            alert(`You may not connect the same context node to a switch.`);
             rgthree.showMessage({
                 id: "dynamic-context-looped",
                 type: "warn",
@@ -611,12 +655,7 @@ class ContextDynamicSwitchNode extends ContextDynamicNodeBase {
                 }
                 else if (post.shadowIndex > -1) {
                     console.log(`[Rename] It's shown and has a new name.`, post.name, post.shadowIndex);
-                    this.shadowInputs[post.shadowIndex].name = this.stripOwnedPrefix(post.name);
-                    this.outputs[post.shadowIndex].name = this.stripOwnedPrefix(post.name).toUpperCase();
-                    this.updateDownstream("update", {
-                        index: post.shadowIndex,
-                        name: this.stripOwnedPrefix(post.name),
-                    });
+                    this.renameContextInput(post.shadowIndex, post.name);
                 }
                 else {
                     console.log(`[Do Nothing] It's shown and has a new name.`, post.name, post.shadowIndex);

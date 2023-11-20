@@ -32,7 +32,6 @@ class RgthreeDynamicContext:
     """Creates a new context from the provided data, with an optional base ctx to start."""
     new_ctx = base_ctx.copy() if base_ctx is not None else {}
 
-
     for key_raw, value in kwargs.items():
       key = key_raw.upper()
       if key.startswith('+ '):
@@ -42,6 +41,7 @@ class RgthreeDynamicContext:
       new_ctx[key] = value
 
     res = [new_ctx]
+    output_keys = output_keys.split(',') if output_keys is not None else []
     for key in output_keys:
       res.append(new_ctx[key] if key in new_ctx else None)
     return tuple(res)
