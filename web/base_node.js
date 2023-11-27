@@ -65,6 +65,15 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         (_b = (_a = nodeType === null || nodeType === void 0 ? void 0 : nodeType.prototype) === null || _a === void 0 ? void 0 : _a.onDrawForeground) === null || _b === void 0 ? void 0 : _b.apply(this, [ctx, canvas]);
         super.onDrawForeground && super.onDrawForeground(ctx, canvas);
     }
+    getExtraMenuOptions(canvas, options) {
+        var _a, _b, _c, _d, _e;
+        if (super.getExtraMenuOptions) {
+            super.getExtraMenuOptions.apply(this, [canvas, options]);
+        }
+        else if ((_b = (_a = this.constructor.nodeType) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.getExtraMenuOptions) {
+            (_e = (_d = (_c = this.constructor.nodeType) === null || _c === void 0 ? void 0 : _c.prototype) === null || _d === void 0 ? void 0 : _d.getExtraMenuOptions) === null || _e === void 0 ? void 0 : _e.apply(this, [canvas, options]);
+        }
+    }
     async setupFromServerNodeData() {
         var _a, _b, _c;
         const nodeData = this.constructor.nodeData;
