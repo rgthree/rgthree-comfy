@@ -96,7 +96,9 @@ class SeedControl {
             }
             this.serializedCtx = {};
         };
+        const oldGetExtraMenuOptions = this.node.getExtraMenuOptions;
         this.node.getExtraMenuOptions = (_, options) => {
+            oldGetExtraMenuOptions === null || oldGetExtraMenuOptions === void 0 ? void 0 : oldGetExtraMenuOptions.apply(this.node, [_, options]);
             options.splice(options.length - 1, 0, {
                 content: "Show/Hide Last Seed Value",
                 callback: (_value, _options, _event, _parentMenu, _node) => {

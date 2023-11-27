@@ -174,7 +174,9 @@ class SeedControl {
       this.serializedCtx = {};
     };
 
+    const oldGetExtraMenuOptions = this.node.getExtraMenuOptions;
     this.node.getExtraMenuOptions = (_: TLGraphNode, options: ContextMenuItem[]) => {
+      oldGetExtraMenuOptions?.apply(this.node, [_, options]);
       options.splice(options.length - 1, 0, {
         content: "Show/Hide Last Seed Value",
         callback: (
