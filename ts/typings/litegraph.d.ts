@@ -68,6 +68,8 @@ export type WidgetComboCallback<T extends IWidget = IWidget> = (
 
 export interface IWidget<TValue = any, TOptions = any> {
     name: string | null;
+    // @rgthree
+    label?: string | null;
     value: TValue;
     options?: TOptions;
     type?: widgetTypes;
@@ -186,6 +188,11 @@ export const LiteGraph: {
     NODE_DEFAULT_SHAPE: string;
     DEFAULT_SHADOW_COLOR: string;
     DEFAULT_GROUP_FONT: number;
+
+    WIDGET_BGCOLOR: string;
+    WIDGET_OUTLINE_COLOR: string;
+    WIDGET_TEXT_COLOR: string;
+    WIDGET_SECONDARY_TEXT_COLOR: string;
 
     LINK_COLOR: string;
     EVENT_LINK_COLOR: string;
@@ -394,8 +401,11 @@ export declare class LGraph {
     starttime: number;
     status: typeof LGraph.STATUS_RUNNING | typeof LGraph.STATUS_STOPPED;
 
-    private _nodes: LGraphNode[];
-    private _groups: LGraphGroup[];
+    // @rgthree, remove private; it's not really private b/c it's javascript.
+    _nodes: LGraphNode[];
+    // @rgthree, remove private; it's not really private b/c it's javascript.
+    _groups: LGraphGroup[];
+
     private _nodes_by_id: Record<number, LGraphNode>;
     /** nodes that are executable sorted in execution order */
     private _nodes_executable:
@@ -1120,6 +1130,11 @@ export declare class LGraphGroup {
     font: string;
     // @rgthree
     _nodes: LGraphNode[];
+    // @rgthree
+    _pos: Vector2;
+    // @rgthree
+    _size: Vector2;
+
 
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;
@@ -1564,18 +1579,6 @@ declare class ContextMenu {
 }
 
 declare global {
-    interface CanvasRenderingContext2D {
-        /** like rect but rounded corners */
-        roundRect(
-            x: number,
-            y: number,
-            width: number,
-            height: number,
-            radius: number,
-            radiusLow: number
-        ): void;
-    }
-
     interface Math {
         clamp(v: number, min: number, max: number): number;
     }

@@ -35,6 +35,7 @@ export class RgthreeBaseNode extends LGraphNode {
   private mode_: NodeMode;
 
   isVirtualNode = false;
+  removed = false;
 
   constructor(title = RgthreeBaseNode.title) {
     super(title);
@@ -90,6 +91,11 @@ export class RgthreeBaseNode extends LGraphNode {
         this.widgets.splice(index, 1);
       }
     }
+  }
+
+  override onRemoved(): void {
+    super.onRemoved?.();
+    this.removed = true;
   }
 
   static setUp<T extends RgthreeBaseNode>(...args: any[]) {

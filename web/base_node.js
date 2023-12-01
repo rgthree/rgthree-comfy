@@ -6,6 +6,7 @@ export class RgthreeBaseNode extends LGraphNode {
         super(title);
         this._tempWidth = 0;
         this.isVirtualNode = false;
+        this.removed = false;
         if (title == '__NEED_NAME__') {
             throw new Error('RgthreeBaseNode needs overrides.');
         }
@@ -41,6 +42,11 @@ export class RgthreeBaseNode extends LGraphNode {
                 this.widgets.splice(index, 1);
             }
         }
+    }
+    onRemoved() {
+        var _a;
+        (_a = super.onRemoved) === null || _a === void 0 ? void 0 : _a.call(this);
+        this.removed = true;
     }
     static setUp(...args) {
     }
