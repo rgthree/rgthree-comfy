@@ -1,7 +1,8 @@
 // COPY THIS FILE BEFORE MAKING CHANGES TO: rgthree_config.json
 {
   "patch_recursive_execution": true,
-  "monitor_bad_links": false,
+  "show_corrupt_link_alerts": false,
+  "monitor_for_corrupt_links": false,
   "nodes": {
     "reroute": {
       "default_width": 40,

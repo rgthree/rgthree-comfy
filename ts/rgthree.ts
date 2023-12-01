@@ -233,39 +233,48 @@ class Rgthree {
         const graphToUse = wasLoadingAborted ? (graphCopy || graph) : app.graph
         const fixBadLinksResult = fixBadLinks(graphToUse);
         if (fixBadLinksResult.hasBadLinks) {
-          that.showMessage({
-            id: 'bad-links',
-            type: 'warn',
-            message: 'The workflow you\'ve loaded may have connection/linking data that could be fixed.',
-            actions: [
-              {
-                label: 'Open fixer',
-                href: '/extensions/rgthree-comfy/html/links.html',
-              },
-              {
-                label: 'Fix in place',
-                href: '/extensions/rgthree-comfy/html/links.html',
-                callback: (event) => {
-                  event.stopPropagation();
-                  event.preventDefault();
-                  if (confirm('This will attempt to fix in place. Please make sure to have a saved copy of your workflow.')) {
-                    const fixBadLinksResult = fixBadLinks(graphToUse, true);
-                    if (!fixBadLinksResult.hasBadLinks) {
-                      that.hideMessage('bad-links');
-                      alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
-                      wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
-                      if (rgthreeConfig['monitor_bad_links']) {
-                        that.monitorLinkTimeout = setTimeout(() => {
-                          that.monitorBadLinks();
-                        }, 5000);
+          that.log(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/extensions/rgthree-comfy/html/links.html to try to fix.`);
+          if (rgthreeConfig['show_corrupt_link_alerts']) {
+            that.showMessage({
+              id: 'bad-links',
+              type: 'warn',
+              message: 'The workflow you\'ve loaded has corrupt linking data that may be able to be fixed.',
+              actions: [
+                {
+                  label: 'Open fixer',
+                  href: '/extensions/rgthree-comfy/html/links.html',
+                },
+                {
+                  label: 'Fix in place',
+                  href: '/extensions/rgthree-comfy/html/links.html',
+                  callback: (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    if (confirm('This will attempt to fix in place. Please make sure to have a saved copy of your workflow.')) {
+                      try {
+                        const fixBadLinksResult = fixBadLinks(graphToUse, true);
+                        if (!fixBadLinksResult.hasBadLinks) {
+                          that.hideMessage('bad-links');
+                          alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
+                          wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
+                          if (rgthreeConfig['monitor_for_corrupt_links'] || rgthreeConfig['monitor_bad_links']) {
+                            that.monitorLinkTimeout = setTimeout(() => {
+                              that.monitorBadLinks();
+                            }, 5000);
+                          }
+                        }
+                      } catch(e) {
+                        console.error(e);
+                        alert('Unsuccessful at fixing corrupt data. :(');
+                        that.hideMessage('bad-links');
                       }
                     }
                   }
-                }
-              },
-            ]
-          });
-        } else if (rgthreeConfig['monitor_bad_links']) {
+                },
+              ]
+            });
+          }
+        } else if (rgthreeConfig['monitor_for_corrupt_links'] || rgthreeConfig['monitor_bad_links']) {
           that.monitorLinkTimeout = setTimeout(() => {
             that.monitorBadLinks();
           }, 5000);
