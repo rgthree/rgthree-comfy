@@ -2,7 +2,7 @@
 import type { SerializedGraph, BadLinksData } from "index";
 import { fixBadLinks } from "../link_fixer.js";
 // @ts-ignore
-import { getPngMetadata } from "/scripts/pnginfo.js";
+import { getPngMetadata } from "../../../scripts/pnginfo.js";
 
 
 function wait(ms = 16, value?: any) {
