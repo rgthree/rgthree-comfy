@@ -95,7 +95,7 @@ NOT_NODES = ['constants', 'log', 'utils', 'rgthree']
 __all__ = ['NODE_CLASS_MAPPINGS']
 
 nodes = []
-for file in glob.glob('*.py', root_dir=DIR_PY) + glob.glob('*.js', root_dir=os.path.join(DIR_DEV_WEB, 'js')):
+for file in glob.glob(os.path.join(DIR_PY, '*.py')) + glob.glob(os.path.join(DIR_DEV_WEB, 'js', '*.js')):
   name = os.path.splitext(file)[0]
   if name not in nodes and name not in NOT_NODES and not name.startswith(
       '_') and not name.startswith('base') and not 'utils' in name:
