@@ -180,7 +180,7 @@ class Rgthree {
                 const fixBadLinksResult = fixBadLinks(graphToUse);
                 if (fixBadLinksResult.hasBadLinks) {
                     that.log(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/extensions/rgthree-comfy/html/links.html to try to fix.`);
-                    if (rgthreeConfig['show_corrupt_link_alerts']) {
+                    if (rgthreeConfig['show_alerts_for_corrupt_workflows']) {
                         that.showMessage({
                             id: 'bad-links',
                             type: 'warn',
