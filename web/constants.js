@@ -10,6 +10,7 @@ export const NodeTypesString = {
     FAST_MUTER: addRgthree('Fast Muter'),
     FAST_BYPASSER: addRgthree('Fast Bypasser'),
     FAST_GROUPS_MUTER: addRgthree('Fast Groups Muter'),
+    FAST_GROUPS_BYPASSER: addRgthree('Fast Groups Bypasser'),
     FAST_ACTIONS_BUTTON: addRgthree('Fast Actions Button'),
     NODE_COLLECTOR: addRgthree('Node Collector'),
     REROUTE: addRgthree('Reroute'),

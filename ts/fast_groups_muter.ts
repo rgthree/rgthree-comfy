@@ -16,20 +16,17 @@ import {
 declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
 
-const MODE_MUTE = 2;
-const MODE_ALWAYS = 0;
-
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
  */
-class FastGroupsMuter extends RgthreeBaseNode {
+export class FastGroupsMuter extends RgthreeBaseNode {
   static override type = NodeTypesString.FAST_GROUPS_MUTER;
   static override title = NodeTypesString.FAST_GROUPS_MUTER;
 
   static override exposedActions = ["Mute all", "Enable all"];
 
-  readonly modeOn = LiteGraph.ALWAYS;
-  readonly modeOff = LiteGraph.NEVER;
+  readonly modeOn: number = LiteGraph.ALWAYS;
+  readonly modeOff: number = LiteGraph.NEVER;
 
   private debouncerTempWidth: number = 0;
   private refreshWidgetsTimeout: number | null = null;
@@ -249,6 +246,8 @@ class FastGroupsMuter extends RgthreeBaseNode {
         widget.callback = () => {
           (widget as any).doModeChange();
         };
+
+		    this.setSize(this.computeSize());
       }
       if (!group._nodes?.length) {
         group.recomputeInsideNodes();
@@ -275,8 +274,9 @@ class FastGroupsMuter extends RgthreeBaseNode {
     }, 500);
   }
 
-  override computeSize(out: Vector2) {
+  override computeSize(out?: Vector2) {
     let size = super.computeSize(out);
+    console.log('computesize', size)
     if (this.tempSize) {
       size[0] = Math.max(this.tempSize[0], size[0]);
       size[1] = Math.max(this.tempSize[1], size[1]);
@@ -286,6 +286,7 @@ class FastGroupsMuter extends RgthreeBaseNode {
         this.tempSize = null;
       }, 32);
     }
+    console.log('computesize2', size)
     setTimeout(() => {
       app.graph.setDirtyCanvas(true, true);
     }, 16);

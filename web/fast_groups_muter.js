@@ -1,9 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-const MODE_MUTE = 2;
-const MODE_ALWAYS = 0;
-class FastGroupsMuter extends RgthreeBaseNode {
+export class FastGroupsMuter extends RgthreeBaseNode {
     constructor(title = FastGroupsMuter.title) {
         super(title);
         this.modeOn = LiteGraph.ALWAYS;
@@ -179,6 +177,7 @@ class FastGroupsMuter extends RgthreeBaseNode {
                 widget.callback = () => {
                     widget.doModeChange();
                 };
+                this.setSize(this.computeSize());
             }
             if (!((_f = group._nodes) === null || _f === void 0 ? void 0 : _f.length)) {
                 group.recomputeInsideNodes();
@@ -203,6 +202,7 @@ class FastGroupsMuter extends RgthreeBaseNode {
     }
     computeSize(out) {
         let size = super.computeSize(out);
+        console.log('computesize', size);
         if (this.tempSize) {
             size[0] = Math.max(this.tempSize[0], size[0]);
             size[1] = Math.max(this.tempSize[1], size[1]);
@@ -211,6 +211,7 @@ class FastGroupsMuter extends RgthreeBaseNode {
                 this.tempSize = null;
             }, 32);
         }
+        console.log('computesize2', size);
         setTimeout(() => {
             app.graph.setDirtyCanvas(true, true);
         }, 16);
