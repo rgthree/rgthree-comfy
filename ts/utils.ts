@@ -77,71 +77,75 @@ export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, conf
     menuOptions: ContextMenuItem[],
   ) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
+    addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
+  }
+}
 
-    let idx = menuOptions
-      .slice()
-      .reverse()
-      .findIndex((option) => (option as any)?.isRgthree);
-    if (idx == -1) {
-      idx = menuOptions.findIndex((option) => option?.content.includes(after)) + 1;
-      if (!idx) {
-        idx = menuOptions.length - 1;
-      }
-      // Add a separator, and move to the next one.
-      menuOptions.splice(idx, 0, null);
-      idx++;
-    } else {
-      idx = menuOptions.length - idx;
+export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuConfig,
+    menuOptions: ContextMenuItem[], after = 'Shape') {
+  let idx = menuOptions
+    .slice()
+    .reverse()
+    .findIndex((option) => (option as any)?.isRgthree);
+  if (idx == -1) {
+    idx = menuOptions.findIndex((option) => option?.content.includes(after)) + 1;
+    if (!idx) {
+      idx = menuOptions.length - 1;
     }
+    // Add a separator, and move to the next one.
+    menuOptions.splice(idx, 0, null);
+    idx++;
+  } else {
+    idx = menuOptions.length - idx;
+  }
 
-    const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(this) : config.subMenuOptions;
+  const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(node) : config.subMenuOptions;
 
-    menuOptions.splice(idx, 0, {
-      content: typeof config.name == "function" ? config.name(this) : config.name,
-      has_submenu: !!subMenuOptions?.length,
-      isRgthree: true, // Mark it, so we can find it.
-      callback: (
-        value: ContextMenuItem,
-        _options: IContextMenuOptions,
-        event: MouseEvent,
-        parentMenu: ContextMenu | undefined,
-        _node: TLGraphNode,
-      ) => {
-        if (!!subMenuOptions?.length) {
-          new LiteGraph.ContextMenu(
-            subMenuOptions.map((option) => (option ? { content: option } : null)),
-            {
-              event,
-              parentMenu,
-              callback: (
-                subValue: ContextMenuItem,
-                _options: IContextMenuOptions,
-                _event: MouseEvent,
-                _parentMenu: ContextMenu | undefined,
-                _node: TLGraphNode,
-              ) => {
-                if (config.property) {
-                  this.properties = this.properties || {};
-                  this.properties[config.property] = config.prepareValue
-                    ? config.prepareValue(subValue!.content, this)
-                    : subValue!.content;
-                }
-                config.callback && config.callback(this, subValue?.content);
-              },
+  menuOptions.splice(idx, 0, {
+    content: typeof config.name == "function" ? config.name(node) : config.name,
+    has_submenu: !!subMenuOptions?.length,
+    isRgthree: true, // Mark it, so we can find it.
+    callback: (
+      value: ContextMenuItem,
+      _options: IContextMenuOptions,
+      event: MouseEvent,
+      parentMenu: ContextMenu | undefined,
+      _node: TLGraphNode,
+    ) => {
+      if (!!subMenuOptions?.length) {
+        new LiteGraph.ContextMenu(
+          subMenuOptions.map((option) => (option ? { content: option } : null)),
+          {
+            event,
+            parentMenu,
+            callback: (
+              subValue: ContextMenuItem,
+              _options: IContextMenuOptions,
+              _event: MouseEvent,
+              _parentMenu: ContextMenu | undefined,
+              _node: TLGraphNode,
+            ) => {
+              if (config.property) {
+                node.properties = node.properties || {};
+                node.properties[config.property] = config.prepareValue
+                  ? config.prepareValue(subValue!.content, node)
+                  : subValue!.content;
+              }
+              config.callback && config.callback(node, subValue?.content);
             },
-          );
-          return;
-        }
-        if (config.property) {
-          this.properties = this.properties || {};
-          this.properties[config.property] = config.prepareValue
-            ? config.prepareValue(this.properties[config.property], this)
-            : !this.properties[config.property];
-        }
-        config.callback && config.callback(this, value?.content);
-      },
-    } as ContextMenuItem);
-  };
+          },
+        );
+        return;
+      }
+      if (config.property) {
+        node.properties = node.properties || {};
+        node.properties[config.property] = config.prepareValue
+          ? config.prepareValue(node.properties[config.property], node)
+          : !node.properties[config.property];
+      }
+      config.callback && config.callback(node, value?.content);
+    },
+  } as ContextMenuItem);
 }
 
 export function addConnectionLayoutSupport(
@@ -358,14 +362,13 @@ export function addHelp(nodeCtor: Constructor<TLGraphNode>, comfyApp?: ComfyApp)
   });
 }
 
-export function addHelpMenuItem(nodeCtor: Constructor<TLGraphNode>, content: string) {
-  addMenuItem(nodeCtor, app, {
+export function addHelpMenuItem(node: TLGraphNode, content: string, menuOptions: ContextMenuItem[]) {
+  addMenuItemOnExtraMenuOptions(node, {
     name: "🛟 Node Help",
     callback: (node) => {
-      const name = (nodeCtor as any).type.replace("(rgthree)", "");
-      new RgthreeHelpDialog(nodeCtor as any, content).show();
+      new RgthreeHelpDialog(node, content).show();
     },
-  }, 'Properties Panel');
+  }, menuOptions, 'Properties Panel');
 }
 
 export enum PassThroughFollowing {

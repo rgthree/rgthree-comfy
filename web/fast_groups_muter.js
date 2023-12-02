@@ -15,6 +15,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.refreshWidgetsTimeout = null;
         this.tempSize = null;
         this.serialize_widgets = false;
+        this.helpActions = 'must and unmute';
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_MATCH_COLORS] = "";
         this.properties[PROPERTY_MATCH_TITLE] = "";
@@ -233,25 +234,26 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             }
         }
     }
+    getExtraMenuOptions(canvas, menuOptions) {
+        addHelpMenuItem(this, `
+        <p>The ${this.type.replace("(rgthree)", "")} is an input-less node that automatically collects all groups in your current
+        workflow and allows you to quickly ${this.helpActions} all nodes within the group.</p>
+        <ul>
+          <li>
+            <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
+            <ul>
+              <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
+              <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
+              <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
+              <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
+            </ul>
+          </li>
+        </ul>
+      `, menuOptions);
+    }
     static setUp(clazz) {
         LiteGraph.registerNodeType(clazz.type, clazz);
         clazz.category = clazz._category;
-        const name = clazz.type.replace("(rgthree)", "");
-        addHelpMenuItem(clazz, `
-      <p>The ${name} is an input-less node that automatically collects all groups in your current
-      workflow and allows you to quickly mute and unmute all nodes.</p>
-      <ul>
-        <li>
-          <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
-          <ul>
-            <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
-            <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
-            <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
-            <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
-          </ul>
-        </li>
-      </ul>
-    `);
     }
 }
 FastGroupsMuter.type = NodeTypesString.FAST_GROUPS_MUTER;

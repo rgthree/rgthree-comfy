@@ -62,29 +62,6 @@ export function createElement(selectorOrText, attributes = null) {
     }
     return element;
 }
-export function getSelfOrParent(element, selector, parent = null) {
-    let selectorElement;
-    if (selector instanceof Element) {
-        selectorElement = selector;
-        if (!selector.id) {
-            selectorElement.id = Date.now().toString(36);
-        }
-        selector = `#${selectorElement.id}`;
-    }
-    parent = parent || document.documentElement;
-    let els = $$(selector, parent);
-    let el = element;
-    let found = null;
-    do {
-        if (els.includes(el)) {
-            found = el;
-        }
-    } while ((el = el.parentElement) && el !== parent && found === null);
-    if (selectorElement) {
-        selectorElement.removeAttribute('id');
-    }
-    return found;
-}
 function getSelectorTag(str) {
     return tryMatch(str, RGX_TAG);
 }

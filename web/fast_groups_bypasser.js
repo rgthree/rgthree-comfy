@@ -4,8 +4,13 @@ import { FastGroupsMuter } from "./fast_groups_muter.js";
 export class FastGroupsBypasser extends FastGroupsMuter {
     constructor(title = FastGroupsBypasser.title) {
         super(title);
+        this.helpActions = 'bypass and enable';
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = 4;
+    }
+    static setUp(clazz) {
+        LiteGraph.registerNodeType(clazz.type, clazz);
+        clazz.category = clazz._category;
     }
 }
 FastGroupsBypasser.type = NodeTypesString.FAST_GROUPS_BYPASSER;

@@ -75,34 +75,6 @@ export function createElement<T extends HTMLElement>(selectorOrText: string, att
   return element as T;
 }
 
-export function getSelfOrParent(element: HTMLElement, selector: string|Element|HTMLElement, parent: HTMLElement|null = null) : HTMLElement|null {
-  // If we passed an element to check for, then add add an id, if there isn't one,
-  // and set the selector to find it.
-  let selectorElement;
-  if (selector instanceof Element){
-    selectorElement = selector;
-    if (!selector.id){
-      selectorElement.id = Date.now().toString(36);
-    }
-    selector = `#${selectorElement.id}`;
-  }
-
-  parent = parent || document.documentElement;
-  let els = $$(selector, parent);
-  let el: HTMLElement|null = element;
-  let found = null;
-  do {
-    if (els.includes(el)) {
-      found = el;
-    }
-  } while((el = el.parentElement) && el !== parent && found === null);
-  // If we set a new id on the element, remove it
-  if (selectorElement) {
-    selectorElement.removeAttribute('id');
-  }
-  return found;
-}
-
 function getSelectorTag(str: string) {
   return tryMatch(str, RGX_TAG);
 }

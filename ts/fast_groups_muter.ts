@@ -11,6 +11,7 @@ import {
   Vector2,
   SerializedLGraphNode,
   IWidget,
+  ContextMenuItem,
 } from "./typings/litegraph.js";
 import { addHelpMenuItem } from "./utils.js";
 
@@ -40,6 +41,8 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   // We don't need to serizalize since we'll just be checking group data on startup anyway
   override serialize_widgets = false;
+
+  protected helpActions = 'must and unmute';
 
   static "@sort" = {
     type: "combo",
@@ -305,29 +308,27 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     }
   }
 
+  override getExtraMenuOptions(canvas: TLGraphCanvas, menuOptions: ContextMenuItem[]): void {
+    addHelpMenuItem(this, `
+        <p>The ${this.type!.replace("(rgthree)", "")} is an input-less node that automatically collects all groups in your current
+        workflow and allows you to quickly ${(this as FastGroupsMuter).helpActions} all nodes within the group.</p>
+        <ul>
+          <li>
+            <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
+            <ul>
+              <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
+              <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
+              <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
+              <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
+            </ul>
+          </li>
+        </ul>
+      `, menuOptions);
+  }
+
   static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
     LiteGraph.registerNodeType((clazz as any).type, clazz);
     (clazz as any).category = (clazz as any)._category;
-
-    const name = (clazz as any).type.replace("(rgthree)", "");
-    addHelpMenuItem(
-      clazz,
-      `
-      <p>The ${name} is an input-less node that automatically collects all groups in your current
-      workflow and allows you to quickly mute and unmute all nodes.</p>
-      <ul>
-        <li>
-          <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
-          <ul>
-            <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
-            <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
-            <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
-            <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
-          </ul>
-        </li>
-      </ul>
-    `,
-    );
   }
 }
 

@@ -1,15 +1,11 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
+import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { FastGroupsMuter } from "./fast_groups_muter.js";
 import {
   type LGraphNode,
-  type LGraph as TLGraph,
   type LiteGraph as TLiteGraph,
-  LGraphCanvas as TLGraphCanvas,
-  Vector2,
-  SerializedLGraphNode,
-  IWidget,
 } from "./typings/litegraph.js";
 
 
@@ -24,6 +20,8 @@ export class FastGroupsBypasser extends FastGroupsMuter {
 
   static override exposedActions = ["Bypass all", "Enable all"];
 
+  protected override helpActions = 'bypass and enable';
+
   override readonly modeOn = LiteGraph.ALWAYS;
   override readonly modeOff = 4; // Used by Comfy for "bypass"
 
@@ -31,6 +29,10 @@ export class FastGroupsBypasser extends FastGroupsMuter {
     super(title);
   }
 
+  static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
+    LiteGraph.registerNodeType((clazz as any).type, clazz);
+    (clazz as any).category = (clazz as any)._category;
+  }
 }
 
 app.registerExtension({

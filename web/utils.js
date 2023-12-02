@@ -31,53 +31,56 @@ export function addMenuItem(node, _app, config, after = 'Shape') {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
-        let idx = menuOptions
-            .slice()
-            .reverse()
-            .findIndex((option) => option === null || option === void 0 ? void 0 : option.isRgthree);
-        if (idx == -1) {
-            idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes(after)) + 1;
-            if (!idx) {
-                idx = menuOptions.length - 1;
-            }
-            menuOptions.splice(idx, 0, null);
-            idx++;
-        }
-        else {
-            idx = menuOptions.length - idx;
-        }
-        const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(this) : config.subMenuOptions;
-        menuOptions.splice(idx, 0, {
-            content: typeof config.name == "function" ? config.name(this) : config.name,
-            has_submenu: !!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length),
-            isRgthree: true,
-            callback: (value, _options, event, parentMenu, _node) => {
-                if (!!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length)) {
-                    new LiteGraph.ContextMenu(subMenuOptions.map((option) => (option ? { content: option } : null)), {
-                        event,
-                        parentMenu,
-                        callback: (subValue, _options, _event, _parentMenu, _node) => {
-                            if (config.property) {
-                                this.properties = this.properties || {};
-                                this.properties[config.property] = config.prepareValue
-                                    ? config.prepareValue(subValue.content, this)
-                                    : subValue.content;
-                            }
-                            config.callback && config.callback(this, subValue === null || subValue === void 0 ? void 0 : subValue.content);
-                        },
-                    });
-                    return;
-                }
-                if (config.property) {
-                    this.properties = this.properties || {};
-                    this.properties[config.property] = config.prepareValue
-                        ? config.prepareValue(this.properties[config.property], this)
-                        : !this.properties[config.property];
-                }
-                config.callback && config.callback(this, value === null || value === void 0 ? void 0 : value.content);
-            },
-        });
+        addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
     };
+}
+export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after = 'Shape') {
+    let idx = menuOptions
+        .slice()
+        .reverse()
+        .findIndex((option) => option === null || option === void 0 ? void 0 : option.isRgthree);
+    if (idx == -1) {
+        idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes(after)) + 1;
+        if (!idx) {
+            idx = menuOptions.length - 1;
+        }
+        menuOptions.splice(idx, 0, null);
+        idx++;
+    }
+    else {
+        idx = menuOptions.length - idx;
+    }
+    const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(node) : config.subMenuOptions;
+    menuOptions.splice(idx, 0, {
+        content: typeof config.name == "function" ? config.name(node) : config.name,
+        has_submenu: !!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length),
+        isRgthree: true,
+        callback: (value, _options, event, parentMenu, _node) => {
+            if (!!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length)) {
+                new LiteGraph.ContextMenu(subMenuOptions.map((option) => (option ? { content: option } : null)), {
+                    event,
+                    parentMenu,
+                    callback: (subValue, _options, _event, _parentMenu, _node) => {
+                        if (config.property) {
+                            node.properties = node.properties || {};
+                            node.properties[config.property] = config.prepareValue
+                                ? config.prepareValue(subValue.content, node)
+                                : subValue.content;
+                        }
+                        config.callback && config.callback(node, subValue === null || subValue === void 0 ? void 0 : subValue.content);
+                    },
+                });
+                return;
+            }
+            if (config.property) {
+                node.properties = node.properties || {};
+                node.properties[config.property] = config.prepareValue
+                    ? config.prepareValue(node.properties[config.property], node)
+                    : !node.properties[config.property];
+            }
+            config.callback && config.callback(node, value === null || value === void 0 ? void 0 : value.content);
+        },
+    });
 }
 export function addConnectionLayoutSupport(node, app, options = [
     ["Left", "Right"],
@@ -255,14 +258,13 @@ export function addHelp(nodeCtor, comfyApp) {
         },
     });
 }
-export function addHelpMenuItem(nodeCtor, content) {
-    addMenuItem(nodeCtor, app, {
+export function addHelpMenuItem(node, content, menuOptions) {
+    addMenuItemOnExtraMenuOptions(node, {
         name: "🛟 Node Help",
         callback: (node) => {
-            const name = nodeCtor.type.replace("(rgthree)", "");
-            new RgthreeHelpDialog(nodeCtor, content).show();
+            new RgthreeHelpDialog(node, content).show();
         },
-    }, 'Properties Panel');
+    }, menuOptions, 'Properties Panel');
 }
 export var PassThroughFollowing;
 (function (PassThroughFollowing) {
