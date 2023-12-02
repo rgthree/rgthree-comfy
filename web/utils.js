@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { wait } from "./shared_utils.js";
+import { RgthreeHelpDialog } from "./dialog.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
     const defs = await oldApiGetNodeDefs.call(api);
@@ -26,7 +27,7 @@ export const LAYOUT_LABEL_OPPOSITES = {
     Bottom: "Top",
 };
 export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
-export function addMenuItem(node, _app, config) {
+export function addMenuItem(node, _app, config, after = 'Shape') {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
@@ -35,7 +36,7 @@ export function addMenuItem(node, _app, config) {
             .reverse()
             .findIndex((option) => option === null || option === void 0 ? void 0 : option.isRgthree);
         if (idx == -1) {
-            idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes("Shape")) + 1;
+            idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes(after)) + 1;
             if (!idx) {
                 idx = menuOptions.length - 1;
             }
@@ -253,6 +254,15 @@ export function addHelp(nodeCtor, comfyApp) {
             alert(node.help || nodeCtor.help);
         },
     });
+}
+export function addHelpMenuItem(nodeCtor, content) {
+    addMenuItem(nodeCtor, app, {
+        name: "🛟 Node Help",
+        callback: (node) => {
+            const name = nodeCtor.type.replace("(rgthree)", "");
+            new RgthreeHelpDialog(nodeCtor, content).show();
+        },
+    }, 'Properties Panel');
 }
 export var PassThroughFollowing;
 (function (PassThroughFollowing) {

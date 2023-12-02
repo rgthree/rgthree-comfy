@@ -12,9 +12,15 @@ import {
   SerializedLGraphNode,
   IWidget,
 } from "./typings/litegraph.js";
+import { addHelpMenuItem } from "./utils.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
+
+const PROPERTY_SORT = "sort";
+const PROPERTY_MATCH_COLORS = "matchColors";
+const PROPERTY_MATCH_TITLE = "matchTitle";
+const PROPERTY_SHOW_NAV = "showNav";
 
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
@@ -45,22 +51,26 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   constructor(title = FastGroupsMuter.title) {
     super(title);
-    this.properties["sort"] = "position";
-    this.properties["matchColors"] = "";
-    this.properties["matchTitle"] = "";
-    this.properties["showNav"] = true;
+    this.properties[PROPERTY_SORT] = "position";
+    this.properties[PROPERTY_MATCH_COLORS] = "";
+    this.properties[PROPERTY_MATCH_TITLE] = "";
+    this.properties[PROPERTY_SHOW_NAV] = true;
     this.addOutput("OPT_CONNECTION", "*");
   }
 
   override onNodeCreated(): void {
-    setTimeout(() => {
+    if (!this.configuring) {
       this.refreshWidgets();
-    }, 1000);
+    } else {
+      setTimeout(() => {
+        this.refreshWidgets();
+      }, 600);
+    }
   }
 
   refreshWidgets() {
     const graph = app.graph as TLGraph;
-    const sort = this.properties?.["sort"] || "position";
+    const sort = this.properties?.[PROPERTY_SORT] || "position";
     const groups = [...graph._groups].sort((a, b) => {
       if (sort === "alphanumeric") {
         return a.title.localeCompare(b.title);
@@ -77,9 +87,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     });
     // See if we're filtering by colors, and match against the built-in keywords and actuial hex
     // values.
-    let filterColors = ((this.properties?.["matchColors"] as string)?.split(",") || []).filter(
-      (c) => c.trim(),
-    );
+    let filterColors = (
+      (this.properties?.[PROPERTY_MATCH_COLORS] as string)?.split(",") || []
+    ).filter((c) => c.trim());
     if (filterColors.length) {
       filterColors = filterColors.map((color) => {
         color = color.trim().toLocaleLowerCase();
@@ -107,9 +117,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           continue;
         }
       }
-      if (this.properties?.["matchTitle"]) {
+      if (this.properties?.[PROPERTY_MATCH_TITLE]?.trim()) {
         try {
-          if (!new RegExp(this.properties?.["matchTitle"], "i").exec(group.title)) {
+          if (!new RegExp(this.properties[PROPERTY_MATCH_TITLE], "i").exec(group.title)) {
             continue;
           }
         } catch (e) {
@@ -137,13 +147,12 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             posY: number,
             height: number,
           ) {
-            let show_text = true;
             let margin = 15;
             let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
             let background_color = LiteGraph.WIDGET_BGCOLOR;
             let text_color = LiteGraph.WIDGET_TEXT_COLOR;
             let secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
-            const showNav = node.properties?.["showNav"] !== false;
+            const showNav = node.properties?.[PROPERTY_SHOW_NAV] !== false;
             const spaceForNav = showNav ? 28 : 0;
 
             ctx.textAlign = "left";
@@ -152,10 +161,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             ctx.beginPath();
             ctx.roundRect(margin, posY, width - margin * 2, height, [height * 0.5]);
             ctx.fill();
-
-            if (show_text && !this.disabled) {
-              ctx.stroke();
-            }
+            ctx.stroke();
 
             // The toggle itself.
             ctx.fillStyle = this.value ? "#89A" : "#333";
@@ -171,9 +177,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
             if (showNav) {
               // The nav button
-              // ctx.textAlign = "right";
-              // ctx.fillStyle = secondary_text_color;
-              // ctx.fillText('➡️', width - margin, posY + height * 0.7);
               const midY = posY + height * 0.5;
               const rightX = width - margin;
               ctx.strokeStyle = outline_color;
@@ -198,21 +201,18 @@ export class FastGroupsMuter extends RgthreeBaseNode {
               ctx.stroke();
             }
 
-            if (show_text) {
-              ctx.textAlign = "left";
-              ctx.fillStyle = secondary_text_color;
-              const label = this.label || this.name;
-              if (label != null) {
-                ctx.fillText(label, margin * 2, posY + height * 0.7);
-              }
-              ctx.fillStyle = this.value ? text_color : secondary_text_color;
-              ctx.textAlign = "right";
-              ctx.fillText(
-                this.value ? this.options.on || "true" : this.options.off || "false",
-                width - margin * 2 - 10 - spaceForNav,
-                posY + height * 0.7,
-              );
+            ctx.textAlign = "left";
+            ctx.fillStyle = this.value ? text_color : secondary_text_color;
+            const label = this.label || this.name;
+            if (label != null) {
+              ctx.fillText(label, margin * 2, posY + height * 0.7);
             }
+            ctx.textAlign = "right";
+            ctx.fillText(
+              this.value ? this.options.on || "true" : this.options.off || "false",
+              width - margin * 2 - 10 - spaceForNav,
+              posY + height * 0.7,
+            );
           },
           serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number) {
             return this.value;
@@ -220,7 +220,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           mouse(event: PointerEvent, pos: Vector2, node: LGraphNode) {
             if (event.type == "pointerdown") {
               if (
-                node.properties?.["showNav"] !== false &&
+                node.properties?.[PROPERTY_SHOW_NAV] !== false &&
                 pos[0] >= node.size[0] - 15 - 28 - 1
               ) {
                 // Clicked on right half with nav arrow, go to the group.
@@ -247,7 +247,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           (widget as any).doModeChange();
         };
 
-		    this.setSize(this.computeSize());
+        this.setSize(this.computeSize());
       }
       if (!group._nodes?.length) {
         group.recomputeInsideNodes();
@@ -276,7 +276,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   override computeSize(out?: Vector2) {
     let size = super.computeSize(out);
-    console.log('computesize', size)
+    console.log("computesize", size);
     if (this.tempSize) {
       size[0] = Math.max(this.tempSize[0], size[0]);
       size[1] = Math.max(this.tempSize[1], size[1]);
@@ -286,7 +286,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.tempSize = null;
       }, 32);
     }
-    console.log('computesize2', size)
+    console.log("computesize2", size);
     setTimeout(() => {
       app.graph.setDirtyCanvas(true, true);
     }, 16);
@@ -308,6 +308,26 @@ export class FastGroupsMuter extends RgthreeBaseNode {
   static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
     LiteGraph.registerNodeType((clazz as any).type, clazz);
     (clazz as any).category = (clazz as any)._category;
+
+    const name = (clazz as any).type.replace("(rgthree)", "");
+    addHelpMenuItem(
+      clazz,
+      `
+      <p>The ${name} is an input-less node that automatically collects all groups in your current
+      workflow and allows you to quickly mute and unmute all nodes.</p>
+      <ul>
+        <li>
+          <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
+          <ul>
+            <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
+            <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
+            <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
+            <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
+          </ul>
+        </li>
+      </ul>
+    `,
+    );
   }
 }
 

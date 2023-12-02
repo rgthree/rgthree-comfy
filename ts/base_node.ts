@@ -36,6 +36,7 @@ export class RgthreeBaseNode extends LGraphNode {
 
   isVirtualNode = false;
   removed = false;
+  configuring = false;
 
   constructor(title = RgthreeBaseNode.title) {
     super(title);
@@ -46,12 +47,14 @@ export class RgthreeBaseNode extends LGraphNode {
   }
 
   override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+    this.configuring = true;
     super.configure(info);
     // Fix https://github.com/comfyanonymous/ComfyUI/issues/1448 locally.
     // Can removed when fixed and adopted.
     for (const w of (this.widgets || [])) {
       w.last_y = w.last_y || 0;
     }
+    this.configuring = false;
   }
 
 

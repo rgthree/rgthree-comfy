@@ -656,6 +656,9 @@ export declare class LGraphNode {
     outputs: INodeOutputSlot[];
     connections: any[];
 
+    // @rgthree
+    _collapsed_width?: number;
+
     //local data
     properties: Record<string, any>;
     properties_info: any[];

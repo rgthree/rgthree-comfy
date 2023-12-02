@@ -19,6 +19,7 @@ import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
 import { wait } from "./shared_utils.js";
+import { RgthreeHelpDialog } from "./dialog.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -69,7 +70,7 @@ interface MenuConfig {
   subMenuOptions?: (string | null)[] | ((node: TLGraphNode) => (string | null)[]);
 }
 
-export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, config: MenuConfig) {
+export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, config: MenuConfig, after = 'Shape') {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function (
     canvas: TLGraphCanvas,
@@ -82,7 +83,7 @@ export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, conf
       .reverse()
       .findIndex((option) => (option as any)?.isRgthree);
     if (idx == -1) {
-      idx = menuOptions.findIndex((option) => option?.content.includes("Shape")) + 1;
+      idx = menuOptions.findIndex((option) => option?.content.includes(after)) + 1;
       if (!idx) {
         idx = menuOptions.length - 1;
       }
@@ -355,6 +356,16 @@ export function addHelp(nodeCtor: Constructor<TLGraphNode>, comfyApp?: ComfyApp)
       alert((node as any).help || (nodeCtor as any).help);
     },
   });
+}
+
+export function addHelpMenuItem(nodeCtor: Constructor<TLGraphNode>, content: string) {
+  addMenuItem(nodeCtor, app, {
+    name: "🛟 Node Help",
+    callback: (node) => {
+      const name = (nodeCtor as any).type.replace("(rgthree)", "");
+      new RgthreeHelpDialog(nodeCtor as any, content).show();
+    },
+  }, 'Properties Panel');
 }
 
 export enum PassThroughFollowing {
