@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
+import { rgthree } from "./rgthree.js";
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 const SPECIAL_SEED_RANDOM = -1;
 const SPECIAL_SEED_INCREMENT = -2;
@@ -54,6 +55,9 @@ class SeedControl {
         this.lastSeedButton.disabled = true;
         this.seedWidget.serializeValue = async (node, index) => {
             const inputSeed = this.seedWidget.value;
+            if (!rgthree.processingQueue) {
+                return inputSeed;
+            }
             this.serializedCtx = {
                 inputSeed: this.seedWidget.value,
             };

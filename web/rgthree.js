@@ -125,6 +125,7 @@ class Rgthree {
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
+        this.processingQueue = false;
         this.eventsToFns = new Map();
         window.addEventListener("keydown", (e) => {
             this.ctrlKey = !!e.ctrlKey;
@@ -142,9 +143,14 @@ class Rgthree {
         const queuePrompt = app.queuePrompt;
         app.queuePrompt = async function () {
             that.fireEvent('queue', {});
-            let promise = queuePrompt.apply(app, [...arguments]);
-            that.fireEvent('queue-end', {});
-            return promise;
+            that.processingQueue = true;
+            try {
+                await queuePrompt.apply(app, [...arguments]);
+            }
+            finally {
+                that.processingQueue = false;
+                that.fireEvent('queue-end', {});
+            }
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {

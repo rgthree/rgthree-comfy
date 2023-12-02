@@ -102,6 +102,8 @@ class Rgthree {
   monitorBadLinksAlerted = false;
   monitorLinkTimeout: number|null = null;
 
+  processingQueue = false;
+
   async clearAllMessages() {
     let container = document.querySelector('.rgthree-top-messages-container');
     container && (container.innerHTML = '');
@@ -194,9 +196,13 @@ class Rgthree {
     const queuePrompt = app.queuePrompt as Function;
     app.queuePrompt = async function() {
       that.fireEvent('queue', {});
-      let promise = queuePrompt.apply(app, [...arguments]);
-      that.fireEvent('queue-end', {});
-      return promise;
+      that.processingQueue = true;
+      try {
+        await queuePrompt.apply(app, [...arguments])
+      } finally {
+        that.processingQueue = false;
+        that.fireEvent('queue-end', {});
+      }
     }
 
     const graphToPrompt = app.graphToPrompt as Function;

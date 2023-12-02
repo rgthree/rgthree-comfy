@@ -14,6 +14,7 @@ import type {
 } from "./typings/litegraph.js";
 import type { ComfyApp, ComfyObjectInfo, ComfyWidget, ComfyGraphNode } from "./typings/comfy.js";
 import { RgthreeBaseNode } from "./base_node.js";
+import { rgthree } from "./rgthree.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -121,6 +122,12 @@ class SeedControl {
      */
     this.seedWidget.serializeValue = async (node: SerializedLGraphNode, index: number) => {
       const inputSeed = this.seedWidget.value;
+      // Only actually swap and set the value when we're currently queuing. Some other nodes, like
+      // cg-use-everywhere, serializes the graph even when not queing, and we don't want to swap
+      // widget values in these cases.
+      if (!rgthree.processingQueue) {
+        return inputSeed;
+      }
       this.serializedCtx = {
         inputSeed: this.seedWidget.value,
       };
