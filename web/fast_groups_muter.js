@@ -9,6 +9,7 @@ const PROPERTY_SHOW_NAV = "showNav";
 export class FastGroupsMuter extends RgthreeBaseNode {
     constructor(title = FastGroupsMuter.title) {
         super(title);
+        this.isVirtualNode = true;
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = LiteGraph.NEVER;
         this.debouncerTempWidth = 0;

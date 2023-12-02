@@ -27,8 +27,11 @@ const PROPERTY_SHOW_NAV = "showNav";
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
  */
 export class FastGroupsMuter extends RgthreeBaseNode {
+
   static override type = NodeTypesString.FAST_GROUPS_MUTER;
   static override title = NodeTypesString.FAST_GROUPS_MUTER;
+
+  override isVirtualNode = true;
 
   static override exposedActions = ["Mute all", "Enable all"];
 
