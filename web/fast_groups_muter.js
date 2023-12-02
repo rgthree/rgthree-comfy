@@ -207,7 +207,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     }
     computeSize(out) {
         let size = super.computeSize(out);
-        console.log("computesize", size);
         if (this.tempSize) {
             size[0] = Math.max(this.tempSize[0], size[0]);
             size[1] = Math.max(this.tempSize[1], size[1]);
@@ -216,7 +215,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 this.tempSize = null;
             }, 32);
         }
-        console.log("computesize2", size);
         setTimeout(() => {
             app.graph.setDirtyCanvas(true, true);
         }, 16);
