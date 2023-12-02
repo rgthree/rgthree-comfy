@@ -1,6 +1,7 @@
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
+import { addHelpMenuItem } from "./utils.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
@@ -53,6 +54,22 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     static setUp(...args) {
     }
+    getHelp() {
+        return '';
+    }
+    getExtraMenuOptions(canvas, options) {
+        var _a, _b, _c, _d, _e, _f;
+        if (super.getExtraMenuOptions) {
+            (_a = super.getExtraMenuOptions) === null || _a === void 0 ? void 0 : _a.apply(this, [canvas, options]);
+        }
+        else if ((_c = (_b = this.constructor.nodeType) === null || _b === void 0 ? void 0 : _b.prototype) === null || _c === void 0 ? void 0 : _c.getExtraMenuOptions) {
+            (_f = (_e = (_d = this.constructor.nodeType) === null || _d === void 0 ? void 0 : _d.prototype) === null || _e === void 0 ? void 0 : _e.getExtraMenuOptions) === null || _f === void 0 ? void 0 : _f.apply(this, [canvas, options]);
+        }
+        const help = this.getHelp() || this.constructor.help;
+        if (help) {
+            addHelpMenuItem(this, help, options);
+        }
+    }
 }
 RgthreeBaseNode.exposedActions = [];
 RgthreeBaseNode.title = "__NEED_NAME__";
@@ -73,15 +90,6 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         const nodeType = this.constructor.nodeType;
         (_b = (_a = nodeType === null || nodeType === void 0 ? void 0 : nodeType.prototype) === null || _a === void 0 ? void 0 : _a.onDrawForeground) === null || _b === void 0 ? void 0 : _b.apply(this, [ctx, canvas]);
         super.onDrawForeground && super.onDrawForeground(ctx, canvas);
-    }
-    getExtraMenuOptions(canvas, options) {
-        var _a, _b, _c, _d, _e;
-        if (super.getExtraMenuOptions) {
-            super.getExtraMenuOptions.apply(this, [canvas, options]);
-        }
-        else if ((_b = (_a = this.constructor.nodeType) === null || _a === void 0 ? void 0 : _a.prototype) === null || _b === void 0 ? void 0 : _b.getExtraMenuOptions) {
-            (_e = (_d = (_c = this.constructor.nodeType) === null || _c === void 0 ? void 0 : _c.prototype) === null || _d === void 0 ? void 0 : _d.getExtraMenuOptions) === null || _e === void 0 ? void 0 : _e.apply(this, [canvas, options]);
-        }
     }
     async setupFromServerNodeData() {
         var _a, _b, _c;

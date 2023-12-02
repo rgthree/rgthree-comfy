@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { addHelpMenuItem } from "./utils.js";
+import { fitString } from "./utils_canvas.js";
 const PROPERTY_SORT = "sort";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
@@ -16,7 +16,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.refreshWidgetsTimeout = null;
         this.tempSize = null;
         this.serialize_widgets = false;
-        this.helpActions = 'must and unmute';
+        this.helpActions = "must and unmute";
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_MATCH_COLORS] = "";
         this.properties[PROPERTY_MATCH_TITLE] = "";
@@ -106,50 +106,48 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         let text_color = LiteGraph.WIDGET_TEXT_COLOR;
                         let secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
                         const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
-                        const spaceForNav = showNav ? 28 : 0;
-                        ctx.textAlign = "left";
                         ctx.strokeStyle = outline_color;
                         ctx.fillStyle = background_color;
                         ctx.beginPath();
                         ctx.roundRect(margin, posY, width - margin * 2, height, [height * 0.5]);
                         ctx.fill();
                         ctx.stroke();
-                        ctx.fillStyle = this.value ? "#89A" : "#333";
-                        ctx.beginPath();
-                        ctx.arc(width - margin * 2 - spaceForNav, posY + height * 0.5, height * 0.36, 0, Math.PI * 2);
-                        ctx.fill();
+                        let currentX = width - margin;
                         if (showNav) {
+                            currentX -= 7;
                             const midY = posY + height * 0.5;
-                            const rightX = width - margin;
-                            ctx.strokeStyle = outline_color;
-                            ctx.beginPath();
-                            ctx.moveTo(rightX - spaceForNav, posY);
-                            ctx.lineTo(rightX - spaceForNav, posY + height);
-                            ctx.stroke();
-                            ctx.fillStyle = "#89A";
-                            ctx.strokeStyle = ctx.fillStyle;
+                            ctx.fillStyle = ctx.strokeStyle = "#89A";
                             ctx.lineJoin = "round";
                             ctx.lineCap = "round";
-                            ctx.beginPath();
-                            ctx.moveTo(rightX - 21, midY - height * 0.12);
-                            ctx.lineTo(rightX - 14, midY - height * 0.12);
-                            ctx.lineTo(rightX - 14, midY - height * 0.31);
-                            ctx.lineTo(rightX - 7, midY);
-                            ctx.lineTo(rightX - 14, midY + height * 0.31);
-                            ctx.lineTo(rightX - 14, midY + height * 0.12);
-                            ctx.lineTo(rightX - 21, midY + height * 0.12);
-                            ctx.lineTo(rightX - 21, midY - height * 0.12);
-                            ctx.fill();
-                            ctx.stroke();
+                            const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
+                            ctx.fill(arrow);
+                            ctx.stroke(arrow);
+                            currentX -= 14;
+                            currentX -= 7;
+                            ctx.strokeStyle = outline_color;
+                            ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
                         }
-                        ctx.textAlign = "left";
+                        currentX -= 7;
+                        ctx.fillStyle = this.value ? "#89A" : "#333";
+                        ctx.beginPath();
+                        const toggleRadius = height * 0.36;
+                        ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+                        ctx.fill();
+                        currentX -= toggleRadius * 2;
+                        currentX -= 4;
+                        ctx.textAlign = "right";
                         ctx.fillStyle = this.value ? text_color : secondary_text_color;
                         const label = this.label || this.name;
+                        const toggleLabelOn = this.options.on || "true";
+                        const toggleLabelOff = this.options.off || "false";
+                        ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
+                        currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
+                        currentX -= 7;
+                        ctx.textAlign = "left";
+                        let maxLabelWidth = width - margin - 10 - (width - currentX);
                         if (label != null) {
-                            ctx.fillText(label, margin * 2, posY + height * 0.7);
+                            ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
                         }
-                        ctx.textAlign = "right";
-                        ctx.fillText(this.value ? this.options.on || "true" : this.options.off || "false", width - margin * 2 - 10 - spaceForNav, posY + height * 0.7);
                     },
                     serializeValue(serializedNode, widgetIndex) {
                         return this.value;
@@ -233,22 +231,21 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             }
         }
     }
-    getExtraMenuOptions(canvas, menuOptions) {
-        addHelpMenuItem(this, `
-        <p>The ${this.type.replace("(rgthree)", "")} is an input-less node that automatically collects all groups in your current
-        workflow and allows you to quickly ${this.helpActions} all nodes within the group.</p>
-        <ul>
-          <li>
-            <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
-            <ul>
-              <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
-              <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
-              <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
-              <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
-            </ul>
-          </li>
-        </ul>
-      `, menuOptions);
+    getHelp() {
+        return `
+      <p>The ${this.type.replace("(rgthree)", "")} is an input-less node that automatically collects all groups in your current
+      workflow and allows you to quickly ${this.helpActions} all nodes within the group.</p>
+      <ul>
+        <li>
+          <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
+          <ul>
+            <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
+            <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
+            <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
+            <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
+          </ul>
+        </li>
+      </ul>`;
     }
     static setUp(clazz) {
         LiteGraph.registerNodeType(clazz.type, clazz);

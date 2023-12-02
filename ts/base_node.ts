@@ -7,6 +7,7 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 import { app } from "../../scripts/app.js";
 
 import { rgthree } from "./rgthree.js";
+import { addHelpMenuItem } from "./utils.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -104,6 +105,28 @@ export class RgthreeBaseNode extends LGraphNode {
   static setUp<T extends RgthreeBaseNode>(...args: any[]) {
     // No-op.
   }
+
+  /**
+   * A function to provide help text to be overridden.
+   */
+  getHelp() {
+    return '';
+  }
+
+  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
+    // Some other extensions override getExtraMenuOptions on the nodeType as it comes through from
+    // the server, so we can call out to that if we don't have our own.
+    if (super.getExtraMenuOptions) {
+      super.getExtraMenuOptions?.apply(this, [canvas, options]);
+    } else if ((this.constructor as any).nodeType?.prototype?.getExtraMenuOptions) {
+      (this.constructor as any).nodeType?.prototype?.getExtraMenuOptions?.apply(this, [canvas, options]);
+    }
+    // If we have help content, then add a menu item.
+    const help = this.getHelp() || (this.constructor as any).help;
+    if (help) {
+      addHelpMenuItem(this, help, options);
+    }
+  }
 }
 
 
@@ -138,18 +161,6 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     // side-effects if other extensions override. If it gets messy, may have to remove.
     nodeType?.prototype?.onDrawForeground?.apply(this, [ctx, canvas]);
     super.onDrawForeground && super.onDrawForeground(ctx, canvas);
-  }
-
-  /**
-   * Some other extensions override getExtraMenuOptions on the nodeType as it comes through from the
-   * server, so we can call out to that.
-   */
-  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
-    if (super.getExtraMenuOptions) {
-      super.getExtraMenuOptions.apply(this, [canvas, options]);
-    } else if ((this.constructor as any).nodeType?.prototype?.getExtraMenuOptions) {
-      (this.constructor as any).nodeType?.prototype?.getExtraMenuOptions?.apply(this, [canvas, options]);
-    }
   }
 
   /**
