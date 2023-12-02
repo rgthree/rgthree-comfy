@@ -145,15 +145,15 @@
   margin-top: 0;
 }
 
-.rgthree-dialog-container-content ul li li p {
+.rgthree-dialog-container-content ul li p {
   margin-bottom: 4px;
 }
 
-
-.rgthree-dialog-container-content ul li li p {
-  margin-bottom: 4px;
-
+.rgthree-dialog-container-content ul li ul {
+  margin-top: .5em;
+  margin-bottom: 1em;
 }
+
 
 .rgthree-dialog-container-content p code {
   display: inline-block;

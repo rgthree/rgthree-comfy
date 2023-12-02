@@ -12,11 +12,7 @@ import type { NodeMode } from "./typings/comfy.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
-  addHelp,
-  filterOutPassthroughNodes,
-  getConnectedInputNodes,
   getConnectedInputNodesAndFilterPassThroughs,
-  getConnectedOutputNodes,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
 import { wait } from "./shared_utils.js";
@@ -40,17 +36,6 @@ class NodeModeRelay extends BaseCollectorNode {
   static override type = NodeTypesString.NODE_MODE_RELAY;
   static override title = NodeTypesString.NODE_MODE_RELAY;
 
-  static help = [
-    `This node will relay its input nodes' modes (Mute, Bypass, or Active) to a connected`,
-    `${stripRgthree(
-      NodeTypesString.NODE_MODE_REPEATER,
-    )} (which would then repeat that mode change to all of its inputs).`,
-    `\n`,
-    `\n- When all connected input nodes are muted, the relay will set a connected repeater to mute.`,
-    `\n- When all connected input nodes are bypassed, the relay will set a connected repeater to bypass.`,
-    `\n- When any connected input nodes are active, the relay will set a connected repeater to active.`,
-  ].join(" ");
-
   constructor(title?: string) {
     super(title);
 
@@ -73,7 +58,13 @@ class NodeModeRelay extends BaseCollectorNode {
     inputNode: LGraphNode,
     inputIndex: number,
   ): boolean {
-    let canConnect = super.onConnectOutput?.(outputIndex, inputType, inputSlot, inputNode, inputIndex);
+    let canConnect = super.onConnectOutput?.(
+      outputIndex,
+      inputType,
+      inputSlot,
+      inputNode,
+      inputIndex,
+    );
     let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0] ?? inputNode;
     return canConnect && nextNode.type === NodeTypesString.NODE_MODE_REPEATER;
   }
@@ -97,7 +88,12 @@ class NodeModeRelay extends BaseCollectorNode {
     if (!this.graph || !this.isAnyOutputConnected() || !this.isInputConnected(0)) {
       return;
     }
-    const inputNodes = getConnectedInputNodesAndFilterPassThroughs(this, this, -1, this.inputsPassThroughFollowing);
+    const inputNodes = getConnectedInputNodesAndFilterPassThroughs(
+      this,
+      this,
+      -1,
+      this.inputsPassThroughFollowing,
+    );
     let mode: NodeMode | null = undefined;
     for (const inputNode of inputNodes) {
       // If we haven't set our mode to be, then let's set it. Otherwise, mode will stick if it
@@ -129,6 +125,30 @@ class NodeModeRelay extends BaseCollectorNode {
       this.stabilize();
     }, 500);
   }
+
+  override getHelp() {
+    return `
+      <p>
+        This node will relay its input nodes' modes (Mute, Bypass, or Active) to a connected
+        ${stripRgthree(NodeTypesString.NODE_MODE_REPEATER)} (which would then repeat that mode
+        change to all of its inputs).
+      </p>
+      <ul>
+          <li><p>
+            When all connected input nodes are muted, the relay will set a connected repeater to
+            mute.
+          </p></li>
+          <li><p>
+            When all connected input nodes are bypassed, the relay will set a connected repeater to
+            bypass.
+          </p></li>
+          <li><p>
+            When any connected input nodes are active, the relay will set a connected repeater to
+            active.
+          </p></li>
+      </ul>
+    `;
+  }
 }
 
 app.registerExtension({
@@ -138,7 +158,6 @@ app.registerExtension({
       ["Left", "Right"],
       ["Right", "Left"],
     ]);
-    addHelp(NodeModeRelay, app);
 
     LiteGraph.registerNodeType(NodeModeRelay.type, NodeModeRelay);
     NodeModeRelay.category = NodeModeRelay._category;

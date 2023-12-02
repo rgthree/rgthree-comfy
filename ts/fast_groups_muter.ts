@@ -11,9 +11,7 @@ import {
   Vector2,
   SerializedLGraphNode,
   IWidget,
-  ContextMenuItem,
 } from "./typings/litegraph.js";
-import { addHelpMenuItem } from "./utils.js";
 import { fitString } from "./utils_canvas.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;

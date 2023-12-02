@@ -16,7 +16,6 @@ import type {
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
-  addHelp,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
@@ -29,25 +28,6 @@ class NodeModeRepeater extends BaseCollectorNode {
 
   static override type = NodeTypesString.NODE_MODE_REPEATER;
   static override title = NodeTypesString.NODE_MODE_REPEATER;
-
-  static help = [
-    `When this node's mode (Mute, Bypass, Active) changes, it will "repeat" that mode to all`,
-    `connected input nodes, or, if there are no connected nodes AND it is overlapping a group,`,
-    `"repeat" it's mode to all nodes in that group.`,
-    `\n`,
-    `\n- Optionally, connect this mode's output to a ${stripRgthree(
-      NodeTypesString.FAST_MUTER,
-    )}`,
-    `or ${stripRgthree(
-      NodeTypesString.FAST_BYPASSER,
-    )} for a single toggle to quickly`,
-    `mute/bypass all its connected nodes.`,
-    `\n- Optionally, connect a ${stripRgthree(
-      NodeTypesString.NODE_MODE_RELAY,
-    )} to this nodes'`,
-    `inputs to have it automatically toggle its mode. If connected, this will always take`,
-    `precedence (and disconnect any connected fast togglers)`,
-  ].join(" ");
 
   private hasRelayInput = false;
   private hasTogglerOutput = false;
@@ -196,6 +176,28 @@ class NodeModeRepeater extends BaseCollectorNode {
       }
     }
   }
+
+  override getHelp(): string {
+    return `
+      <p>
+        When this node's mode (Mute, Bypass, Active) changes, it will "repeat" that mode to all
+        connected input nodes, or, if there are no connected nodes AND it is overlapping a group,
+        "repeat" it's mode to all nodes in that group.
+      </p>
+      <ul>
+        <li><p>
+          Optionally, connect this mode's output to a ${stripRgthree(NodeTypesString.FAST_MUTER)}
+          or ${stripRgthree(NodeTypesString.FAST_BYPASSER)} for a single toggle to quickly
+          mute/bypass all its connected nodes.
+        </p></li>
+        <li><p>
+          Optionally, connect a ${stripRgthree(NodeTypesString.NODE_MODE_RELAY)} to this nodes
+          inputs to have it automatically toggle its mode. If connected, this will always take
+          precedence (and disconnect any connected fast togglers).
+        </p></li>
+      </ul>
+    `;
+  }
 }
 
 app.registerExtension({
@@ -205,7 +207,6 @@ app.registerExtension({
       ["Left", "Right"],
       ["Right", "Left"],
     ]);
-    addHelp(NodeModeRepeater, app);
 
     LiteGraph.registerNodeType(NodeModeRepeater.type, NodeModeRepeater);
     NodeModeRepeater.category = NodeModeRepeater._category;

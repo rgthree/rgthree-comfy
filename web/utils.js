@@ -249,15 +249,6 @@ function toggleConnectionLabel(cxn, hide = true) {
     }
     return cxn;
 }
-export function addHelp(nodeCtor, comfyApp) {
-    addMenuItem(nodeCtor, comfyApp || app, {
-        name: "🛟 Node Help",
-        property: "help",
-        callback: (node) => {
-            alert(node.help || nodeCtor.help);
-        },
-    });
-}
 export function addHelpMenuItem(node, content, menuOptions) {
     addMenuItemOnExtraMenuOptions(node, {
         name: "🛟 Node Help",

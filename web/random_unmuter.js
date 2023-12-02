@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";
-import { addHelp, getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
+import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
 const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;
 class RandomUnmuterNode extends BaseAnyInputConnectedNode {
@@ -61,26 +61,34 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
             this.tempEnabledNode = null;
         }
     }
+    handleLinkedNodesStabilization(linkedNodes) {
+    }
+    getHelp() {
+        return `
+      <p>
+        Use this node to unmute on of its inputs randomly when the graph is queued (and, immediately
+        mute it back).
+      </p>
+      <ul>
+        <li><p>
+          NOTE: All input nodes MUST be muted to start; if not this node will not randomly unmute
+          another. (This is powerful, as the generated image can be dragged in and the chosen input
+          will already by unmuted and work w/o any further action.)
+        </p></li>
+        <li><p>
+          TIP: Connect a Repeater's output to this nodes input and place that Repeater on a group
+          without any other inputs, and it will mute/unmute the entire group.
+        </p></li>
+      </ul>
+    `;
+    }
     static setUp(clazz) {
         BaseAnyInputConnectedNode.setUp(clazz);
-        addHelp(clazz);
-    }
-    handleLinkedNodesStabilization(linkedNodes) {
     }
 }
 RandomUnmuterNode.exposedActions = ['Mute all', 'Enable all'];
 RandomUnmuterNode.type = NodeTypesString.RANDOM_UNMUTER;
 RandomUnmuterNode.title = RandomUnmuterNode.type;
-RandomUnmuterNode.help = [
-    `Use this node to unmute on of its inputs randomly when the graph is queued (and, immediately`,
-    `mute it back).`,
-    `\n`,
-    `\n- NOTE: All input nodes MUST be muted to start; if not this node will not randomly unmute another.`,
-    `\n(This is powerful, as the generated image can be dragged in and the chosen input will `,
-    `already by unmuted and work w/o any further action.)`,
-    `\n- TIP: Connect a Repeater's output to this nodes input and place that Repeater on a group`,
-    `without any other inputs, and it will mute/unmute the entire group.`,
-].join(" ");
 app.registerExtension({
     name: "rgthree.RandomUnmuter",
     registerCustomNodes() {

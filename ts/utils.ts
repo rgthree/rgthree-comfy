@@ -352,16 +352,6 @@ function toggleConnectionLabel(cxn: any, hide = true) {
   return cxn;
 }
 
-export function addHelp(nodeCtor: Constructor<TLGraphNode>, comfyApp?: ComfyApp) {
-  addMenuItem(nodeCtor, comfyApp || app, {
-    name: "🛟 Node Help",
-    property: "help",
-    callback: (node) => {
-      alert((node as any).help || (nodeCtor as any).help);
-    },
-  });
-}
-
 export function addHelpMenuItem(node: TLGraphNode, content: string, menuOptions: ContextMenuItem[]) {
   addMenuItemOnExtraMenuOptions(node, {
     name: "🛟 Node Help",

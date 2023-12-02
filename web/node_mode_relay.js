@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, addHelp, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
 import { wait } from "./shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
@@ -69,17 +69,32 @@ class NodeModeRelay extends BaseCollectorNode {
             this.stabilize();
         }, 500);
     }
+    getHelp() {
+        return `
+      <p>
+        This node will relay its input nodes' modes (Mute, Bypass, or Active) to a connected
+        ${stripRgthree(NodeTypesString.NODE_MODE_REPEATER)} (which would then repeat that mode
+        change to all of its inputs).
+      </p>
+      <ul>
+          <li><p>
+            When all connected input nodes are muted, the relay will set a connected repeater to
+            mute.
+          </p></li>
+          <li><p>
+            When all connected input nodes are bypassed, the relay will set a connected repeater to
+            bypass.
+          </p></li>
+          <li><p>
+            When any connected input nodes are active, the relay will set a connected repeater to
+            active.
+          </p></li>
+      </ul>
+    `;
+    }
 }
 NodeModeRelay.type = NodeTypesString.NODE_MODE_RELAY;
 NodeModeRelay.title = NodeTypesString.NODE_MODE_RELAY;
-NodeModeRelay.help = [
-    `This node will relay its input nodes' modes (Mute, Bypass, or Active) to a connected`,
-    `${stripRgthree(NodeTypesString.NODE_MODE_REPEATER)} (which would then repeat that mode change to all of its inputs).`,
-    `\n`,
-    `\n- When all connected input nodes are muted, the relay will set a connected repeater to mute.`,
-    `\n- When all connected input nodes are bypassed, the relay will set a connected repeater to bypass.`,
-    `\n- When any connected input nodes are active, the relay will set a connected repeater to active.`,
-].join(" ");
 app.registerExtension({
     name: "rgthree.NodeModeRepeaterHelper",
     registerCustomNodes() {
@@ -87,7 +102,6 @@ app.registerExtension({
             ["Left", "Right"],
             ["Right", "Left"],
         ]);
-        addHelp(NodeModeRelay, app);
         LiteGraph.registerNodeType(NodeModeRelay.type, NodeModeRelay);
         NodeModeRelay.category = NodeModeRelay._category;
     },
