@@ -5,3 +5,4 @@ wildcards/**
 .idea/
 node_modules/
 rgthree_config.json
+web/rgthree_config.js

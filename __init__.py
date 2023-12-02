@@ -52,25 +52,20 @@ NODE_CLASS_MAPPINGS = {
 }
 
 
-# This doesn't import correctly..
-# WEB_DIRECTORY = "./web"
+WEB_DIRECTORY = "./web"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DIR_DEV_WEB = os.path.abspath(f'{THIS_DIR}/web/')
+DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')
 DIR_PY = os.path.abspath(f'{THIS_DIR}/py')
 
-# remove old directory.
-OLD_DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree')
-if os.path.exists(OLD_DIR_WEB):
-  shutil.rmtree(OLD_DIR_WEB)
-
-DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree-comfy')
-if os.path.exists(DIR_WEB):
-  shutil.rmtree(DIR_WEB)
-os.makedirs(DIR_WEB)
-
-shutil.copytree(DIR_DEV_WEB, DIR_WEB, dirs_exist_ok=True)
-
+# remove old directories
+OLD_DIRS = [
+  os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree'),
+  os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree-comfy'),
+]
+for old_dir in OLD_DIRS:
+  if os.path.exists(old_dir):
+    shutil.rmtree(old_dir)
 
 def extend_config(default_config, user_config):
   cfg = {}
@@ -92,10 +87,10 @@ with open(os.path.join(DIR_WEB, 'rgthree_config.js'), 'w', encoding = 'UTF-8') a
 
 NOT_NODES = ['constants', 'log', 'utils', 'rgthree']
 
-__all__ = ['NODE_CLASS_MAPPINGS']
+__all__ = ['NODE_CLASS_MAPPINGS', 'WEB_DIRECTORY']
 
 nodes = []
-for file in glob.glob(os.path.join(DIR_PY, '*.py')) + glob.glob(os.path.join(DIR_DEV_WEB, 'js', '*.js')):
+for file in glob.glob(os.path.join(DIR_PY, '*.py')) + glob.glob(os.path.join(DIR_WEB, 'js', '*.js')):
   name = os.path.splitext(file)[0]
   if name not in nodes and name not in NOT_NODES and not name.startswith(
       '_') and not name.startswith('base') and not 'utils' in name:
