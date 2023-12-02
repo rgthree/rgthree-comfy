@@ -237,7 +237,7 @@ export function fixBadLinks(graph, fix = false, silent = false, logger = console
         if ((!originNode || !nodeHasLinkId(originNode, IoDirection.OUTPUT, link.origin_slot, link.id)) &&
             (!targetNode || !nodeHasLinkId(targetNode, IoDirection.INPUT, link.target_slot, link.id))) {
             !silent &&
-                logger.log(`${link.id} is def invalid; BOTH origin node ${link.origin_id} ${originNode ? "is removed" : `doesn\'t have ${link.id}`} and ${link.origin_id} target node ${link.target_id ? "is removed" : `doesn\'t have ${link.id}`}.`);
+                logger.log(`${link.id} is def invalid; BOTH origin node ${link.origin_id} ${!originNode ? "is removed" : `doesn\'t have ${link.id}`} and ${link.origin_id} target node ${!targetNode ? "is removed" : `doesn\'t have ${link.id}`}.`);
             data.deletedLinks.push(link.id);
             continue;
         }

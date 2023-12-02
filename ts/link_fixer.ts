@@ -323,9 +323,9 @@ export function fixBadLinks(
       !silent &&
         logger.log(
           `${link.id} is def invalid; BOTH origin node ${link.origin_id} ${
-            originNode ? "is removed" : `doesn\'t have ${link.id}`
+            !originNode ? "is removed" : `doesn\'t have ${link.id}`
           } and ${link.origin_id} target node ${
-            link.target_id ? "is removed" : `doesn\'t have ${link.id}`
+            !targetNode ? "is removed" : `doesn\'t have ${link.id}`
           }.`,
         );
       data.deletedLinks.push(link.id);
