@@ -18,6 +18,7 @@ declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
 
 const PROPERTY_SORT = "sort";
+const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
@@ -45,20 +46,22 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   protected helpActions = "must and unmute";
 
-  static "@sort" = {
-    type: "combo",
-    values: ["position", "alphanumeric"],
-  };
   static "@matchColors" = { type: "string" };
   static "@matchTitle" = { type: "string" };
   static "@showNav" = { type: "boolean" };
+  static "@sort" = {
+    type: "combo",
+    values: ["position", "alphanumeric", "custom alphabet"],
+  };
+  static "@customSortAlphabet" = { type: "string" };
 
   constructor(title = FastGroupsMuter.title) {
     super(title);
-    this.properties[PROPERTY_SORT] = "position";
     this.properties[PROPERTY_MATCH_COLORS] = "";
     this.properties[PROPERTY_MATCH_TITLE] = "";
     this.properties[PROPERTY_SHOW_NAV] = true;
+    this.properties[PROPERTY_SORT] = "position";
+    this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
     this.addOutput("OPT_CONNECTION", "*");
   }
 
@@ -74,10 +77,54 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   refreshWidgets() {
     const graph = app.graph as TLGraph;
-    const sort = this.properties?.[PROPERTY_SORT] || "position";
+    let sort = this.properties?.[PROPERTY_SORT] || "position";
+    let customAlphabet: string[] | null = null;
+
+    // Check if we're using a custom alphabet and, if so, clean it up. If we get just a string, then
+    // we split if up per letter. If there's commas, then we'll split on the commas.
+    if (sort === "custom alphabet") {
+      const customAlphaStr = this.properties?.[PROPERTY_SORT_CUSTOM_ALPHA]?.replace(/\n/g, "");
+      if (!customAlphaStr?.trim()) {
+        sort = "alphanumeric";
+        customAlphabet = null;
+      } else {
+        customAlphabet = customAlphaStr.includes(",")
+          ? customAlphaStr.toLocaleLowerCase().split(",")
+          : customAlphaStr.toLocaleLowerCase().trim().split("");
+      }
+    }
+
+    // Sort the groups.
     const groups = [...graph._groups].sort((a, b) => {
       if (sort === "alphanumeric") {
         return a.title.localeCompare(b.title);
+      } else if (customAlphabet) {
+        let aIndex = -1;
+        let bIndex = -1;
+        // Loop and find indexes. As we're finding multiple, a single for loop is more efficient.
+        for (const [index, alpha] of customAlphabet.entries()) {
+          aIndex =
+            aIndex < 0 ? (a.title.toLocaleLowerCase().startsWith(alpha) ? index : -1) : aIndex;
+          bIndex =
+            bIndex < 0 ? (b.title.toLocaleLowerCase().startsWith(alpha) ? index : -1) : bIndex;
+          if (aIndex > -1 && bIndex > -1) {
+            break;
+          }
+        }
+        // Now compare.
+        if (aIndex > -1 && bIndex > -1) {
+          const ret = aIndex - bIndex;
+          if (ret === 0) {
+            return a.title.localeCompare(b.title);
+          }
+          return ret;
+        } else if (aIndex > -1) {
+          return -1;
+        } else if (bIndex > -1) {
+          return 1;
+        } else {
+          return a.title.localeCompare(b.title);
+        }
       }
       // Sort by y, then x, clamped to 30.
       const aY = Math.floor(a._pos[1] / 30);
@@ -89,6 +136,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
       }
       return aY - bY;
     });
+
     // See if we're filtering by colors, and match against the built-in keywords and actuial hex
     // values.
     let filterColors = (
@@ -107,6 +155,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         return `#${color}`;
       });
     }
+
     // Go over the groups
     let index = 0;
     for (const group of groups) {
@@ -182,27 +231,19 @@ export class FastGroupsMuter extends RgthreeBaseNode {
               ctx.stroke(arrow);
               currentX -= 14;
 
-              currentX -= 7
+              currentX -= 7;
               ctx.strokeStyle = outline_color;
               ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
             }
-
 
             // The toggle itself.
             currentX -= 7;
             ctx.fillStyle = this.value ? "#89A" : "#333";
             ctx.beginPath();
             const toggleRadius = height * 0.36;
-            ctx.arc(
-              currentX - toggleRadius,
-              posY + height * 0.5,
-              toggleRadius,
-              0,
-              Math.PI * 2,
-            );
+            ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
             ctx.fill();
             currentX -= toggleRadius * 2;
-
 
             currentX -= 4;
             ctx.textAlign = "right";
@@ -327,12 +368,52 @@ export class FastGroupsMuter extends RgthreeBaseNode {
       } all nodes within the group.</p>
       <ul>
         <li>
-          <p><strong>Properties.</strong> You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):</p>
+          <p>
+            <strong>Properties.</strong> You can change the following properties (by right-clicking
+            on the node, and select "Properties" or "Properties Panel" from the menu):
+          </p>
           <ul>
-            <li><p><code>${PROPERTY_SORT}</code> - Sort the toggles' order by alphanumeric or graph position.</p></li>
-            <li><p><code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.</p></li>
-            <li><p><code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match (string match, or regular expression).</p></li>
-            <li><p><code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you to the group.</p></li>
+            <li><p>
+              <code>${PROPERTY_MATCH_COLORS}</code> - Only add groups that match the provided
+              colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be
+              added, comma delimited.
+            </p></li>
+            <li><p>
+              <code>${PROPERTY_MATCH_TITLE}</code> - Filter the list of toggles by title match
+              (string match, or regular expression).
+            </p></li>
+            <li><p>
+              <code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you
+              to the group. <i>(default: true)</i>
+              </p></li>
+            <li><p>
+              <code>${PROPERTY_SORT}</code> - Sort the toggles' order by "alphanumeric", graph
+              "position", or "custom alphabet". <i>(default: "position")</i>
+            </p></li>
+            <li>
+              <p>
+                <code>${PROPERTY_SORT_CUSTOM_ALPHA}</code> - When the
+                <code>${PROPERTY_SORT}</code> property is "custom alphabet" you can define the
+                alphabet to use here, which will match the <i>beginning</i> of each group name and
+                sort against it. If group titles do not match any custom alphabet entry, then they
+                will be put after groups that do, ordered alphanumerically.
+              </p>
+              <p>
+                This can be a list of single characters, like "zyxw..." or comma delimited strings
+                for more control, like "sdxl,pro,sd,n,p".
+              </p>
+              <p>
+                Note, when two group title match the same custom alphabet entry, the <i>normal
+                alphanumeric alphabet</i> breaks the tie. For instance, a custom alphabet of
+                "e,s,d" will order groups names like "SDXL, SEGS, Detailer" eventhough the custom
+                alphabet has an "e" before "d" (where one may expect "SE" to be before "SD").
+              </p>
+              <p>
+                To have "SEGS" appear before "SDXL" you can use longer strings. For instance, the
+                custom alphabet value of "se,s,f" would work here.
+              </p>
+            </li>
+
           </ul>
         </li>
       </ul>`;

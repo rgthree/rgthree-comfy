@@ -149,6 +149,10 @@
   margin-bottom: 4px;
 }
 
+.rgthree-dialog-container-content ul li p + p {
+  margin-top: .5em;
+}
+
 .rgthree-dialog-container-content ul li ul {
   margin-top: .5em;
   margin-bottom: 1em;
