@@ -17,31 +17,54 @@ class FastGroupsService {
         this.groupsSortedAlpha = [];
         this.groupsSortedPosition = [];
         this.fastGroupNodes = [];
+        this.runScheduledForMs = null;
+        this.runScheduleTimeout = null;
+        this.runScheduleAnimation = null;
     }
     addFastGroupNode(node) {
         this.fastGroupNodes.push(node);
-        if (this.fastGroupNodes.length === 1) {
-            this.run();
-        }
-        else {
-            node.refreshWidgets();
-        }
+        this.scheduleRun(8);
     }
     removeFastGroupNode(node) {
+        var _a;
         const index = this.fastGroupNodes.indexOf(node);
         if (index > -1) {
             this.fastGroupNodes.splice(index, 1);
         }
+        if (!((_a = this.fastGroupNodes) === null || _a === void 0 ? void 0 : _a.length)) {
+            this.clearScheduledRun();
+            this.groupsUnsorted = [];
+            this.groupsSortedAlpha = [];
+            this.groupsSortedPosition = [];
+        }
     }
     run() {
+        if (!this.runScheduledForMs) {
+            return;
+        }
         for (const node of this.fastGroupNodes) {
             node.refreshWidgets();
         }
-        if (this.fastGroupNodes.length) {
-            setTimeout(() => {
-                this.run();
-            }, 500);
+        this.clearScheduledRun();
+        this.scheduleRun();
+    }
+    scheduleRun(ms = 500) {
+        if (this.runScheduledForMs && ms < this.runScheduledForMs) {
+            this.clearScheduledRun();
         }
+        if (!this.runScheduledForMs && this.fastGroupNodes.length) {
+            this.runScheduledForMs = ms;
+            this.runScheduleTimeout = setTimeout(() => {
+                this.runScheduleAnimation = requestAnimationFrame(() => this.run());
+            }, ms);
+        }
+    }
+    clearScheduledRun() {
+        this.runScheduleTimeout && clearTimeout(this.runScheduleTimeout);
+        this.runScheduleAnimation && cancelAnimationFrame(this.runScheduleAnimation);
+        this.runScheduleTimeout = null;
+        this.runScheduleAnimation = null;
+        this.runScheduledForMs = null;
     }
     getGroupsUnsorted(now) {
         const graph = app.graph;

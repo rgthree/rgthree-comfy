@@ -40,17 +40,19 @@ class FastGroupsService {
 
   private readonly fastGroupNodes: FastGroupsMuter[] = [];
 
+  private runScheduledForMs: number|null = null;
+  private runScheduleTimeout: number|null = null;
+  private runScheduleAnimation: number|null = null;
+
   constructor() {
     // Don't need to do anything, wait until a signal.
   }
 
   addFastGroupNode(node: FastGroupsMuter) {
     this.fastGroupNodes.push(node);
-    if (this.fastGroupNodes.length === 1) {
-      this.run();
-    } else {
-      node.refreshWidgets();
-    }
+    // Schedule it because the node may not be ready to refreshWidgets (like, when added it may
+    // not have cloned properties to filter against, etc.).
+    this.scheduleRun(8);
   }
 
   removeFastGroupNode(node: FastGroupsMuter) {
@@ -58,17 +60,47 @@ class FastGroupsService {
     if (index > -1) {
       this.fastGroupNodes.splice(index, 1);
     }
+    // If we have no more group nodes, then clear out data; it could be because of a canvas clear.
+    if (!this.fastGroupNodes?.length) {
+      this.clearScheduledRun();
+      this.groupsUnsorted = [];
+      this.groupsSortedAlpha = [];
+      this.groupsSortedPosition = [];
+    }
   }
 
-  run() {
+  private run() {
+    // We only run if we're scheduled, so if we're not, then bail.
+    if (!this.runScheduledForMs) {
+      return;
+    }
     for (const node of this.fastGroupNodes) {
       node.refreshWidgets();
     }
-    if (this.fastGroupNodes.length) {
-      setTimeout(() => {
-        this.run();
-      }, 500);
+    this.clearScheduledRun();
+    this.scheduleRun();
+  }
+
+  private scheduleRun(ms = 500) {
+    // If we got a request for an immediate schedule and already have on scheduled for longer, then
+    // cancel the long one to expediate a fast one.
+    if (this.runScheduledForMs && ms < this.runScheduledForMs) {
+      this.clearScheduledRun();
     }
+    if (!this.runScheduledForMs && this.fastGroupNodes.length) {
+      this.runScheduledForMs = ms;
+      this.runScheduleTimeout = setTimeout(() => {
+        this.runScheduleAnimation = requestAnimationFrame(() => this.run());
+      }, ms);
+    }
+  }
+
+  private clearScheduledRun() {
+    this.runScheduleTimeout && clearTimeout(this.runScheduleTimeout);
+    this.runScheduleAnimation && cancelAnimationFrame(this.runScheduleAnimation);
+    this.runScheduleTimeout = null;
+    this.runScheduleAnimation = null;
+    this.runScheduledForMs = null;
   }
 
   private getGroupsUnsorted(now: number) {
