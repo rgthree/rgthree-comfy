@@ -11,6 +11,7 @@ import {
   Vector2,
   SerializedLGraphNode,
   IWidget,
+  LGraphGroup,
 } from "./typings/litegraph.js";
 import { fitString } from "./utils_canvas.js";
 
@@ -22,6 +23,112 @@ const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
+
+/**
+ * A service that keeps global state that can be shared by multiple FastGroupsMuter or
+ * FastGroupsBypasser nodes rather than calculate it on it's own.
+ */
+class FastGroupsService {
+  private msThreshold = 400;
+  private msLastUnsorted = 0;
+  private msLastAlpha = 0;
+  private msLastPosition = 0;
+
+  private groupsUnsorted: LGraphGroup[] = [];
+  private groupsSortedAlpha: LGraphGroup[] = [];
+  private groupsSortedPosition: LGraphGroup[] = [];
+
+  private readonly fastGroupNodes: FastGroupsMuter[] = [];
+
+  constructor() {
+    // Don't need to do anything, wait until a signal.
+  }
+
+  addFastGroupNode(node: FastGroupsMuter) {
+    this.fastGroupNodes.push(node);
+    if (this.fastGroupNodes.length === 1) {
+      this.run();
+    } else {
+      node.refreshWidgets();
+    }
+  }
+
+  removeFastGroupNode(node: FastGroupsMuter) {
+    const index = this.fastGroupNodes.indexOf(node);
+    if (index > -1) {
+      this.fastGroupNodes.splice(index, 1);
+    }
+  }
+
+  run() {
+    for (const node of this.fastGroupNodes) {
+      node.refreshWidgets();
+    }
+    if (this.fastGroupNodes.length) {
+      setTimeout(() => {
+        this.run();
+      }, 500);
+    }
+  }
+
+  private getGroupsUnsorted(now: number) {
+    const graph = app.graph as TLGraph;
+    if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
+      this.groupsUnsorted = [...graph._groups];
+      for (const group of this.groupsUnsorted) {
+        group.recomputeInsideNodes();
+        (group as any)._rgthreeHasAnyActiveNode = group._nodes.some(
+          (n) => n.mode === LiteGraph.ALWAYS,
+        );
+      }
+      this.msLastUnsorted = now;
+    }
+    return this.groupsUnsorted;
+  }
+
+  private getGroupsAlpha(now: number) {
+    const graph = app.graph as TLGraph;
+    if (!this.groupsSortedAlpha.length || now - this.msLastAlpha > this.msThreshold) {
+      this.groupsSortedAlpha = [...this.getGroupsUnsorted(now)].sort((a, b) => {
+        return a.title.localeCompare(b.title);
+      });
+      this.msLastAlpha = now;
+    }
+    return this.groupsSortedAlpha;
+  }
+
+  private getGroupsPosition(now: number) {
+    const graph = app.graph as TLGraph;
+    if (!this.groupsSortedPosition.length || now - this.msLastPosition > this.msThreshold) {
+      this.groupsSortedPosition = [...this.getGroupsUnsorted(now)].sort((a, b) => {
+        // Sort by y, then x, clamped to 30.
+        const aY = Math.floor(a._pos[1] / 30);
+        const bY = Math.floor(b._pos[1] / 30);
+        if (aY == bY) {
+          const aX = Math.floor(a._pos[0] / 30);
+          const bX = Math.floor(b._pos[0] / 30);
+          return aX - bX;
+        }
+        return aY - bY;
+      });
+      this.msLastPosition = now;
+    }
+    return this.groupsSortedPosition;
+  }
+
+  getGroups(sort?: string) {
+    const now = +new Date();
+    if (sort === "alphanumeric") {
+      return this.getGroupsAlpha(now);
+    }
+    if (sort === "position") {
+      return this.getGroupsPosition(now);
+    }
+    return this.getGroupsUnsorted(now);
+  }
+}
+
+const SERVICE = new FastGroupsService();
 
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
@@ -38,7 +145,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
   readonly modeOff: number = LiteGraph.NEVER;
 
   private debouncerTempWidth: number = 0;
-  private refreshWidgetsTimeout: number | null = null;
   tempSize: Vector2 | null = null;
 
   // We don't need to serizalize since we'll just be checking group data on startup anyway
@@ -65,44 +171,39 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     this.addOutput("OPT_CONNECTION", "*");
   }
 
-  override onNodeCreated(): void {
-    if (!this.configuring) {
-      this.refreshWidgets();
-    } else {
-      setTimeout(() => {
-        this.refreshWidgets();
-      }, 600);
-    }
+  override onAdded(graph: TLGraph): void {
+    SERVICE.addFastGroupNode(this);
+  }
+
+  override onRemoved(): void {
+    SERVICE.removeFastGroupNode(this);
   }
 
   refreshWidgets() {
-    const graph = app.graph as TLGraph;
     let sort = this.properties?.[PROPERTY_SORT] || "position";
     let customAlphabet: string[] | null = null;
-
-    // Check if we're using a custom alphabet and, if so, clean it up. If we get just a string, then
-    // we split if up per letter. If there's commas, then we'll split on the commas.
     if (sort === "custom alphabet") {
       const customAlphaStr = this.properties?.[PROPERTY_SORT_CUSTOM_ALPHA]?.replace(/\n/g, "");
-      if (!customAlphaStr?.trim()) {
-        sort = "alphanumeric";
-        customAlphabet = null;
-      } else {
+      if (customAlphaStr && customAlphaStr.trim()) {
         customAlphabet = customAlphaStr.includes(",")
           ? customAlphaStr.toLocaleLowerCase().split(",")
           : customAlphaStr.toLocaleLowerCase().trim().split("");
       }
+      if (!customAlphabet?.length) {
+        sort = "alphanumeric";
+        customAlphabet = null;
+      }
     }
 
-    // Sort the groups.
-    const groups = [...graph._groups].sort((a, b) => {
-      if (sort === "alphanumeric") {
-        return a.title.localeCompare(b.title);
-      } else if (customAlphabet) {
+    const groups = [...SERVICE.getGroups(sort)];
+    // The service will return pre-sorted groups for alphanumeric and position. If this node has a
+    // custom sort, then we need to sort it manually.
+    if (customAlphabet?.length) {
+      groups.sort((a, b) => {
         let aIndex = -1;
         let bIndex = -1;
         // Loop and find indexes. As we're finding multiple, a single for loop is more efficient.
-        for (const [index, alpha] of customAlphabet.entries()) {
+        for (const [index, alpha] of customAlphabet!.entries()) {
           aIndex =
             aIndex < 0 ? (a.title.toLocaleLowerCase().startsWith(alpha) ? index : -1) : aIndex;
           bIndex =
@@ -122,20 +223,10 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           return -1;
         } else if (bIndex > -1) {
           return 1;
-        } else {
-          return a.title.localeCompare(b.title);
         }
-      }
-      // Sort by y, then x, clamped to 30.
-      const aY = Math.floor(a._pos[1] / 30);
-      const bY = Math.floor(b._pos[1] / 30);
-      if (aY == bY) {
-        const aX = Math.floor(a._pos[0] / 30);
-        const bX = Math.floor(b._pos[0] / 30);
-        return aX - bX;
-      }
-      return aY - bY;
-    });
+        return a.title.localeCompare(b.title);
+      });
+    }
 
     // See if we're filtering by colors, and match against the built-in keywords and actuial hex
     // values.
@@ -160,7 +251,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     let index = 0;
     for (const group of groups) {
       if (filterColors.length) {
-        // TODO: match name, color, etc.
         let groupColor = group.color.replace("#", "").trim().toLocaleLowerCase();
         if (groupColor.length === 3) {
           groupColor = groupColor.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
@@ -291,11 +381,14 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         });
         (widget as any).doModeChange = (force?: boolean) => {
           group.recomputeInsideNodes();
-          let off = force == null ? group._nodes.every((n) => n.mode === this.modeOff) : force;
+          const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+          let newValue = force != null ? force : !hasAnyActiveNodes;
           for (const node of group._nodes) {
-            node.mode = (off ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
+            node.mode = (newValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
           }
-          widget!.value = off;
+          (group as any)._rgthreeHasAnyActiveNode = newValue;
+          widget!.value = newValue;
+          app.graph.setDirtyCanvas(true, false);
         };
         widget.callback = () => {
           (widget as any).doModeChange();
@@ -303,14 +396,18 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
         this.setSize(this.computeSize());
       }
-      if (!group._nodes?.length) {
-        group.recomputeInsideNodes();
+      if (widget.name != widgetName) {
+        widget.name = widgetName;
+        this.setDirtyCanvas(true, false);
       }
-      widget.name = widgetName;
-      widget.value = !group._nodes.every((n) => n.mode === this.modeOff);
+      if (widget.value != (group as any)._rgthreeHasAnyActiveNode) {
+        widget.value = (group as any)._rgthreeHasAnyActiveNode;
+        this.setDirtyCanvas(true, false);
+      }
       if (this.widgets[index] !== widget) {
         const oldIndex = this.widgets.findIndex((w) => w === widget);
         this.widgets.splice(index, 0, this.widgets.splice(oldIndex, 1)[0]!);
+        this.setDirtyCanvas(true, false);
       }
       index++;
     }
@@ -319,13 +416,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     while ((this.widgets || [])[index]) {
       this.removeWidget(index++);
     }
-
-    this.refreshWidgetsTimeout && clearTimeout(this.refreshWidgetsTimeout);
-    this.refreshWidgetsTimeout = setTimeout(() => {
-      if (!this.removed) {
-        this.refreshWidgets();
-      }
-    }, 500);
   }
 
   override computeSize(out?: Vector2) {

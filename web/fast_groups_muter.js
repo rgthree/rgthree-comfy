@@ -7,6 +7,93 @@ const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
+class FastGroupsService {
+    constructor() {
+        this.msThreshold = 400;
+        this.msLastUnsorted = 0;
+        this.msLastAlpha = 0;
+        this.msLastPosition = 0;
+        this.groupsUnsorted = [];
+        this.groupsSortedAlpha = [];
+        this.groupsSortedPosition = [];
+        this.fastGroupNodes = [];
+    }
+    addFastGroupNode(node) {
+        this.fastGroupNodes.push(node);
+        if (this.fastGroupNodes.length === 1) {
+            this.run();
+        }
+        else {
+            node.refreshWidgets();
+        }
+    }
+    removeFastGroupNode(node) {
+        const index = this.fastGroupNodes.indexOf(node);
+        if (index > -1) {
+            this.fastGroupNodes.splice(index, 1);
+        }
+    }
+    run() {
+        for (const node of this.fastGroupNodes) {
+            node.refreshWidgets();
+        }
+        if (this.fastGroupNodes.length) {
+            setTimeout(() => {
+                this.run();
+            }, 500);
+        }
+    }
+    getGroupsUnsorted(now) {
+        const graph = app.graph;
+        if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
+            this.groupsUnsorted = [...graph._groups];
+            for (const group of this.groupsUnsorted) {
+                group.recomputeInsideNodes();
+                group._rgthreeHasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+            }
+            this.msLastUnsorted = now;
+        }
+        return this.groupsUnsorted;
+    }
+    getGroupsAlpha(now) {
+        const graph = app.graph;
+        if (!this.groupsSortedAlpha.length || now - this.msLastAlpha > this.msThreshold) {
+            this.groupsSortedAlpha = [...this.getGroupsUnsorted(now)].sort((a, b) => {
+                return a.title.localeCompare(b.title);
+            });
+            this.msLastAlpha = now;
+        }
+        return this.groupsSortedAlpha;
+    }
+    getGroupsPosition(now) {
+        const graph = app.graph;
+        if (!this.groupsSortedPosition.length || now - this.msLastPosition > this.msThreshold) {
+            this.groupsSortedPosition = [...this.getGroupsUnsorted(now)].sort((a, b) => {
+                const aY = Math.floor(a._pos[1] / 30);
+                const bY = Math.floor(b._pos[1] / 30);
+                if (aY == bY) {
+                    const aX = Math.floor(a._pos[0] / 30);
+                    const bX = Math.floor(b._pos[0] / 30);
+                    return aX - bX;
+                }
+                return aY - bY;
+            });
+            this.msLastPosition = now;
+        }
+        return this.groupsSortedPosition;
+    }
+    getGroups(sort) {
+        const now = +new Date();
+        if (sort === "alphanumeric") {
+            return this.getGroupsAlpha(now);
+        }
+        if (sort === "position") {
+            return this.getGroupsPosition(now);
+        }
+        return this.getGroupsUnsorted(now);
+    }
+}
+const SERVICE = new FastGroupsService();
 export class FastGroupsMuter extends RgthreeBaseNode {
     constructor(title = FastGroupsMuter.title) {
         super(title);
@@ -14,7 +101,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = LiteGraph.NEVER;
         this.debouncerTempWidth = 0;
-        this.refreshWidgetsTimeout = null;
         this.tempSize = null;
         this.serialize_widgets = false;
         this.helpActions = "must and unmute";
@@ -25,38 +111,31 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
         this.addOutput("OPT_CONNECTION", "*");
     }
-    onNodeCreated() {
-        if (!this.configuring) {
-            this.refreshWidgets();
-        }
-        else {
-            setTimeout(() => {
-                this.refreshWidgets();
-            }, 600);
-        }
+    onAdded(graph) {
+        SERVICE.addFastGroupNode(this);
+    }
+    onRemoved() {
+        SERVICE.removeFastGroupNode(this);
     }
     refreshWidgets() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        const graph = app.graph;
+        var _a, _b, _c, _d, _e, _f, _g;
         let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
         let customAlphabet = null;
         if (sort === "custom alphabet") {
             const customAlphaStr = (_c = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_SORT_CUSTOM_ALPHA]) === null || _c === void 0 ? void 0 : _c.replace(/\n/g, "");
-            if (!(customAlphaStr === null || customAlphaStr === void 0 ? void 0 : customAlphaStr.trim())) {
-                sort = "alphanumeric";
-                customAlphabet = null;
-            }
-            else {
+            if (customAlphaStr && customAlphaStr.trim()) {
                 customAlphabet = customAlphaStr.includes(",")
                     ? customAlphaStr.toLocaleLowerCase().split(",")
                     : customAlphaStr.toLocaleLowerCase().trim().split("");
             }
-        }
-        const groups = [...graph._groups].sort((a, b) => {
-            if (sort === "alphanumeric") {
-                return a.title.localeCompare(b.title);
+            if (!(customAlphabet === null || customAlphabet === void 0 ? void 0 : customAlphabet.length)) {
+                sort = "alphanumeric";
+                customAlphabet = null;
             }
-            else if (customAlphabet) {
+        }
+        const groups = [...SERVICE.getGroups(sort)];
+        if (customAlphabet === null || customAlphabet === void 0 ? void 0 : customAlphabet.length) {
+            groups.sort((a, b) => {
                 let aIndex = -1;
                 let bIndex = -1;
                 for (const [index, alpha] of customAlphabet.entries()) {
@@ -81,19 +160,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 else if (bIndex > -1) {
                     return 1;
                 }
-                else {
-                    return a.title.localeCompare(b.title);
-                }
-            }
-            const aY = Math.floor(a._pos[1] / 30);
-            const bY = Math.floor(b._pos[1] / 30);
-            if (aY == bY) {
-                const aX = Math.floor(a._pos[0] / 30);
-                const bX = Math.floor(b._pos[0] / 30);
-                return aX - bX;
-            }
-            return aY - bY;
-        });
+                return a.title.localeCompare(b.title);
+            });
+        }
         let filterColors = (((_e = (_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_MATCH_COLORS]) === null || _e === void 0 ? void 0 : _e.split(",")) || []).filter((c) => c.trim());
         if (filterColors.length) {
             filterColors = filterColors.map((color) => {
@@ -216,37 +285,38 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 });
                 widget.doModeChange = (force) => {
                     group.recomputeInsideNodes();
-                    let off = force == null ? group._nodes.every((n) => n.mode === this.modeOff) : force;
+                    const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                    let newValue = force != null ? force : !hasAnyActiveNodes;
                     for (const node of group._nodes) {
-                        node.mode = (off ? this.modeOn : this.modeOff);
+                        node.mode = (newValue ? this.modeOn : this.modeOff);
                     }
-                    widget.value = off;
+                    group._rgthreeHasAnyActiveNode = newValue;
+                    widget.value = newValue;
+                    app.graph.setDirtyCanvas(true, false);
                 };
                 widget.callback = () => {
                     widget.doModeChange();
                 };
                 this.setSize(this.computeSize());
             }
-            if (!((_h = group._nodes) === null || _h === void 0 ? void 0 : _h.length)) {
-                group.recomputeInsideNodes();
+            if (widget.name != widgetName) {
+                widget.name = widgetName;
+                this.setDirtyCanvas(true, false);
             }
-            widget.name = widgetName;
-            widget.value = !group._nodes.every((n) => n.mode === this.modeOff);
+            if (widget.value != group._rgthreeHasAnyActiveNode) {
+                widget.value = group._rgthreeHasAnyActiveNode;
+                this.setDirtyCanvas(true, false);
+            }
             if (this.widgets[index] !== widget) {
                 const oldIndex = this.widgets.findIndex((w) => w === widget);
                 this.widgets.splice(index, 0, this.widgets.splice(oldIndex, 1)[0]);
+                this.setDirtyCanvas(true, false);
             }
             index++;
         }
         while ((this.widgets || [])[index]) {
             this.removeWidget(index++);
         }
-        this.refreshWidgetsTimeout && clearTimeout(this.refreshWidgetsTimeout);
-        this.refreshWidgetsTimeout = setTimeout(() => {
-            if (!this.removed) {
-                this.refreshWidgets();
-            }
-        }, 500);
     }
     computeSize(out) {
         let size = super.computeSize(out);
