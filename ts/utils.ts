@@ -4,7 +4,7 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   ContextMenuItem,
   LLink,
-  LGraph,
+  LGraph as TLGraph,
   IContextMenuOptions,
   ContextMenu,
   LGraphNode as TLGraphNode,
@@ -18,7 +18,7 @@ import type { Constructor } from "./typings/index.js";
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
-import { wait } from "./shared_utils.js";
+import { Resolver, getResolver, wait } from "./shared_utils.js";
 import { RgthreeHelpDialog } from "./dialog.js";
 
 declare const LGraphNode: typeof TLGraphNode;
@@ -79,6 +79,48 @@ export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, conf
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
     addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
   }
+}
+
+/**
+ * Waits for the canvas to be available on app using a single promise.
+ */
+let canvasResolver: Resolver<TLGraphCanvas>|null = null;
+export function waitForCanvas() {
+  if (canvasResolver === null) {
+    canvasResolver = getResolver<TLGraphCanvas>();
+    function _waitForCanvas() {
+      if (!canvasResolver!.completed) {
+        if (app?.canvas) {
+          canvasResolver!.resolve(app.canvas);
+        } else {
+          requestAnimationFrame(_waitForCanvas);
+        }
+      }
+    }
+    _waitForCanvas();
+  }
+  return canvasResolver.promise;
+}
+
+/**
+ * Waits for the graph to be available on app using a single promise.
+ */
+let graphResolver: Resolver<TLGraph>|null = null;
+export function waitForGraph() {
+  if (graphResolver === null) {
+    graphResolver = getResolver<TLGraph>();
+    function _wait() {
+      if (!graphResolver!.completed) {
+        if (app?.graph) {
+          graphResolver!.resolve(app.graph);
+        } else {
+          requestAnimationFrame(_wait);
+        }
+      }
+    }
+    _wait();
+  }
+  return graphResolver.promise;
 }
 
 export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuConfig,
@@ -468,7 +510,7 @@ export function getConnectedNodes(
         return [];
       }
     }
-    let graph = app.graph as LGraph;
+    let graph = app.graph as TLGraph;
     for (const linkId of linkIds) {
       const link: LLink = (linkId != null && graph.links[linkId]) as LLink;
       if (!link) {
@@ -545,7 +587,7 @@ function getTypeFromSlot(
   dir: IoDirection,
   skipSelf = false,
 ): ConnectionType | null {
-  let graph = app.graph as LGraph;
+  let graph = app.graph as TLGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
     return { type: type as string, label: slot?.label || slot?.name };
@@ -619,7 +661,7 @@ export async function replaceNode(
   }[] = [];
   for (const [index, output] of existingNode.outputs.entries()) {
     for (const linkId of output.links || []) {
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const link: LLink = (app.graph as TLGraph).links[linkId]!;
       if (!link) continue;
       const targetNode = app.graph.getNodeById(link.target_id);
       links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
@@ -628,7 +670,7 @@ export async function replaceNode(
   for (const [index, input] of existingNode.inputs.entries()) {
     const linkId = input.link;
     if (linkId) {
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const link: LLink = (app.graph as TLGraph).links[linkId]!;
       const originNode = app.graph.getNodeById(link.origin_id);
       links.push({
         node: originNode,
@@ -688,7 +730,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
   if ((inputOrOutput as INodeOutputSlot).links?.length) {
     const output = inputOrOutput as INodeOutputSlot;
     for (const linkId of output.links || []) {
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const link: LLink = (app.graph as TLGraph).links[linkId]!;
       if (link) {
         links.push({ id: linkId, link: link });
       }
@@ -696,7 +738,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
   }
   if ((inputOrOutput as INodeInputSlot).link) {
     const input = inputOrOutput as INodeInputSlot;
-    const link: LLink = (app.graph as LGraph).links[input.link!]!;
+    const link: LLink = (app.graph as TLGraph).links[input.link!]!;
     if (link) {
       links.push({ id: input.link!, link: link });
     }

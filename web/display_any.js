@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { addConnectionLayoutSupport } from "./utils.js";
+import { rgthree } from "./rgthree.js";
 let hasShownAlertForUpdatingInt = false;
 app.registerExtension({
     name: "rgthree.DisplayAny",
@@ -13,7 +14,14 @@ app.registerExtension({
                 this.showValueWidget = ComfyWidgets["STRING"](this, "output", ["STRING", { multiline: true }], app).widget;
                 this.showValueWidget.inputEl.readOnly = true;
                 this.showValueWidget.serializeValue = async (node, index) => {
-                    node.widgets_values[index] = "";
+                    const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+                    if (n) {
+                        n.widgets_values[index] = "";
+                    }
+                    else {
+                        console.warn('No serialized node found in workflow. May be attributed to '
+                            + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+                    }
                     return "";
                 };
             };

@@ -4,7 +4,9 @@ import { ComfyApp } from "../../../../web/scripts/app";
 export { ComfyApp } from "../../../../web/scripts/app";
 
 export interface ComfyWidget extends IWidget {
-	serializeValue(nodeType: SerializedLGraphNode, index: number): Promise<TValue>;
+	// https://github.com/comfyanonymous/ComfyUI/issues/2193 Changes from SerializedLGraphNode to
+	// LGraphNode...
+	serializeValue(nodeType: TLGraphNode, index: number): Promise<TValue>;
 	afterQueued(): void;
 	inputEl?: HTMLTextAreaElement;
 	width: number;

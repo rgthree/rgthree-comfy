@@ -78,7 +78,14 @@ class SeedControl {
             else {
                 this.serializedCtx.seedUsed = this.seedWidget.value;
             }
-            node.widgets_values[index] = this.serializedCtx.seedUsed;
+            const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+            if (n) {
+                n.widgets_values[index] = this.serializedCtx.seedUsed;
+            }
+            else {
+                console.warn('No serialized node found in workflow. May be attributed to '
+                    + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+            }
             this.seedWidget.value = this.serializedCtx.seedUsed;
             this.lastSeed = this.serializedCtx.seedUsed;
             if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed)) {
@@ -125,7 +132,14 @@ class SeedControl {
         this.lastSeedValue.inputEl.style.fontSize = "0.75rem";
         this.lastSeedValue.inputEl.style.textAlign = "center";
         this.lastSeedValue.serializeValue = async (node, index) => {
-            node.widgets_values[index] = "";
+            const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+            if (n) {
+                n.widgets_values[index] = "";
+            }
+            else {
+                console.warn('No serialized node found in workflow. May be attributed to '
+                    + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+            }
             return "";
         };
         this.node.computeSize();

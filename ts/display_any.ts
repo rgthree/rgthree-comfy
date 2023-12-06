@@ -10,6 +10,7 @@ import type {
 } from "./typings/litegraph.js";
 import type { ComfyApp, ComfyObjectInfo } from "./typings/comfy.js";
 import { addConnectionLayoutSupport, replaceNode } from "./utils.js";
+import { rgthree } from "./rgthree.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -38,12 +39,18 @@ app.registerExtension({
         ).widget;
         (this as any).showValueWidget.inputEl!.readOnly = true;
         (this as any).showValueWidget.serializeValue = async (
-          node: SerializedLGraphNode,
+          node: TLGraphNode,
           index: number,
         ) => {
-          // Since we need a round trip to get the value, the serizalized value means nothing, and
-          // saving it to the metadata would just be confusing. So, we clear it here.
-          node.widgets_values![index] = "";
+          const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+          if (n) {
+            // Since we need a round trip to get the value, the serizalized value means nothing, and
+            // saving it to the metadata would just be confusing. So, we clear it here.
+            n.widgets_values![index] = "";
+          } else {
+            console.warn('No serialized node found in workflow. May be attributed to '
+              + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+          }
           return "";
         };
       };

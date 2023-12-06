@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { wait } from "./shared_utils.js";
+import { getResolver, wait } from "./shared_utils.js";
 import { RgthreeHelpDialog } from "./dialog.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
@@ -33,6 +33,42 @@ export function addMenuItem(node, _app, config, after = 'Shape') {
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
         addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
     };
+}
+let canvasResolver = null;
+export function waitForCanvas() {
+    if (canvasResolver === null) {
+        canvasResolver = getResolver();
+        function _waitForCanvas() {
+            if (!canvasResolver.completed) {
+                if (app === null || app === void 0 ? void 0 : app.canvas) {
+                    canvasResolver.resolve(app.canvas);
+                }
+                else {
+                    requestAnimationFrame(_waitForCanvas);
+                }
+            }
+        }
+        _waitForCanvas();
+    }
+    return canvasResolver.promise;
+}
+let graphResolver = null;
+export function waitForGraph() {
+    if (graphResolver === null) {
+        graphResolver = getResolver();
+        function _wait() {
+            if (!graphResolver.completed) {
+                if (app === null || app === void 0 ? void 0 : app.graph) {
+                    graphResolver.resolve(app.graph);
+                }
+                else {
+                    requestAnimationFrame(_wait);
+                }
+            }
+        }
+        _wait();
+    }
+    return graphResolver.promise;
 }
 export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after = 'Shape') {
     let idx = menuOptions

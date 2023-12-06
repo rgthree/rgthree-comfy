@@ -120,7 +120,7 @@ class SeedControl {
      * for serialization, so it's saved in the image metadata. When re-opening the window, the
      * seed value will be pre-filled, instead of `-1`.
      */
-    this.seedWidget.serializeValue = async (node: SerializedLGraphNode, index: number) => {
+    this.seedWidget.serializeValue = async (node: TLGraphNode, index: number) => {
       const inputSeed = this.seedWidget.value;
       // Only actually swap and set the value when we're currently queuing. Some other nodes, like
       // cg-use-everywhere, serializes the graph even when not queing, and we don't want to swap
@@ -153,7 +153,13 @@ class SeedControl {
         this.serializedCtx.seedUsed = this.seedWidget.value;
       }
 
-      node.widgets_values![index] = this.serializedCtx.seedUsed;
+      const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+      if (n) {
+        n.widgets_values![index] = this.serializedCtx.seedUsed;
+      } else {
+        console.warn('No serialized node found in workflow. May be attributed to '
+          + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+      }
       this.seedWidget.value = this.serializedCtx.seedUsed;
       this.lastSeed = this.serializedCtx.seedUsed!;
       // Enabled the 'Last seed' Button
@@ -215,8 +221,14 @@ class SeedControl {
     this.lastSeedValue!.inputEl!.readOnly = true;
     this.lastSeedValue!.inputEl!.style.fontSize = "0.75rem";
     this.lastSeedValue!.inputEl!.style.textAlign = "center";
-    this.lastSeedValue!.serializeValue = async (node: SerializedLGraphNode, index: number) => {
-      node.widgets_values![index] = "";
+    this.lastSeedValue!.serializeValue = async (node: TLGraphNode, index: number) => {
+      const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+      if (n) {
+        n.widgets_values![index] = "";
+      } else {
+        console.warn('No serialized node found in workflow. May be attributed to '
+          + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+      }
       return "";
     };
     this.node.computeSize();

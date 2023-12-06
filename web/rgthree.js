@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
 import { wait } from "./shared_utils.js";
+import { waitForGraph } from "./utils.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -60,33 +61,33 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     async clearAllMessages() {
-        let container = document.querySelector('.rgthree-top-messages-container');
-        container && (container.innerHTML = '');
+        let container = document.querySelector(".rgthree-top-messages-container");
+        container && (container.innerHTML = "");
     }
     async showMessage(data) {
-        let container = document.querySelector('.rgthree-top-messages-container');
+        let container = document.querySelector(".rgthree-top-messages-container");
         if (!container) {
-            container = document.createElement('div');
-            container.classList.add('rgthree-top-messages-container');
+            container = document.createElement("div");
+            container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
         }
         await this.hideMessage(data.id);
-        const messageContainer = document.createElement('div');
-        messageContainer.setAttribute('type', data.type || 'info');
-        const message = document.createElement('span');
+        const messageContainer = document.createElement("div");
+        messageContainer.setAttribute("type", data.type || "info");
+        const message = document.createElement("span");
         message.innerText = data.message;
         messageContainer.appendChild(message);
         for (let a = 0; a < (data.actions || []).length; a++) {
             const action = data.actions[a];
             if (a > 0) {
-                const sep = document.createElement('span');
-                sep.innerHTML = '&nbsp;|&nbsp;';
+                const sep = document.createElement("span");
+                sep.innerHTML = "&nbsp;|&nbsp;";
                 messageContainer.appendChild(sep);
             }
-            const actionEl = document.createElement('a');
+            const actionEl = document.createElement("a");
             actionEl.innerText = action.label;
             if (action.href) {
-                actionEl.target = '_blank';
+                actionEl.target = "_blank";
                 actionEl.href = action.href;
             }
             if (action.callback) {
@@ -96,14 +97,14 @@ class Rgthree extends EventTarget {
             }
             messageContainer.appendChild(actionEl);
         }
-        const messageAnimContainer = document.createElement('div');
-        messageAnimContainer.setAttribute('msg-id', data.id);
+        const messageAnimContainer = document.createElement("div");
+        messageAnimContainer.setAttribute("msg-id", data.id);
         messageAnimContainer.appendChild(messageContainer);
         container.appendChild(messageAnimContainer);
         await wait(64);
         messageAnimContainer.style.marginTop = `-${messageAnimContainer.offsetHeight}px`;
         await wait(64);
-        messageAnimContainer.classList.add('-show');
+        messageAnimContainer.classList.add("-show");
         if (data.timeout) {
             await wait(data.timeout);
             this.hideMessage(data.id);
@@ -111,8 +112,8 @@ class Rgthree extends EventTarget {
     }
     async hideMessage(id) {
         const msg = document.querySelector(`.rgthree-top-messages-container > [msg-id="${id}"]`);
-        if (msg === null || msg === void 0 ? void 0 : msg.classList.contains('-show')) {
-            msg.classList.remove('-show');
+        if (msg === null || msg === void 0 ? void 0 : msg.classList.contains("-show")) {
+            msg.classList.remove("-show");
             await wait(750);
         }
         msg && msg.remove();
@@ -123,7 +124,7 @@ class Rgthree extends EventTarget {
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = true;
-        this.downKeys['^' + e.key.toLocaleUpperCase()] = true;
+        this.downKeys["^" + e.key.toLocaleUpperCase()] = true;
     }
     handleKeyup(e) {
         this.ctrlKey = !!e.ctrlKey;
@@ -131,15 +132,27 @@ class Rgthree extends EventTarget {
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = false;
-        this.downKeys['^' + e.key.toLocaleUpperCase()] = false;
+        this.downKeys["^" + e.key.toLocaleUpperCase()] = false;
     }
     areAllKeysDown(keys, caseSensitive = false) {
         return keys.every((k) => {
             if (caseSensitive) {
-                return rgthree.downKeys['^' + k.trim()];
+                return rgthree.downKeys["^" + k.trim()];
             }
             return rgthree.downKeys[k.trim().toUpperCase()];
         });
+    }
+    getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node) {
+        var _a, _b, _c;
+        return (_c = (_b = (_a = this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff) === null || _a === void 0 ? void 0 : _a.nodes) === null || _b === void 0 ? void 0 : _b.find((n) => n.id === node.id)) !== null && _c !== void 0 ? _c : null;
+    }
+    async initializeGraphHooks() {
+        const graph = await waitForGraph();
+        const onSerialize = graph.onSerialize;
+        graph.onSerialize = (data) => {
+            this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
+            onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.apply(graph, data);
+        };
     }
     constructor() {
         super();
@@ -152,31 +165,33 @@ class Rgthree extends EventTarget {
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
         this.processingQueue = false;
+        this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
         window.addEventListener("keydown", (e) => {
             this.handleKeydown(e);
         });
         window.addEventListener("keyup", (e) => {
             this.handleKeyup(e);
         });
+        this.initializeGraphHooks();
         const that = this;
         const queuePrompt = app.queuePrompt;
         app.queuePrompt = async function () {
-            that.dispatchEvent(new CustomEvent('queue'));
+            that.dispatchEvent(new CustomEvent("queue"));
             that.processingQueue = true;
             try {
                 await queuePrompt.apply(app, [...arguments]);
             }
             finally {
                 that.processingQueue = false;
-                that.dispatchEvent(new CustomEvent('queue-end'));
+                that.dispatchEvent(new CustomEvent("queue-end"));
             }
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {
-            that.dispatchEvent(new CustomEvent('graph-to-prompt'));
+            that.dispatchEvent(new CustomEvent("graph-to-prompt"));
             let promise = graphToPrompt.apply(app, [...arguments]);
             await promise;
-            that.dispatchEvent(new CustomEvent('graph-to-prompt-end'));
+            that.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
             return promise;
         };
         const clean = app.clean;
@@ -200,35 +215,37 @@ class Rgthree extends EventTarget {
             }
             setTimeout(() => {
                 var _a, _b;
-                const wasLoadingAborted = (_b = (_a = document.querySelector('.comfy-modal-content')) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.includes('Loading aborted due');
-                const graphToUse = wasLoadingAborted ? (graphCopy || graph) : app.graph;
+                const wasLoadingAborted = (_b = (_a = document
+                    .querySelector(".comfy-modal-content")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.includes("Loading aborted due");
+                const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
                 const fixBadLinksResult = fixBadLinks(graphToUse);
                 if (fixBadLinksResult.hasBadLinks) {
                     that.log(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/extensions/rgthree-comfy/html/links.html to try to fix.`);
-                    if (rgthreeConfig['show_alerts_for_corrupt_workflows']) {
+                    if (rgthreeConfig["show_alerts_for_corrupt_workflows"]) {
                         that.showMessage({
-                            id: 'bad-links',
-                            type: 'warn',
-                            message: 'The workflow you\'ve loaded has corrupt linking data that may be able to be fixed.',
+                            id: "bad-links",
+                            type: "warn",
+                            message: "The workflow you've loaded has corrupt linking data that may be able to be fixed.",
                             actions: [
                                 {
-                                    label: 'Open fixer',
-                                    href: '/extensions/rgthree-comfy/html/links.html',
+                                    label: "Open fixer",
+                                    href: "/extensions/rgthree-comfy/html/links.html",
                                 },
                                 {
-                                    label: 'Fix in place',
-                                    href: '/extensions/rgthree-comfy/html/links.html',
+                                    label: "Fix in place",
+                                    href: "/extensions/rgthree-comfy/html/links.html",
                                     callback: (event) => {
                                         event.stopPropagation();
                                         event.preventDefault();
-                                        if (confirm('This will attempt to fix in place. Please make sure to have a saved copy of your workflow.')) {
+                                        if (confirm("This will attempt to fix in place. Please make sure to have a saved copy of your workflow.")) {
                                             try {
                                                 const fixBadLinksResult = fixBadLinks(graphToUse, true);
                                                 if (!fixBadLinksResult.hasBadLinks) {
-                                                    that.hideMessage('bad-links');
-                                                    alert('Success! It\'s possible some valid links may have been affected. Please check and verify your workflow.');
+                                                    that.hideMessage("bad-links");
+                                                    alert("Success! It's possible some valid links may have been affected. Please check and verify your workflow.");
                                                     wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
-                                                    if (rgthreeConfig['monitor_for_corrupt_links'] || rgthreeConfig['monitor_bad_links']) {
+                                                    if (rgthreeConfig["monitor_for_corrupt_links"] ||
+                                                        rgthreeConfig["monitor_bad_links"]) {
                                                         that.monitorLinkTimeout = setTimeout(() => {
                                                             that.monitorBadLinks();
                                                         }, 5000);
@@ -237,17 +254,18 @@ class Rgthree extends EventTarget {
                                             }
                                             catch (e) {
                                                 console.error(e);
-                                                alert('Unsuccessful at fixing corrupt data. :(');
-                                                that.hideMessage('bad-links');
+                                                alert("Unsuccessful at fixing corrupt data. :(");
+                                                that.hideMessage("bad-links");
                                             }
                                         }
-                                    }
+                                    },
                                 },
-                            ]
+                            ],
                         });
                     }
                 }
-                else if (rgthreeConfig['monitor_for_corrupt_links'] || rgthreeConfig['monitor_bad_links']) {
+                else if (rgthreeConfig["monitor_for_corrupt_links"] ||
+                    rgthreeConfig["monitor_bad_links"]) {
                     that.monitorLinkTimeout = setTimeout(() => {
                         that.monitorBadLinks();
                     }, 5000);
@@ -261,9 +279,9 @@ class Rgthree extends EventTarget {
     }
     injectRgthreeCss() {
         let link = document.createElement("link");
-        link.rel = 'stylesheet';
-        link.type = 'text/css';
-        link.href = 'extensions/rgthree-comfy/rgthree.css';
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.href = "extensions/rgthree-comfy/rgthree.css";
         document.head.appendChild(link);
     }
     setLogLevel(level) {
@@ -279,7 +297,9 @@ class Rgthree extends EventTarget {
         const badLinksFound = fixBadLinks(app.graph);
         if (badLinksFound.hasBadLinks && !this.monitorBadLinksAlerted) {
             this.monitorBadLinksAlerted = true;
-            alert(`Problematic links just found in live data. Can you save your workflow and file a bug with the last few steps you took to trigger this at https://github.com/rgthree/rgthree-comfy/issues. Thank you!`);
+            alert(`Problematic links just found in live data. Can you save your workflow and file a bug with `
+                + `the last few steps you took to trigger this at `
+                + `https://github.com/rgthree/rgthree-comfy/issues. Thank you!`);
         }
         else if (!badLinksFound.hasBadLinks) {
             this.monitorBadLinksAlerted = false;
