@@ -356,7 +356,12 @@ export function addHelpMenuItem(node: TLGraphNode, content: string, menuOptions:
   addMenuItemOnExtraMenuOptions(node, {
     name: "🛟 Node Help",
     callback: (node) => {
-      new RgthreeHelpDialog(node, content).show();
+      if ((node as any).showHelp) {
+        (node as any).showHelp();
+      } else {
+        new RgthreeHelpDialog(node, content).show();
+      }
+
     },
   }, menuOptions, 'Properties Panel');
 }

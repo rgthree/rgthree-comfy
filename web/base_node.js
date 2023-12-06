@@ -2,6 +2,7 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
+import { RgthreeHelpDialog } from "./dialog.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
@@ -9,6 +10,7 @@ export class RgthreeBaseNode extends LGraphNode {
         this.isVirtualNode = false;
         this.removed = false;
         this.configuring = false;
+        this.helpDialog = null;
         if (title == '__NEED_NAME__') {
             throw new Error('RgthreeBaseNode needs overrides.');
         }
@@ -56,6 +58,25 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     getHelp() {
         return '';
+    }
+    showHelp() {
+        const help = this.getHelp() || this.constructor.help;
+        if (help) {
+            this.helpDialog = new RgthreeHelpDialog(this, help).show();
+            this.helpDialog.addEventListener('close', (e) => {
+                console.log('close', e);
+                this.helpDialog = null;
+            });
+        }
+    }
+    onKeyDown(event) {
+        rgthree.handleKeydown(event);
+        if (event.key == '?' && !this.helpDialog) {
+            this.showHelp();
+        }
+    }
+    onKeyUp(event) {
+        rgthree.handleKeyup(event);
     }
     getExtraMenuOptions(canvas, options) {
         var _a, _b, _c, _d, _e, _f;

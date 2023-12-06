@@ -253,7 +253,12 @@ export function addHelpMenuItem(node, content, menuOptions) {
     addMenuItemOnExtraMenuOptions(node, {
         name: "🛟 Node Help",
         callback: (node) => {
-            new RgthreeHelpDialog(node, content).show();
+            if (node.showHelp) {
+                node.showHelp();
+            }
+            else {
+                new RgthreeHelpDialog(node, content).show();
+            }
         },
     }, menuOptions, 'Properties Panel');
 }

@@ -90,12 +90,13 @@ export type RgthreeUiMessage = {
 /**
  * A global class as 'rgthree'; exposed on wiindow. Lots can go in here.
  */
-class Rgthree {
+class Rgthree extends EventTarget {
   /** Are any functional keys pressed in this given moment? */
   ctrlKey = false;
   altKey = false;
   metaKey = false;
   shiftKey = false;
+  readonly downKeys: {[key:string]: boolean} = {};
 
   logger = new LogSession("[rgthree]");
 
@@ -175,19 +176,43 @@ class Rgthree {
     msg && msg.remove();
   }
 
+  /** Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree. */
+  handleKeydown(e: KeyboardEvent) {
+    this.ctrlKey = !!e.ctrlKey;
+    this.altKey = !!e.altKey;
+    this.metaKey = !!e.metaKey;
+    this.shiftKey = !!e.shiftKey;
+    this.downKeys[e.key.toLocaleUpperCase()] = true;
+    this.downKeys['^' + e.key.toLocaleUpperCase()] = true;
+  }
+
+  /** Handle keyup. Pulled out because sometimes a node will get a keyup before rgthree. */
+  handleKeyup(e: KeyboardEvent) {
+    this.ctrlKey = !!e.ctrlKey;
+    this.altKey = !!e.altKey;
+    this.metaKey = !!e.metaKey;
+    this.shiftKey = !!e.shiftKey;
+    this.downKeys[e.key.toLocaleUpperCase()] = false;
+    this.downKeys['^' + e.key.toLocaleUpperCase()] = false;
+  }
+
+  areAllKeysDown(keys: string[], caseSensitive = false) {
+    return keys.every((k) => {
+      if (caseSensitive) {
+        return rgthree.downKeys['^' + k.trim()];
+      }
+      return rgthree.downKeys[k.trim().toUpperCase()];
+    });
+  }
+
   constructor() {
+    super()
     window.addEventListener("keydown", (e) => {
-      this.ctrlKey = !!e.ctrlKey;
-      this.altKey = !!e.altKey;
-      this.metaKey = !!e.metaKey;
-      this.shiftKey = !!e.shiftKey;
+      this.handleKeydown(e);
     });
 
     window.addEventListener("keyup", (e) => {
-      this.ctrlKey = !!e.ctrlKey;
-      this.altKey = !!e.altKey;
-      this.metaKey = !!e.metaKey;
-      this.shiftKey = !!e.shiftKey;
+      this.handleKeyup(e);
     });
 
     // Override the loadGraphData so we can check for bad links and ask the user to fix them.
@@ -195,22 +220,22 @@ class Rgthree {
 
     const queuePrompt = app.queuePrompt as Function;
     app.queuePrompt = async function() {
-      that.fireEvent('queue', {});
+      that.dispatchEvent(new CustomEvent('queue'));
       that.processingQueue = true;
       try {
         await queuePrompt.apply(app, [...arguments])
       } finally {
         that.processingQueue = false;
-        that.fireEvent('queue-end', {});
+        that.dispatchEvent(new CustomEvent('queue-end'));
       }
     }
 
     const graphToPrompt = app.graphToPrompt as Function;
     app.graphToPrompt = async function() {
-      that.fireEvent('graph-to-prompt', {});
+      that.dispatchEvent(new CustomEvent('graph-to-prompt'));
       let promise = graphToPrompt.apply(app, [...arguments]);
       await promise;
-      that.fireEvent('graph-to-prompt-end', {});
+      that.dispatchEvent(new CustomEvent('graph-to-prompt-end'));
       return promise;
     }
 
@@ -300,30 +325,6 @@ class Rgthree {
     link.type = 'text/css';
     link.href = 'extensions/rgthree-comfy/rgthree.css';
     document.head.appendChild(link);
-  }
-
-  private readonly eventsToFns = new Map<string, Set<(ev: Event) => void>>();
-
-  addEventListener(event: string, fn: (ev: Event) => void) {
-    if (!this.eventsToFns.has(event)) {
-      this.eventsToFns.set(event, new Set());
-    }
-    this.eventsToFns.get(event)!.add(fn);
-  }
-
-  removeEventListener(event: string, fn: (ev: Event) => void) {
-    if (this.eventsToFns.has(event)) {
-      this.eventsToFns.get(event)!.delete(fn);
-    }
-  }
-
-  fireEvent(event: string, data: any) {
-    if (this.eventsToFns.has(event)) {
-      for (let fn of this.eventsToFns.get(event)!) {
-        const event = new Event(data);
-        fn(event);
-      }
-    }
   }
 
   setLogLevel(level: LogLevel) {

@@ -119,6 +119,7 @@
   height: 186px;
   line-height: 1;
   pointer-events: none;
+  z-index: -1;
 }
 
 @media (max-width: 832px) {

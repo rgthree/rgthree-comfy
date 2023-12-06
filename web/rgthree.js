@@ -58,7 +58,7 @@ class LogSession {
         return new LogSession(`${this.name}${name}`);
     }
 }
-class Rgthree {
+class Rgthree extends EventTarget {
     async clearAllMessages() {
         let container = document.querySelector('.rgthree-top-messages-container');
         container && (container.innerHTML = '');
@@ -117,47 +117,66 @@ class Rgthree {
         }
         msg && msg.remove();
     }
+    handleKeydown(e) {
+        this.ctrlKey = !!e.ctrlKey;
+        this.altKey = !!e.altKey;
+        this.metaKey = !!e.metaKey;
+        this.shiftKey = !!e.shiftKey;
+        this.downKeys[e.key.toLocaleUpperCase()] = true;
+        this.downKeys['^' + e.key.toLocaleUpperCase()] = true;
+    }
+    handleKeyup(e) {
+        this.ctrlKey = !!e.ctrlKey;
+        this.altKey = !!e.altKey;
+        this.metaKey = !!e.metaKey;
+        this.shiftKey = !!e.shiftKey;
+        this.downKeys[e.key.toLocaleUpperCase()] = false;
+        this.downKeys['^' + e.key.toLocaleUpperCase()] = false;
+    }
+    areAllKeysDown(keys, caseSensitive = false) {
+        return keys.every((k) => {
+            if (caseSensitive) {
+                return rgthree.downKeys['^' + k.trim()];
+            }
+            return rgthree.downKeys[k.trim().toUpperCase()];
+        });
+    }
     constructor() {
+        super();
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
         this.shiftKey = false;
+        this.downKeys = {};
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
         this.processingQueue = false;
-        this.eventsToFns = new Map();
         window.addEventListener("keydown", (e) => {
-            this.ctrlKey = !!e.ctrlKey;
-            this.altKey = !!e.altKey;
-            this.metaKey = !!e.metaKey;
-            this.shiftKey = !!e.shiftKey;
+            this.handleKeydown(e);
         });
         window.addEventListener("keyup", (e) => {
-            this.ctrlKey = !!e.ctrlKey;
-            this.altKey = !!e.altKey;
-            this.metaKey = !!e.metaKey;
-            this.shiftKey = !!e.shiftKey;
+            this.handleKeyup(e);
         });
         const that = this;
         const queuePrompt = app.queuePrompt;
         app.queuePrompt = async function () {
-            that.fireEvent('queue', {});
+            that.dispatchEvent(new CustomEvent('queue'));
             that.processingQueue = true;
             try {
                 await queuePrompt.apply(app, [...arguments]);
             }
             finally {
                 that.processingQueue = false;
-                that.fireEvent('queue-end', {});
+                that.dispatchEvent(new CustomEvent('queue-end'));
             }
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {
-            that.fireEvent('graph-to-prompt', {});
+            that.dispatchEvent(new CustomEvent('graph-to-prompt'));
             let promise = graphToPrompt.apply(app, [...arguments]);
             await promise;
-            that.fireEvent('graph-to-prompt-end', {});
+            that.dispatchEvent(new CustomEvent('graph-to-prompt-end'));
             return promise;
         };
         const clean = app.clean;
@@ -246,25 +265,6 @@ class Rgthree {
         link.type = 'text/css';
         link.href = 'extensions/rgthree-comfy/rgthree.css';
         document.head.appendChild(link);
-    }
-    addEventListener(event, fn) {
-        if (!this.eventsToFns.has(event)) {
-            this.eventsToFns.set(event, new Set());
-        }
-        this.eventsToFns.get(event).add(fn);
-    }
-    removeEventListener(event, fn) {
-        if (this.eventsToFns.has(event)) {
-            this.eventsToFns.get(event).delete(fn);
-        }
-    }
-    fireEvent(event, data) {
-        if (this.eventsToFns.has(event)) {
-            for (let fn of this.eventsToFns.get(event)) {
-                const event = new Event(data);
-                fn(event);
-            }
-        }
     }
     setLogLevel(level) {
         GLOBAL_LOG_LEVEL = level;

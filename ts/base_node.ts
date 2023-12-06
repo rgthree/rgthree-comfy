@@ -8,6 +8,7 @@ import { app } from "../../scripts/app.js";
 
 import { rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
+import { RgthreeHelpDialog } from "./dialog.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -38,6 +39,8 @@ export class RgthreeBaseNode extends LGraphNode {
   isVirtualNode = false;
   removed = false;
   configuring = false;
+
+  helpDialog: RgthreeHelpDialog | null = null;
 
   constructor(title = RgthreeBaseNode.title) {
     super(title);
@@ -111,6 +114,28 @@ export class RgthreeBaseNode extends LGraphNode {
    */
   getHelp() {
     return '';
+  }
+
+  showHelp() {
+    const help = this.getHelp() || (this.constructor as any).help;
+    if (help) {
+      this.helpDialog = new RgthreeHelpDialog(this, help).show();
+      this.helpDialog.addEventListener('close', (e) => {
+        console.log('close', e);
+        this.helpDialog = null;
+      });
+    }
+  }
+
+  override onKeyDown(event: KeyboardEvent): void {
+    rgthree.handleKeydown(event);
+    if (event.key == '?' && !this.helpDialog) {
+      this.showHelp();
+    }
+  }
+
+  override onKeyUp(event: KeyboardEvent): void {
+    rgthree.handleKeyup(event);
   }
 
   override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {

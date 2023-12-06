@@ -14,10 +14,11 @@ type RgthreeDialogOptions = {
 /**
  * A Dialog that shows content, and closes.
  */
-export class RgthreeDialog {
+export class RgthreeDialog extends EventTarget {
   element: HTMLDialogElement;
 
   constructor(options: RgthreeDialogOptions) {
+    super();
     let contentEl = $el("div.rgthree-dialog-container");
     this.element = $el("dialog", {
       classes: ["rgthree-dialog", options.class || ""],
@@ -32,7 +33,7 @@ export class RgthreeDialog {
             event.clientX < rect.left ||
             event.clientX > rect.right
           ) {
-            return this.element.close();
+            return this.close();
           }
         },
       },
@@ -56,7 +57,7 @@ export class RgthreeDialog {
         text: options.closeButtonLabel || "Close",
         events: {
           click: () => {
-            this.element.close();
+            this.close();
           },
         },
       }),
@@ -65,7 +66,15 @@ export class RgthreeDialog {
 
   show() {
     this.element.showModal();
+    this.dispatchEvent(new CustomEvent('show'));
+    return this;
   }
+
+  close() {
+    this.element.close();
+    this.dispatchEvent(new CustomEvent('close'));
+  }
+
 }
 
 /**
