@@ -1012,6 +1012,10 @@ export declare class LGraphNode {
         graphCanvas: LGraphCanvas
     ): void;
     onKey?(event: KeyboardEvent, pos: Vector2, graphCanvas: LGraphCanvas): void;
+    // @rgthree
+    onKeyDown?(event: KeyboardEvent): void;
+    // @rgthree
+    onKeyUp?(event: KeyboardEvent): void;
 
     onExecuted(message: any): void;
     /** Called by `LGraphNode.createNode` */
