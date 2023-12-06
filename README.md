@@ -1,5 +1,7 @@
 # rgthree's Comfy Nodes
 
+**_Making ComfyUI more comfortable!_**
+
 A collection of nodes I've created while messing around with Stable Diffusion. I made them for myself to make my workflow easier and cleaner. You're welcome to try them out, but do so at your own risk. Since I made them for myself, I didn't battle test them much outside of my specific use cases.
 
 ![Context Node](./docs/rgthree_advanced.png)
