@@ -54,7 +54,7 @@ class AnySwitchforMixin extends RgthreeBaseNode {
             AnySwitchforMixin.category = nodeType.category;
         });
         applyMixins(nodeType, [RgthreeBaseNode, AnySwitchforMixin]);
-        addConnectionLayoutSupport(nodeType, app, [["Left"], ["Right"]]);
+        addConnectionLayoutSupport(nodeType, app, [["Left", "Right"], ["Right", "Left"]]);
     }
 }
 AnySwitchforMixin.comfyClass = "";
