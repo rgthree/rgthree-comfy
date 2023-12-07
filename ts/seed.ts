@@ -15,6 +15,7 @@ import type {
 import type { ComfyApp, ComfyObjectInfo, ComfyWidget, ComfyGraphNode } from "./typings/comfy.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
+import { addConnectionLayoutSupport } from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -57,12 +58,15 @@ class SeedControl {
       }
     };
 
+    // (this.node as any).widgets_values = (this.node as any).widgets_values || [];
+
     this.node.properties = this.node.properties || {};
 
     // Grab the already available widgets, and remove the built-in control_after_generate
     for (const [i, w] of this.node.widgets.entries()) {
       if (w.name === "seed") {
         this.seedWidget = w as ComfyWidget;
+        this.seedWidget.value = SPECIAL_SEED_RANDOM;
       } else if (w.name === "control_after_generate") {
         this.node.widgets.splice(i, 1);
       }
@@ -256,6 +260,7 @@ app.registerExtension({
         onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
         (this as any).seedControl = new SeedControl(this as ComfyGraphNode);
       };
+      addConnectionLayoutSupport(nodeType, app, [["Left", "Right"], ["Right", "Left"]]);
     }
   },
 });

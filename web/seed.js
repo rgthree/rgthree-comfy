@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { rgthree } from "./rgthree.js";
+import { addConnectionLayoutSupport } from "./utils.js";
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 const SPECIAL_SEED_RANDOM = -1;
 const SPECIAL_SEED_INCREMENT = -2;
@@ -29,6 +30,7 @@ class SeedControl {
         for (const [i, w] of this.node.widgets.entries()) {
             if (w.name === "seed") {
                 this.seedWidget = w;
+                this.seedWidget.value = SPECIAL_SEED_RANDOM;
             }
             else if (w.name === "control_after_generate") {
                 this.node.widgets.splice(i, 1);
@@ -162,6 +164,7 @@ app.registerExtension({
                 onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
                 this.seedControl = new SeedControl(this);
             };
+            addConnectionLayoutSupport(nodeType, app, [["Left", "Right"], ["Right", "Left"]]);
         }
     },
 });
