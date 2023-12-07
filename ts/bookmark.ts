@@ -25,6 +25,8 @@ export class Bookmark extends RgthreeBaseNode {
   // override it with a setter and re-set it measured exactly as we want.
   ___collapsed_width: number = 0;
 
+  override isVirtualNode = true;
+
   //@ts-ignore - TS Doesn't like us overriding a property with accessors but, too bad.
   override get _collapsed_width() {
     return this.___collapsed_width;
