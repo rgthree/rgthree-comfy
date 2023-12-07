@@ -106,7 +106,8 @@ class BaseContextNode extends RgthreeBaseServerNode {
     const ctx = canvas.canvas.getContext('2d')!;
     const oldFont = ctx.font;
     ctx.font = canvas.title_text_font;
-    this.___collapsed_width = 40 + ctx.measureText(this.title.trim()).width;
+    let title = this.title.trim();
+    this.___collapsed_width = 30 + (title ? 10 + ctx.measureText(title).width : 0);
     ctx.font = oldFont;
   }
 
@@ -281,7 +282,53 @@ class ContextSwitchBigNode extends BaseContextNode {
   }
 }
 
-const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode];
+/**
+ * The Context Merge (original) node.
+ */
+class ContextMergeNode extends BaseContextNode {
+  static override title = "Context Merge (rgthree)";
+  static override type = "Context Merge (rgthree)";
+  static comfyClass = "Context Merge (rgthree)";
+
+  constructor(title = ContextMergeNode.title) {
+    super(title);
+  }
+
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextMergeNode);
+    addMenuItem(ContextMergeNode, app, {
+      name: "Convert To Context Merge Big",
+      callback: (node) => {
+        replaceNode(node, ContextMergeBigNode.type);
+      },
+    });
+  }
+}
+
+/**
+ * The Context Switch Big node.
+ */
+class ContextMergeBigNode extends BaseContextNode {
+  static override title = "Context Merge Big (rgthree)";
+  static override type = "Context Merge Big (rgthree)";
+  static comfyClass = "Context Merge Big (rgthree)";
+
+  constructor(title = ContextMergeBigNode.title) {
+    super(title);
+  }
+
+  static override setUp(comfyClass: any) {
+    BaseContextNode.setUp(comfyClass, ContextMergeBigNode);
+    addMenuItem(ContextMergeBigNode, app, {
+      name: "Convert To Context Switch",
+      callback: (node) => {
+        replaceNode(node, ContextMergeNode.type);
+      },
+    });
+  }
+}
+
+const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode, ContextMergeNode, ContextMergeBigNode];
 const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
 
 function fixBadConfigs(node: ContextNode) {
@@ -318,7 +365,7 @@ app.registerExtension({
       fixBadConfigs(node as ContextNode);
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs
-      if (!type!.includes("Switch")) {
+      if (!type!.includes("Switch") && !type!.includes("Merge")) {
         matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
       }
       // }, 100);
@@ -336,7 +383,7 @@ app.registerExtension({
       fixBadConfigs(node as ContextNode);
       matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
       // Switches don't need to change inputs, only context outputs
-      if (!type!.includes("Switch")) {
+      if (!type!.includes("Switch") && !type!.includes("Merge")) {
         matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
       }
     }

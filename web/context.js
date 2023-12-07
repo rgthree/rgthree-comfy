@@ -60,7 +60,8 @@ class BaseContextNode extends RgthreeBaseServerNode {
         const ctx = canvas.canvas.getContext('2d');
         const oldFont = ctx.font;
         ctx.font = canvas.title_text_font;
-        this.___collapsed_width = 40 + ctx.measureText(this.title.trim()).width;
+        let title = this.title.trim();
+        this.___collapsed_width = 30 + (title ? 10 + ctx.measureText(title).width : 0);
         ctx.font = oldFont;
     }
     connectByType(slot, sourceNode, sourceSlotType, optsIn) {
@@ -183,7 +184,41 @@ class ContextSwitchBigNode extends BaseContextNode {
 ContextSwitchBigNode.title = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
-const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode];
+class ContextMergeNode extends BaseContextNode {
+    constructor(title = ContextMergeNode.title) {
+        super(title);
+    }
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextMergeNode);
+        addMenuItem(ContextMergeNode, app, {
+            name: "Convert To Context Merge Big",
+            callback: (node) => {
+                replaceNode(node, ContextMergeBigNode.type);
+            },
+        });
+    }
+}
+ContextMergeNode.title = "Context Merge (rgthree)";
+ContextMergeNode.type = "Context Merge (rgthree)";
+ContextMergeNode.comfyClass = "Context Merge (rgthree)";
+class ContextMergeBigNode extends BaseContextNode {
+    constructor(title = ContextMergeBigNode.title) {
+        super(title);
+    }
+    static setUp(comfyClass) {
+        BaseContextNode.setUp(comfyClass, ContextMergeBigNode);
+        addMenuItem(ContextMergeBigNode, app, {
+            name: "Convert To Context Switch",
+            callback: (node) => {
+                replaceNode(node, ContextMergeNode.type);
+            },
+        });
+    }
+}
+ContextMergeBigNode.title = "Context Merge Big (rgthree)";
+ContextMergeBigNode.type = "Context Merge Big (rgthree)";
+ContextMergeBigNode.comfyClass = "Context Merge Big (rgthree)";
+const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode, ContextMergeNode, ContextMergeBigNode];
 const contextTypeToServerDef = {};
 function fixBadConfigs(node) {
     const wrongName = node.outputs.find((o, i) => o.name === 'CLIP_HEIGTH');
@@ -212,7 +247,7 @@ app.registerExtension({
         if (serverDef) {
             fixBadConfigs(node);
             matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
-            if (!type.includes("Switch")) {
+            if (!type.includes("Switch") && !type.includes("Merge")) {
                 matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
             }
         }
@@ -223,7 +258,7 @@ app.registerExtension({
         if (serverDef) {
             fixBadConfigs(node);
             matchLocalSlotsToServer(node, IoDirection.OUTPUT, serverDef);
-            if (!type.includes("Switch")) {
+            if (!type.includes("Switch") && !type.includes("Merge")) {
                 matchLocalSlotsToServer(node, IoDirection.INPUT, serverDef);
             }
         }

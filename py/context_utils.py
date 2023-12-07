@@ -78,6 +78,21 @@ def new_context(base_ctx, **kwargs):
   return new_ctx
 
 
+def merge_new_context(ctx_01, ctx_02, ctx_03, ctx_04, ctx_05):
+  """Creates a new context by merging provided contexts with the latter overriding same fields."""
+  new_ctx = {}
+  for key in _all_context_input_output_data:
+    if key == "base_ctx":
+      continue
+    v = None
+    for ctx in [ctx_01, ctx_02, ctx_03, ctx_04, ctx_05]:
+      v = ctx[key] if ctx is not None and key in ctx else None
+      if v is not None:
+        break
+    new_ctx[key] = v
+  return new_ctx
+
+
 def get_context_return_tuple(ctx, inputs_list=None):
   """Returns a tuple for returning in the order of the inputs list."""
   if inputs_list is None:

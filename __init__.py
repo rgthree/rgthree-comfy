@@ -31,6 +31,8 @@ from .py.ksampler_config import RgthreeKSamplerConfig
 from .py.sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
 from .py.any_switch import RgthreeAnySwitch
+from .py.context_merge import RgthreeContextMerge
+from .py.context_merge_big import RgthreeContextMergeBig
 
 NODE_CLASS_MAPPINGS = {
   RgthreeBigContext.NAME: RgthreeBigContext,
@@ -49,6 +51,8 @@ NODE_CLASS_MAPPINGS = {
   RgthreeSDXLPowerPromptPositive.NAME: RgthreeSDXLPowerPromptPositive,
   RgthreeSDXLPowerPromptSimple.NAME: RgthreeSDXLPowerPromptSimple,
   RgthreeAnySwitch.NAME: RgthreeAnySwitch,
+  RgthreeContextMerge.NAME: RgthreeContextMerge,
+  RgthreeContextMergeBig.NAME: RgthreeContextMergeBig,
 }
 
 
