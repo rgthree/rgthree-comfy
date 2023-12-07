@@ -50,6 +50,18 @@ function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
 class BaseContextNode extends RgthreeBaseServerNode {
     constructor(title) {
         super(title);
+        this.___collapsed_width = 0;
+    }
+    get _collapsed_width() {
+        return this.___collapsed_width;
+    }
+    set _collapsed_width(width) {
+        const canvas = app.canvas;
+        const ctx = canvas.canvas.getContext('2d');
+        const oldFont = ctx.font;
+        ctx.font = canvas.title_text_font;
+        this.___collapsed_width = 40 + ctx.measureText(this.title.trim()).width;
+        ctx.font = oldFont;
     }
     connectByType(slot, sourceNode, sourceSlotType, optsIn) {
         let canConnect = super.connectByType &&

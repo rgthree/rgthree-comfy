@@ -4,6 +4,7 @@ import type {
   INodeOutputSlot,
   LGraph,
   LLink,
+  LGraphCanvas as TLGraphCanvas,
   LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
 } from "./typings/litegraph.js";
@@ -23,6 +24,7 @@ import { rgthree } from "./rgthree.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
+declare const LGraphCanvas: typeof TLGraphCanvas;
 
 /**
  * Takes a non-context node and determins for its input or output slot, if there is a valid
@@ -88,6 +90,24 @@ function findMatchingIndexByTypeOrName(otherNode: TLGraphNode, otherSlot: INodeI
 class BaseContextNode extends RgthreeBaseServerNode {
   constructor(title: string) {
     super(title);
+  }
+
+  // LiteGraph adds more spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
+  // override it with a setter and re-set it measured exactly as we want.
+  ___collapsed_width: number = 0;
+
+  //@ts-ignore - TS Doesn't like us overriding a property with accessors but, too bad.
+  override get _collapsed_width() {
+    return this.___collapsed_width;
+  }
+
+  override set _collapsed_width(width: number) {
+    const canvas = app.canvas as TLGraphCanvas;
+    const ctx = canvas.canvas.getContext('2d')!;
+    const oldFont = ctx.font;
+    ctx.font = canvas.title_text_font;
+    this.___collapsed_width = 40 + ctx.measureText(this.title.trim()).width;
+    ctx.font = oldFont;
   }
 
   override connectByType<T = any>(
