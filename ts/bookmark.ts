@@ -77,9 +77,13 @@ export class Bookmark extends RgthreeBaseNode {
 
   canvasToBookmark() {
     const canvas = app.canvas as TLGraphCanvas;
-    canvas.ds.offset[0] = -this.pos[0]  + 16;
-    canvas.ds.offset[1] = -this.pos[1]  + 40;
-    canvas.setDirty(true, true);
+    // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
+    // https://github.com/rgthree/rgthree-comfy/issues/71
+    if (canvas?.ds?.offset) {
+      canvas.ds.offset[0] = -this.pos[0]  + 16;
+      canvas.ds.offset[1] = -this.pos[1]  + 40;
+      canvas.setDirty(true, true);
+    }
   }
 }
 

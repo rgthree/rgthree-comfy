@@ -142,8 +142,10 @@ class RerouteNode extends LGraphNode {
 
   override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: TLGraphCanvas): void {
     if (this.properties?.['showLabel']) {
-      const low_quality = canvas.ds.scale < 0.6;
-      if (low_quality || this.size[0] <= 10) {
+      // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
+      // https://github.com/rgthree/rgthree-comfy/issues/71
+      const low_quality = canvas?.ds?.scale && canvas.ds.scale < 0.6;
+      if (low_quality || this.size[0] <= 10 || this.size[1] <= 10) {
         return;
       }
       const fontSize = Math.min(14, ((this.size[1] * 0.65)|0));
