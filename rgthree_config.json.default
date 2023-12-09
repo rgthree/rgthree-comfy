@@ -8,7 +8,16 @@
       "default_width": 40,
       "default_height": 30,
       "default_resizable": false,
-      "default_layout": ["Left", "Right"]
+      "default_layout": ["Left", "Right"],
+      "fast_reroute": {
+        "enabled": true,
+        "key_create_while_dragging_link" : "Shift + R",
+        "key_rotate": "Shift + A",
+        "key_resize": "Shift + X",
+        "key_move": "Shift + Z",
+        "key_connections_input": "Shift + S",
+        "key_connections_output": "Shift + D"
+      }
     }
   }
 }

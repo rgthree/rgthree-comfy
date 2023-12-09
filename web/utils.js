@@ -200,15 +200,8 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
                 return count;
             }, 0);
     cxn.dir = data[0];
-    if (node.size[0] == 10 &&
-        ["Left", "Right"].includes(side) &&
-        ["Top", "Bottom"].includes(otherSide)) {
-        side = otherSide === "Top" ? "Bottom" : "Top";
-    }
-    else if (node.size[1] == 10 &&
-        ["Top", "Bottom"].includes(side) &&
-        ["Left", "Right"].includes(otherSide)) {
-        side = otherSide === "Left" ? "Right" : "Left";
+    if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
+        cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1];
     }
     if (side === "Left") {
         if (node.flags.collapsed) {

@@ -401,11 +401,9 @@ export declare class LGraph {
     starttime: number;
     status: typeof LGraph.STATUS_RUNNING | typeof LGraph.STATUS_STOPPED;
 
-    // @rgthree, remove private; it's not really private b/c it's javascript.
-    _nodes: LGraphNode[];
+    private _nodes: LGraphNode[];
     // @rgthree, remove private; it's not really private b/c it's javascript.
     _groups: LGraphGroup[];
-
     private _nodes_by_id: Record<number, LGraphNode>;
     /** nodes that are executable sorted in execution order */
     private _nodes_executable:
@@ -647,6 +645,8 @@ export declare class LGraphNode {
     pos: Vector2;
     is_selected: boolean;
     mouseOver: boolean;
+    // @rgthree - missing.
+    block_delete: boolean;
 
     id: number;
 
@@ -1223,6 +1223,9 @@ export declare class LGraphCanvas {
     static onMenuNodeRemove: ContextMenuEventListener;
     static onMenuNodeClone: ContextMenuEventListener;
 
+    // @rgthree
+    static onShowPropertyEditor: ContextMenuEventListener;
+
     constructor(
         canvas: HTMLCanvasElement | string,
         graph?: LGraph,
@@ -1253,6 +1256,17 @@ export declare class LGraphCanvas {
     canvas_mouse: Vector2;
     clear_background: boolean;
     connecting_node: LGraphNode | null;
+    // @rgthree - for overriding.
+    _connecting_node: LGraphNode | null;
+    // @rgthree
+    connecting_input: INodeInputSlot | null;
+    // @rgthree
+    connecting_output: INodeOutputSlot | null;
+    // @rgthree
+    connecting_slot: number;
+    // @rgthree
+    connecting_pos: Vector2 | null;
+
     connections_width: number;
     ctx: CanvasRenderingContext2D;
     current_node: LGraphNode | null;
@@ -1546,7 +1560,9 @@ export declare class LGraphCanvas {
     convertOffsetToCanvas: DragAndScale["convertOffsetToCanvas"];
     convertCanvasToOffset: DragAndScale["convertCanvasToOffset"];
     /** converts event coordinates from canvas2D to graph coordinates */
-    convertEventToCanvasOffset(e: MouseEvent): Vector2;
+    // @rgthree - change MouseEvent to less restrictive {clientX: number, clientY: number} that
+    // implementation uses.
+    convertEventToCanvasOffset(e: {clientX: number, clientY: number}): Vector2;
     /** adds some useful properties to a mouse event, like the position in graph coordinates */
     adjustMouseEvent(e: MouseEvent): void;
 

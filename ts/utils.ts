@@ -21,6 +21,7 @@ import { api } from "../../scripts/api.js";
 import { Resolver, getResolver, wait } from "./shared_utils.js";
 import { RgthreeHelpDialog } from "./dialog.js";
 
+declare const LGraph: typeof TLGraph;
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -304,20 +305,12 @@ export function getConnectionPosForLayout(
       }, 0);
   // Set the direction first. This is how the connection line will be drawn.
   cxn.dir = data[0];
-  // If we are only 10px wide or tall, then put it one the end
-  if (
-    node.size[0] == 10 &&
-    ["Left", "Right"].includes(side) &&
-    ["Top", "Bottom"].includes(otherSide)
-  ) {
-    side = otherSide === "Top" ? "Bottom" : "Top";
-  } else if (
-    node.size[1] == 10 &&
-    ["Top", "Bottom"].includes(side) &&
-    ["Left", "Right"].includes(otherSide)
-  ) {
-    side = otherSide === "Left" ? "Right" : "Left";
+
+  // If we are only 10px tall or wide, then look at connections_dir for the direction.
+  if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
+    cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1]!;
   }
+
   if (side === "Left") {
     if (node.flags.collapsed) {
       var w = (node as any)._collapsed_width || LiteGraph.NODE_COLLAPSED_WIDTH;

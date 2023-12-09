@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
 import { wait } from "./shared_utils.js";
-import { waitForGraph } from "./utils.js";
+import { waitForCanvas, waitForGraph } from "./utils.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -146,16 +146,22 @@ class Rgthree extends EventTarget {
         var _a, _b, _c;
         return (_c = (_b = (_a = this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff) === null || _a === void 0 ? void 0 : _a.nodes) === null || _b === void 0 ? void 0 : _b.find((n) => n.id === node.id)) !== null && _c !== void 0 ? _c : null;
     }
-    async initializeGraphHooks() {
-        const graph = await waitForGraph();
+    async initializeGraphAndCanvasHooks() {
+        const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
         const onSerialize = graph.onSerialize;
         graph.onSerialize = (data) => {
             this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
             onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.apply(graph, data);
         };
+        const onGroupAdd = LGraphCanvas.onGroupAdd;
+        LGraphCanvas.onGroupAdd = function (...args) {
+            onGroupAdd.apply(canvas, [...args]);
+            LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
+        };
     }
     constructor() {
         super();
+        this.config = rgthreeConfig;
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
@@ -172,7 +178,7 @@ class Rgthree extends EventTarget {
         window.addEventListener("keyup", (e) => {
             this.handleKeyup(e);
         });
-        this.initializeGraphHooks();
+        this.initializeGraphAndCanvasHooks();
         const that = this;
         const queuePrompt = app.queuePrompt;
         app.queuePrompt = async function () {

@@ -42,10 +42,13 @@ export class Bookmark extends RgthreeBaseNode {
         }
     }
     canvasToBookmark() {
+        var _a;
         const canvas = app.canvas;
-        canvas.ds.offset[0] = -this.pos[0] + 16;
-        canvas.ds.offset[1] = -this.pos[1] + 40;
-        canvas.setDirty(true, true);
+        if ((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) {
+            canvas.ds.offset[0] = -this.pos[0] + 16;
+            canvas.ds.offset[1] = -this.pos[1] + 40;
+            canvas.setDirty(true, true);
+        }
     }
 }
 Bookmark.type = NodeTypesString.BOOKMARK;

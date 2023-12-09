@@ -1,11 +1,13 @@
-import type { LGraphNode, SerializedLGraphNode, serializedLGraph } from "litegraph.js";
+import { type LGraphCanvas as TLGraphCanvas, type LGraphNode, type SerializedLGraphNode, type serializedLGraph } from "litegraph.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "./link_fixer.js";
 import { wait } from "./shared_utils.js";
-import { waitForGraph } from "./utils.js";
+import { waitForCanvas, waitForGraph } from "./utils.js";
+
+declare const LGraphCanvas: typeof TLGraphCanvas;
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -92,6 +94,9 @@ export type RgthreeUiMessage = {
  * A global class as 'rgthree'; exposed on wiindow. Lots can go in here.
  */
 class Rgthree extends EventTarget {
+
+  readonly config = rgthreeConfig;
+
   /** Are any functional keys pressed in this given moment? */
   ctrlKey = false;
   altKey = false;
@@ -217,8 +222,9 @@ class Rgthree extends EventTarget {
   }
 
 
-  private async initializeGraphHooks() {
-    const graph = await waitForGraph();
+  private async initializeGraphAndCanvasHooks() {
+    const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
+
     const onSerialize = (graph as any).onSerialize;
     (graph as any).onSerialize = (data: any) => {
       // This sucks.. but to mitigate changes from https://github.com/rgthree/rgthree-comfy/issues/69
@@ -226,6 +232,13 @@ class Rgthree extends EventTarget {
       // node so out nodes can find the seralized node. What a way to work around...
       this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
       onSerialize?.apply(graph, data);
+    };
+
+    // Make it so when we add a group, we get to name it immediately.
+    const onGroupAdd = LGraphCanvas.onGroupAdd;
+    LGraphCanvas.onGroupAdd = function(...args: any[]) {
+      onGroupAdd.apply(canvas, [...args] as any);
+      LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
     }
   }
 
@@ -239,7 +252,7 @@ class Rgthree extends EventTarget {
       this.handleKeyup(e);
     });
 
-    this.initializeGraphHooks();
+    this.initializeGraphAndCanvasHooks();
 
     // Override the loadGraphData so we can check for bad links and ask the user to fix them.
     const that = this;
