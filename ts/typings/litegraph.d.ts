@@ -1283,7 +1283,11 @@ export declare class LGraphCanvas {
     drag_mode: boolean;
     dragging_canvas: boolean;
     dragging_rectangle: Vector4 | null;
-    ds: DragAndScale;
+    // @rgthree; mark undefined.
+    // It doesn't look like this should ever be undefined.. but something changed in Comfy and folks
+    // reported https://github.com/rgthree/rgthree-comfy/issues/71. I couldn't reproduce, but we can
+    // handle it.
+    ds?: DragAndScale;
     /** used for transition */
     editor_alpha: number;
     filter: any;

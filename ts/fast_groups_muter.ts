@@ -212,6 +212,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
   }
 
   refreshWidgets() {
+    const canvas = app.canvas as TLGraphCanvas;
     let sort = this.properties?.[PROPERTY_SORT] || "position";
     let customAlphabet: string[] | null = null;
     if (sort === "custom alphabet") {
@@ -322,6 +323,8 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             posY: number,
             height: number,
           ) {
+            const lowQuality = (canvas.ds?.scale || 1) < 0.5;
+
             let margin = 15;
             let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
             let background_color = LiteGraph.WIDGET_BGCOLOR;
@@ -333,16 +336,18 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             ctx.strokeStyle = outline_color;
             ctx.fillStyle = background_color;
             ctx.beginPath();
-            ctx.roundRect(margin, posY, width - margin * 2, height, [height * 0.5]);
+            ctx.roundRect(margin, posY, width - margin * 2, height, lowQuality ? [0] : [height * 0.5]);
             ctx.fill();
-            ctx.stroke();
+            if (!lowQuality) {
+              ctx.stroke();
+            }
 
             // Render from right to left, since the text on left will take available space.
             // `currentX` markes the current x position moving backwards.
             let currentX = width - margin;
 
             // The nav arrow
-            if (showNav) {
+            if (!lowQuality && showNav) {
               currentX -= 7; // Arrow space margin
               const midY = posY + height * 0.5;
               ctx.fillStyle = ctx.strokeStyle = "#89A";
@@ -356,6 +361,8 @@ export class FastGroupsMuter extends RgthreeBaseNode {
               currentX -= 7;
               ctx.strokeStyle = outline_color;
               ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
+            } else if (lowQuality && showNav) {
+              currentX -= 28;
             }
 
             // The toggle itself.
@@ -367,27 +374,29 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             ctx.fill();
             currentX -= toggleRadius * 2;
 
-            currentX -= 4;
-            ctx.textAlign = "right";
-            ctx.fillStyle = this.value ? text_color : secondary_text_color;
-            const label = this.label || this.name;
-            const toggleLabelOn = this.options.on || "true";
-            const toggleLabelOff = this.options.off || "false";
-            ctx.fillText(
-              this.value ? toggleLabelOn : toggleLabelOff,
-              currentX,
-              posY + height * 0.7,
-            );
-            currentX -= Math.max(
-              ctx.measureText(toggleLabelOn).width,
-              ctx.measureText(toggleLabelOff).width,
-            );
+            if (!lowQuality) {
+              currentX -= 4;
+              ctx.textAlign = "right";
+              ctx.fillStyle = this.value ? text_color : secondary_text_color;
+              const label = this.label || this.name;
+              const toggleLabelOn = this.options.on || "true";
+              const toggleLabelOff = this.options.off || "false";
+              ctx.fillText(
+                this.value ? toggleLabelOn : toggleLabelOff,
+                currentX,
+                posY + height * 0.7,
+              );
+              currentX -= Math.max(
+                ctx.measureText(toggleLabelOn).width,
+                ctx.measureText(toggleLabelOff).width,
+              );
 
-            currentX -= 7;
-            ctx.textAlign = "left";
-            let maxLabelWidth = width - margin - 10 - (width - currentX);
-            if (label != null) {
-              ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+              currentX -= 7;
+              ctx.textAlign = "left";
+              let maxLabelWidth = width - margin - 10 - (width - currentX);
+              if (label != null) {
+                ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+              }
             }
           },
           serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number) {
@@ -399,8 +408,11 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 node.properties?.[PROPERTY_SHOW_NAV] !== false &&
                 pos[0] >= node.size[0] - 15 - 28 - 1
               ) {
-                // Clicked on right half with nav arrow, go to the group.
-                app.canvas.centerOnNode(group);
+                const lowQuality = (canvas.ds?.scale || 1) < 0.5;
+                if (!lowQuality) {
+                  // Clicked on right half with nav arrow, go to the group.
+                  app.canvas.centerOnNode(group);
+                }
               } else {
                 this.value = !this.value;
                 setTimeout(() => {

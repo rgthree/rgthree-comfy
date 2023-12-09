@@ -142,6 +142,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     }
     refreshWidgets() {
         var _a, _b, _c, _d, _e, _f, _g;
+        const canvas = app.canvas;
         let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
         let customAlphabet = null;
         if (sort === "custom alphabet") {
@@ -235,21 +236,24 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                     disabled: false,
                     options: { on: "yes", off: "no" },
                     draw: function (ctx, node, width, posY, height) {
-                        var _a;
+                        var _a, _b;
+                        const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) < 0.5;
                         let margin = 15;
                         let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
                         let background_color = LiteGraph.WIDGET_BGCOLOR;
                         let text_color = LiteGraph.WIDGET_TEXT_COLOR;
                         let secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
-                        const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
+                        const showNav = ((_b = node.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_SHOW_NAV]) !== false;
                         ctx.strokeStyle = outline_color;
                         ctx.fillStyle = background_color;
                         ctx.beginPath();
-                        ctx.roundRect(margin, posY, width - margin * 2, height, [height * 0.5]);
+                        ctx.roundRect(margin, posY, width - margin * 2, height, lowQuality ? [0] : [height * 0.5]);
                         ctx.fill();
-                        ctx.stroke();
+                        if (!lowQuality) {
+                            ctx.stroke();
+                        }
                         let currentX = width - margin;
-                        if (showNav) {
+                        if (!lowQuality && showNav) {
                             currentX -= 7;
                             const midY = posY + height * 0.5;
                             ctx.fillStyle = ctx.strokeStyle = "#89A";
@@ -263,6 +267,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                             ctx.strokeStyle = outline_color;
                             ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
                         }
+                        else if (lowQuality && showNav) {
+                            currentX -= 28;
+                        }
                         currentX -= 7;
                         ctx.fillStyle = this.value ? "#89A" : "#333";
                         ctx.beginPath();
@@ -270,30 +277,35 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
                         ctx.fill();
                         currentX -= toggleRadius * 2;
-                        currentX -= 4;
-                        ctx.textAlign = "right";
-                        ctx.fillStyle = this.value ? text_color : secondary_text_color;
-                        const label = this.label || this.name;
-                        const toggleLabelOn = this.options.on || "true";
-                        const toggleLabelOff = this.options.off || "false";
-                        ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
-                        currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
-                        currentX -= 7;
-                        ctx.textAlign = "left";
-                        let maxLabelWidth = width - margin - 10 - (width - currentX);
-                        if (label != null) {
-                            ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+                        if (!lowQuality) {
+                            currentX -= 4;
+                            ctx.textAlign = "right";
+                            ctx.fillStyle = this.value ? text_color : secondary_text_color;
+                            const label = this.label || this.name;
+                            const toggleLabelOn = this.options.on || "true";
+                            const toggleLabelOff = this.options.off || "false";
+                            ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
+                            currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
+                            currentX -= 7;
+                            ctx.textAlign = "left";
+                            let maxLabelWidth = width - margin - 10 - (width - currentX);
+                            if (label != null) {
+                                ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+                            }
                         }
                     },
                     serializeValue(serializedNode, widgetIndex) {
                         return this.value;
                     },
                     mouse(event, pos, node) {
-                        var _a;
+                        var _a, _b;
                         if (event.type == "pointerdown") {
                             if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false &&
                                 pos[0] >= node.size[0] - 15 - 28 - 1) {
-                                app.canvas.centerOnNode(group);
+                                const lowQuality = (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1) < 0.5;
+                                if (!lowQuality) {
+                                    app.canvas.centerOnNode(group);
+                                }
                             }
                             else {
                                 this.value = !this.value;
