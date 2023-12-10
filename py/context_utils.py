@@ -85,7 +85,7 @@ def merge_new_context(ctx_01, ctx_02, ctx_03, ctx_04, ctx_05):
     if key == "base_ctx":
       continue
     v = None
-    for ctx in [ctx_01, ctx_02, ctx_03, ctx_04, ctx_05]:
+    for ctx in [ctx_05, ctx_04, ctx_03, ctx_02, ctx_01]:
       v = ctx[key] if ctx is not None and key in ctx else None
       if v is not None:
         break
