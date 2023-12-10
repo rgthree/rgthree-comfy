@@ -7,6 +7,9 @@ import {
   type LGraph as TLGraph,
   type LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
+  ISliderWidget,
+  INumberWidget,
+  Vector2,
 } from "./typings/litegraph.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -20,6 +23,10 @@ export class Bookmark extends RgthreeBaseNode {
 
   static override type = NodeTypesString.BOOKMARK;
   static override title = "🔖";
+
+  // Really silly, but Litegraph assumes we have at least one input/output... so we need to
+  // counteract it's computeSize calculation by offsetting the start.
+  static slot_start_y = -20;
 
   // LiteGraph adds mroe spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
   // override it with a setter and re-set it measured exactly as we want.
@@ -48,9 +55,25 @@ export class Bookmark extends RgthreeBaseNode {
     super(title);
     this.addWidget('text', 'shortcut_key', '1', (value: string, ...args) => {
       value = value.trim()[0] || '1';
+    },{
+      y: 8,
+    });
+    this.addWidget<INumberWidget>('number', 'zoom', 1, (value: number) => {
+
+    }, {
+      y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
+      max: 2,
+      min: 0.5,
+      precision: 2,
     });
     this.keypressBound = this.onKeypress.bind(this);
   }
+
+  // override computeSize(out?: Vector2 | undefined): Vector2 {
+  //   super.computeSize(out);
+  //   const minHeight = (this.widgets?.length || 0) * (LiteGraph.NODE_WIDGET_HEIGHT + 4) + 16;
+  //   this.size[1] = Math.max(minHeight, this.size[1]);
+  // }
 
 
   static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
@@ -83,8 +106,11 @@ export class Bookmark extends RgthreeBaseNode {
     if (canvas?.ds?.offset) {
       canvas.ds.offset[0] = -this.pos[0]  + 16;
       canvas.ds.offset[1] = -this.pos[1]  + 40;
-      canvas.setDirty(true, true);
     }
+    if (canvas?.ds?.scale != null) {
+      canvas.ds.scale = Number(this.widgets[1]!.value || 1);
+    }
+    canvas.setDirty(true, true);
   }
 }
 

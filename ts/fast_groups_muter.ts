@@ -323,7 +323,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             posY: number,
             height: number,
           ) {
-            const lowQuality = (canvas.ds?.scale || 1) < 0.5;
+            const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
 
             let margin = 15;
             let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
@@ -408,7 +408,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 node.properties?.[PROPERTY_SHOW_NAV] !== false &&
                 pos[0] >= node.size[0] - 15 - 28 - 1
               ) {
-                const lowQuality = (canvas.ds?.scale || 1) < 0.5;
+                const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
                 if (!lowQuality) {
                   // Clicked on right half with nav arrow, go to the group.
                   app.canvas.centerOnNode(group);

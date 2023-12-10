@@ -66,6 +66,40 @@ export type WidgetComboCallback<T extends IWidget = IWidget> = (
     event?: MouseEvent
 ) => void;
 
+// @rgthree
+export type IWidgetOptions = {
+    y?: number; // ?
+    property?: string;
+    serialize?: boolean; // ComfyUI in app.js
+    forceInput?: boolean; // ComfyUI in app.js
+    defaultInput?: boolean; // ComfyUI in app.js
+}
+
+// @rgthree
+export type IWidgetToggleOptions = IWidgetOptions & {
+    on?: string;
+    off?: string;
+}
+
+// @rgthree
+export type IWidgetNumberOptions = IWidgetOptions & {
+    precision?: number;
+    max?: number;
+    min?: number;
+}
+
+// @rgthree
+export type IWidgetSliderOptions = IWidgetNumberOptions & {
+    slider_color?: string;
+    marker_color?: string;
+}
+
+
+// @rgthree
+export type IWidgetComboOptions = IWidgetOptions & {
+    values?: string[] | ((widget: IComboWidget, node: LGraphNode) => string[]);
+}
+
 export interface IWidget<TValue = any, TOptions = any> {
     name: string | null;
     // @rgthree
@@ -104,26 +138,20 @@ export interface IWidget<TValue = any, TOptions = any> {
 export interface IButtonWidget extends IWidget<null, {}> {
     type: "button";
 }
-export interface IToggleWidget
-    extends IWidget<boolean, { on?: string; off?: string }> {
+// @rgthree: adding options
+export interface IToggleWidget extends IWidget<boolean, IWidgetToggleOptions> {
     type: "toggle";
 }
-export interface ISliderWidget
-    extends IWidget<number, { max: number; min: number }> {
+// @rgthree: adding options
+export interface ISliderWidget extends IWidget<number, IWidgetSliderOptions> {
     type: "slider";
 }
-export interface INumberWidget extends IWidget<number, { precision: number }> {
+// @rgthree: adding options
+export interface INumberWidget extends IWidget<number, IWidgetNumberOptions> {
     type: "number";
 }
-export interface IComboWidget
-    extends IWidget<
-        string[],
-        {
-            values:
-                | string[]
-                | ((widget: IComboWidget, node: LGraphNode) => string[]);
-        } | TOptions
-    > {
+// @rgthree: adding options
+export interface IComboWidget extends IWidget<string[], IWidgetComboOptions> {
     value: T[0];
     type: "combo";
     callback?: WidgetComboCallback;

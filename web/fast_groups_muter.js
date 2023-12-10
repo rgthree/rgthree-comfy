@@ -237,7 +237,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                     options: { on: "yes", off: "no" },
                     draw: function (ctx, node, width, posY, height) {
                         var _a, _b;
-                        const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) < 0.5;
+                        const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) <= 0.5;
                         let margin = 15;
                         let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
                         let background_color = LiteGraph.WIDGET_BGCOLOR;
@@ -302,7 +302,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         if (event.type == "pointerdown") {
                             if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false &&
                                 pos[0] >= node.size[0] - 15 - 28 - 1) {
-                                const lowQuality = (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1) < 0.5;
+                                const lowQuality = (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1) <= 0.5;
                                 if (!lowQuality) {
                                     app.canvas.centerOnNode(group);
                                 }

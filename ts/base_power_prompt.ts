@@ -175,7 +175,7 @@ export class PowerPrompt {
                 return size;
               };
             }
-            this.combos[key]!.options.values = values;
+            this.combos[key]!.options!.values = values;
             this.combos[key]!.value = values[0];
           } else if (!shouldShow && this.combos[key]) {
             this.node.widgets.splice(this.node.widgets.indexOf(this.combos[key]!), 1);

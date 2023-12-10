@@ -20,6 +20,15 @@ export class Bookmark extends RgthreeBaseNode {
         this.serialize_widgets = true;
         this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
             value = value.trim()[0] || '1';
+        }, {
+            y: 8,
+        });
+        this.addWidget('number', 'zoom', 1, (value) => {
+        }, {
+            y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
+            max: 2,
+            min: 0.5,
+            precision: 2,
         });
         this.keypressBound = this.onKeypress.bind(this);
     }
@@ -43,17 +52,21 @@ export class Bookmark extends RgthreeBaseNode {
         }
     }
     canvasToBookmark() {
-        var _a;
+        var _a, _b;
         const canvas = app.canvas;
         if ((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) {
             canvas.ds.offset[0] = -this.pos[0] + 16;
             canvas.ds.offset[1] = -this.pos[1] + 40;
-            canvas.setDirty(true, true);
         }
+        if (((_b = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) != null) {
+            canvas.ds.scale = Number(this.widgets[1].value || 1);
+        }
+        canvas.setDirty(true, true);
     }
 }
 Bookmark.type = NodeTypesString.BOOKMARK;
 Bookmark.title = "🔖";
+Bookmark.slot_start_y = -20;
 app.registerExtension({
     name: "rgthree.Bookmark",
     registerCustomNodes() {
