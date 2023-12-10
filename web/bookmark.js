@@ -17,6 +17,7 @@ export class Bookmark extends RgthreeBaseNode {
         super(title);
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
+        this.serialize_widgets = true;
         this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
             value = value.trim()[0] || '1';
         });

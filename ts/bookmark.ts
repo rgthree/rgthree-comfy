@@ -26,6 +26,7 @@ export class Bookmark extends RgthreeBaseNode {
   ___collapsed_width: number = 0;
 
   override isVirtualNode = true;
+  override serialize_widgets = true;
 
   //@ts-ignore - TS Doesn't like us overriding a property with accessors but, too bad.
   override get _collapsed_width() {
