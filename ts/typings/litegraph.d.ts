@@ -1462,7 +1462,8 @@ export declare class LGraphCanvas {
     /** process a key event */
     processKey(e: KeyboardEvent): boolean | undefined;
 
-    copyToClipboard(): void;
+    // @rgthree - added param
+    copyToClipboard(nodes: LGraphNode[]|{[key:number]:LGraphNode}): void;
     pasteFromClipboard(): void;
     processDrop(e: DragEvent): void;
     checkDropItem(e: DragEvent): void;

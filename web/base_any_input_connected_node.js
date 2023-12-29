@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
+import { rgthree } from "./rgthree.js";
 import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs } from "./utils.js";
 export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     constructor(title = BaseAnyInputConnectedNode.title) {
@@ -24,11 +25,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
     }
     clone() {
         const cloned = super.clone();
-        while (cloned.inputs.length > 1) {
-            cloned.removeInput(cloned.inputs.length - 1);
-        }
-        if (cloned.inputs[0]) {
-            cloned.inputs[0].label = '';
+        if (!rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes) {
+            while (cloned.inputs.length > 1) {
+                cloned.removeInput(cloned.inputs.length - 1);
+            }
+            if (cloned.inputs[0]) {
+                cloned.inputs[0].label = '';
+            }
         }
         return cloned;
     }

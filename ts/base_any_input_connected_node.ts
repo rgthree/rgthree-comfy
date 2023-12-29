@@ -2,7 +2,8 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
-import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from './typings/litegraph.js';
+import {rgthree} from "./rgthree.js"
+import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from './typings/litegraph.js';
 import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, filterOutPassthroughNodes, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -46,11 +47,17 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 
   override clone() {
     const cloned = super.clone();
-    while (cloned.inputs.length > 1) {
-      cloned.removeInput(cloned.inputs.length - 1);
-    }
-    if (cloned.inputs[0]) {
-      cloned.inputs[0].label = '';
+    // Copying to clipboard (and also, creating node templates) work by cloning nodes and, for some
+    // reason, it manually manipulates the cloned data. So, we want to keep the present input slots
+    // so if it's pasted/templatized the data is correct. Otherwise, clear the inputs and so the new
+    // node is ready to go, fresh.
+    if (!rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes) {
+      while (cloned.inputs.length > 1) {
+        cloned.removeInput(cloned.inputs.length - 1);
+      }
+      if (cloned.inputs[0]) {
+        cloned.inputs[0].label = '';
+      }
     }
     return cloned;
   }
