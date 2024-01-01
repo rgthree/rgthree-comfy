@@ -6,54 +6,101 @@ import { addConnectionLayoutSupport } from "./utils.js";
 export class RgthreeImageComparer extends RgthreeBaseServerNode {
     constructor(title = RgthreeImageComparer.title) {
         super(title);
+        this.imageIndex = 0;
         this.imgs = [];
-        this.images = [];
+        this.serialize_widgets = true;
         this.isPointerDown = false;
+        this.isPointerOver = false;
+        this.pointerOverPos = [0, 0];
+        this.canvasWidget = null;
+        this.properties['comparer_mode'] = 'Slide';
     }
     onExecuted(output) {
         var _a;
         (_a = super.onExecuted) === null || _a === void 0 ? void 0 : _a.call(this, output);
-        console.log(app.nodePreviewImages);
-        console.log(app.nodePreviewImages[this.id]);
-        this.imgs = output.images || [];
-        this.images = [];
-        for (const imgData of this.imgs) {
-            let img = new Image();
-            img.src = api.apiURL(`/view?filename=${encodeURIComponent(imgData.filename)}&type=${imgData.type}&subfolder=${imgData.subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`);
-            this.images.push(img);
+        this.canvasWidget.value = (output.images || []).map((d) => api.apiURL(`/view?filename=${encodeURIComponent(d.filename)}&type=${d.type}&subfolder=${d.subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`));
+    }
+    drawWidgetImage(ctx, image, y, cropX) {
+        if (!(image === null || image === void 0 ? void 0 : image.naturalWidth) || !(image === null || image === void 0 ? void 0 : image.naturalHeight)) {
+            return;
+        }
+        let [nodeWidth, nodeHeight] = this.size;
+        const imageAspect = image.naturalWidth / image.naturalHeight;
+        let height = nodeHeight - y;
+        const widgetAspect = nodeWidth / height;
+        let targetWidth, targetHeight;
+        let offsetX = 0;
+        if (imageAspect > widgetAspect) {
+            targetWidth = nodeWidth;
+            targetHeight = nodeWidth / imageAspect;
+        }
+        else {
+            targetHeight = height;
+            targetWidth = height * imageAspect;
+            offsetX = (nodeWidth - targetWidth) / 2;
+        }
+        const widthMultiplier = image.naturalWidth / targetWidth;
+        const sourceX = 0;
+        const sourceY = 0;
+        const sourceWidth = cropX != null ? (cropX - offsetX) * widthMultiplier : image.naturalWidth;
+        const sourceHeight = image.naturalHeight;
+        const destX = (nodeWidth - targetWidth) / 2;
+        const destY = y + (height - targetHeight) / 2;
+        const destWidth = cropX != null ? (cropX - offsetX) : targetWidth;
+        const destHeight = targetHeight;
+        ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+        if (cropX != null
+            && cropX >= (nodeWidth - targetWidth) / 2
+            && cropX <= targetWidth + offsetX) {
+            let globalCompositeOperation = ctx.globalCompositeOperation;
+            ctx.globalCompositeOperation = "difference";
+            ctx.moveTo(cropX, destY);
+            ctx.lineTo(cropX, destY + destHeight);
+            ctx.strokeStyle = 'rgba(255,255,255, 1)';
+            ctx.stroke();
+            ctx.globalCompositeOperation = globalCompositeOperation;
         }
     }
     onNodeCreated() {
+        const node = this;
         const widget = {
             type: "RGTHREE_CANVAS_COMPARER",
             name: "CANVAS_COMPARER",
             options: { serialize: false },
-            value: null,
-            draw(ctx, node, width, y) {
-                let [nodeWidth, nodeHeight] = node.size;
-                const image = node.isPointerDown ? node.images[1] : node.images[0];
-                if (!(image === null || image === void 0 ? void 0 : image.naturalWidth) || !(image === null || image === void 0 ? void 0 : image.naturalHeight)) {
-                    return;
+            _value: [],
+            set value(v) {
+                this._value = v;
+                node.imgs = [];
+                if (v && v.length) {
+                    for (let i = 0; i < 2; i++) {
+                        let img = new Image();
+                        img.src = v[i];
+                        node.imgs.push(img);
+                    }
                 }
-                const imageAspect = image.width / image.height;
-                let height = nodeHeight - y;
-                const widgetAspect = width / height;
-                let targetWidth, targetHeight;
-                if (imageAspect > widgetAspect) {
-                    targetWidth = width;
-                    targetHeight = width / imageAspect;
+            },
+            get value() {
+                return this._value;
+            },
+            draw(ctx, node, width, y) {
+                var _a;
+                let [nodeWidth, nodeHeight] = node.size;
+                if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a['comparer_mode']) === 'Click') {
+                    const image = node.isPointerDown ? node.imgs[1] : node.imgs[0];
+                    node.drawWidgetImage(ctx, image, y);
                 }
                 else {
-                    targetHeight = height;
-                    targetWidth = height * imageAspect;
+                    node.drawWidgetImage(ctx, node.imgs[0], y);
+                    if (node.isPointerOver) {
+                        node.drawWidgetImage(ctx, node.imgs[1], y, node.pointerOverPos[0]);
+                    }
                 }
-                ctx.drawImage(image, (width - targetWidth) / 2, y + (height - targetHeight) / 2, targetWidth, targetHeight);
             },
             computeSize(...args) {
                 return [128, 128];
             },
         };
-        this.addCustomWidget(widget);
+        this.canvasWidget = this.addCustomWidget(widget);
     }
     setIsPointerDown(down = this.isPointerDown) {
         const newIsDown = down && !!app.canvas.pointer_is_down;
@@ -61,6 +108,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             this.isPointerDown = newIsDown;
             this.setDirtyCanvas(true, false);
         }
+        this.imageIndex = this.isPointerDown ? 1 : 0;
         if (this.isPointerDown) {
             requestAnimationFrame(() => {
                 this.setIsPointerDown();
@@ -70,17 +118,24 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     onMouseDown(event, pos, graphCanvas) {
         var _a;
         (_a = super.onMouseDown) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
-        this.setIsPointerDown();
+        this.setIsPointerDown(true);
     }
     onMouseEnter(event, pos, graphCanvas) {
         var _a;
         (_a = super.onMouseEnter) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
         this.setIsPointerDown(!!app.canvas.pointer_is_down);
+        this.isPointerOver = true;
     }
     onMouseLeave(event, pos, graphCanvas) {
         var _a;
         (_a = super.onMouseLeave) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
         this.setIsPointerDown(false);
+        this.isPointerOver = false;
+    }
+    onMouseMove(event, pos, graphCanvas) {
+        var _a;
+        (_a = super.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
+        this.pointerOverPos = [...pos];
     }
     static setUp(comfyClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeImageComparer);
@@ -92,18 +147,29 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             RgthreeImageComparer.category = comfyClass.category;
         });
     }
+    getExtraMenuOptions(canvas, options) {
+        var _a, _b;
+        (_b = (_a = PreviewImageNodeForHacking === null || PreviewImageNodeForHacking === void 0 ? void 0 : PreviewImageNodeForHacking.prototype) === null || _a === void 0 ? void 0 : _a.getExtraMenuOptions) === null || _b === void 0 ? void 0 : _b.apply(this, [canvas, options]);
+    }
 }
 RgthreeImageComparer.title = NodeTypesString.IMAGE_COMPARER;
 RgthreeImageComparer.type = NodeTypesString.IMAGE_COMPARER;
 RgthreeImageComparer.comfyClass = NodeTypesString.IMAGE_COMPARER;
+RgthreeImageComparer["@comparer_mode"] = {
+    type: "combo",
+    values: ["Slide", "Click"],
+};
+let PreviewImageNodeForHacking;
 app.registerExtension({
     name: "rgthree.ImageComparer",
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name === RgthreeImageComparer.type) {
-            console.log("beforeRegisterNodeDef", nodeType, nodeData);
             RgthreeImageComparer.nodeType = nodeType;
             RgthreeImageComparer.nodeData = nodeData;
             RgthreeImageComparer.setUp(nodeType);
+        }
+        if (nodeData.name === 'PreviewImage') {
+            PreviewImageNodeForHacking = nodeType;
         }
     },
 });
