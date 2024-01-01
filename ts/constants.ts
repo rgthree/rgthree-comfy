@@ -19,4 +19,5 @@ export const NodeTypesString = {
   REROUTE: addRgthree('Reroute'),
   RANDOM_UNMUTER: addRgthree('Random Unmuter'),
   BOOKMARK: addRgthree('Bookmark'),
+  IMAGE_COMPARER: addRgthree('Image Comparer'),
 }

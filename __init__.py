@@ -33,6 +33,7 @@ from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
 from .py.any_switch import RgthreeAnySwitch
 from .py.context_merge import RgthreeContextMerge
 from .py.context_merge_big import RgthreeContextMergeBig
+from .py.image_comparer import RgthreeImageComparer
 
 NODE_CLASS_MAPPINGS = {
   RgthreeBigContext.NAME: RgthreeBigContext,
@@ -53,6 +54,7 @@ NODE_CLASS_MAPPINGS = {
   RgthreeAnySwitch.NAME: RgthreeAnySwitch,
   RgthreeContextMerge.NAME: RgthreeContextMerge,
   RgthreeContextMergeBig.NAME: RgthreeContextMergeBig,
+  RgthreeImageComparer.NAME: RgthreeImageComparer,
 }
 
 

@@ -133,7 +133,8 @@ export interface IWidget<TValue = any, TOptions = any> {
     ): boolean;
     /** Called by `LGraphNode.computeSize` */
     computeSize?(width: number): [number, number];
-    serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number): TValue;
+    // @rgthree - make optional, since it is in the code.
+    serializeValue?(serializedNode: SerializedLGraphNode, widgetIndex: number): TValue;
 }
 export interface IButtonWidget extends IWidget<null, {}> {
     type: "button";
