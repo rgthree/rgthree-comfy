@@ -137,6 +137,29 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         (_a = super.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
         this.pointerOverPos = [...pos];
     }
+    getHelp() {
+        return `
+      <p>
+        The ${this.type.replace("(rgthree)", "")} node compares two images on top of each other.
+        Two images must be provided, either using both the <code>image_a</code> and
+        <code>image_b</code> inputs, or using the first two images in a <code>image_a</code> batch.
+        Note, only two images can be compared; if the inputs contain multiple batches, only the
+        first image of each batch will be shown.
+      </p>
+      <ul>
+        <li>
+          <p>
+            <strong>Properties.</strong> You can change the following properties (by right-clicking
+            on the node, and select "Properties" or "Properties Panel" from the menu):
+          </p>
+          <ul>
+            <li><p>
+              <code>comparer_mode</code> - Choose between "Slide" and "Click". Defaults to "Slide".
+            </p></li>
+          </ul>
+        </li>
+      </ul>`;
+    }
     static setUp(comfyClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeImageComparer);
         addConnectionLayoutSupport(RgthreeBaseServerNode, app, [
@@ -147,10 +170,6 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             RgthreeImageComparer.category = comfyClass.category;
         });
     }
-    getExtraMenuOptions(canvas, options) {
-        var _a, _b;
-        (_b = (_a = PreviewImageNodeForHacking === null || PreviewImageNodeForHacking === void 0 ? void 0 : PreviewImageNodeForHacking.prototype) === null || _a === void 0 ? void 0 : _a.getExtraMenuOptions) === null || _b === void 0 ? void 0 : _b.apply(this, [canvas, options]);
-    }
 }
 RgthreeImageComparer.title = NodeTypesString.IMAGE_COMPARER;
 RgthreeImageComparer.type = NodeTypesString.IMAGE_COMPARER;
@@ -159,7 +178,6 @@ RgthreeImageComparer["@comparer_mode"] = {
     type: "combo",
     values: ["Slide", "Click"],
 };
-let PreviewImageNodeForHacking;
 app.registerExtension({
     name: "rgthree.ImageComparer",
     async beforeRegisterNodeDef(nodeType, nodeData) {
@@ -167,9 +185,6 @@ app.registerExtension({
             RgthreeImageComparer.nodeType = nodeType;
             RgthreeImageComparer.nodeData = nodeData;
             RgthreeImageComparer.setUp(nodeType);
-        }
-        if (nodeData.name === 'PreviewImage') {
-            PreviewImageNodeForHacking = nodeType;
         }
     },
 });

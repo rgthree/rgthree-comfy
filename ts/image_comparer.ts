@@ -42,27 +42,13 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
 
   override onExecuted(output: any) {
     super.onExecuted?.(output);
-    // this.imgs = [];
-    // for (const imgData of output.images || []) {
-    //   let img = new Image();
-    //   img.src = api.apiURL(
-    //     `/view?filename=${encodeURIComponent(imgData.filename)}&type=${imgData.type}&subfolder=${
-    //       imgData.subfolder
-    //     }${app.getPreviewFormatParam()}${app.getRandParam()}`,
-    //   );
-    //   this.imgs.push(img);
-    // }
+    // Set the widget, it will then set the `node.imgs` property for us.
     this.canvasWidget!.value = (output.images || []).map((d: any) => api.apiURL(
       `/view?filename=${encodeURIComponent(d.filename)}&type=${d.type}&subfolder=${
         d.subfolder
       }${app.getPreviewFormatParam()}${app.getRandParam()}`,
     ));
   }
-
-  // override configure(info: SerializedLGraphNode<LGraphNode>): void {
-  //   console.log('configure', info)
-  //   super.configure?.(info);
-  // }
 
   private drawWidgetImage(ctx: CanvasRenderingContext2D, image: InstanceType<typeof Image>|undefined, y: number, cropX?: number) {
     if (!image?.naturalWidth || !image?.naturalHeight) {
@@ -202,6 +188,30 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     this.pointerOverPos = [...pos];
   }
 
+  override getHelp(): string {
+    return `
+      <p>
+        The ${this.type!.replace("(rgthree)", "",)} node compares two images on top of each other.
+        Two images must be provided, either using both the <code>image_a</code> and
+        <code>image_b</code> inputs, or using the first two images in a <code>image_a</code> batch.
+        Note, only two images can be compared; if the inputs contain multiple batches, only the
+        first image of each batch will be shown.
+      </p>
+      <ul>
+        <li>
+          <p>
+            <strong>Properties.</strong> You can change the following properties (by right-clicking
+            on the node, and select "Properties" or "Properties Panel" from the menu):
+          </p>
+          <ul>
+            <li><p>
+              <code>comparer_mode</code> - Choose between "Slide" and "Click". Defaults to "Slide".
+            </p></li>
+          </ul>
+        </li>
+      </ul>`;
+  }
+
   static override setUp(comfyClass: any) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeImageComparer);
     addConnectionLayoutSupport(RgthreeBaseServerNode, app, [
@@ -212,18 +222,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
       RgthreeImageComparer.category = comfyClass.category;
     });
   }
-
-  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
-    PreviewImageNodeForHacking?.prototype?.getExtraMenuOptions?.apply(this, [canvas, options]);
-  }
-
 }
-
-// Set a reference to the native PreviewImage node so we can use its `getExtraMenuOptions` method
-// off its prototype (ComfyUI doesn't expose the method to set it up, so we can't hook in natively).
-// This may not be super beneficial, since it's likely that it will always be options for the first
-// image, but, that's ok.
-let PreviewImageNodeForHacking: any;
 
 app.registerExtension({
   name: "rgthree.ImageComparer",
@@ -232,9 +231,6 @@ app.registerExtension({
       RgthreeImageComparer.nodeType = nodeType;
       RgthreeImageComparer.nodeData = nodeData;
       RgthreeImageComparer.setUp(nodeType as any);
-    }
-    if (nodeData.name === 'PreviewImage') {
-      PreviewImageNodeForHacking = nodeType;
     }
   },
 });
