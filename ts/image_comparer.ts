@@ -186,6 +186,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
   override onMouseMove(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
     super.onMouseMove?.(event, pos, graphCanvas);
     this.pointerOverPos = [...pos];
+    this.imageIndex = this.pointerOverPos[0] > (this.size[0] / 2) ? 1 : 0;
   }
 
   override getHelp(): string {
