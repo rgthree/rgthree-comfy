@@ -21,9 +21,9 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   readonly modeOn: number = -1;
   readonly modeOff: number = -1;
 
-  static "@restriction" = {
+  static "@toggleRestriction" = {
     type: "combo",
-    values: ["None", "Max one", "Always one"],
+    values: ["default", "max one", "always one"],
   };
 
   private stabilizedWidgetStates: boolean[] = [];
@@ -32,7 +32,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     super(title);
 
     this.properties = this.properties || {};
-    this.properties['restriction'] = 'None';
+    this.properties['toggleRestriction'] = 'default';
 
     wait(10).then(() => {
       if (this.modeOn < 0 || this.modeOff < 0) {
@@ -43,7 +43,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   }
 
   override handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
-    let restictToOne = this.properties?.['restriction']?.includes(' one');
+    let restictToOne = this.properties?.['toggleRestriction']?.includes(' one');
     let oneIsOn = false;
     console.log(this.stabilizedWidgetStates.join(', '), ' | ', this.widgets?.map(w => w.value).join(', '))
     if (restictToOne && this.stabilizedWidgetStates.length) {
@@ -72,7 +72,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
       this.widgets.length = linkedNodes.length
     }
     // If we always need one, and none are on, then make the first one on.
-    if (this.properties?.['restriction'] === 'Always one' && !oneIsOn) {
+    if (this.properties?.['toggleRestriction'] === 'always one' && !oneIsOn) {
       (this.widgets[0] as any).doModeChange(true, true);
     }
   }
@@ -91,11 +91,11 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     (widget as any).doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
       let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
       if (skipOtherNodeCheck !== true) {
-        if (newValue && this.properties?.['restriction']?.includes(' one')) {
+        if (newValue && this.properties?.['toggleRestriction']?.includes(' one')) {
           for (const widget of this.widgets) {
             (widget as any).doModeChange(false, true);
           }
-        } else if (!newValue && this.properties?.['restriction'] === 'Always one') {
+        } else if (!newValue && this.properties?.['toggleRestriction'] === 'always one') {
           newValue = true;
         }
       }

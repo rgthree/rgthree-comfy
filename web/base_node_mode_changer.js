@@ -10,7 +10,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         this.modeOff = -1;
         this.stabilizedWidgetStates = [];
         this.properties = this.properties || {};
-        this.properties['restriction'] = 'None';
+        this.properties['toggleRestriction'] = 'default';
         wait(10).then(() => {
             if (this.modeOn < 0 || this.modeOff < 0) {
                 throw new Error('modeOn and modeOff must be overridden.');
@@ -20,7 +20,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     }
     handleLinkedNodesStabilization(linkedNodes) {
         var _a, _b, _c, _d;
-        let restictToOne = (_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a['restriction']) === null || _b === void 0 ? void 0 : _b.includes(' one');
+        let restictToOne = (_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a['toggleRestriction']) === null || _b === void 0 ? void 0 : _b.includes(' one');
         let oneIsOn = false;
         console.log(this.stabilizedWidgetStates.join(', '), ' | ', (_c = this.widgets) === null || _c === void 0 ? void 0 : _c.map(w => w.value).join(', '));
         if (restictToOne && this.stabilizedWidgetStates.length) {
@@ -45,7 +45,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         if (this.widgets && this.widgets.length > linkedNodes.length) {
             this.widgets.length = linkedNodes.length;
         }
-        if (((_d = this.properties) === null || _d === void 0 ? void 0 : _d['restriction']) === 'Always one' && !oneIsOn) {
+        if (((_d = this.properties) === null || _d === void 0 ? void 0 : _d['toggleRestriction']) === 'always one' && !oneIsOn) {
             this.widgets[0].doModeChange(true, true);
         }
     }
@@ -62,12 +62,12 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
             var _a, _b, _c;
             let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
             if (skipOtherNodeCheck !== true) {
-                if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a['restriction']) === null || _b === void 0 ? void 0 : _b.includes(' one'))) {
+                if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a['toggleRestriction']) === null || _b === void 0 ? void 0 : _b.includes(' one'))) {
                     for (const widget of this.widgets) {
                         widget.doModeChange(false, true);
                     }
                 }
-                else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c['restriction']) === 'Always one') {
+                else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c['toggleRestriction']) === 'always one') {
                     newValue = true;
                 }
             }
@@ -93,7 +93,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     }
 }
 BaseNodeModeChanger.collapsible = false;
-BaseNodeModeChanger["@restriction"] = {
+BaseNodeModeChanger["@toggleRestriction"] = {
     type: "combo",
-    values: ["None", "Max one", "Always one"],
+    values: ["default", "max one", "always one"],
 };

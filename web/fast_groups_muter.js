@@ -7,6 +7,7 @@ const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
+const PROPERTY_RESTRICTION = "toggleRestriction";
 class FastGroupsService {
     constructor() {
         this.msThreshold = 400;
@@ -132,6 +133,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         this.properties[PROPERTY_SHOW_NAV] = true;
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
+        this.properties[PROPERTY_RESTRICTION] = "default";
         this.addOutput("OPT_CONNECTION", "*");
     }
     onAdded(graph) {
@@ -318,10 +320,21 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         return true;
                     },
                 });
-                widget.doModeChange = (force) => {
+                widget.doModeChange = (force, skipOtherNodeCheck) => {
+                    var _a, _b, _c;
                     group.recomputeInsideNodes();
                     const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
                     let newValue = force != null ? force : !hasAnyActiveNodes;
+                    if (skipOtherNodeCheck !== true) {
+                        if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(' one'))) {
+                            for (const widget of this.widgets) {
+                                widget.doModeChange(false, true);
+                            }
+                        }
+                        else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION]) === 'always one') {
+                            newValue = this.widgets.every(w => !w.value || w === widget);
+                        }
+                    }
                     for (const node of group._nodes) {
                         node.mode = (newValue ? this.modeOn : this.modeOff);
                     }
@@ -369,14 +382,17 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         return size;
     }
     async handleAction(action) {
+        var _a, _b;
         if (action === "Mute all") {
-            for (const widget of this.widgets) {
-                widget === null || widget === void 0 ? void 0 : widget.doModeChange(false);
+            const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === 'always one';
+            for (const [index, widget] of this.widgets.entries()) {
+                widget === null || widget === void 0 ? void 0 : widget.doModeChange(alwaysOne && !index ? true : false, true);
             }
         }
         else if (action === "Enable all") {
-            for (const widget of this.widgets) {
-                widget === null || widget === void 0 ? void 0 : widget.doModeChange(true);
+            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includeS(' one');
+            for (const [index, widget] of this.widgets.entries()) {
+                widget === null || widget === void 0 ? void 0 : widget.doModeChange(onlyOne && index > 0 ? false : true, true);
             }
         }
     }
@@ -431,6 +447,16 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 custom alphabet value of "se,s,f" would work here.
               </p>
             </li>
+            <li><p>
+              <code>${PROPERTY_RESTRICTION}</code> - Optionally, attempt to restrict the number of
+              widgets that can be enabled to a maximum of one, or always one.
+              </p>
+              <p><em><strong>Note:</strong> If using "max one" or "always one" then this is only
+              enforced when clicking a toggle on this node; if nodes within groups are changed
+              outside of the initial toggle click, then these restriction will not be enforced, and
+              could result in a state where more than one toggle is enabled. This could also happen
+              if nodes are overlapped with multiple groups.
+            </p></li>
 
           </ul>
         </li>
@@ -452,6 +478,10 @@ FastGroupsMuter["@sort"] = {
     values: ["position", "alphanumeric", "custom alphabet"],
 };
 FastGroupsMuter["@customSortAlphabet"] = { type: "string" };
+FastGroupsMuter["@toggleRestriction"] = {
+    type: "combo",
+    values: ["default", "max one", "always one"],
+};
 app.registerExtension({
     name: "rgthree.FastGroupsMuter",
     registerCustomNodes() {
