@@ -45,7 +45,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
                     }
                 }
                 else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c['toggleRestriction']) === 'always one') {
-                    newValue = true;
+                    newValue = this.widgets.every(w => !w.value || w === widget);
                 }
             }
             linkedNode.mode = (newValue ? this.modeOn : this.modeOff);
