@@ -84,12 +84,15 @@
 }
 
 /* There's no reason for this z-index to be so high. It layers on top of things it shouldn't,
-  (like pythongssss' image gallery, etc.) */
+  (like pythongssss' image gallery, the properties panel, etc.) */
 .comfy-multiline-input {
-  z-index: 2 !important;
+  z-index: 1 !important;
 }
 .comfy-multiline-input:focus {
-  z-index: 3 !important;
+  z-index: 2 !important;
+}
+.litegraph .dialog {
+  z-index: 3 !important; /* This is set to 1, but goes under the multi-line inputs, so bump it. */
 }
 
 
