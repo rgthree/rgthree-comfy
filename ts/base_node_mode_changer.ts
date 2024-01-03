@@ -26,8 +26,6 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     values: ["default", "max one", "always one"],
   };
 
-  private stabilizedWidgetStates: boolean[] = [];
-
   constructor(title?: string) {
     super(title);
 
@@ -43,19 +41,6 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   }
 
   override handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
-    let restictToOne = this.properties?.['toggleRestriction']?.includes(' one');
-    let oneIsOn = false;
-    console.log(this.stabilizedWidgetStates.join(', '), ' | ', this.widgets?.map(w => w.value).join(', '))
-    if (restictToOne && this.stabilizedWidgetStates.length) {
-      // Find what changed.. because if a latter one changed, then we want to make that the newest.
-      for (const [index, state] of this.stabilizedWidgetStates.entries()) {
-        if (linkedNodes[index] && (linkedNodes[index]!.mode === this.modeOn) !== state) {
-          (this.widgets[index] as any).doModeChange(linkedNodes[index]!.mode === this.modeOn);
-          break;
-        }
-      }
-    }
-    this.stabilizedWidgetStates = [];
     for (const [index, node] of linkedNodes.entries()) {
       let widget = this.widgets && this.widgets[index];
       if (!widget) {
@@ -64,23 +49,11 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         (this as any)._tempWidth = this.size[0];
         widget = this.addWidget('toggle', '', false, '', {"on": 'yes', "off": 'no'});
       }
-      node && this.setWidget(widget, node, restictToOne && oneIsOn ? false : undefined);
-      oneIsOn = oneIsOn || widget.value;
-      this.stabilizedWidgetStates.push(widget.value);
+      node && this.setWidget(widget, node);
     }
     if (this.widgets && this.widgets.length > linkedNodes.length) {
       this.widgets.length = linkedNodes.length
     }
-    // If we always need one, and none are on, then make the first one on.
-    if (this.properties?.['toggleRestriction'] === 'always one' && !oneIsOn) {
-      (this.widgets[0] as any).doModeChange(true, true);
-    }
-  }
-
-  override onConnectionsChange(type: number, index: number, connected: boolean, linkInfo: LLink, ioSlot: (INodeOutputSlot | INodeInputSlot)) {
-    // We can clear out the stabilizedWidgetStates states since we've made an explicit change.
-    this.stabilizedWidgetStates = [];
-    super.onConnectionsChange && super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
   }
 
   protected setWidget(widget: IWidget, linkedNode: TLGraphNode, forceValue?: boolean) {
@@ -101,8 +74,6 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
       }
       linkedNode.mode = (newValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
       widget.value = newValue;
-      // We can clear out the stabilizedWidgetStates states since we've made an explicit change.
-      this.stabilizedWidgetStates = [];
     }
     widget.callback = () => {
       (widget as any).doModeChange();
