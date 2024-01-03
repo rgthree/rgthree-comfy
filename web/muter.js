@@ -12,12 +12,12 @@ class MuterNode extends BaseNodeModeChanger {
     async handleAction(action) {
         if (action === 'Mute all') {
             for (const widget of this.widgets) {
-                this.forceWidgetOff(widget);
+                this.forceWidgetOff(widget, true);
             }
         }
         else if (action === 'Enable all') {
             for (const widget of this.widgets) {
-                this.forceWidgetOn(widget);
+                this.forceWidgetOn(widget, true);
             }
         }
     }
