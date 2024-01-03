@@ -193,12 +193,36 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     return `
       <p>
         The ${this.type!.replace("(rgthree)", "",)} node compares two images on top of each other.
-        Two images must be provided, either using both the <code>image_a</code> and
-        <code>image_b</code> inputs, or using the first two images in a <code>image_a</code> batch.
-        Note, only two images can be compared; if the inputs contain multiple batches, only the
-        first image of each batch will be shown.
       </p>
       <ul>
+        <li>
+          <p>
+            <strong>Notes</strong>
+          </p>
+          <ul>
+            <li><p>
+              The right-click menu may show image options (Open Image, Save Image, etc.) which will
+              correspond to the first image (image_a) if clicked on the left-half of the node, or
+              the second image if on the right half of the node.
+            </p></li>
+          </ul>
+        </li>
+        <li>
+          <p>
+            <strong>Inputs</strong>
+          </p>
+          <ul>
+            <li><p>
+              <code>image_a</code> <i>Required.</i> The first image to use to compare. If image_b is
+              not supplied and image_a is a batch, the comparer will use the first two images of
+              image_a.
+            </p></li>
+            <li><p>
+              <code>image_b</code> <i>Optional.</i> The second image to use to compare. Optional
+              only if image_a is a batch with two images.
+            </p></li>
+          </ul>
+        </li>
         <li>
           <p>
             <strong>Properties.</strong> You can change the following properties (by right-clicking
