@@ -1,7 +1,7 @@
 // @ts-ignore
-import { app } from "/scripts/app.js";
+import { app } from "../../scripts/app.js";
 // @ts-ignore
-import { api } from "/scripts/api.js";
+import { api } from "../../scripts/api.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { ComfyNodeConstructor, ComfyObjectInfo } from "comfy.js";
