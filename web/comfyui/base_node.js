@@ -177,10 +177,17 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
             throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
         }
         overriddenServerNodes.set(comfyClass, rgthreeClass);
+        if (!rgthreeClass.__registeredForOverride__) {
+            rgthreeClass.__registeredForOverride__ = true;
+            rgthreeClass.onRegisteredForOverride(comfyClass, rgthreeClass);
+        }
+    }
+    static onRegisteredForOverride(comfyClass, rgthreeClass) {
     }
 }
 RgthreeBaseServerNode.nodeData = null;
 RgthreeBaseServerNode.nodeType = null;
+RgthreeBaseServerNode.__registeredForOverride__ = false;
 const oldregisterNodeType = LiteGraph.registerNodeType;
 LiteGraph.registerNodeType = function (nodeId, baseClass) {
     const clazz = overriddenServerNodes.get(baseClass) || baseClass;

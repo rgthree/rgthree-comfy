@@ -180,6 +180,9 @@ class BaseContextNode extends RgthreeBaseServerNode {
 
   static override setUp(comfyClass: any, ctxClass: any) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, ctxClass);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
     addConnectionLayoutSupport(ctxClass, app, [
       ["Left", "Right"],
       ["Right", "Left"],
@@ -204,6 +207,10 @@ class ContextNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextNode, app, {
       name: "Convert To Context Big",
       callback: (node) => {
@@ -227,6 +234,10 @@ class ContextBigNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextBigNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextBigNode, app, {
       name: "Convert To Context (Original)",
       callback: (node) => {
@@ -250,6 +261,10 @@ class ContextSwitchNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextSwitchNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextSwitchNode, app, {
       name: "Convert To Context Switch Big",
       callback: (node) => {
@@ -273,6 +288,10 @@ class ContextSwitchBigNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextSwitchBigNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextSwitchBigNode, app, {
       name: "Convert To Context Switch",
       callback: (node) => {
@@ -296,6 +315,10 @@ class ContextMergeNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextMergeNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextMergeNode, app, {
       name: "Convert To Context Merge Big",
       callback: (node) => {
@@ -319,6 +342,10 @@ class ContextMergeBigNode extends BaseContextNode {
 
   static override setUp(comfyClass: any) {
     BaseContextNode.setUp(comfyClass, ContextMergeBigNode);
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
     addMenuItem(ContextMergeBigNode, app, {
       name: "Convert To Context Switch",
       callback: (node) => {

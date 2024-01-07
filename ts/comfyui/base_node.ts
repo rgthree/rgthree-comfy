@@ -265,12 +265,26 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
   }
 
 
+  static __registeredForOverride__: boolean = false;
   static registerForOverride(comfyClass: any, rgthreeClass: any) {
     if (overriddenServerNodes.has(comfyClass)) {
       throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
     }
     overriddenServerNodes.set(comfyClass, rgthreeClass);
+    // Mark the rgthreeClass as `__registeredForOverride__` because ComfyUI will repeatedly call
+    // this and certain setups will only want to setup once (like adding context menus, etc).
+    if (!rgthreeClass.__registeredForOverride__) {
+      rgthreeClass.__registeredForOverride__ = true;
+      rgthreeClass.onRegisteredForOverride(comfyClass, rgthreeClass);
+    }
   }
+
+  static onRegisteredForOverride(comfyClass: any, rgthreeClass: any) {
+    // To be overridden
+  }
+
+
+
 }
 
 

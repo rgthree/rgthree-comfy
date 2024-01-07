@@ -239,7 +239,10 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
 
   static override setUp(comfyClass: any) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeImageComparer);
-    addConnectionLayoutSupport(RgthreeBaseServerNode, app, [
+  }
+
+  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+    addConnectionLayoutSupport(RgthreeImageComparer, app, [
       ["Left", "Right"],
       ["Right", "Left"],
     ]);
