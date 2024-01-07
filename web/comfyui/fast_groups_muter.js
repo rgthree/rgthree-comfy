@@ -390,7 +390,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             }
         }
         else if (action === "Enable all") {
-            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includeS(' one');
+            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includes(' one');
             for (const [index, widget] of this.widgets.entries()) {
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(onlyOne && index > 0 ? false : true, true);
             }
