@@ -12,8 +12,7 @@ import shutil
 import re
 
 from .config import RGTHREE_CONFIG
-
-# from .server import server
+from .py.rgthree_server import *
 
 from .py.log import log_welcome
 from .py.context import RgthreeContext
@@ -57,11 +56,11 @@ NODE_CLASS_MAPPINGS = {
   RgthreeImageComparer.NAME: RgthreeImageComparer,
 }
 
-
-WEB_DIRECTORY = "./web"
+# WEB_DIRECTORY is the comfyui nodes directory that ComfyUI will link and auto-load.
+WEB_DIRECTORY = "./web/comfyui"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')
+DIR_WEB = os.path.abspath(f'{THIS_DIR}/{WEB_DIRECTORY}')
 DIR_PY = os.path.abspath(f'{THIS_DIR}/py')
 
 # remove old directories

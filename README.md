@@ -18,7 +18,7 @@ A collection of nodes I've created while messing around with Stable Diffusion. I
 
 ## 🐛 Graph Linking Issues
 
-If your workflows sometimes have missing connections, or even errors on load, start up ComfyUI and go to http://127.0.0.1:8188/extensions/rgthree-comfy/html/links.html which will allow you to drop in an image or workflow json file and check for and fix any bad links.
+If your workflows sometimes have missing connections, or even errors on load, start up ComfyUI and go to http://127.0.0.1:8188/rgthree/link_fixer which will allow you to drop in an image or workflow json file and check for and fix any bad links.
 
 # The Nodes
 
