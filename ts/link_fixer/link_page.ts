@@ -1,7 +1,6 @@
 
 import type { SerializedGraph, BadLinksData } from "index";
-// @ts-ignore
-import { fixBadLinks } from "/extensions/rgthree-comfy/link_fixer.js";
+import { fixBadLinks } from "../comfyui/link_fixer.js";
 // @ts-ignore
 import { getPngMetadata } from "../../scripts/pnginfo.js";
 
