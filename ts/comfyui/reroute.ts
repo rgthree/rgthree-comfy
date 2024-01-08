@@ -2,6 +2,8 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
+import { getWidgetConfig, mergeIfValid, setWidgetConfig } from "../../extensions/core/widgetInputs.js";
+// @ts-ignore
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import type {
@@ -524,6 +526,9 @@ class RerouteNode extends RgthreeBaseNode {
     const nodes: TLGraphNode[] = [this];
     let outputNode = null;
     let outputType = null;
+    // For primitive nodes, which look at the widget to dsplay themselves.
+    let outputWidgetConfig = null;
+    let outputWidget = null;
     while (nodes.length) {
       currentNode = nodes.pop()!;
       const outputs = (currentNode.outputs ? currentNode.outputs[0]!.links : []) || [];
@@ -570,6 +575,30 @@ class RerouteNode extends RgthreeBaseNode {
             } else {
               outputType = nodeOutType;
               outputNode = node;
+              outputWidgetConfig = null;
+              outputWidget = null;
+              // For primitive nodes, which look at the widget to dsplay themselves.
+              if (output?.widget) {
+                try {
+                  const config = getWidgetConfig(output);
+                  if (!outputWidgetConfig && config) {
+                    outputWidgetConfig = config[1] ?? {};
+                    outputType = config[0];
+                    if (!outputWidget) {
+                      outputWidget = outputNode.widgets?.find((w) => w.name === output?.widget?.name);
+                    }
+                    const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
+                    if (merged.customConfig) {
+                      outputWidgetConfig = merged.customConfig;
+                    }
+                  }
+                } catch(e) {
+                  // Something happened, probably because comfyUI changes their methods.
+                  console.error('[rgthree] Could not propagate widget infor for reroute; maybe ComfyUI updated?');
+                  outputWidgetConfig = null;
+                  outputWidget = null;
+                }
+              }
             }
           }
         }
@@ -595,6 +624,24 @@ class RerouteNode extends RgthreeBaseNode {
         const link = app.graph.links[l];
         if (link) {
           link.color = color;
+        }
+      }
+
+      try {
+        // For primitive nodes, which look at the widget to dsplay themselves.
+        if (outputWidgetConfig && outputWidget && outputType) {
+          node.inputs[0]!.widget = { name: "value" };
+          setWidgetConfig(node.inputs[0], [outputType ?? displayType, outputWidgetConfig], outputWidget);
+        } else {
+          setWidgetConfig(node.inputs[0], null);
+        }
+      } catch(e) {
+        // Something happened, probably because comfyUI changes their methods.
+        console.error('[rgthree] Could not set widget config for reroute; maybe ComfyUI updated?');
+        outputWidgetConfig = null;
+        outputWidget = null;
+        if (node.inputs[0]?.widget) {
+          delete node.inputs[0].widget;
         }
       }
     }

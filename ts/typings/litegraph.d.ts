@@ -42,7 +42,12 @@ export interface INodeSlot {
 
 export interface INodeInputSlot extends INodeSlot {
     link: LLink["id"] | null;
+    // @rgthree - add comfy widget info
+    widget?: {
+        name: string;
+    }
 }
+
 export interface INodeOutputSlot extends INodeSlot {
     links: LLink["id"][] | null;
 }

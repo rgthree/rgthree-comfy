@@ -1,5 +1,6 @@
 var _a, _b;
 import { app } from "../../scripts/app.js";
+import { getWidgetConfig, mergeIfValid, setWidgetConfig } from "../../extensions/core/widgetInputs.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import { IoDirection, LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, setConnectionsLayout, waitForCanvas, } from "./utils.js";
@@ -297,7 +298,7 @@ class RerouteNode extends RgthreeBaseNode {
         return this.schedulePromise;
     }
     stabilize() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         if (this.configuring) {
             return;
         }
@@ -344,6 +345,8 @@ class RerouteNode extends RgthreeBaseNode {
         const nodes = [this];
         let outputNode = null;
         let outputType = null;
+        let outputWidgetConfig = null;
+        let outputWidget = null;
         while (nodes.length) {
             currentNode = nodes.pop();
             const outputs = (currentNode.outputs ? currentNode.outputs[0].links : []) || [];
@@ -378,6 +381,29 @@ class RerouteNode extends RgthreeBaseNode {
                         else {
                             outputType = nodeOutType;
                             outputNode = node;
+                            outputWidgetConfig = null;
+                            outputWidget = null;
+                            if (output === null || output === void 0 ? void 0 : output.widget) {
+                                try {
+                                    const config = getWidgetConfig(output);
+                                    if (!outputWidgetConfig && config) {
+                                        outputWidgetConfig = (_e = config[1]) !== null && _e !== void 0 ? _e : {};
+                                        outputType = config[0];
+                                        if (!outputWidget) {
+                                            outputWidget = (_f = outputNode.widgets) === null || _f === void 0 ? void 0 : _f.find((w) => { var _a; return w.name === ((_a = output === null || output === void 0 ? void 0 : output.widget) === null || _a === void 0 ? void 0 : _a.name); });
+                                        }
+                                        const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
+                                        if (merged.customConfig) {
+                                            outputWidgetConfig = merged.customConfig;
+                                        }
+                                    }
+                                }
+                                catch (e) {
+                                    console.error('[rgthree] Could not propagate widget infor for reroute; maybe ComfyUI updated?');
+                                    outputWidgetConfig = null;
+                                    outputWidget = null;
+                                }
+                            }
                         }
                     }
                 }
@@ -392,11 +418,28 @@ class RerouteNode extends RgthreeBaseNode {
             node.__outputType = displayType;
             node.outputs[0].name = (input === null || input === void 0 ? void 0 : input.name) || "";
             node.size = node.computeSize();
-            (_f = (_e = node).applyNodeSize) === null || _f === void 0 ? void 0 : _f.call(_e);
+            (_h = (_g = node).applyNodeSize) === null || _h === void 0 ? void 0 : _h.call(_g);
             for (const l of node.outputs[0].links || []) {
                 const link = app.graph.links[l];
                 if (link) {
                     link.color = color;
+                }
+            }
+            try {
+                if (outputWidgetConfig && outputWidget && outputType) {
+                    node.inputs[0].widget = { name: "value" };
+                    setWidgetConfig(node.inputs[0], [outputType !== null && outputType !== void 0 ? outputType : displayType, outputWidgetConfig], outputWidget);
+                }
+                else {
+                    setWidgetConfig(node.inputs[0], null);
+                }
+            }
+            catch (e) {
+                console.error('[rgthree] Could not set widget config for reroute; maybe ComfyUI updated?');
+                outputWidgetConfig = null;
+                outputWidget = null;
+                if ((_j = node.inputs[0]) === null || _j === void 0 ? void 0 : _j.widget) {
+                    delete node.inputs[0].widget;
                 }
             }
         }
@@ -409,8 +452,8 @@ class RerouteNode extends RgthreeBaseNode {
                 }
             }
         }
-        (_g = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(inputNode);
-        (_h = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _h === void 0 ? void 0 : _h.call(outputNode);
+        (_k = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _k === void 0 ? void 0 : _k.call(inputNode);
+        (_l = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _l === void 0 ? void 0 : _l.call(outputNode);
         app.graph.setDirtyCanvas(true, true);
     }
     setSize(size) {
