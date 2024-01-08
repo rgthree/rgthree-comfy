@@ -17,7 +17,6 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
 
   constructor(title?: string) {
     super(title);
-    this.addInput("", "*");
     this.addOutput("Output", "*");
   }
 

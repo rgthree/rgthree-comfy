@@ -5,7 +5,6 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);
         this.inputsPassThroughFollowing = PassThroughFollowing.REROUTE_ONLY;
-        this.addInput("", "*");
         this.addOutput("Output", "*");
     }
     clone() {
