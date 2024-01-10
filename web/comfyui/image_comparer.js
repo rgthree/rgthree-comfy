@@ -97,10 +97,12 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
                 }
             },
             computeSize(...args) {
-                return [128, 128];
+                return [64, 64];
             },
         };
         this.canvasWidget = this.addCustomWidget(widget);
+        this.setSize(this.computeSize());
+        this.setDirtyCanvas(true, true);
     }
     setIsPointerDown(down = this.isPointerDown) {
         const newIsDown = down && !!app.canvas.pointer_is_down;

@@ -135,7 +135,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         }
       },
       computeSize(...args: any[]) {
-        return [128, 128];
+        return [64, 64];
       },
       // serializeValue(serializedNode: any, widgetIndex: any) {
       //   const value = node.imgs.map(i => i.src)
@@ -145,6 +145,8 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     };
 
     this.canvasWidget = this.addCustomWidget(widget as any);
+    this.setSize( this.computeSize() );
+    this.setDirtyCanvas(true, true);
   }
 
   /**
