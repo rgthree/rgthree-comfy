@@ -120,6 +120,7 @@ class Rgthree extends EventTarget {
   monitorLinkTimeout: number | null = null;
 
   processingQueue = false;
+  loadingApiJson = false;
 
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
@@ -212,6 +213,17 @@ class Rgthree extends EventTarget {
       } finally {
         rgthree.processingQueue = false;
         rgthree.dispatchEvent(new CustomEvent("queue-end"));
+      }
+    };
+
+    // Keep state for when the app is in the middle of loading from an api JSON file.
+    const loadApiJson = app.loadApiJson as Function;
+    app.loadApiJson = async function () {
+      rgthree.loadingApiJson = true;
+      try {
+        loadApiJson.apply(app, [...arguments]);
+      } finally {
+        rgthree.loadingApiJson = false;
       }
     };
 

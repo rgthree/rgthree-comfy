@@ -1,9 +1,11 @@
 import { api } from '../../scripts/api.js';
 import { wait } from "./shared_utils.js";
+import { rgthree } from "./rgthree.js";
 export class PowerPrompt {
     constructor(node, nodeData) {
         this.combos = {};
         this.combosValues = {};
+        this.configuring = false;
         this.node = node;
         this.node.properties = this.node.properties || {};
         this.node.properties['combos_filter'] = '';
@@ -12,6 +14,12 @@ export class PowerPrompt {
         this.promptEl = node.widgets[0].inputEl;
         this.addAndHandleKeyboardLoraEditWeight();
         this.patchNodeRefresh();
+        const oldConfigure = this.node.configure;
+        this.node.configure = (info) => {
+            this.configuring = true;
+            oldConfigure === null || oldConfigure === void 0 ? void 0 : oldConfigure.apply(this.node, [info]);
+            this.configuring = false;
+        };
         const oldOnConnectionsChange = this.node.onConnectionsChange;
         this.node.onConnectionsChange = (type, slotIndex, isConnected, link_info, _ioSlot) => {
             oldOnConnectionsChange === null || oldOnConnectionsChange === void 0 ? void 0 : oldOnConnectionsChange.apply(this.node, [type, slotIndex, isConnected, link_info, _ioSlot]);
@@ -23,7 +31,7 @@ export class PowerPrompt {
             if (oldOnConnectInput) {
                 canConnect = oldOnConnectInput.apply(this.node, [inputIndex, outputType, outputSlot, outputNode, outputIndex]);
             }
-            return canConnect && !this.node.inputs[inputIndex].disabled;
+            return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.inputs[inputIndex].disabled);
         };
         const oldOnConnectOutput = this.node.onConnectOutput;
         this.node.onConnectOutput = (outputIndex, inputType, inputSlot, inputNode, inputIndex) => {
@@ -31,7 +39,7 @@ export class PowerPrompt {
             if (oldOnConnectOutput) {
                 canConnect = oldOnConnectOutput === null || oldOnConnectOutput === void 0 ? void 0 : oldOnConnectOutput.apply(this.node, [outputIndex, inputType, inputSlot, inputNode, inputIndex]);
             }
-            return canConnect && !this.node.outputs[outputIndex].disabled;
+            return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.outputs[outputIndex].disabled);
         };
         const onPropertyChanged = this.node.onPropertyChanged;
         this.node.onPropertyChanged = (property, value, prevValue) => {
@@ -54,6 +62,9 @@ export class PowerPrompt {
         this.stabilizeInputsOutputs();
     }
     stabilizeInputsOutputs() {
+        if (this.configuring || rgthree.loadingApiJson) {
+            return;
+        }
         const clipLinked = this.node.inputs.some(i => i.name.includes('clip') && !!i.link);
         const modelLinked = this.node.inputs.some(i => i.name.includes('model') && !!i.link);
         for (const output of this.node.outputs) {

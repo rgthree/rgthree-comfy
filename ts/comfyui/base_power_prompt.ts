@@ -5,9 +5,10 @@ import {app} from '../../scripts/app.js';
 import {api} from '../../scripts/api.js';
 // @ts-ignore
 import { ComfyWidgets } from '../../scripts/widgets.js';
-import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, IWidget} from '../typings/litegraph.js';
+import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, IWidget, SerializedLGraphNode} from '../typings/litegraph.js';
 import type {ComfyObjectInfo, ComfyGraphNode} from '../typings/comfy.js';
 import { wait } from "./shared_utils.js";
+import { rgthree } from "./rgthree.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -23,6 +24,8 @@ export class PowerPrompt {
   readonly combosValues: {[key:string]: string[]} = {};
   boundOnFreshNodeDefs!: (event: CustomEvent) => void;
 
+  private configuring = false;
+
   constructor(node: ComfyGraphNode, nodeData: ComfyObjectInfo) {
     this.node = node;
     this.node.properties = this.node.properties || {};
@@ -37,6 +40,13 @@ export class PowerPrompt {
 
     this.patchNodeRefresh();
 
+    const oldConfigure = this.node.configure;
+    this.node.configure = (info: SerializedLGraphNode) => {
+      this.configuring = true;
+      oldConfigure?.apply(this.node, [info]);
+      this.configuring = false;
+    }
+
     const oldOnConnectionsChange = this.node.onConnectionsChange;
     this.node.onConnectionsChange = (type: number, slotIndex: number, isConnected: boolean, link_info: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) => {
       oldOnConnectionsChange?.apply(this.node, [type, slotIndex, isConnected, link_info,_ioSlot]);
@@ -49,7 +59,7 @@ export class PowerPrompt {
       if (oldOnConnectInput) {
         canConnect = oldOnConnectInput.apply(this.node, [inputIndex, outputType, outputSlot, outputNode,outputIndex]);
       }
-      return canConnect && !this.node.inputs[inputIndex]!.disabled;
+      return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.inputs[inputIndex]!.disabled);
     }
 
     const oldOnConnectOutput = this.node.onConnectOutput;
@@ -58,7 +68,7 @@ export class PowerPrompt {
       if (oldOnConnectOutput) {
         canConnect = oldOnConnectOutput?.apply(this.node, [outputIndex, inputType, inputSlot, inputNode, inputIndex]);
       }
-      return canConnect && !this.node.outputs[outputIndex]!.disabled;
+      return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.outputs[outputIndex]!.disabled);
     }
 
     const onPropertyChanged = this.node.onPropertyChanged;
@@ -91,6 +101,11 @@ export class PowerPrompt {
   }
 
   private stabilizeInputsOutputs() {
+    // If we are currently "configuring" then skip this stabilization. The connected nodes may
+    // not yet be configured.
+    if (this.configuring || rgthree.loadingApiJson) {
+      return;
+    }
     // If our first input is connected, then we can show the proper output.
     const clipLinked = this.node.inputs.some(i=>i.name.includes('clip') && !!i.link);
     const modelLinked = this.node.inputs.some(i=>i.name.includes('model') && !!i.link);

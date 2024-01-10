@@ -74,6 +74,7 @@ class Rgthree extends EventTarget {
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
         this.processingQueue = false;
+        this.loadingApiJson = false;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
@@ -124,6 +125,16 @@ class Rgthree extends EventTarget {
             finally {
                 rgthree.processingQueue = false;
                 rgthree.dispatchEvent(new CustomEvent("queue-end"));
+            }
+        };
+        const loadApiJson = app.loadApiJson;
+        app.loadApiJson = async function () {
+            rgthree.loadingApiJson = true;
+            try {
+                loadApiJson.apply(app, [...arguments]);
+            }
+            finally {
+                rgthree.loadingApiJson = false;
             }
         };
         const graphToPrompt = app.graphToPrompt;
