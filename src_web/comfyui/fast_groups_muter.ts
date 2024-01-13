@@ -539,7 +539,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
   }
 
   override async handleAction(action: string) {
-    if (action === "Mute all") {
+    if (action === "Mute all" || action === "Bypass all") {
       const alwaysOne = this.properties?.[PROPERTY_RESTRICTION] === 'always one';
       for (const [index, widget] of this.widgets.entries()) {
         (widget as any)?.doModeChange(alwaysOne && !index ? true : false, true);
