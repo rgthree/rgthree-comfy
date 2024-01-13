@@ -297,6 +297,7 @@ export const LiteGraph: {
 
     //@rgthree
     isValidConnection(type: string|string[], type: string|string[]):boolean;
+    overlapBounding(a: Vector4, b: Vector4) : boolean;
 
     createNode<T extends LGraphNode = LGraphNode>(type: string): T;
     /** Register a node class so it can be listed when the user wants to create a new one */
@@ -435,7 +436,8 @@ export declare class LGraph {
     starttime: number;
     status: typeof LGraph.STATUS_RUNNING | typeof LGraph.STATUS_STOPPED;
 
-    private _nodes: LGraphNode[];
+    // @rgthree, remove private; it's not really private b/c it's javascript.
+    _nodes: LGraphNode[];
     // @rgthree, remove private; it's not really private b/c it's javascript.
     _groups: LGraphGroup[];
     private _nodes_by_id: Record<number, LGraphNode>;
@@ -1166,7 +1168,8 @@ export type SerializedLGraphGroup = {
 };
 export declare class LGraphGroup {
     title: string;
-    private _bounding: Vector4;
+    // @rgthree - mark unprivate
+    _bounding: Vector4;
     color: string;
     font: string;
     // @rgthree
@@ -1175,6 +1178,8 @@ export declare class LGraphGroup {
     _pos: Vector2;
     // @rgthree
     _size: Vector2;
+    // @rgthree
+    graph: LGraph;
 
 
     configure(o: SerializedLGraphGroup): void;

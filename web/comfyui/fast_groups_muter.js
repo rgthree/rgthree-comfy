@@ -21,6 +21,7 @@ class FastGroupsService {
         this.runScheduledForMs = null;
         this.runScheduleTimeout = null;
         this.runScheduleAnimation = null;
+        this.cachedNodeBoundings = null;
     }
     addFastGroupNode(node) {
         this.fastGroupNodes.push(node);
@@ -67,12 +68,36 @@ class FastGroupsService {
         this.runScheduleAnimation = null;
         this.runScheduledForMs = null;
     }
+    getBoundingsForAllNodes() {
+        if (!this.cachedNodeBoundings) {
+            this.cachedNodeBoundings = {};
+            for (const node of app.graph._nodes) {
+                this.cachedNodeBoundings[node.id] = node.getBounding();
+            }
+            setTimeout(() => {
+                this.cachedNodeBoundings = null;
+            }, 50);
+        }
+        return this.cachedNodeBoundings;
+    }
+    recomputeInsideNodesForGroup(group) {
+        const cachedBoundings = this.getBoundingsForAllNodes();
+        const nodes = group.graph._nodes;
+        group._nodes.length = 0;
+        for (const node of nodes) {
+            const node_bounding = cachedBoundings[node.id];
+            if (!node_bounding || !LiteGraph.overlapBounding(group._bounding, node_bounding)) {
+                continue;
+            }
+            group._nodes.push(node);
+        }
+    }
     getGroupsUnsorted(now) {
         const graph = app.graph;
         if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
             this.groupsUnsorted = [...graph._groups];
             for (const group of this.groupsUnsorted) {
-                group.recomputeInsideNodes();
+                this.recomputeInsideNodesForGroup(group);
                 group._rgthreeHasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
             }
             this.msLastUnsorted = now;

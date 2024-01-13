@@ -12,6 +12,7 @@ import {
   SerializedLGraphNode,
   IWidget,
   LGraphGroup,
+  Vector4,
 } from "../typings/litegraph.js";
 import { fitString } from "./utils_canvas.js";
 
@@ -44,6 +45,8 @@ class FastGroupsService {
   private runScheduledForMs: number|null = null;
   private runScheduleTimeout: number|null = null;
   private runScheduleAnimation: number|null = null;
+
+  private cachedNodeBoundings: {[key: number]: Vector4}|null = null;
 
   constructor() {
     // Don't need to do anything, wait until a signal.
@@ -104,12 +107,52 @@ class FastGroupsService {
     this.runScheduledForMs = null;
   }
 
+  /**
+   * Returns the boundings for all nodes on the graph, then clears it after a short delay. This is
+   * to increase efficiency by caching the nodes' boundings when multiple groups are on the page.
+   */
+  getBoundingsForAllNodes() {
+    if (!this.cachedNodeBoundings) {
+      this.cachedNodeBoundings = {};
+      for (const node of app.graph._nodes) {
+        this.cachedNodeBoundings[node.id] = node.getBounding();
+      }
+      setTimeout(() => {
+        this.cachedNodeBoundings = null;
+      }, 50);
+    }
+    return this.cachedNodeBoundings;
+  }
+
+  /**
+   * This overrides `LGraphGroup.prototype.recomputeInsideNodes` to be much more efficient when
+   * calculating for many groups at once (only compute all nodes once in `getBoundingsForAllNodes`).
+   */
+  recomputeInsideNodesForGroup(group: LGraphGroup) {
+    const cachedBoundings = this.getBoundingsForAllNodes();
+    const nodes = group.graph._nodes;
+    group._nodes.length = 0;
+
+    for (const node of nodes) {
+      const node_bounding = cachedBoundings[node.id];
+      if (!node_bounding || !LiteGraph.overlapBounding(group._bounding, node_bounding)) {
+        continue;
+      }
+      group._nodes.push(node);
+    }
+  }
+
+  /**
+   * Everything goes through getGroupsUnsorted, so we only get groups once. However, LiteGraph's
+   * `recomputeInsideNodes` is inefficient when calling multiple groups (it iterates over all nodes
+   * each time). So, we'll do our own dang thing, once.
+   */
   private getGroupsUnsorted(now: number) {
     const graph = app.graph as TLGraph;
     if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
       this.groupsUnsorted = [...graph._groups];
       for (const group of this.groupsUnsorted) {
-        group.recomputeInsideNodes();
+        this.recomputeInsideNodesForGroup(group);
         (group as any)._rgthreeHasAnyActiveNode = group._nodes.some(
           (n) => n.mode === LiteGraph.ALWAYS,
         );
