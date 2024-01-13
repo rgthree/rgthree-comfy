@@ -7,7 +7,7 @@
     // ],
     "baseUrl": "./",
     "paths": {
-        "*": ["ts/typings/*"],
+        "*": ["src_web/typings/*"],
     },
     "outDir": "web/",
     "removeComments": true,
@@ -32,7 +32,7 @@
     "skipLibCheck": true,
   },
   "include": [
-    "ts/*.ts", "ts/**/*.ts", "ts/typings/index.d.ts",
+    "src_web/*.ts", "src_web/**/*.ts", "src_web/typings/index.d.ts",
   ],
   "exclude": [
     "**/*.spec.ts",

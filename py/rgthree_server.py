@@ -23,11 +23,14 @@ async def get_comfyui_file_relative(request):
 
 
 @routes.get('/rgthree/link_fixer')
+async def link_fixer_home_redir(request):
+  raise web.HTTPFound(f'{request.path}/')
+
+@routes.get('/rgthree/link_fixer/')
 async def link_fixer_home(request):
   html = ''
   with open(os.path.join(DIR_WEB, 'link_fixer', 'index.html'), 'r', encoding='UTF-8') as file:
     html = file.read()
-
   return web.Response(text=html, content_type='text/html')
 
 
