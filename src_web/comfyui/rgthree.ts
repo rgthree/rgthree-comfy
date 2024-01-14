@@ -162,7 +162,7 @@ class Rgthree extends EventTarget {
     const onSerialize = (graph as any).onSerialize;
     (graph as any).onSerialize = (data: any) => {
       this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-      onSerialize?.apply(graph, data);
+      onSerialize?.call(graph, data);
     };
 
     // [🤮] Copying to clipboard clones nodes and then manipulats the linking data manually which
