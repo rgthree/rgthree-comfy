@@ -96,7 +96,7 @@ class Rgthree extends EventTarget {
         const onSerialize = graph.onSerialize;
         graph.onSerialize = (data) => {
             this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-            onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.apply(graph, data);
+            onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.call(graph, data);
         };
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
         LGraphCanvas.prototype.copyToClipboard = function (nodes) {
