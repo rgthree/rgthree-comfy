@@ -215,7 +215,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   override isVirtualNode = true;
 
-  static override exposedActions = ["Mute all", "Enable all"];
+  static override exposedActions = ["Mute all", "Enable all", "Toggle all"];
 
   readonly modeOn: number = LiteGraph.ALWAYS;
   readonly modeOff: number = LiteGraph.NEVER;
@@ -558,6 +558,19 @@ export class FastGroupsMuter extends RgthreeBaseNode {
       const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
       for (const [index, widget] of this.widgets.entries()) {
         (widget as any)?.doModeChange(onlyOne && index > 0 ? false : true, true);
+      }
+    } else if (action === "Toggle all") {
+      const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
+      let foundOne = false;
+      for (const [index, widget] of this.widgets.entries()) {
+        // If you have only one, then we'll stop at the first.
+        let newValue: boolean = onlyOne && foundOne ? false : !widget.value;
+        foundOne = foundOne || newValue;
+        (widget as any)?.doModeChange(newValue, true);
+      }
+      // And if you have always one, then we'll flip the last
+      if (!foundOne && this.properties?.[PROPERTY_RESTRICTION] === "always one") {
+        (this.widgets[this.widgets.length - 1] as any)?.doModeChange(true, true);
       }
     }
   }

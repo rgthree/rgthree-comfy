@@ -416,7 +416,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         return size;
     }
     async handleAction(action) {
-        var _a, _b;
+        var _a, _b, _c, _d, _e;
         if (action === "Mute all" || action === "Bypass all") {
             const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === "always one";
             for (const [index, widget] of this.widgets.entries()) {
@@ -427,6 +427,18 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includes(" one");
             for (const [index, widget] of this.widgets.entries()) {
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(onlyOne && index > 0 ? false : true, true);
+            }
+        }
+        else if (action === "Toggle all") {
+            const onlyOne = (_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION].includes(" one");
+            let foundOne = false;
+            for (const [index, widget] of this.widgets.entries()) {
+                let newValue = onlyOne && foundOne ? false : !widget.value;
+                foundOne = foundOne || newValue;
+                widget === null || widget === void 0 ? void 0 : widget.doModeChange(newValue, true);
+            }
+            if (!foundOne && ((_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_RESTRICTION]) === "always one") {
+                (_e = this.widgets[this.widgets.length - 1]) === null || _e === void 0 ? void 0 : _e.doModeChange(true, true);
             }
         }
     }
@@ -503,7 +515,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 }
 FastGroupsMuter.type = NodeTypesString.FAST_GROUPS_MUTER;
 FastGroupsMuter.title = NodeTypesString.FAST_GROUPS_MUTER;
-FastGroupsMuter.exposedActions = ["Mute all", "Enable all"];
+FastGroupsMuter.exposedActions = ["Mute all", "Enable all", "Toggle all"];
 FastGroupsMuter["@matchColors"] = { type: "string" };
 FastGroupsMuter["@matchTitle"] = { type: "string" };
 FastGroupsMuter["@showNav"] = { type: "boolean" };

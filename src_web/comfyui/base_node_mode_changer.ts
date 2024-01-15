@@ -89,6 +89,9 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   forceWidgetOn(widget: IWidget, skipOtherNodeCheck?: boolean) {
     (widget as any).doModeChange(true, skipOtherNodeCheck);
   }
+  forceWidgetToggle(widget: IWidget, skipOtherNodeCheck?: boolean) {
+    (widget as any).doModeChange(!widget.value, skipOtherNodeCheck);
+  }
 
 
   static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {

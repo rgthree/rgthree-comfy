@@ -18,7 +18,7 @@ export class FastGroupsBypasser extends FastGroupsMuter {
   static override type = NodeTypesString.FAST_GROUPS_BYPASSER;
   static override title = NodeTypesString.FAST_GROUPS_BYPASSER;
 
-  static override exposedActions = ["Bypass all", "Enable all"];
+  static override exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 
   protected override helpActions = 'bypass and enable';
 

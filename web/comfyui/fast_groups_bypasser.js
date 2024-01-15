@@ -15,7 +15,7 @@ export class FastGroupsBypasser extends FastGroupsMuter {
 }
 FastGroupsBypasser.type = NodeTypesString.FAST_GROUPS_BYPASSER;
 FastGroupsBypasser.title = NodeTypesString.FAST_GROUPS_BYPASSER;
-FastGroupsBypasser.exposedActions = ["Bypass all", "Enable all"];
+FastGroupsBypasser.exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 app.registerExtension({
     name: "rgthree.FastGroupsBypasser",
     registerCustomNodes() {

@@ -10,19 +10,24 @@ class MuterNode extends BaseNodeModeChanger {
         this.modeOff = MODE_MUTE;
     }
     async handleAction(action) {
-        if (action === 'Mute all') {
+        if (action === "Mute all") {
             for (const widget of this.widgets) {
                 this.forceWidgetOff(widget, true);
             }
         }
-        else if (action === 'Enable all') {
+        else if (action === "Enable all") {
             for (const widget of this.widgets) {
                 this.forceWidgetOn(widget, true);
             }
         }
+        else if (action === "Toggle all") {
+            for (const widget of this.widgets) {
+                this.forceWidgetToggle(widget, true);
+            }
+        }
     }
 }
-MuterNode.exposedActions = ['Mute all', 'Enable all'];
+MuterNode.exposedActions = ["Mute all", "Enable all", "Toggle all"];
 MuterNode.type = NodeTypesString.FAST_MUTER;
 MuterNode.title = NodeTypesString.FAST_MUTER;
 app.registerExtension({
