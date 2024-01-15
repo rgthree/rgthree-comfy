@@ -24,6 +24,13 @@ export class RgthreeBaseNode extends LGraphNode {
         }
         this.configuring = false;
     }
+    clone() {
+        const cloned = super.clone();
+        if (cloned.properties && !!window.structuredClone) {
+            cloned.properties = structuredClone(cloned.properties);
+        }
+        return cloned;
+    }
     set mode(mode) {
         if (this.mode_ != mode) {
             this.mode_ = mode;

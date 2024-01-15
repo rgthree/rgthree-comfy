@@ -61,6 +61,19 @@ export class RgthreeBaseNode extends LGraphNode {
     this.configuring = false;
   }
 
+  /**
+   * Override clone for, at the least, deep-copying properties.
+   */
+  override clone() {
+    const cloned = super.clone();
+    // This is whild, but LiteGraph clone doesn't deep clone data, so we will. We'll use structured
+    // clone, which most browsers in 2022 support, but but we'll check.
+    if (cloned.properties && !!window.structuredClone) {
+      cloned.properties = structuredClone(cloned.properties);
+    }
+    return cloned;
+  }
+
 
   // @ts-ignore - Changing the property to an accessor here seems to work, but ts compiler complains.
   override set mode(mode: NodeMode) {
