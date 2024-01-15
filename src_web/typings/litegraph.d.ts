@@ -1180,6 +1180,10 @@ export declare class LGraphGroup {
     _size: Vector2;
     // @rgthree
     graph: LGraph;
+    // @rgthree - apparently it is available?
+    size: Vector2;
+    // @rgthree - apparently it is available?
+    pos: Vector2;
 
 
     configure(o: SerializedLGraphGroup): void;
@@ -1494,7 +1498,8 @@ export declare class LGraphCanvas {
     deleteSelectedNodes(): void;
 
     /** centers the camera on a given node */
-    centerOnNode(node: LGraphNode): void;
+    // @rgthree - narrow parameter
+    centerOnNode(node: {pos: Vector2, size: Vector2}): void;
     /** changes the zoom level of the graph (default is 1), you can pass also a place used to pivot the zoom */
     setZoom(value: number, center: Vector2): void;
     /** brings a node to front (above all other nodes) */

@@ -458,10 +458,20 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                 node.properties?.[PROPERTY_SHOW_NAV] !== false &&
                 pos[0] >= node.size[0] - 15 - 28 - 1
               ) {
+                const canvas = app.canvas as TLGraphCanvas;
                 const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
                 if (!lowQuality) {
-                  // Clicked on right half with nav arrow, go to the group.
-                  app.canvas.centerOnNode(group);
+                  // Clicked on right half with nav arrow, go to the group, center on group and set
+                  // zoom to see it all.
+                  canvas.centerOnNode(group);
+                  const zoomCurrent = canvas.ds?.scale || 1;
+                  const zoomX = canvas.canvas.width / group._size[0] - 0.02;
+                  const zoomY = canvas.canvas.height / group._size[1] - 0.02;
+                  canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+                    canvas.canvas.width / 2,
+                    canvas.canvas.height / 2,
+                  ]);
+                  canvas.setDirty(true, true);
                 }
               } else {
                 this.value = !this.value;
@@ -540,12 +550,12 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
   override async handleAction(action: string) {
     if (action === "Mute all" || action === "Bypass all") {
-      const alwaysOne = this.properties?.[PROPERTY_RESTRICTION] === 'always one';
+      const alwaysOne = this.properties?.[PROPERTY_RESTRICTION] === "always one";
       for (const [index, widget] of this.widgets.entries()) {
         (widget as any)?.doModeChange(alwaysOne && !index ? true : false, true);
       }
     } else if (action === "Enable all") {
-      const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(' one');
+      const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
       for (const [index, widget] of this.widgets.entries()) {
         (widget as any)?.doModeChange(onlyOne && index > 0 ? false : true, true);
       }

@@ -325,13 +325,22 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         return this.value;
                     },
                     mouse(event, pos, node) {
-                        var _a, _b;
+                        var _a, _b, _c;
                         if (event.type == "pointerdown") {
                             if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false &&
                                 pos[0] >= node.size[0] - 15 - 28 - 1) {
+                                const canvas = app.canvas;
                                 const lowQuality = (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1) <= 0.5;
                                 if (!lowQuality) {
-                                    app.canvas.centerOnNode(group);
+                                    canvas.centerOnNode(group);
+                                    const zoomCurrent = ((_c = canvas.ds) === null || _c === void 0 ? void 0 : _c.scale) || 1;
+                                    const zoomX = canvas.canvas.width / group._size[0] - 0.02;
+                                    const zoomY = canvas.canvas.height / group._size[1] - 0.02;
+                                    canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+                                        canvas.canvas.width / 2,
+                                        canvas.canvas.height / 2,
+                                    ]);
+                                    canvas.setDirty(true, true);
                                 }
                             }
                             else {
@@ -409,13 +418,13 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     async handleAction(action) {
         var _a, _b;
         if (action === "Mute all" || action === "Bypass all") {
-            const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === 'always one';
+            const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === "always one";
             for (const [index, widget] of this.widgets.entries()) {
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(alwaysOne && !index ? true : false, true);
             }
         }
         else if (action === "Enable all") {
-            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includes(' one');
+            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includes(" one");
             for (const [index, widget] of this.widgets.entries()) {
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(onlyOne && index > 0 ? false : true, true);
             }
