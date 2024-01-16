@@ -72,6 +72,7 @@ for old_dir in OLD_DIRS:
   if os.path.exists(old_dir):
     shutil.rmtree(old_dir)
 
+
 def extend_config(default_config, user_config):
   cfg = {}
   for key, value in default_config.items():
@@ -84,25 +85,24 @@ def extend_config(default_config, user_config):
   return cfg
 
 
-with open(os.path.join(DIR_WEB, 'rgthree_config.js'), 'w', encoding = 'UTF-8') as file:
+with open(os.path.join(DIR_WEB, 'rgthree_config.js'), 'w', encoding='UTF-8') as file:
   file.write('export const rgthreeConfig = ' + json.dumps(RGTHREE_CONFIG))
 
 # shutil.copy(os.path.join(THIS_DIR, 'rgthree_config.json'), os.path.join(DIR_WEB, 'rgthree_config.js'))
-
 
 NOT_NODES = ['constants', 'log', 'utils', 'rgthree']
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'WEB_DIRECTORY']
 
 nodes = []
-for file in glob.glob(os.path.join(DIR_PY, '*.py')) + glob.glob(os.path.join(DIR_WEB, 'js', '*.js')):
+for file in glob.glob(os.path.join(DIR_PY, '*.py')) + glob.glob(os.path.join(DIR_WEB, 'js',
+                                                                             '*.js')):
   name = os.path.splitext(file)[0]
   if name not in nodes and name not in NOT_NODES and not name.startswith(
       '_') and not name.startswith('base') and not 'utils' in name:
     nodes.append(name)
 
 log_welcome(num_nodes=len(nodes))
-
 
 # Alright, I don't like doing this, but until https://github.com/comfyanonymous/ComfyUI/issues/1502
 # and/or https://github.com/comfyanonymous/ComfyUI/pull/1503 is pulled into ComfyUI, we need a way
@@ -114,8 +114,9 @@ log_welcome(num_nodes=len(nodes))
 if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recursive_execution']:
   import execution
 
-  msg = "\33[32m[rgthree] Optimizing ComfyUI recursive execution. \33[33mIf queueing and/or re-queueing seems "
-  msg += "broken, change \"patch_recursive_execution\" to false in rgthree_config.json \33[0m"
+  msg = "\33[32m[rgthree] Optimizing ComfyUI recursive execution. "
+  msg += "\33[33mIf queueing and/or re-queueing seems broken, change \"patch_recursive_execution\" "
+  msg += "to false in rgthree_config.json \33[0m"
   print(msg)
 
   class RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working:
@@ -128,6 +129,7 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
     This mimics the enhancement from https://github.com/rgthree/ComfyUI/commit/50b3fb1 but without
     modifying the execution.py
     """
+
     def __init__(self, unique_id):
       self.unique_id = unique_id
       self.count = 0
@@ -160,8 +162,10 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
       return self.count < other
 
     def __str__(self):
-      return str((self.count, self.unique_id,))
-
+      return str((
+        self.count,
+        self.unique_id,
+      ))
 
   execution.rgthree_cache_recursive_output_delete_if_changed_output = {}
   execution.rgthree_cache_recursive_will_execute = {}
@@ -170,36 +174,37 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
     # When we execute, we'll reset our global cache here.
     execution.rgthree_cache_recursive_output_delete_if_changed_output = {}
     execution.rgthree_cache_recursive_will_execute = {}
-    return self.old_execute(*args, **kwargs)
-
+    return self.rgthree_old_execute(*args, **kwargs)
 
   def rgthree_recursive_will_execute(prompt, outputs, current_item, *args, **kwargs):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
-    will_execute = RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working(unique_id)
+    will_execute = RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working(
+      unique_id)
     if unique_id in outputs:
-        return will_execute
+      return will_execute
 
     will_execute.add(1)
     for x in inputs:
-        input_data = inputs[x]
-        if isinstance(input_data, list):
-          input_unique_id = input_data[0]
-          output_index = input_data[1]
-          node_output_cache_key = f'{input_unique_id}.{output_index}'
-          will_execute_value = None
-          # If this node's output has already been recursively evaluated, then we can reuse.
-          if node_output_cache_key in execution.rgthree_cache_recursive_will_execute:
-            will_execute_value = execution.rgthree_cache_recursive_will_execute[node_output_cache_key]
-          elif input_unique_id not in outputs:
-            will_execute_value = execution.recursive_will_execute(prompt, outputs, input_unique_id, *args, **kwargs)
-            execution.rgthree_cache_recursive_will_execute[node_output_cache_key] = will_execute_value
-          if will_execute_value is not None:
-            will_execute.add(len(will_execute_value))
+      input_data = inputs[x]
+      if isinstance(input_data, list):
+        input_unique_id = input_data[0]
+        output_index = input_data[1]
+        node_output_cache_key = f'{input_unique_id}.{output_index}'
+        will_execute_value = None
+        # If this node's output has already been recursively evaluated, then we can reuse.
+        if node_output_cache_key in execution.rgthree_cache_recursive_will_execute:
+          will_execute_value = execution.rgthree_cache_recursive_will_execute[node_output_cache_key]
+        elif input_unique_id not in outputs:
+          will_execute_value = execution.recursive_will_execute(prompt, outputs, input_unique_id,
+                                                                *args, **kwargs)
+          execution.rgthree_cache_recursive_will_execute[node_output_cache_key] = will_execute_value
+        if will_execute_value is not None:
+          will_execute.add(len(will_execute_value))
     return will_execute
 
-
-  def rgthree_recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item, *args, **kwargs):
+  def rgthree_recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item, *args,
+                                                 **kwargs):
     unique_id = current_item
     inputs = prompt[unique_id]['inputs']
     class_type = prompt[unique_id]['class_type']
@@ -244,8 +249,8 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
               to_delete = execution.rgthree_cache_recursive_output_delete_if_changed_output[
                 node_output_cache_key]
             elif input_unique_id in outputs:
-              to_delete = execution.recursive_output_delete_if_changed(prompt, old_prompt, outputs,
-                                                                      input_unique_id, *args, **kwargs)
+              to_delete = execution.recursive_output_delete_if_changed(
+                prompt, old_prompt, outputs, input_unique_id, *args, **kwargs)
               execution.rgthree_cache_recursive_output_delete_if_changed_output[
                 node_output_cache_key] = to_delete
             else:
@@ -260,15 +265,15 @@ if 'patch_recursive_execution' in RGTHREE_CONFIG and RGTHREE_CONFIG['patch_recur
       del d
     return to_delete
 
+  # Some installations may have been isntantiating this twice, so let's ensure we only do it twice.
+  if not hasattr(execution.PromptExecutor, 'rgthree_old_execute'):
+    execution.PromptExecutor.rgthree_old_execute = execution.PromptExecutor.execute
+    execution.PromptExecutor.execute = rgthree_execute
 
-  execution.PromptExecutor.old_execute = execution.PromptExecutor.execute
-  execution.PromptExecutor.execute = rgthree_execute
+    execution.rgthree_old_recursive_output_delete_if_changed = execution.recursive_output_delete_if_changed
+    execution.recursive_output_delete_if_changed = rgthree_recursive_output_delete_if_changed
 
-  execution.old_recursive_output_delete_if_changed = execution.recursive_output_delete_if_changed
-  execution.recursive_output_delete_if_changed = rgthree_recursive_output_delete_if_changed
-
-  execution.old_recursive_will_execute = execution.recursive_will_execute
-  execution.recursive_will_execute = rgthree_recursive_will_execute
-
+    execution.rgthree_old_recursive_will_execute = execution.recursive_will_execute
+    execution.recursive_will_execute = rgthree_recursive_will_execute
 
 print()
