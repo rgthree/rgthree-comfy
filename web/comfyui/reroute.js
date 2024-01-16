@@ -201,7 +201,7 @@ class RerouteNode extends RgthreeBaseNode {
         this.isVirtualNode = true;
         this.hideSlotLabels = true;
         this.schedulePromise = null;
-        this.defaultConnectionsLayout = configLayout;
+        this.defaultConnectionsLayout = Array.from(configLayout);
         this.shortcuts = {
             rotate: { keys: CONFIG_KEY_ROTATE, state: false },
             connection_input: { keys: CONFIG_KEY_CXN_INPUT, state: false },

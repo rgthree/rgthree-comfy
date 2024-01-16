@@ -343,7 +343,7 @@ class RerouteNode extends RgthreeBaseNode {
 
   private schedulePromise: Promise<void> | null = null;
 
-  defaultConnectionsLayout = configLayout;
+  defaultConnectionsLayout = Array.from(configLayout);
 
   /** Shortcuts defined in the config. */
   private shortcuts = {
