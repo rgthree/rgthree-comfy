@@ -11,8 +11,8 @@ import type {
   LGraphNode as TLGraphNode,
   LiteGraph as TLiteGraph,
   IWidget,
-} from "../typings/litegraph.js";
-import type { ComfyApp, ComfyObjectInfo, ComfyWidget, ComfyGraphNode } from "../typings/comfy.js";
+} from "typings/litegraph.js";
+import type { ComfyApp, ComfyObjectInfo, ComfyWidget, ComfyGraphNode } from "typings/comfy.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";

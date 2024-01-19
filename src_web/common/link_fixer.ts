@@ -1,5 +1,5 @@
-import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "index";
-import type { LGraph, LGraphNode, LLink } from "../typings/litegraph";
+import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index";
+import type { LGraph, LGraphNode, LLink } from "typings/litegraph";
 
 enum IoDirection {
   INPUT,

@@ -3,7 +3,7 @@
 import {app} from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import {rgthree} from "./rgthree.js"
-import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from '../typings/litegraph.js';
+import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
 import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, filterOutPassthroughNodes, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;

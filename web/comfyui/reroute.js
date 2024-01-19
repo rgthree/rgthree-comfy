@@ -4,7 +4,7 @@ import { getWidgetConfig, mergeIfValid, setWidgetConfig } from "../../extensions
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import { IoDirection, LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, setConnectionsLayout, waitForCanvas, } from "./utils.js";
-import { wait } from "./shared_utils.js";
+import { wait } from "../../rgthree/common/shared_utils.js";
 import { RgthreeBaseNode } from "./base_node.js";
 const CONFIG_REROUTE = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig["nodes"]) === null || _a === void 0 ? void 0 : _a["reroute"]) || {};
 const CONFIG_FAST_REROUTE = CONFIG_REROUTE["fast_reroute"];

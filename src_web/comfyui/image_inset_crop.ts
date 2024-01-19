@@ -2,11 +2,11 @@
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 // @ts-ignore
-import type {ComfyApp, ComfyObjectInfo,} from '../typings/comfy.js';
-import type {Constructor} from '../typings/index.js'
+import type {ComfyApp, ComfyObjectInfo,} from 'typings/comfy.js';
+import type {Constructor} from 'typings/index.js'
 import { RgthreeBaseNode } from "./base_node.js";
 import { applyMixins } from "./utils.js";
-import { IComboWidget, IWidget, LGraph, LGraphCanvas, LGraphNode, SerializedLGraphNode, Vector2 } from "litegraph.js";
+import { IComboWidget, IWidget, LGraph, LGraphCanvas, LGraphNode, SerializedLGraphNode, Vector2 } from "typings/litegraph.js";
 
 class ImageInsetCrop extends RgthreeBaseNode {
 

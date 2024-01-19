@@ -11,8 +11,8 @@ import type {
   SerializedLGraphNode,
   LGraphNode as TLGraphNode,
   LiteGraph as TLiteGraph,
-} from "../typings/litegraph.js";
-import type { ComfyApp, ComfyObjectInfo } from "../typings/comfy.js";
+} from "typings/litegraph.js";
+import type { ComfyApp, ComfyObjectInfo } from "typings/comfy.js";
 import {
   IoDirection,
   addConnectionLayoutSupport,

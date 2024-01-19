@@ -1,4 +1,4 @@
-import type { ComfyApp, ComfyObjectInfo } from "../typings/comfy";
+import type { ComfyApp, ComfyObjectInfo } from "typings/comfy";
 import type {
   Vector2,
   LGraphCanvas as TLGraphCanvas,
@@ -12,13 +12,13 @@ import type {
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
-} from "../typings/litegraph.js";
-import type { Constructor } from "../typings/index.js";
+} from "typings/litegraph.js";
+import type { Constructor } from "typings/index.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
-import { Resolver, getResolver, wait } from "./shared_utils.js";
+import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
 import { RgthreeHelpDialog } from "./dialog.js";
 
 declare const LGraph: typeof TLGraph;

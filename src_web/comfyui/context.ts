@@ -7,8 +7,8 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
-} from "../typings/litegraph.js";
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "../typings/comfy.js";
+} from "typings/litegraph.js";
+import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import {

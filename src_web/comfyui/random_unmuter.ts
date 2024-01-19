@@ -5,7 +5,7 @@ import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";
-import type {LGraphNode} from '../typings/litegraph.js';
+import type {LGraphNode} from 'typings/litegraph.js';
 import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
 
 const MODE_MUTE = 2;

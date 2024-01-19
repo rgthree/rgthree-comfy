@@ -1,4 +1,4 @@
-import type { LLink, INodeOutputSlot, LGraphNode } from "litegraph.js";
+import type { LLink, INodeOutputSlot, LGraphNode } from "typings/litegraph.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";

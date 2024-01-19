@@ -10,7 +10,7 @@ import {
   ISliderWidget,
   INumberWidget,
   Vector2,
-} from "../typings/litegraph.js";
+} from "typings/litegraph.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 

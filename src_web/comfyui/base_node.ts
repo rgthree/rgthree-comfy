@@ -1,6 +1,6 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-import { NodeMode } from "../typings/comfy.js";
-import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode, LGraphCanvas, ContextMenuItem} from '../typings/litegraph.js';
+import { NodeMode } from "typings/comfy.js";
+import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode, LGraphCanvas, ContextMenuItem} from 'typings/litegraph.js';
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore

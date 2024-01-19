@@ -3,7 +3,7 @@
 import {app} from "../../scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
 import { NodeTypesString } from "./constants.js";
-import type {LGraphNode} from '../typings/litegraph.js';
+import type {LGraphNode} from 'typings/litegraph.js';
 
 const MODE_BYPASS = 4;
 const MODE_ALWAYS = 0;

@@ -1,7 +1,7 @@
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type { LGraphCanvas, ContextMenuItem } from "../typings/litegraph.js";
-import type { ComfyNodeConstructor, ComfyObjectInfo } from "comfy.js";
+import type { LGraphCanvas, ContextMenuItem } from "typings/litegraph.js";
+import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 
 const clipboardSupportedPromise = new Promise<boolean>(async (resolve) => {
   try {

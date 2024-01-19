@@ -1,9 +1,9 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from '../typings/litegraph.js';
+import type {LLink, LGraph, ContextMenuItem, LGraphCanvas, SerializedLGraphNode, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IContextMenuOptions, ContextMenu} from 'typings/litegraph.js';
 import { addConnectionLayoutSupport } from "./utils.js";
-import { wait } from "./shared_utils.js";
+import { wait } from "rgthree/common/shared_utils.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore

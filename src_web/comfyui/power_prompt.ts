@@ -1,8 +1,8 @@
 // / <reference path='../node_modules/litegraph.js/src/litegraph.d.ts' />
 // @ts-ignore
 import {app} from '../../scripts/app.js';
-import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from '../typings/litegraph.js';
-import type {ComfyApp, ComfyObjectInfo, ComfyGraphNode} from '../typings/comfy.js'
+import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from 'typings/litegraph.js';
+import type {ComfyApp, ComfyObjectInfo, ComfyGraphNode} from 'typings/comfy.js'
 import {addConnectionLayoutSupport} from './utils.js';
 import { PowerPrompt } from './base_power_prompt.js';
 

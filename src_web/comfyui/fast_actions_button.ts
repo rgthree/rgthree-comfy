@@ -4,14 +4,14 @@ import { app } from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { ComfyApp, ComfyWidget } from "../typings/comfy.js";
+import { ComfyApp, ComfyWidget } from "typings/comfy.js";
 import type {
   IWidget,
   LGraph,
   LGraphNode,
   SerializedLGraphNode,
-} from "../typings/litegraph.js";
-import type { Constructor } from "../typings/index.js";
+} from "typings/litegraph.js";
+import type { Constructor } from "typings/index.js";
 import { addMenuItem } from "./utils.js";
 import { rgthree } from "./rgthree.js";
 

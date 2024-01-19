@@ -16,7 +16,7 @@ import type {
   INodeOutputSlot,
   LGraphNode as TLGraphNode,
   LiteGraph as TLiteGraph,
-} from "../typings/litegraph.js";
+} from "typings/litegraph.js";
 import {
   IoDirection,
   LAYOUT_CLOCKWISE,
@@ -29,7 +29,7 @@ import {
   setConnectionsLayout,
   waitForCanvas,
 } from "./utils.js";
-import { wait } from "./shared_utils.js";
+import { wait } from "rgthree/common/shared_utils.js";
 import { RgthreeBaseNode } from "./base_node.js";
 
 declare const LiteGraph: typeof TLiteGraph;

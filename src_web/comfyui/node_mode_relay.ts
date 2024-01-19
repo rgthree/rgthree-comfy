@@ -10,15 +10,15 @@ import type {
   LLink,
   LiteGraph as TLiteGraph,
   Vector2,
-} from "../typings/litegraph.js";
-import type { NodeMode } from "../typings/comfy.js";
+} from "typings/litegraph.js";
+import type { NodeMode } from "typings/comfy.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import { wait } from "./shared_utils.js";
+import { wait } from "rgthree/common/shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";

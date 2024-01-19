@@ -1,4 +1,4 @@
-import { fixBadLinks } from "../comfyui/link_fixer.js";
+import { fixBadLinks } from "../common/link_fixer.js";
 import { getPngMetadata } from "../../scripts/pnginfo.js";
 function wait(ms = 16, value) {
     return new Promise((resolve) => {

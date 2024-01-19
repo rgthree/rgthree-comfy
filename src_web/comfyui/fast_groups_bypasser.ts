@@ -6,7 +6,7 @@ import { FastGroupsMuter } from "./fast_groups_muter.js";
 import {
   type LGraphNode,
   type LiteGraph as TLiteGraph,
-} from "../typings/litegraph.js";
+} from "typings/litegraph.js";
 
 
 declare const LiteGraph: typeof TLiteGraph;

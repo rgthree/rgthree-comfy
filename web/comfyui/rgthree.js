@@ -1,8 +1,8 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { rgthreeConfig } from "./rgthree_config.js";
-import { fixBadLinks } from "./link_fixer.js";
-import { wait } from "./shared_utils.js";
+import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
+import { wait } from "../../rgthree/common/shared_utils.js";
 import { waitForCanvas, waitForGraph } from "./utils.js";
 export var LogLevel;
 (function (LogLevel) {

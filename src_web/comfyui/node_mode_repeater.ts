@@ -12,7 +12,7 @@ import type {
   LGraphNode,
   LLink,
   LiteGraph as TLiteGraph,
-} from "../typings/litegraph.js";
+} from "typings/litegraph.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,

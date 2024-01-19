@@ -13,7 +13,7 @@ import {
   IWidget,
   LGraphGroup,
   Vector4,
-} from "../typings/litegraph.js";
+} from "typings/litegraph.js";
 import { fitString } from "./utils_canvas.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;

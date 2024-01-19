@@ -3,15 +3,15 @@ import {
   type LGraphNode,
   type SerializedLGraphNode,
   type serializedLGraph,
-} from "litegraph.js";
+} from "typings/litegraph.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
 // @ts-ignore
 import { rgthreeConfig } from "./rgthree_config.js";
-import { fixBadLinks } from "./link_fixer.js";
-import { wait } from "./shared_utils.js";
+import { fixBadLinks } from "rgthree/common/link_fixer.js";
+import { wait } from "rgthree/common/shared_utils.js";
 import { waitForCanvas, waitForGraph } from "./utils.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;

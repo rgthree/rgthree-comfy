@@ -1,6 +1,6 @@
 
-import type { SerializedGraph, BadLinksData } from "index";
-import { fixBadLinks } from "../comfyui/link_fixer.js";
+import type { SerializedGraph, BadLinksData } from "typings/index";
+import { fixBadLinks } from "../common/link_fixer.js";
 // @ts-ignore
 import { getPngMetadata } from "../../scripts/pnginfo.js";
 

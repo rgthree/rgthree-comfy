@@ -4,8 +4,8 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { ComfyNodeConstructor, ComfyObjectInfo } from "comfy.js";
-import { ContextMenuItem, IWidget, LGraphCanvas, LGraphNode, SerializedLGraphNode, Vector2 } from "../typings/litegraph.js";
+import { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
+import { ContextMenuItem, IWidget, LGraphCanvas, LGraphNode, SerializedLGraphNode, Vector2 } from "typings/litegraph.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 
 /**

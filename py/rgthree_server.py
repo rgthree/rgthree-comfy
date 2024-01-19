@@ -21,6 +21,10 @@ routes = PromptServer.instance.routes
 async def get_comfyui_file_relative(request):
   return web.FileResponse(os.path.join(DIR_WEB, 'comfyui', request.match_info['file']))
 
+@routes.get('/rgthree/common/{file}')
+async def get_common_file(request):
+  return web.FileResponse(os.path.join(DIR_WEB, 'common', request.match_info['file']))
+
 
 @routes.get('/rgthree/link_fixer')
 async def link_fixer_home_redir(request):

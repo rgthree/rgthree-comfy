@@ -1,4 +1,4 @@
-import { LGraphNode, LGraphNodeConstructor } from "litegraph.js";
+import { LGraphNode, LGraphNodeConstructor } from "typings/litegraph.js";
 import { createElement as $el } from "./utils_dom.js";
 
 type RgthreeDialogOptions = {
