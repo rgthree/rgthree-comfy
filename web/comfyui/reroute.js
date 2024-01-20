@@ -1,11 +1,12 @@
 var _a, _b;
 import { app } from "../../scripts/app.js";
-import { getWidgetConfig, mergeIfValid, setWidgetConfig } from "../../extensions/core/widgetInputs.js";
+import { getWidgetConfig, mergeIfValid, setWidgetConfig, } from "../../extensions/core/widgetInputs.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { rgthree } from "./rgthree.js";
 import { IoDirection, LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, setConnectionsLayout, waitForCanvas, } from "./utils.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { RgthreeBaseNode } from "./base_node.js";
+import { NodeTypesString } from "./constants.js";
 const CONFIG_REROUTE = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig["nodes"]) === null || _a === void 0 ? void 0 : _a["reroute"]) || {};
 const CONFIG_FAST_REROUTE = CONFIG_REROUTE["fast_reroute"];
 const CONFIG_FAST_REROUTE_ENABLED = (_b = CONFIG_FAST_REROUTE["enabled"]) !== null && _b !== void 0 ? _b : false;
@@ -126,24 +127,24 @@ class RerouteService {
         if (distX > 0 && Math.abs(distX) > Math.abs(distY)) {
             layout[0] = canvas.connecting_output ? "Left" : "Right";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
-            node.pos[0] -= (node.size[0] + 10);
-            node.pos[1] -= (Math.round((node.size[1] / 2) / 10) * 10);
+            node.pos[0] -= node.size[0] + 10;
+            node.pos[1] -= Math.round(node.size[1] / 2 / 10) * 10;
         }
         else if (distX < 0 && Math.abs(distX) > Math.abs(distY)) {
             layout[0] = canvas.connecting_output ? "Right" : "Left";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
-            node.pos[1] -= (Math.round((node.size[1] / 2) / 10) * 10);
+            node.pos[1] -= Math.round(node.size[1] / 2 / 10) * 10;
         }
         else if (distY < 0 && Math.abs(distY) > Math.abs(distX)) {
             layout[0] = canvas.connecting_output ? "Bottom" : "Top";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
-            node.pos[0] -= (Math.round((node.size[0] / 2) / 10) * 10);
+            node.pos[0] -= Math.round(node.size[0] / 2 / 10) * 10;
         }
         else if (distY > 0 && Math.abs(distY) > Math.abs(distX)) {
             layout[0] = canvas.connecting_output ? "Top" : "Bottom";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
-            node.pos[0] -= (Math.round((node.size[0] / 2) / 10) * 10);
-            node.pos[1] -= (node.size[1] + 10);
+            node.pos[0] -= Math.round(node.size[0] / 2 / 10) * 10;
+            node.pos[1] -= node.size[1] + 10;
         }
         setConnectionsLayout(entry.node, layout);
         if (canvas.connecting_output) {
@@ -234,6 +235,12 @@ class RerouteNode extends RgthreeBaseNode {
         this.setResizable((_a = this.properties["resizable"]) !== null && _a !== void 0 ? _a : configResizable);
         this.applyNodeSize();
         this.configuring = false;
+    }
+    findInputSlot(name) {
+        return 0;
+    }
+    findOutputSlot(name) {
+        return 0;
     }
     setResizable(resizable) {
         this.properties["resizable"] = !!resizable;
@@ -399,7 +406,7 @@ class RerouteNode extends RgthreeBaseNode {
                                     }
                                 }
                                 catch (e) {
-                                    console.error('[rgthree] Could not propagate widget infor for reroute; maybe ComfyUI updated?');
+                                    console.error("[rgthree] Could not propagate widget infor for reroute; maybe ComfyUI updated?");
                                     outputWidgetConfig = null;
                                     outputWidget = null;
                                 }
@@ -435,7 +442,7 @@ class RerouteNode extends RgthreeBaseNode {
                 }
             }
             catch (e) {
-                console.error('[rgthree] Could not set widget config for reroute; maybe ComfyUI updated?');
+                console.error("[rgthree] Could not set widget config for reroute; maybe ComfyUI updated?");
                 outputWidgetConfig = null;
                 outputWidget = null;
                 if ((_j = node.inputs[0]) === null || _j === void 0 ? void 0 : _j.widget) {
@@ -712,10 +719,8 @@ class RerouteNode extends RgthreeBaseNode {
       </p>
 
       ${!CONFIG_FAST_REROUTE_ENABLED
-            ?
-                `<p><i>Fast Shortcuts are currently disabled.</b>`
-            :
-                `
+            ? `<p><i>Fast Shortcuts are currently disabled.</b>`
+            : `
         <ul>
           <li><p>
             <code>${CONFIG_KEY_CREATE_WHILE_LINKING}</code> Create a new reroute node while dragging
@@ -744,7 +749,7 @@ class RerouteNode extends RgthreeBaseNode {
         </ul>
       `}
       <p><small>
-        To change, ${!CONFIG_FAST_REROUTE_ENABLED ? 'enable' : 'disable'} or configure sohrtcuts,
+        To change, ${!CONFIG_FAST_REROUTE_ENABLED ? "enable" : "disable"} or configure sohrtcuts,
         make a copy of
         <code>/custom_nodes/rgthree-comfy/rgthree_config.json.default</code> to
         <code>/custom_nodes/rgthree-comfy/rgthree_config.json</code> and configure under
@@ -753,7 +758,7 @@ class RerouteNode extends RgthreeBaseNode {
     `;
     }
 }
-RerouteNode.title = "Reroute (rgthree)";
+RerouteNode.title = NodeTypesString.REROUTE;
 RerouteNode.title_mode = LiteGraph.NO_TITLE;
 RerouteNode.collapsable = false;
 RerouteNode.layout_slot_offset = 5;

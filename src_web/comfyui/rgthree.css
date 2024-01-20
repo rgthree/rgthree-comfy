@@ -193,3 +193,30 @@
   margin: 0.25rem;
   cursor: pointer;
 }
+
+.litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
+}
+.litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item svg {
+  fill: currentColor;
+  width: auto;
+  height: 16px;
+  margin-right: 6px;
+}
+.litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item svg.github-star {
+  fill: rgb(227, 179, 65);
+}
+
+.litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-label {
+  color: #dde;
+  background-color: #090909 !important;
+  margin: 0;
+  padding: 2px;
+  cursor: default;
+  opacity: 1;
+  padding: 4px;
+  font-weight: bold;
+}

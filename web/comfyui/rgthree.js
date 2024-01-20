@@ -3,7 +3,8 @@ import { api } from "../../scripts/api.js";
 import { rgthreeConfig } from "./rgthree_config.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
-import { waitForCanvas, waitForGraph } from "./utils.js";
+import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
+import { NodeTypesString } from "./constants.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -86,6 +87,7 @@ class Rgthree extends EventTarget {
         });
         this.initializeGraphAndCanvasHooks();
         this.initializeComfyUIHooks();
+        this.initializeContextMenu();
         wait(100).then(() => {
             this.injectRgthreeCss();
         });
@@ -112,6 +114,73 @@ class Rgthree extends EventTarget {
             onGroupAdd.apply(canvas, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
         };
+    }
+    async initializeContextMenu() {
+        const graph = await waitForGraph();
+        setTimeout(() => {
+            const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
+            LGraphCanvas.prototype.getCanvasMenuOptions = function (...args) {
+                const options = getCanvasMenuOptions.apply(this, [...args]);
+                const hasReroutes = graph._nodes.find((n) => n.type == "Reroute");
+                options.push(null);
+                options.push({
+                    content: `
+          <svg viewBox="0 0 256 256">
+            <path d="M88.503,158.997 L152.731,196.103 L152.738,196.092 L152.762,196.103 L152.769,196.106 L152.771,196.103 L183.922,142.084     L174.153,136.437 L148.611,180.676 L101.512,153.484 L132.193,30.415 L156.124,71.869 L165.896,66.225 L128.002,0.59 "></path>
+            <path d="M55.586,148.581l13.44,47.521l0.014,0.051l0.168-0.051l10.689-3.022l-6.589-23.313l45.609,26.335l0.087,0.051l0.027-0.051     l5.617-9.718l-42.648-24.622l35.771-143.45L33.232,164.729l9.77,5.645L55.586,148.581z M87.394,93.484l-16.708,67.018l-5.018-17.747     l-8.028,2.27L87.394,93.484z"></path>
+            <path d="M189.85,107.717 L137.892,137.718 L143.532,147.49 L185.723,123.133 L231.109,201.746 L24.895,201.746 L37.363,180.146     L27.592,174.505 L5.347,213.03 L250.653,213.03 "></path>
+            <path d="M5.347,247.299v8.111h245.307v-8.111l-41.94-0.003c-1.336,0-2.404-1.065-2.441-2.396v-12.14     c0.037-1.315,1.089-2.368,2.41-2.385h41.972v-8.11H5.347v8.11h41.951c1.338,0.017,2.427,1.104,2.427,2.449v12.01     c0,1.365-1.105,2.462-2.457,2.462L5.347,247.299z M139.438,247.296c-1.334,0-2.406-1.065-2.439-2.396v-12.14     c0.033-1.315,1.085-2.368,2.41-2.385h46.415c1.335,0.017,2.425,1.104,2.425,2.449v12.01c0,1.365-1.103,2.462-2.459,2.462H139.438z       M70.193,247.296c-1.339,0-2.408-1.065-2.441-2.396v-12.14c0.033-1.315,1.086-2.368,2.407-2.385h46.418     c1.336,0.017,2.425,1.104,2.425,2.449v12.01c0,1.365-1.103,2.462-2.458,2.462H70.193z"></path>
+          </svg>
+          rgthree-comfy`,
+                    className: "rgthree-contextmenu-item rgthree-contextmenu-main-rgthree-comfy",
+                    submenu: {
+                        options: [
+                            {
+                                content: "Functions",
+                                disabled: true,
+                                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+                            },
+                            {
+                                content: "Convert all 'Reroute' => 'Reroute (rgthree)'",
+                                disabled: !hasReroutes,
+                                callback: (...args) => {
+                                    const msg = "Convert all comfyui reroute nodes to rgthree-comfy reroute nodes? \n" +
+                                        "(First save a copy of your workflow & check reroute connections afterwards)";
+                                    if (!window.confirm(msg)) {
+                                        return;
+                                    }
+                                    (async () => {
+                                        const nodes = [...graph._nodes];
+                                        for (const node of nodes) {
+                                            if (node.type == "Reroute") {
+                                                await replaceNode(node, NodeTypesString.REROUTE);
+                                            }
+                                        }
+                                    })();
+                                },
+                            },
+                            {
+                                content: "More...",
+                                disabled: true,
+                                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+                            },
+                            {
+                                content: `
+                <svg viewBox="0 0 16 16" class="github-star">
+                  <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
+                </svg>
+                Star on Github`,
+                                callback: (...args) => {
+                                    window.open("https://github.com/rgthree/rgthree-comfy", "_blank");
+                                },
+                                className: "rgthree-contextmenu-item rgthree-contextmenu-github",
+                            },
+                        ],
+                    },
+                });
+                return options;
+            };
+        }, 1000);
     }
     initializeComfyUIHooks() {
         const rgthree = this;

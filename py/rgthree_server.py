@@ -14,30 +14,44 @@ DIR_WEB = os.path.abspath(f'{THIS_DIR}/../web/')
 routes = PromptServer.instance.routes
 
 
+def set_default_page_resources(path):
+  """ Sets up routes for handling static files under a path."""
+
+  @routes.get(f'/rgthree/{path}/{{file}}')
+  async def get_resource(request):
+    """ Returns a resource file. """
+    return web.FileResponse(os.path.join(DIR_WEB, path, request.match_info['file']))
+
+  @routes.get(f'/rgthree/{path}/{{subdir}}/{{file}}')
+  async def get_resource_subdir(request):
+    """ Returns a resource file. """
+    return web.FileResponse(
+      os.path.join(DIR_WEB, path, request.match_info['subdir'], request.match_info['file']))
+
+
+def set_default_page_routes(path):
+  """ Sets default path handling for a hosted rgthree page. """
+
+  @routes.get(f'/rgthree/{path}')
+  async def get_path_redir(request):
+    """ Redirects to the path adding a trailing slash. """
+    raise web.HTTPFound(f'{request.path}/')
+
+  @routes.get(f'/rgthree/{path}/')
+  async def get_path_index(request):
+    """ Handles the page's index loading. """
+    html = ''
+    with open(os.path.join(DIR_WEB, path, 'index.html'), 'r', encoding='UTF-8') as file:
+      html = file.read()
+    return web.Response(text=html, content_type='text/html')
+
+  set_default_page_resources(path)
+
+
 # Sometimes other pages (link_fixer, etc.) may want to import JS from the comfyui
 # directory. To allows TS to resolve like '../comfyui/file.js', we'll also resolve any module HTTP
 # to these routes.
-@routes.get('/rgthree/comfyui/{file}')
-async def get_comfyui_file_relative(request):
-  return web.FileResponse(os.path.join(DIR_WEB, 'comfyui', request.match_info['file']))
+set_default_page_resources("comfyui")
+set_default_page_resources("common")
 
-@routes.get('/rgthree/common/{file}')
-async def get_common_file(request):
-  return web.FileResponse(os.path.join(DIR_WEB, 'common', request.match_info['file']))
-
-
-@routes.get('/rgthree/link_fixer')
-async def link_fixer_home_redir(request):
-  raise web.HTTPFound(f'{request.path}/')
-
-@routes.get('/rgthree/link_fixer/')
-async def link_fixer_home(request):
-  html = ''
-  with open(os.path.join(DIR_WEB, 'link_fixer', 'index.html'), 'r', encoding='UTF-8') as file:
-    html = file.read()
-  return web.Response(text=html, content_type='text/html')
-
-
-@routes.get('/rgthree/link_fixer/{file}')
-async def get_link_fixer_file(request):
-  return web.FileResponse(os.path.join(DIR_WEB, 'link_fixer', request.match_info['file']))
+set_default_page_routes("link_fixer")
