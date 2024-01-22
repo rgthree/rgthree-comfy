@@ -103,3 +103,90 @@ export type ComfyObjectInfo = {
 };
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any];
+
+// @rgthree
+type ComfyApiInputLink = [
+  /** The id string of the connected node. */
+  string,
+  /** The output index. */
+  number,
+]
+
+// @rgthree
+export type ComfyApiFormatNode = {
+  "inputs": {
+    [input_name: string]: string|number|boolean|ComfyApiInputLink,
+  },
+  "class_type": string,
+  "_meta": {
+    "title": string,
+  }
+}
+
+// @rgthree
+export type ComfyApiFormat = {
+  [node_id: string]: ComfyApiFormatNode
+}
+
+// @rgthree
+export type ComfyApiPrompt = {
+  workflow: any,
+  output: ComfyApiFormat,
+}
+
+// @rgthree
+export type ComfyApiEventDetailStatus = {
+  exec_info: {
+    queue_remaining: number;
+  };
+};
+
+// @rgthree
+export type ComfyApiEventDetailExecutionStart = {
+  prompt_id: string;
+};
+
+// @rgthree
+export type ComfyApiEventDetailExecuting = null | string;
+
+// @rgthree
+export type ComfyApiEventDetailProgress = {
+  node: string;
+  prompt_id: string;
+  max: number;
+  value: number;
+};
+
+// @rgthree
+export type ComfyApiEventDetailExecuted = {
+  node: string;
+  prompt_id: string;
+  output: any;
+};
+
+// @rgthree
+export type ComfyApiEventDetailCached = {
+  nodes: string[];
+  prompt_id: string;
+};
+
+// @rgthree
+export type ComfyApiEventDetailExecuted = {
+  prompt_id: string;
+  node: string;
+  output: any;
+};
+
+// @rgthree
+export type ComfyApiEventDetailError = {
+  prompt_id: string;
+  exception_type: string;
+  exception_message: string;
+  node_id: string;
+  node_type: string;
+  node_id: string;
+  traceback: string;
+  executed: any[];
+  current_inputs:  {[key: string]: (number[]|string[])};
+  current_outputs: {[key: string]: (number[]|string[])};
+}

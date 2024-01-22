@@ -5,6 +5,7 @@ import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
+import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -91,6 +92,13 @@ class Rgthree extends EventTarget {
         wait(100).then(() => {
             this.injectRgthreeCss();
         });
+        this.initializeProgressBar();
+    }
+    initializeProgressBar() {
+        var _a, _b, _c;
+        if ((_c = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.features) === null || _b === void 0 ? void 0 : _b.progress_bar) === null || _c === void 0 ? void 0 : _c.enabled) {
+            document.body.appendChild(RgthreeProgressBar.create());
+        }
     }
     async initializeGraphAndCanvasHooks() {
         const rgthree = this;

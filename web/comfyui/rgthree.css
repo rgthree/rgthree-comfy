@@ -220,3 +220,18 @@
   padding: 4px;
   font-weight: bold;
 }
+
+rgthree-progress-bar {
+  display: block;
+  position: fixed;
+  z-index: 999;
+  top: 0;
+  left: 0;
+  height: 14px;
+  font-size: 10px;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(23,23,23,0.9);
+  box-shadow: 0px 0px 3px rgba(0,0,0,0.25);
+  box-shadow: inset 0px -1px 0px rgba(0,0,0,0.25), 0px 1px 0px rgba(255,255,255,0.125);
+}

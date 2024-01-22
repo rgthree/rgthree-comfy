@@ -14,6 +14,7 @@ import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
+import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
 
@@ -145,6 +146,17 @@ class Rgthree extends EventTarget {
     wait(100).then(() => {
       this.injectRgthreeCss();
     });
+
+    this.initializeProgressBar();
+  }
+
+  /**
+   * Initializes the top progress bar, if it's configured.
+   */
+  initializeProgressBar() {
+    if (this.config?.features?.progress_bar?.enabled) {
+      document.body.appendChild(RgthreeProgressBar.create());
+    }
   }
 
   /**

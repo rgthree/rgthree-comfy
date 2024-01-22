@@ -19,6 +19,9 @@ with open(DEFAULT_CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
   config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
   rgthree_config_default = json.loads(config)
 
+# Shim in unreleased features.
+rgthree_config_default["features"] = {"progress_bar": {"enabled": False}}
+
 CONFIG_FILE = os.path.join(THIS_DIR, 'rgthree_config.json')
 if os.path.exists(CONFIG_FILE):
   with open(CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
