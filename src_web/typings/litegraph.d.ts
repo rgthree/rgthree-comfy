@@ -523,8 +523,11 @@ export declare class LGraph {
     onNodeAdded(node: LGraphNode): void;
     /** Removes a node from the graph */
     remove(node: LGraphNode): void;
-    /** Returns a node by its id. */
-    getNodeById(id: number): LGraphNode | undefined;
+    /**
+     * Returns a node by its id.
+     * @rgthree - make id options/nullable.
+     */
+    getNodeById(id?: number|null): LGraphNode | undefined;
     /**
      * Returns a list of nodes that matches a class
      * @param classObject the class itself (not an string)

@@ -236,12 +236,6 @@ class RerouteNode extends RgthreeBaseNode {
         this.applyNodeSize();
         this.configuring = false;
     }
-    findInputSlot(name) {
-        return 0;
-    }
-    findOutputSlot(name) {
-        return 0;
-    }
     setResizable(resizable) {
         this.properties["resizable"] = !!resizable;
         this.resizable = this.properties["resizable"];
@@ -289,8 +283,26 @@ class RerouteNode extends RgthreeBaseNode {
             ctx.restore();
         }
     }
+    findInputSlot(name) {
+        return 0;
+    }
+    findOutputSlot(name) {
+        return 0;
+    }
     disconnectOutput(slot, targetNode) {
         return super.disconnectOutput(slot, targetNode);
+    }
+    disconnectInput(slot) {
+        var _a;
+        if (rgthree.replacingReroute != null && ((_a = this.inputs[0]) === null || _a === void 0 ? void 0 : _a.link)) {
+            const graph = app.graph;
+            const link = graph.links[this.inputs[0].link];
+            const node = graph.getNodeById(link === null || link === void 0 ? void 0 : link.origin_id);
+            if (rgthree.replacingReroute !== (node === null || node === void 0 ? void 0 : node.id)) {
+                return false;
+            }
+        }
+        return super.disconnectInput(slot);
     }
     scheduleStabilize(ms = 64) {
         if (!this.schedulePromise) {

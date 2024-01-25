@@ -123,6 +123,7 @@ class Rgthree extends EventTarget {
 
   processingQueue = false;
   loadingApiJson = false;
+  replacingReroute: number|null = null;
 
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
@@ -212,12 +213,20 @@ class Rgthree extends EventTarget {
    */
   private async initializeContextMenu() {
     const graph = await waitForGraph();
+    const that = this;
     setTimeout(() => {
       const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
       LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
         const options = getCanvasMenuOptions.apply(this, [...args] as any);
 
-        const hasReroutes = graph._nodes.find((n) => n.type == "Reroute");
+        const selectedNodes = Object.values(this.selected_nodes || {});
+        let rerouteNodes: LGraphNode[] = [];
+        if (selectedNodes.length) {
+          rerouteNodes = selectedNodes.filter((n) => n.type === "Reroute");
+        } else {
+          rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
+        }
+        const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
         options.push(null); // Divider
         options.push({
@@ -238,20 +247,21 @@ class Rgthree extends EventTarget {
                 className: "rgthree-contextmenu-item rgthree-contextmenu-label",
               },
               {
-                content: "Convert all 'Reroute' => 'Reroute (rgthree)'",
-                disabled: !hasReroutes,
+                content: `Convert ${rerouteLabel} Reroutes`,
+                disabled: !rerouteNodes.length,
                 callback: (...args: any[]) => {
                   const msg =
-                    "Convert all comfyui reroute nodes to rgthree-comfy reroute nodes? \n" +
-                    "(First save a copy of your workflow & check reroute connections afterwards)";
+                    `Convert ${rerouteLabel} ComfyUI Reroutes to Reroute (rgthree) nodes? \n` +
+                    `(First save a copy of your workflow & check reroute connections afterwards)`;
                   if (!window.confirm(msg)) {
                     return;
                   }
                   (async () => {
-                    const nodes = [...graph._nodes];
-                    for (const node of nodes) {
+                    for (const node of [...rerouteNodes]) {
                       if (node.type == "Reroute") {
+                        that.replacingReroute = node.id;
                         await replaceNode(node, NodeTypesString.REROUTE);
+                        that.replacingReroute = null;
                       }
                     }
                   })();

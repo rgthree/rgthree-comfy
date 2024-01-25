@@ -14,7 +14,7 @@ import type {
   Vector2,
   LLink,
   LGraphCanvas as TLGraphCanvas,
-  LGraph,
+  LGraph as TLGraph,
   SerializedLGraphNode,
   INodeInputSlot,
   INodeOutputSlot,
@@ -384,16 +384,6 @@ class RerouteNode extends RgthreeBaseNode {
     this.configuring = false;
   }
 
-  /** Finds the input slot; since we only ever have one, this is always 0. */
-  override findInputSlot(name: string): number {
-    return 0;
-  }
-
-  /** Finds the output slot; since we only ever have one, this is always 0. */
-  override findOutputSlot(name: string): number {
-    return 0;
-  }
-
   setResizable(resizable: boolean) {
     this.properties["resizable"] = !!resizable;
     this.resizable = this.properties["resizable"];
@@ -466,8 +456,37 @@ class RerouteNode extends RgthreeBaseNode {
     }
   }
 
+  /** Finds the input slot; since we only ever have one, this is always 0. */
+  override findInputSlot(name: string): number {
+    return 0;
+  }
+
+  /** Finds the output slot; since we only ever have one, this is always 0. */
+  override findOutputSlot(name: string): number {
+    return 0;
+  }
+
   override disconnectOutput(slot: string | number, targetNode?: TLGraphNode | undefined): boolean {
     return super.disconnectOutput(slot, targetNode);
+  }
+
+  override disconnectInput(slot: string | number): boolean {
+    // [🤮] ComfyUI's reroute nodes will disconnect our input if it doesn't yet match (ours being
+    // "*" and it's being a type. This mostly happens if we're converting reroutes to rgthree
+    // reroutes, the old reroute does a check and calls disconnectInput. Luckily, we can be smarter
+    // and check if we're being asked to disconnect from an old reroute while we're replacing
+    // reroute nodes (via rgthree.replacingReroute state).
+    if (rgthree.replacingReroute != null && this.inputs[0]?.link) {
+      const graph = app.graph as TLGraph;
+      const link = graph.links[this.inputs[0].link];
+      const node = graph.getNodeById(link?.origin_id);
+      // We'll also be asked to disconnect when the old one is removed, so we only want to stop a
+      // disconnect when the connected node is NOT the one being removed/replaced.
+      if (rgthree.replacingReroute !== node?.id) {
+        return false;
+      }
+    }
+    return super.disconnectInput(slot);
   }
 
   scheduleStabilize(ms = 64) {
@@ -500,8 +519,8 @@ class RerouteNode extends RgthreeBaseNode {
       updateNodes.unshift(currentNode);
       const linkId: number | null = currentNode.inputs[0]!.link;
       if (linkId !== null) {
-        const link: LLink = (app.graph as LGraph).links[linkId]!;
-        const node: TLGraphNode = (app.graph as LGraph).getNodeById(link.origin_id)!;
+        const link: LLink = (app.graph as TLGraph).links[linkId]!;
+        const node: TLGraphNode = (app.graph as TLGraph).getNodeById(link.origin_id)!;
         if (!node) {
           // Bummer, somthing happened.. should we cleanup?
           app.graph.removeLink(linkId);

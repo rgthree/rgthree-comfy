@@ -77,6 +77,7 @@ class Rgthree extends EventTarget {
         this.monitorLinkTimeout = null;
         this.processingQueue = false;
         this.loadingApiJson = false;
+        this.replacingReroute = null;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
@@ -125,11 +126,20 @@ class Rgthree extends EventTarget {
     }
     async initializeContextMenu() {
         const graph = await waitForGraph();
+        const that = this;
         setTimeout(() => {
             const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
             LGraphCanvas.prototype.getCanvasMenuOptions = function (...args) {
                 const options = getCanvasMenuOptions.apply(this, [...args]);
-                const hasReroutes = graph._nodes.find((n) => n.type == "Reroute");
+                const selectedNodes = Object.values(this.selected_nodes || {});
+                let rerouteNodes = [];
+                if (selectedNodes.length) {
+                    rerouteNodes = selectedNodes.filter((n) => n.type === "Reroute");
+                }
+                else {
+                    rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
+                }
+                const rerouteLabel = selectedNodes.length ? "selected" : "all";
                 options.push(null);
                 options.push({
                     content: `
@@ -149,19 +159,20 @@ class Rgthree extends EventTarget {
                                 className: "rgthree-contextmenu-item rgthree-contextmenu-label",
                             },
                             {
-                                content: "Convert all 'Reroute' => 'Reroute (rgthree)'",
-                                disabled: !hasReroutes,
+                                content: `Convert ${rerouteLabel} Reroutes`,
+                                disabled: !rerouteNodes.length,
                                 callback: (...args) => {
-                                    const msg = "Convert all comfyui reroute nodes to rgthree-comfy reroute nodes? \n" +
-                                        "(First save a copy of your workflow & check reroute connections afterwards)";
+                                    const msg = `Convert ${rerouteLabel} ComfyUI Reroutes to Reroute (rgthree) nodes? \n` +
+                                        `(First save a copy of your workflow & check reroute connections afterwards)`;
                                     if (!window.confirm(msg)) {
                                         return;
                                     }
                                     (async () => {
-                                        const nodes = [...graph._nodes];
-                                        for (const node of nodes) {
+                                        for (const node of [...rerouteNodes]) {
                                             if (node.type == "Reroute") {
+                                                that.replacingReroute = node.id;
                                                 await replaceNode(node, NodeTypesString.REROUTE);
+                                                that.replacingReroute = null;
                                             }
                                         }
                                     })();
