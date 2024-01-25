@@ -74,6 +74,9 @@ class ProgressBarService extends EventTarget {
             return response;
         };
         api.addEventListener("status", (e) => {
+            var _a;
+            if (!((_a = e.detail) === null || _a === void 0 ? void 0 : _a.exec_info))
+                return;
             if (e.detail.exec_info.queue_remaining > this.lastQueueRemaining) {
                 this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
             }

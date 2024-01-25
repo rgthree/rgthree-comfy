@@ -8,7 +8,7 @@ import {
   // @ts-ignore
 } from "../../extensions/core/widgetInputs.js";
 // @ts-ignore
-import { rgthreeConfig } from "./rgthree_config.js";
+import { rgthreeConfig } from "rgthree/config.js";
 import { rgthree } from "./rgthree.js";
 import type {
   Vector2,

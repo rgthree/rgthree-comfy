@@ -48,16 +48,6 @@ COLORS_BG = {
 }
 
 
-def log_welcome(num_nodes=None):
-  """Logs the welcome message."""
-  msg = f"{COLORS_FG['GREEN']}{COLORS_STYLE['BOLD']}[rgthree] Loaded"
-  print()
-  if num_nodes:
-    print(f"{msg} {num_nodes} exciting nodes.{COLORS_STYLE['RESET']}")
-  else:
-    print(f"{msg}.{COLORS_STYLE['RESET']}")
-
-
 def log_node_success(node_name, message):
   """Logs a success message."""
   _log_node(COLORS_FG["GREEN"], node_name, message)
@@ -86,3 +76,13 @@ def _get_log_msg(color, node_name, message, prefix=''):
   msg = f'{COLORS_STYLE["BOLD"]}{color}{prefix}[rgthree] {node_name.replace(" (rgthree)", "")}'
   msg += f':{COLORS_STYLE["RESET"]} {message}'
   return msg
+
+
+def log(message, color=None, msg_color=None, prefix=None):
+  color = COLORS_FG[color] if color is not None and color in COLORS_FG else COLORS_FG["BRIGHT_GREEN"]
+  msg_color = COLORS_STYLE["RESET"] if msg_color == 'RESET' else COLORS_FG[
+    msg_color] if msg_color is not None and msg_color in COLORS_FG else ''
+  prefix = f'[{prefix}]' if prefix is not None else ''
+  msg = f'{color}[rgthree]{prefix}'
+  msg += f'{msg_color} {message}{COLORS_STYLE["RESET"]}'
+  print(msg)

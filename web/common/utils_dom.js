@@ -29,8 +29,15 @@ const RGX_ATTR_CLASS = new RegExp(`(^|\\S)\\.([a-z0-9_\\-\\.]+)`, 'gi');
 const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
+export function querySelectorAll(query, parent = document) {
+    return [].slice.call(parent.querySelectorAll(query));
+}
 export function createText(text) {
     return document.createTextNode(text);
+}
+export function getClosestOrSelf(element, query) {
+    const el = element;
+    return (el === null || el === void 0 ? void 0 : el.closest) && (el.matches(query) || el.closest(query)) || null;
 }
 export function createElement(selectorOrText, attributes = null) {
     let selector = selectorOrText.replace(/[\r\n]\s*/g, '');
@@ -186,6 +193,15 @@ export function setAttribute(element, attribute, value) {
     }
     else if (attribute === 'class' || attribute === 'className' || attribute === 'classes') {
         element.className = isRemoving ? '' : Array.isArray(value) ? value.join(' ') : String(value);
+    }
+    else if (attribute === 'dataset') {
+        if (typeof value !== 'object') {
+            console.error('Expecting an object for dataset');
+            return;
+        }
+        for (const [key, val] of Object.entries(value)) {
+            element.dataset[key] = String(val);
+        }
     }
     else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
         element[attribute] = !!value;

@@ -1,11 +1,14 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { rgthreeConfig } from "./rgthree_config.js";
+import { SERVICE as CONFIG_SERVICE } from "./config.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
+import { RgthreeConfigDialog } from "./config.js";
+import { querySelectorAll as $$ } from "../../rgthree/common/utils_dom.js";
+import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -31,10 +34,16 @@ const LogLevelToCSS = {
 let GLOBAL_LOG_LEVEL = LogLevel.DEBUG;
 class Logger {
     log(level, message, ...args) {
+        var _a;
+        const [n, v] = this.logParts(level, message, ...args);
+        (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+    }
+    logParts(level, message, ...args) {
         if (level <= GLOBAL_LOG_LEVEL) {
             const css = LogLevelToCSS[level] || "";
-            console[LogLevelToMethod[level]](`%c${message}`, css, ...args);
+            return [LogLevelToMethod[level], [`%c${message}`, css, ...args]];
         }
+        return ["none", []];
     }
 }
 class LogSession {
@@ -43,14 +52,20 @@ class LogSession {
         this.logger = new Logger();
     }
     log(levelOrMessage, message, ...args) {
+        var _a;
+        const [n, v] = this.logParts(levelOrMessage, message, ...args);
+        (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+    }
+    logParts(levelOrMessage, message, ...args) {
         let level = typeof levelOrMessage === "string" ? LogLevel.INFO : levelOrMessage;
-        if (typeof levelOrMessage === "string") {
-            message = levelOrMessage;
-        }
-        this.logger.log(level, `${this.name || ""}${message ? " " + message : ""}`, ...args);
+        message = typeof levelOrMessage === "string" ? levelOrMessage : message;
+        return this.logger.logParts(level, `${this.name || ""}${message ? " " + message : ""}`, ...args);
     }
     debug(message, ...args) {
         this.log(LogLevel.DEBUG, message, ...args);
+    }
+    debugParts(message, ...args) {
+        return this.logParts(LogLevel.DEBUG, message, ...args);
     }
     info(message, ...args) {
         this.log(LogLevel.INFO, message, ...args);
@@ -65,8 +80,8 @@ class LogSession {
 class Rgthree extends EventTarget {
     constructor() {
         super();
-        this.config = rgthreeConfig;
         this.api = api;
+        this.settingsDialog = null;
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
@@ -94,11 +109,20 @@ class Rgthree extends EventTarget {
             this.injectRgthreeCss();
         });
         this.initializeProgressBar();
+        CONFIG_SERVICE.addEventListener("config-change", ((e) => {
+            var _a, _b;
+            if ((_b = (_a = e.detail) === null || _a === void 0 ? void 0 : _a.key) === null || _b === void 0 ? void 0 : _b.includes("features.progress_bar")) {
+                this.initializeProgressBar();
+            }
+        }));
     }
     initializeProgressBar() {
-        var _a, _b, _c;
-        if ((_c = (_b = (_a = this.config) === null || _a === void 0 ? void 0 : _a.features) === null || _b === void 0 ? void 0 : _b.progress_bar) === null || _c === void 0 ? void 0 : _c.enabled) {
+        var _a;
+        if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
             document.body.appendChild(RgthreeProgressBar.create());
+        }
+        else {
+            (_a = $$(RgthreeProgressBar.NAME)[0]) === null || _a === void 0 ? void 0 : _a.remove();
         }
     }
     async initializeGraphAndCanvasHooks() {
@@ -142,25 +166,30 @@ class Rgthree extends EventTarget {
                 const rerouteLabel = selectedNodes.length ? "selected" : "all";
                 options.push(null);
                 options.push({
-                    content: `
-          <svg viewBox="0 0 256 256">
-            <path d="M88.503,158.997 L152.731,196.103 L152.738,196.092 L152.762,196.103 L152.769,196.106 L152.771,196.103 L183.922,142.084     L174.153,136.437 L148.611,180.676 L101.512,153.484 L132.193,30.415 L156.124,71.869 L165.896,66.225 L128.002,0.59 "></path>
-            <path d="M55.586,148.581l13.44,47.521l0.014,0.051l0.168-0.051l10.689-3.022l-6.589-23.313l45.609,26.335l0.087,0.051l0.027-0.051     l5.617-9.718l-42.648-24.622l35.771-143.45L33.232,164.729l9.77,5.645L55.586,148.581z M87.394,93.484l-16.708,67.018l-5.018-17.747     l-8.028,2.27L87.394,93.484z"></path>
-            <path d="M189.85,107.717 L137.892,137.718 L143.532,147.49 L185.723,123.133 L231.109,201.746 L24.895,201.746 L37.363,180.146     L27.592,174.505 L5.347,213.03 L250.653,213.03 "></path>
-            <path d="M5.347,247.299v8.111h245.307v-8.111l-41.94-0.003c-1.336,0-2.404-1.065-2.441-2.396v-12.14     c0.037-1.315,1.089-2.368,2.41-2.385h41.972v-8.11H5.347v8.11h41.951c1.338,0.017,2.427,1.104,2.427,2.449v12.01     c0,1.365-1.105,2.462-2.457,2.462L5.347,247.299z M139.438,247.296c-1.334,0-2.406-1.065-2.439-2.396v-12.14     c0.033-1.315,1.085-2.368,2.41-2.385h46.415c1.335,0.017,2.425,1.104,2.425,2.449v12.01c0,1.365-1.103,2.462-2.459,2.462H139.438z       M70.193,247.296c-1.339,0-2.408-1.065-2.441-2.396v-12.14c0.033-1.315,1.086-2.368,2.407-2.385h46.418     c1.336,0.017,2.425,1.104,2.425,2.449v12.01c0,1.365-1.103,2.462-2.458,2.462H70.193z"></path>
-          </svg>
-          rgthree-comfy`,
+                    content: logoRgthree + `rgthree-comfy`,
                     className: "rgthree-contextmenu-item rgthree-contextmenu-main-rgthree-comfy",
                     submenu: {
                         options: [
                             {
-                                content: "Functions",
+                                content: "Actions",
                                 disabled: true,
                                 className: "rgthree-contextmenu-item rgthree-contextmenu-label",
                             },
                             {
-                                content: `Convert ${rerouteLabel} Reroutes`,
+                                content: iconGear + "Open rgthree-comfy Settings",
+                                disabled: !!that.settingsDialog,
+                                className: "rgthree-contextmenu-item",
+                                callback: (...args) => {
+                                    that.settingsDialog = new RgthreeConfigDialog().show();
+                                    that.settingsDialog.addEventListener("close", (e) => {
+                                        that.settingsDialog = null;
+                                    });
+                                },
+                            },
+                            {
+                                content: iconReplace + ` Convert ${rerouteLabel} Reroutes`,
                                 disabled: !rerouteNodes.length,
+                                className: "rgthree-contextmenu-item",
                                 callback: (...args) => {
                                     const msg = `Convert ${rerouteLabel} ComfyUI Reroutes to Reroute (rgthree) nodes? \n` +
                                         `(First save a copy of your workflow & check reroute connections afterwards)`;
@@ -184,15 +213,11 @@ class Rgthree extends EventTarget {
                                 className: "rgthree-contextmenu-item rgthree-contextmenu-label",
                             },
                             {
-                                content: `
-                <svg viewBox="0 0 16 16" class="github-star">
-                  <path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.751.751 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"></path>
-                </svg>
-                Star on Github`,
+                                content: iconStarFilled + "Star on Github",
+                                className: "rgthree-contextmenu-item rgthree-contextmenu-github",
                                 callback: (...args) => {
                                     window.open("https://github.com/rgthree/rgthree-comfy", "_blank");
                                 },
-                                className: "rgthree-contextmenu-item rgthree-contextmenu-github",
                             },
                         ],
                     },
@@ -260,7 +285,7 @@ class Rgthree extends EventTarget {
                 const fixBadLinksResult = fixBadLinks(graphToUse);
                 if (fixBadLinksResult.hasBadLinks) {
                     rgthree.log(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/rgthree/link_fixer to try to fix.`);
-                    if (rgthreeConfig["show_alerts_for_corrupt_workflows"]) {
+                    if (CONFIG_SERVICE.getConfigValue("features.show_alerts_for_corrupt_workflows")) {
                         rgthree.showMessage({
                             id: "bad-links",
                             type: "warn",
@@ -283,8 +308,8 @@ class Rgthree extends EventTarget {
                                                     rgthree.hideMessage("bad-links");
                                                     alert("Success! It's possible some valid links may have been affected. Please check and verify your workflow.");
                                                     wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
-                                                    if (rgthreeConfig["monitor_for_corrupt_links"] ||
-                                                        rgthreeConfig["monitor_bad_links"]) {
+                                                    if (CONFIG_SERVICE.getConfigValue("features.monitor_for_corrupt_links") ||
+                                                        CONFIG_SERVICE.getConfigValue("features.monitor_bad_links")) {
                                                         rgthree.monitorLinkTimeout = setTimeout(() => {
                                                             rgthree.monitorBadLinks();
                                                         }, 5000);
@@ -303,8 +328,8 @@ class Rgthree extends EventTarget {
                         });
                     }
                 }
-                else if (rgthreeConfig["monitor_for_corrupt_links"] ||
-                    rgthreeConfig["monitor_bad_links"]) {
+                else if (CONFIG_SERVICE.getConfigValue("features.monitor_for_corrupt_links") ||
+                    CONFIG_SERVICE.getConfigValue("features.monitor_bad_links")) {
                     rgthree.monitorLinkTimeout = setTimeout(() => {
                         rgthree.monitorBadLinks();
                     }, 5000);

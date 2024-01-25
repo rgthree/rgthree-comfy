@@ -126,7 +126,8 @@ class ProgressBarService extends EventTarget {
     };
 
     api.addEventListener("status", (e: CustomEvent<ComfyApiEventDetailStatus>) => {
-      // console.log("status", e.detail);
+      // Sometimes a status message is fired when the app loades w/o any details.
+      if (!e.detail?.exec_info) return;
       if (e.detail.exec_info.queue_remaining > this.lastQueueRemaining) {
         this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
       } else if (e.detail.exec_info.queue_remaining === this.lastQueueRemaining) {

@@ -2,7 +2,7 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
-import { RgthreeHelpDialog } from "./dialog.js";
+import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title) {
         super(title);
@@ -11,15 +11,15 @@ export class RgthreeBaseNode extends LGraphNode {
         this.removed = false;
         this.configuring = false;
         this.helpDialog = null;
-        if (title == '__NEED_NAME__') {
-            throw new Error('RgthreeBaseNode needs overrides.');
+        if (title == "__NEED_NAME__") {
+            throw new Error("RgthreeBaseNode needs overrides.");
         }
         this.properties = this.properties || {};
     }
     configure(info) {
         this.configuring = true;
         super.configure(info);
-        for (const w of (this.widgets || [])) {
+        for (const w of this.widgets || []) {
             w.last_y = w.last_y || 0;
         }
         this.configuring = false;
@@ -46,7 +46,7 @@ export class RgthreeBaseNode extends LGraphNode {
         action;
     }
     removeWidget(widgetOrSlot) {
-        if (typeof widgetOrSlot === 'number') {
+        if (typeof widgetOrSlot === "number") {
             this.widgets.splice(widgetOrSlot, 1);
         }
         else if (widgetOrSlot) {
@@ -64,21 +64,21 @@ export class RgthreeBaseNode extends LGraphNode {
     static setUp(...args) {
     }
     getHelp() {
-        return '';
+        return "";
     }
     showHelp() {
         const help = this.getHelp() || this.constructor.help;
         if (help) {
             this.helpDialog = new RgthreeHelpDialog(this, help).show();
-            this.helpDialog.addEventListener('close', (e) => {
-                console.log('close', e);
+            this.helpDialog.addEventListener("close", (e) => {
+                console.log("close", e);
                 this.helpDialog = null;
             });
         }
     }
     onKeyDown(event) {
         rgthree.handleKeydown(event);
-        if (event.key == '?' && !this.helpDialog) {
+        if (event.key == "?" && !this.helpDialog) {
             this.showHelp();
         }
     }
@@ -91,7 +91,10 @@ export class RgthreeBaseNode extends LGraphNode {
             (_a = super.getExtraMenuOptions) === null || _a === void 0 ? void 0 : _a.apply(this, [canvas, options]);
         }
         else if ((_c = (_b = this.constructor.nodeType) === null || _b === void 0 ? void 0 : _b.prototype) === null || _c === void 0 ? void 0 : _c.getExtraMenuOptions) {
-            (_f = (_e = (_d = this.constructor.nodeType) === null || _d === void 0 ? void 0 : _d.prototype) === null || _e === void 0 ? void 0 : _e.getExtraMenuOptions) === null || _f === void 0 ? void 0 : _f.apply(this, [canvas, options]);
+            (_f = (_e = (_d = this.constructor.nodeType) === null || _d === void 0 ? void 0 : _d.prototype) === null || _e === void 0 ? void 0 : _e.getExtraMenuOptions) === null || _f === void 0 ? void 0 : _f.apply(this, [
+                canvas,
+                options,
+            ]);
         }
         const help = this.getHelp() || this.constructor.help;
         if (help) {
@@ -101,8 +104,8 @@ export class RgthreeBaseNode extends LGraphNode {
 }
 RgthreeBaseNode.exposedActions = [];
 RgthreeBaseNode.title = "__NEED_NAME__";
-RgthreeBaseNode.category = 'rgthree';
-RgthreeBaseNode._category = 'rgthree';
+RgthreeBaseNode.category = "rgthree";
+RgthreeBaseNode._category = "rgthree";
 const overriddenServerNodes = new Map();
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {
@@ -123,7 +126,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         var _a, _b, _c;
         const nodeData = this.constructor.nodeData;
         if (!nodeData) {
-            throw Error('No node data');
+            throw Error("No node data");
         }
         this.comfyClass = nodeData.name;
         let inputs = nodeData["input"]["required"];
@@ -131,7 +134,11 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
             inputs = Object.assign({}, inputs, nodeData["input"]["optional"]);
         }
         const WIDGETS = this.getWidgets();
-        const config = { minWidth: 1, minHeight: 1, widget: null };
+        const config = {
+            minWidth: 1,
+            minHeight: 1,
+            widget: null,
+        };
         for (const inputName in inputs) {
             const inputData = inputs[inputName];
             const type = inputData[0];
@@ -170,7 +177,9 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
             if (output instanceof Array)
                 output = "COMBO";
             const outputName = nodeData["output_name"][o] || output;
-            const outputShape = nodeData["output_is_list"][o] ? LiteGraph.GRID_SHAPE : LiteGraph.CIRCLE_SHAPE;
+            const outputShape = nodeData["output_is_list"][o]
+                ? LiteGraph.GRID_SHAPE
+                : LiteGraph.CIRCLE_SHAPE;
             this.addOutput(outputName, output, { shape: outputShape });
         }
         const s = this.computeSize();
@@ -197,9 +206,12 @@ RgthreeBaseServerNode.nodeType = null;
 RgthreeBaseServerNode.__registeredForOverride__ = false;
 const oldregisterNodeType = LiteGraph.registerNodeType;
 LiteGraph.registerNodeType = function (nodeId, baseClass) {
+    var _a;
     const clazz = overriddenServerNodes.get(baseClass) || baseClass;
     if (clazz !== baseClass) {
-        rgthree.logger.debug(`For "${nodeId}", replacing default ComfyNode implementation with custom ${clazz.type || clazz.name || clazz.title} class.`);
+        const classLabel = clazz.type || clazz.name || clazz.title;
+        const [n, v] = rgthree.logger.debugParts(`${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`);
+        (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
     }
     return oldregisterNodeType.call(LiteGraph, nodeId, clazz);
 };

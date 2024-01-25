@@ -1,6 +1,13 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 import { NodeMode } from "typings/comfy.js";
-import type {IWidget, SerializedLGraphNode, LiteGraph as TLiteGraph, LGraphNode as TLGraphNode, LGraphCanvas, ContextMenuItem} from 'typings/litegraph.js';
+import type {
+  IWidget,
+  SerializedLGraphNode,
+  LiteGraph as TLiteGraph,
+  LGraphNode as TLGraphNode,
+  LGraphCanvas,
+  ContextMenuItem,
+} from "typings/litegraph.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore
@@ -8,7 +15,7 @@ import { app } from "../../scripts/app.js";
 
 import { rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
-import { RgthreeHelpDialog } from "./dialog.js";
+import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -18,7 +25,6 @@ declare const LiteGraph: typeof TLiteGraph;
  * This can be used for ui-nodes and a further base for server nodes.
  */
 export class RgthreeBaseNode extends LGraphNode {
-
   /**
    * Action strings that can be exposed and triggered from other nodes, like Fast Actions Button.
    */
@@ -27,8 +33,8 @@ export class RgthreeBaseNode extends LGraphNode {
   static override title = "__NEED_NAME__";
   // `category` seems to get reset at register, so we'll
   // re-reset it after the register call. ¯\_(ツ)_/¯
-  static category = 'rgthree';
-  static _category = 'rgthree';
+  static category = "rgthree";
+  static _category = "rgthree";
 
   /** A temporary width value that can be used to ensure compute size operates correctly. */
   _tempWidth = 0;
@@ -44,8 +50,8 @@ export class RgthreeBaseNode extends LGraphNode {
 
   constructor(title = RgthreeBaseNode.title) {
     super(title);
-    if (title == '__NEED_NAME__') {
-      throw new Error('RgthreeBaseNode needs overrides.');
+    if (title == "__NEED_NAME__") {
+      throw new Error("RgthreeBaseNode needs overrides.");
     }
     this.properties = this.properties || {};
   }
@@ -55,7 +61,7 @@ export class RgthreeBaseNode extends LGraphNode {
     super.configure(info);
     // Fix https://github.com/comfyanonymous/ComfyUI/issues/1448 locally.
     // Can removed when fixed and adopted.
-    for (const w of (this.widgets || [])) {
+    for (const w of this.widgets || []) {
       w.last_y = w.last_y || 0;
     }
     this.configuring = false;
@@ -73,7 +79,6 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     return cloned;
   }
-
 
   // @ts-ignore - Changing the property to an accessor here seems to work, but ts compiler complains.
   override set mode(mode: NodeMode) {
@@ -103,7 +108,7 @@ export class RgthreeBaseNode extends LGraphNode {
    * Guess this doesn't exist in Litegraph...
    */
   removeWidget(widgetOrSlot?: IWidget | number) {
-    if (typeof widgetOrSlot === 'number') {
+    if (typeof widgetOrSlot === "number") {
       this.widgets.splice(widgetOrSlot, 1);
     } else if (widgetOrSlot) {
       const index = this.widgets.indexOf(widgetOrSlot);
@@ -126,15 +131,15 @@ export class RgthreeBaseNode extends LGraphNode {
    * A function to provide help text to be overridden.
    */
   getHelp() {
-    return '';
+    return "";
   }
 
   showHelp() {
     const help = this.getHelp() || (this.constructor as any).help;
     if (help) {
       this.helpDialog = new RgthreeHelpDialog(this, help).show();
-      this.helpDialog.addEventListener('close', (e) => {
-        console.log('close', e);
+      this.helpDialog.addEventListener("close", (e) => {
+        console.log("close", e);
         this.helpDialog = null;
       });
     }
@@ -142,7 +147,7 @@ export class RgthreeBaseNode extends LGraphNode {
 
   override onKeyDown(event: KeyboardEvent): void {
     rgthree.handleKeydown(event);
-    if (event.key == '?' && !this.helpDialog) {
+    if (event.key == "?" && !this.helpDialog) {
       this.showHelp();
     }
   }
@@ -157,7 +162,10 @@ export class RgthreeBaseNode extends LGraphNode {
     if (super.getExtraMenuOptions) {
       super.getExtraMenuOptions?.apply(this, [canvas, options]);
     } else if ((this.constructor as any).nodeType?.prototype?.getExtraMenuOptions) {
-      (this.constructor as any).nodeType?.prototype?.getExtraMenuOptions?.apply(this, [canvas, options]);
+      (this.constructor as any).nodeType?.prototype?.getExtraMenuOptions?.apply(this, [
+        canvas,
+        options,
+      ]);
     }
     // If we have help content, then add a menu item.
     const help = this.getHelp() || (this.constructor as any).help;
@@ -167,8 +175,6 @@ export class RgthreeBaseNode extends LGraphNode {
   }
 }
 
-
-
 const overriddenServerNodes = new Map<any, any>();
 
 /**
@@ -177,9 +183,8 @@ const overriddenServerNodes = new Map<any, any>();
  * seems safer than NOT overriding.
  */
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
-
-  static nodeData: any|null = null;
-  static nodeType: any|null = null;
+  static nodeData: any | null = null;
+  static nodeType: any | null = null;
 
   comfyClass!: string;
 
@@ -209,7 +214,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
   async setupFromServerNodeData() {
     const nodeData = (this.constructor as any).nodeData;
     if (!nodeData) {
-      throw Error('No node data');
+      throw Error("No node data");
     }
 
     // Necessary for serialization so Comfy backend can check types.
@@ -217,13 +222,17 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     this.comfyClass = nodeData.name;
 
     let inputs = nodeData["input"]["required"];
-    if (nodeData["input"]["optional"] != undefined){
-        inputs = Object.assign({}, inputs, nodeData["input"]["optional"])
+    if (nodeData["input"]["optional"] != undefined) {
+      inputs = Object.assign({}, inputs, nodeData["input"]["optional"]);
     }
 
     const WIDGETS = this.getWidgets();
 
-    const config: {minWidth: number, minHeight: number, widget?: null|{options: any}} = { minWidth: 1, minHeight: 1, widget: null };
+    const config: { minWidth: number; minHeight: number; widget?: null | { options: any } } = {
+      minWidth: 1,
+      minHeight: 1,
+      widget: null,
+    };
     for (const inputName in inputs) {
       const inputData = inputs[inputName];
       const type = inputData[0];
@@ -240,7 +249,10 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
           Object.assign(config, WIDGETS.COMBO(this, inputName, inputData, app) || {});
         } else if (`${type}:${inputName}` in WIDGETS) {
           // Support custom widgets by Type:Name
-          Object.assign(config, WIDGETS[`${type}:${inputName}`](this, inputName, inputData, app) || {});
+          Object.assign(
+            config,
+            WIDGETS[`${type}:${inputName}`](this, inputName, inputData, app) || {},
+          );
         } else if (type in WIDGETS) {
           // Standard type widgets
           Object.assign(config, WIDGETS[type](this, inputName, inputData, app) || {});
@@ -251,11 +263,11 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         }
 
         // Don't actually need this right now, but ported it over from ComfyWidget.
-        if(widgetCreated && inputData[1]?.forceInput && config?.widget) {
+        if (widgetCreated && inputData[1]?.forceInput && config?.widget) {
           if (!config.widget.options) config.widget.options = {};
           config.widget.options.forceInput = inputData[1].forceInput;
         }
-        if(widgetCreated && inputData[1]?.defaultInput && config?.widget) {
+        if (widgetCreated && inputData[1]?.defaultInput && config?.widget) {
           if (!config.widget.options) config.widget.options = {};
           config.widget.options.defaultInput = inputData[1].defaultInput;
         }
@@ -264,9 +276,11 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
     for (const o in nodeData["output"]) {
       let output = nodeData["output"][o];
-      if(output instanceof Array) output = "COMBO";
+      if (output instanceof Array) output = "COMBO";
       const outputName = nodeData["output_name"][o] || output;
-      const outputShape = nodeData["output_is_list"][o] ? LiteGraph.GRID_SHAPE : LiteGraph.CIRCLE_SHAPE ;
+      const outputShape = nodeData["output_is_list"][o]
+        ? LiteGraph.GRID_SHAPE
+        : LiteGraph.CIRCLE_SHAPE;
       this.addOutput(outputName, output, { shape: outputShape });
     }
 
@@ -277,11 +291,14 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     this.serialize_widgets = true;
   }
 
-
   static __registeredForOverride__: boolean = false;
   static registerForOverride(comfyClass: any, rgthreeClass: any) {
     if (overriddenServerNodes.has(comfyClass)) {
-      throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
+      throw Error(
+        `Already have a class to overridde ${
+          comfyClass.type || comfyClass.name || comfyClass.title
+        }`,
+      );
     }
     overriddenServerNodes.set(comfyClass, rgthreeClass);
     // Mark the rgthreeClass as `__registeredForOverride__` because ComfyUI will repeatedly call
@@ -295,23 +312,22 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
   static onRegisteredForOverride(comfyClass: any, rgthreeClass: any) {
     // To be overridden
   }
-
-
-
 }
-
 
 const oldregisterNodeType = LiteGraph.registerNodeType;
 /**
  * ComfyUI calls registerNodeType with its ComfyNode, but we don't trust that will remain stable, so
  * we need to identify it, intercept it, and supply our own class for the node.
  */
-LiteGraph.registerNodeType = function(nodeId: string, baseClass: any) {
+LiteGraph.registerNodeType = function (nodeId: string, baseClass: any) {
   const clazz = overriddenServerNodes.get(baseClass) || baseClass;
   if (clazz !== baseClass) {
-    rgthree.logger.debug(`For "${nodeId}", replacing default ComfyNode implementation with custom ${
-        clazz.type || clazz.name || clazz.title} class.`);
+    const classLabel = clazz.type || clazz.name || clazz.title;
+    const [n, v] = rgthree.logger.debugParts(
+      `${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`,
+    );
+    console[n]?.(...v);
   }
 
   return oldregisterNodeType.call(LiteGraph, nodeId, clazz);
-}
+};

@@ -7,22 +7,18 @@ from glob import glob
 import json
 import re
 
-from config import RGTHREE_CONFIG
+from py.config import RGTHREE_CONFIG
 
 THIS_DIR=os.path.dirname(os.path.abspath(__file__))
 DIR_SRC_WEB = os.path.abspath(f'{THIS_DIR}/src_web/')
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')
 DIR_WEB_COMFYUI = os.path.abspath(f'{DIR_WEB}/comfyui/')
 
-
 rmtree(DIR_WEB)
 
 copytree(DIR_SRC_WEB, DIR_WEB, ignore=ignore_patterns("typings*", "*.ts"))
 
 subprocess.run(["./node_modules/typescript/bin/tsc"])
-
-with open(os.path.join(DIR_WEB_COMFYUI, 'rgthree_config.js'), 'w', encoding = 'UTF-8') as file:
-  file.write('export const rgthreeConfig = ' + json.dumps(RGTHREE_CONFIG))
 
 # Because ComfyUI loads under /extensions/rgthree-comfy we can't easily share sources outside of the
 # DIR_WEB_COMFYUI _and_ allow typescript to resolve them, so we set the path in the tsconfig to map

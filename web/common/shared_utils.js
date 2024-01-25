@@ -36,5 +36,38 @@ function dec2hex(dec) {
 export function generateId(length) {
     const arr = new Uint8Array(length / 2);
     crypto.getRandomValues(arr);
-    return Array.from(arr, dec2hex).join('');
+    return Array.from(arr, dec2hex).join("");
+}
+export function getObjectValue(obj, objKey, def) {
+    if (!obj || !objKey)
+        return def;
+    const keys = objKey.split(".");
+    const key = keys.shift();
+    const found = obj[key];
+    if (keys.length) {
+        return getObjectValue(found, keys.join("."), def);
+    }
+    return found;
+}
+export function setObjectValue(obj, objKey, value, createMissingObjects = true) {
+    if (!obj || !objKey)
+        return obj;
+    const keys = objKey.split(".");
+    const key = keys.shift();
+    if (obj[key] === undefined) {
+        if (!createMissingObjects) {
+            return;
+        }
+        obj[key] = {};
+    }
+    if (!keys.length) {
+        obj[key] = value;
+    }
+    else {
+        if (typeof obj[key] != "object") {
+            obj[key] = {};
+        }
+        setObjectValue(obj[key], keys.join("."), value, createMissingObjects);
+    }
+    return obj;
 }

@@ -38,8 +38,17 @@ const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 
+export function querySelectorAll(query: string, parent: HTMLElement|Document = document) : HTMLElement[] {
+  return [].slice.call(parent.querySelectorAll(query));
+}
+
 export function createText(text: string) {
   return document.createTextNode(text);
+}
+
+export function getClosestOrSelf(element: EventTarget|HTMLElement|null, query: string) {
+  const el = (element as HTMLElement);
+  return el?.closest && (el.matches(query) || el.closest(query)) || null;
 }
 
 export function createElement<T extends HTMLElement>(selectorOrText: string, attributes: {[name: string]: any}|null = null) {
@@ -207,6 +216,15 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
 
   } else if (attribute === 'class' || attribute === 'className' || attribute === 'classes') {
     element.className = isRemoving ? '' : Array.isArray(value) ? value.join(' ') : String(value);
+
+  } else if (attribute === 'dataset') {
+    if (typeof value !== 'object') {
+      console.error('Expecting an object for dataset');
+      return;
+    }
+    for (const [key, val] of Object.entries(value)) {
+      element.dataset[key] = String(val);
+    }
 
   } else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
       // Could be input, button, etc. We are not discriminate.

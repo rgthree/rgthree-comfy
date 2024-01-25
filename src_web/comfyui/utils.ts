@@ -19,7 +19,7 @@ import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
 import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
-import { RgthreeHelpDialog } from "./dialog.js";
+import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 
 declare const LGraph: typeof TLGraph;
 declare const LGraphNode: typeof TLGraphNode;

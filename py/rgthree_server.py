@@ -55,3 +55,27 @@ set_default_page_resources("comfyui")
 set_default_page_resources("common")
 
 set_default_page_routes("link_fixer")
+
+
+# Configuration
+from .config import RGTHREE_CONFIG, set_user_config
+
+@routes.get('/rgthree/config.js')
+def api_get_user_config_file(request):
+  """ Returns the user configuration as a jsavascript file. """
+  text=f'export const rgthreeConfig = {json.dumps(RGTHREE_CONFIG, sort_keys=True, indent=2, separators=(",", ": "))}'
+  return web.Response(text=text, content_type='application/javascript')
+
+
+@routes.get('/rgthree/api/config')
+def api_get_user_config(request):
+  """ Returns the user configuration. """
+  return web.json_response(json.dumps(RGTHREE_CONFIG))
+
+@routes.post('/rgthree/api/config')
+async def api_set_user_config(request):
+  """ Returns the user configuration. """
+  post = await request.post()
+  data = json.loads(post.get("json"))
+  set_user_config(data)
+  return web.json_response({"status": "ok"})
