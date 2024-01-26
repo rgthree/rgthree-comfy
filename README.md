@@ -4,12 +4,18 @@
     <sub><sup><i>Making ComfyUI more comfortable!</i></sup></sub>
     <br>
 </h1>
+<p align="center">
+    <a href="#️-the-nodes">The Nodes</a> &nbsp; | &nbsp; <a href="#-improvements--features">Improvements & Features</a>  &nbsp; | &nbsp; <a href="#-link-fixer">Link Fixer</a>
+</p>
+<hr>
 
-A collection of nodes I've created while messing around with ComfyUI. I made them for myself to make my workflow easier and cleaner. You're welcome to try them out, but do so at your own risk. Since I made them for myself, I didn't battle test them much outside of my specific use cases.
+A collection of nodes and improvements created while messing around with ComfyUI. I made them for myself to make my workflow cleaner, easier, and faster. You're welcome to try them out. But remember, I made them for my own use cases :)
 
 ![Context Node](./docs/rgthree_advanced.png)
 
-# Install
+# Get Started
+
+## Install
 
 1. Install the great [ComfyUi](https://github.com/comfyanonymous/ComfyUI).
 2. Clone this repo into `custom_modules`:
@@ -19,11 +25,19 @@ A collection of nodes I've created while messing around with ComfyUI. I made the
     ```
 3. Start up ComfyUI.
 
-## 🐛 Graph Linking Issues
+## Settings
 
-If your workflows sometimes have missing connections, or even errors on load, start up ComfyUI and go to http://127.0.0.1:8188/rgthree/link_fixer which will allow you to drop in an image or workflow json file and check for and fix any bad links.
+You can configure certain aspect of rgthree-comfy. For instance, perhaps a future ComfyUI change breaks rgthree-comfy, or you already have another extension that does something similar and you want to turn it off for rgthree-comfy.
 
-# The Nodes
+You can get to rgthree-settings by right-clicking on the empty part of the graph, and selecting `rgthree-comfy > Settings (rgthree-comfy)` or by clicking the `rgthree-comfy settings` in the ComfyUI settings dialog.
+
+_(Note, settings are stored in an `rgthree_config.json` in the `rgthree-comfy` directory. There are other advanced settings that can only be configured there; You can copy default settings from `rgthree_config.json.default` before `rgthree_config.json` before modifying)_.
+
+<br>
+
+# ✴️ The Nodes
+
+Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟 Node Help` menu item for in-app help when available.
 
 ## Seed
 > An intuitive seed control node for ComfyUI that works very much like Automatic1111's seed control.
@@ -196,3 +210,40 @@ Let's take a look at an example.
 
 4. Lastly, and optionally, you can see the `Node Collector`. Use it to clean up noodles if you want and connect it to the muter. You can connect anything to it, but doing so may break your workflow's execution.
 
+<br>
+
+# ⚡ Improvements & Features
+
+rgthree-comfy adds several improvements, features, and optimizations to ComfyUI that are not directly tied to nodes.
+
+## Progress Bar
+> A minimal progress bar that run alongs the top of the app window that shows the queue size, the current progress of the a prompt execution (within the same window), and the progress of multi-step nodes as well.
+> 
+> <i>You can remove/enable from rgthree-comfy settings, as well as configure the height/size.</i>
+
+
+## ComfyUI Recursive Optimization
+> An optimization to ComfyUI's recursive execution. Because rgthree-comfy nodes make it easy to build larger, more complex workflows, I (and others) started to hit a wall of poor execution times.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Until [ComfyUI/issues/1502](https://github.com/comfyanonymous/ComfyUI/issues/1502) is resolved and/or [ComfyUI/pull/1503](https://github.com/comfyanonymous/ComfyUI/pull/1503) is pulled in, then know that you're benefiting from hundreds of millions of saved cycles each run.
+>
+>    - Specifically, for a rather complex test workflow, the patch reduces iterations of `recursive_will_execute` from 113,292,566 to just 135 (and 116.32 seconds to 69.84 seconds on my machine) on a fresh queue, and reduces recursive calls of `recursive_output_delete_if_changed` from 250,496,808 to 142 (and 158.13 seconds to 0.0 seconds on my machine).
+>
+>    - ⚠️ *However,* there is a chance ComfyUI changes something in/around the code I patched which could break. If that's the case, you should disable the optimization from rgthree-comfy settings.
+>
+> </details>
+
+## Other/Smaller Fixes
+- Fixed the width of ultra-wide node chooser on double click.
+- Fixed z-indexes for textareas that would overlap above other elements, like Properties Panel, or @pythongosssss's image viewer.
+- Check for bad links when loading a workflow and log to console, by default. _(See Link Fixer below)._
+
+<br>
+
+# 📄 Link Fixer
+
+If your workflows sometimes have missing connections, or even errors on load, start up ComfyUI and go to http://127.0.0.1:8188/rgthree/link_fixer which will allow you to drop in an image or workflow json file and check for and fix any bad links.
+
+You can also enable a link fixer check in the rgthree-comfy settings to give you an alert if you load a workflow with bad linking data to start.
