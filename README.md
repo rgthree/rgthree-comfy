@@ -235,6 +235,13 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 >
 > </details>
 
+
+## "Copy Image" in right-click menu
+> Right clicking on a node that has an image should have a context-menu item of "Copy Image" will allow you to copy the image right to your clipboard
+> 
+> <i>🎓 I believe this has graduated, with ComfyUI recently adding this setting too. You won't get two menu items; my code checks that there isn't already a "Copy Image" item there before adding it.</i>
+
+
 ## Other/Smaller Fixes
 - Fixed the width of ultra-wide node chooser on double click.
 - Fixed z-indexes for textareas that would overlap above other elements, like Properties Panel, or @pythongosssss's image viewer.
