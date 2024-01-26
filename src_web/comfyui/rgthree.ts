@@ -1,8 +1,11 @@
-import {
-  type LGraphCanvas as TLGraphCanvas,
-  type LGraphNode,
-  type SerializedLGraphNode,
-  type serializedLGraph,
+import type {
+  LGraphCanvas as TLGraphCanvas,
+  LGraphNode,
+  SerializedLGraphNode,
+  serializedLGraph,
+  LiteGraph as TLiteGraph,
+  ContextMenuItem,
+  LGraph as TLGraph,
 } from "typings/litegraph.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
@@ -16,9 +19,9 @@ import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { querySelectorAll as $$ } from "rgthree/common/utils_dom.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 
+declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
 
 export enum LogLevel {
@@ -139,6 +142,7 @@ class Rgthree extends EventTarget {
   /** Exposes the ComfyUI api instance on rgthree. */
   readonly api = api;
   private settingsDialog: RgthreeConfigDialog | null = null;
+  private progressBarEl: RgthreeProgressBar | null = null;
 
   /** Are any functional keys pressed in this given moment? */
   ctrlKey = false;
@@ -154,7 +158,7 @@ class Rgthree extends EventTarget {
 
   processingQueue = false;
   loadingApiJson = false;
-  replacingReroute: number|null = null;
+  replacingReroute: number | null = null;
 
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
@@ -192,19 +196,55 @@ class Rgthree extends EventTarget {
    * Initializes the top progress bar, if it's configured.
    */
   initializeProgressBar() {
-    let bar = $$(RgthreeProgressBar.NAME)[0];
     if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
-      if (!bar) {
-        bar = RgthreeProgressBar.create();
-        document.body.appendChild(bar);
+      if (!this.progressBarEl) {
+        this.progressBarEl = RgthreeProgressBar.create();
+
+        this.progressBarEl.addEventListener("contextmenu", async (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+        });
+
+        this.progressBarEl.addEventListener("pointerdown", async (e) => {
+          LiteGraph.closeAllContextMenus();
+          if (e.button == 2) {
+            const canvas = await waitForCanvas();
+            new LiteGraph.ContextMenu(
+              this.getRgthreeContextMenuItems(),
+              {
+                title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
+                left: e.clientX,
+                top: 5,
+              },
+              canvas.getCanvasWindow(),
+            );
+            return;
+          }
+          if (e.button == 0) {
+            const nodeId = this.progressBarEl?.currentNodeId;
+            if (nodeId) {
+              const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
+              const node = graph.getNodeById(Number(nodeId));
+              if (node) {
+                canvas.centerOnNode(node);
+                e.stopPropagation();
+                e.preventDefault();
+              }
+            }
+            return;
+          }
+        });
+      }
+      if (!this.progressBarEl!.parentElement) {
+        document.body.appendChild(this.progressBarEl);
       }
       const height = CONFIG_SERVICE.getConfigValue("features.progress_bar.height") || 14;
-      bar.style.height = `${height}px`;
+      this.progressBarEl.style.height = `${height}px`;
       const fontSize = Math.max(10, Number(height) - 10);
-      bar.style.fontSize = `${fontSize}px`;
-      bar.style.fontWeight = fontSize <= 12 ? 'bold' : 'normal';
+      this.progressBarEl.style.fontSize = `${fontSize}px`;
+      this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
     } else {
-      bar?.remove();
+      this.progressBarEl?.remove();
     }
   }
 
@@ -260,85 +300,92 @@ class Rgthree extends EventTarget {
    * Initializes hooks specific to an rgthree-comfy context menu on the root menu.
    */
   private async initializeContextMenu() {
-    const graph = await waitForGraph();
     const that = this;
-    setTimeout(() => {
+    setTimeout(async () => {
       const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
       LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
         const options = getCanvasMenuOptions.apply(this, [...args] as any);
 
-        const selectedNodes = Object.values(this.selected_nodes || {});
-        let rerouteNodes: LGraphNode[] = [];
-        if (selectedNodes.length) {
-          rerouteNodes = selectedNodes.filter((n) => n.type === "Reroute");
-        } else {
-          rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
-        }
-        const rerouteLabel = selectedNodes.length ? "selected" : "all";
-
         options.push(null); // Divider
         options.push({
           content: logoRgthree + `rgthree-comfy`,
-          className: "rgthree-contextmenu-item rgthree-contextmenu-main-rgthree-comfy",
+          className: "rgthree-contextmenu-item rgthree-contextmenu-main-item-rgthree-comfy",
           submenu: {
-            options: [
-              {
-                content: "Actions",
-                disabled: true,
-                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-              },
-              {
-                content: iconGear + "Open rgthree-comfy Settings",
-                disabled: !!that.settingsDialog,
-                className: "rgthree-contextmenu-item",
-                callback: (...args: any[]) => {
-                  that.settingsDialog = new RgthreeConfigDialog().show();
-                  that.settingsDialog.addEventListener("close", (e) => {
-                    that.settingsDialog = null;
-                  });
-                },
-              },
-              {
-                content: iconReplace + ` Convert ${rerouteLabel} Reroutes`,
-                disabled: !rerouteNodes.length,
-                className: "rgthree-contextmenu-item",
-                callback: (...args: any[]) => {
-                  const msg =
-                    `Convert ${rerouteLabel} ComfyUI Reroutes to Reroute (rgthree) nodes? \n` +
-                    `(First save a copy of your workflow & check reroute connections afterwards)`;
-                  if (!window.confirm(msg)) {
-                    return;
-                  }
-                  (async () => {
-                    for (const node of [...rerouteNodes]) {
-                      if (node.type == "Reroute") {
-                        that.replacingReroute = node.id;
-                        await replaceNode(node, NodeTypesString.REROUTE);
-                        that.replacingReroute = null;
-                      }
-                    }
-                  })();
-                },
-              },
-              {
-                content: "More...",
-                disabled: true,
-                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-              },
-              {
-                content: iconStarFilled + "Star on Github",
-                className: "rgthree-contextmenu-item rgthree-contextmenu-github",
-                callback: (...args: any[]) => {
-                  window.open("https://github.com/rgthree/rgthree-comfy", "_blank");
-                },
-              },
-            ],
+            options: that.getRgthreeContextMenuItems(),
           },
         });
 
         return options;
       };
     }, 1000);
+  }
+
+  /**
+   * Returns the standard menu items for an rgthree-comfy context menu.
+   */
+  private getRgthreeContextMenuItems(): ContextMenuItem[] {
+    const [canvas, graph] = [app.canvas as TLGraphCanvas, app.graph as TLGraph];
+    const selectedNodes = Object.values(canvas.selected_nodes || {});
+    let rerouteNodes: LGraphNode[] = [];
+    if (selectedNodes.length) {
+      rerouteNodes = selectedNodes.filter((n) => n.type === "Reroute");
+    } else {
+      rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
+    }
+    const rerouteLabel = selectedNodes.length ? "selected" : "all";
+
+    return [
+      {
+        content: "Actions",
+        disabled: true,
+        className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+      },
+      {
+        content: iconGear + "Settings (rgthree-comfy)",
+        disabled: !!this.settingsDialog,
+        className: "rgthree-contextmenu-item",
+        callback: (...args: any[]) => {
+          this.settingsDialog = new RgthreeConfigDialog().show();
+          this.settingsDialog.addEventListener("close", (e) => {
+            this.settingsDialog = null;
+          });
+        },
+      },
+      {
+        content: iconReplace + ` Convert ${rerouteLabel} Reroutes`,
+        disabled: !rerouteNodes.length,
+        className: "rgthree-contextmenu-item",
+        callback: (...args: any[]) => {
+          const msg =
+            `Convert ${rerouteLabel} ComfyUI Reroutes to Reroute (rgthree) nodes? \n` +
+            `(First save a copy of your workflow & check reroute connections afterwards)`;
+          if (!window.confirm(msg)) {
+            return;
+          }
+          (async () => {
+            for (const node of [...rerouteNodes]) {
+              if (node.type == "Reroute") {
+                this.replacingReroute = node.id;
+                await replaceNode(node, NodeTypesString.REROUTE);
+                this.replacingReroute = null;
+              }
+            }
+          })();
+        },
+      },
+      {
+        content: "More...",
+        disabled: true,
+        className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+      },
+      {
+        content: iconStarFilled + "Star on Github",
+        className: "rgthree-contextmenu-item rgthree-contextmenu-github",
+        callback: (...args: any[]) => {
+          window.open("https://github.com/rgthree/rgthree-comfy", "_blank");
+        },
+      },
+    ];
   }
 
   /**
@@ -516,7 +563,7 @@ class Rgthree extends EventTarget {
     messageContainer.setAttribute("type", data.type || "info");
 
     const message = document.createElement("span");
-    message.innerText = data.message;
+    message.innerHTML = data.message;
     messageContainer.appendChild(message);
 
     for (let a = 0; a < (data.actions || []).length; a++) {

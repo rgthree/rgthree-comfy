@@ -4,7 +4,7 @@ import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
 import { getObjectValue, setObjectValue } from "../../rgthree/common/shared_utils.js";
 import { createElement as $el, querySelectorAll as $$ } from "../../rgthree/common/utils_dom.js";
-import { logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { checkmark, logoRgthree } from "../../rgthree/common/media/svgs.js";
 import { rgthree } from "./rgthree.js";
 var ConfigType;
 (function (ConfigType) {
@@ -156,7 +156,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                             this.close();
                             rgthree.showMessage({
                                 id: "config-success",
-                                message: "Successfully saved rgthree-comfy config!",
+                                message: `${checkmark} Successfully saved rgthree-comfy settings!`,
                                 timeout: 4000,
                             });
                             $$(".save-button", this.element)[0].disabled = true;

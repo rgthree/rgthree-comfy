@@ -188,6 +188,10 @@ export interface IContextMenuOptions {
     autoopen?: boolean;
     title?: string;
     extra?: any;
+    // @rgthree
+    left?: number;
+    // @rgthree
+    top?: number;
 }
 
 export type ContextMenuItem = IContextMenuItem | null;
@@ -392,6 +396,8 @@ export const LiteGraph: {
     ContextMenu: typeof ContextMenu;
     extendClass<A, B>(target: A, origin: B): A & B;
     getParameterNames(func: string): string[];
+    // @rgthree
+    closeAllContextMenus(ref_window?: Window): void;
 };
 
 export type serializedLGraph<

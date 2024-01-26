@@ -52,6 +52,20 @@
   font-family: Arial, sans-serif;
   font-size: 14px;
 }
+.rgthree-top-messages-container > div > div > span {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+.rgthree-top-messages-container > div > div > span svg {
+  width: 20px;
+  height: auto;
+  margin-right: 8px;
+}
+.rgthree-top-messages-container > div > div > span svg.icon-checkmark {
+  fill: #2e9720;
+}
 
 .rgthree-top-messages-container [type="warn"]::before {
   content: "⚠️";
@@ -394,12 +408,16 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   margin-right: 16px;
 }
 
+
+.litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy,
 .litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: start;
 }
+
+.litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy svg,
 .litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item svg {
   fill: currentColor;
   width: auto;
@@ -410,15 +428,23 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   fill: rgb(227, 179, 65);
 }
 
+.litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy,
 .litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-label {
   color: #dde;
-  background-color: #090909 !important;
+  background-color: #212121 !important;
   margin: 0;
   padding: 2px;
   cursor: default;
   opacity: 1;
   padding: 4px;
   font-weight: bold;
+}
+.litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy {
+  font-size: 1.1em;
+  color: #fff;
+  background-color: #090909 !important;
+  justify-content: center;
+  padding: 4px 8px;
 }
 
 rgthree-progress-bar {

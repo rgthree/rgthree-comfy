@@ -155,6 +155,12 @@ export class RgthreeProgressBar extends HTMLElement {
     static create() {
         return document.createElement(RgthreeProgressBar.NAME);
     }
+    get currentNodeId() {
+        var _a, _b;
+        const prompt = this.currentPromptExecution;
+        const nodeId = ((_a = prompt === null || prompt === void 0 ? void 0 : prompt.errorDetails) === null || _a === void 0 ? void 0 : _a.node_id) || ((_b = prompt === null || prompt === void 0 ? void 0 : prompt.currentlyExecuting) === null || _b === void 0 ? void 0 : _b.nodeId);
+        return nodeId || null;
+    }
     constructor() {
         super();
         this.shadow = null;
@@ -162,16 +168,10 @@ export class RgthreeProgressBar extends HTMLElement {
         this.onProgressUpdateBound = this.onProgressUpdate.bind(this);
         this.connected = false;
     }
-    maybeGetComfyGraph() {
-        var _a;
-        return ((_a = window === null || window === void 0 ? void 0 : window.app) === null || _a === void 0 ? void 0 : _a.graph) || null;
-    }
-    maybeGetComfyCanvas() {
-        var _a;
-        return ((_a = window === null || window === void 0 ? void 0 : window.app) === null || _a === void 0 ? void 0 : _a.canvas) || null;
-    }
     onProgressUpdate(e) {
         var _a, _b, _c, _d;
+        if (!this.connected)
+            return;
         const prompt = e.detail.prompt;
         this.currentPromptExecution = prompt;
         if (prompt === null || prompt === void 0 ? void 0 : prompt.errorDetails) {
@@ -222,10 +222,16 @@ export class RgthreeProgressBar extends HTMLElement {
         }
     }
     connectedCallback() {
+        if (!this.connected) {
+            SERVICE.addEventListener("progress-update", this.onProgressUpdateBound);
+            this.connected = true;
+        }
         if (this.shadow) {
+            this.progressTextEl.innerText = 'Idle';
+            this.progressNodesEl.style.width = `0%`;
+            this.progressStepsEl.style.width = `0%`;
             return;
         }
-        SERVICE.addEventListener("progress-update", this.onProgressUpdateBound);
         this.shadow = this.attachShadow({ mode: "open" });
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(`
@@ -307,36 +313,10 @@ export class RgthreeProgressBar extends HTMLElement {
         this.progressTextEl = document.createElement("span");
         this.progressTextEl.innerText = "Idle";
         this.shadow.appendChild(this.progressTextEl);
-        overlayEl.addEventListener("click", (e) => {
-            this.onClick(e);
-        });
-        this.connected = true;
     }
     disconnectedCallback() {
         this.connected = false;
         SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound);
-    }
-    onClick(e) {
-        var _a, _b;
-        const prompt = this.currentPromptExecution;
-        const nodeId = ((_a = prompt === null || prompt === void 0 ? void 0 : prompt.errorDetails) === null || _a === void 0 ? void 0 : _a.node_id) || ((_b = prompt === null || prompt === void 0 ? void 0 : prompt.currentlyExecuting) === null || _b === void 0 ? void 0 : _b.nodeId);
-        if (!nodeId)
-            return;
-        const graph = this.maybeGetComfyGraph();
-        const canvas = this.maybeGetComfyCanvas();
-        if (graph && canvas) {
-            const node = graph.getNodeById(Number(nodeId));
-            if (node) {
-                canvas.centerOnNode(node);
-                e.stopPropagation();
-                e.preventDefault();
-            }
-        }
-    }
-    updateProgress() {
-        if (!this.shadow) {
-            return;
-        }
     }
 }
 RgthreeProgressBar.NAME = "rgthree-progress-bar";
