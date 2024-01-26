@@ -10,10 +10,14 @@ var ConfigType;
 (function (ConfigType) {
     ConfigType[ConfigType["UNKNOWN"] = 0] = "UNKNOWN";
     ConfigType[ConfigType["BOOLEAN"] = 1] = "BOOLEAN";
+    ConfigType[ConfigType["STRING"] = 2] = "STRING";
+    ConfigType[ConfigType["NUMBER"] = 3] = "NUMBER";
 })(ConfigType || (ConfigType = {}));
 const TYPE_TO_STRING = {
-    [ConfigType.UNKNOWN]: 'unknown',
-    [ConfigType.BOOLEAN]: 'boolean',
+    [ConfigType.UNKNOWN]: "unknown",
+    [ConfigType.BOOLEAN]: "boolean",
+    [ConfigType.STRING]: "string",
+    [ConfigType.NUMBER]: "number",
 };
 const CONFIGURABLE = {
     features: [
@@ -23,6 +27,19 @@ const CONFIGURABLE = {
             label: "Optimize ComfyUI's Execution",
             description: "Patches ComfyUI's backend execution making complex workflows 1000's of times faster." +
                 "<br>⚠️ Disable if execution seems broken due to forward ComfyUI changes.",
+        },
+        {
+            key: "features.progress_bar.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "Prompt Progress Bar",
+            description: `Shows a minimal progress bar for nodes and steps at the top of the app.`,
+            subconfig: [
+                {
+                    key: "features.progress_bar.height",
+                    type: ConfigType.NUMBER,
+                    label: "Height of the bar",
+                },
+            ],
         },
         {
             key: "features.show_alerts_for_corrupt_workflows",
@@ -54,37 +71,59 @@ class ConfigService extends EventTarget {
     }
 }
 export const SERVICE = new ConfigService();
+function fieldrow(item) {
+    const initialValue = SERVICE.getConfigValue(item.key);
+    const container = $el(`div.fieldrow.-type-${TYPE_TO_STRING[item.type]}`, {
+        dataset: {
+            name: item.key,
+            initial: initialValue,
+            type: item.type,
+        },
+    });
+    $el(`label[for="${item.key}"]`, {
+        children: [
+            $el(`span[text="${item.label}"]`),
+            item.description ? $el("small", { html: item.description }) : null,
+        ],
+        parent: container,
+    });
+    let input;
+    if (item.type === ConfigType.BOOLEAN) {
+        container.classList.toggle("-checked", initialValue);
+        input = $el(`input[type="checkbox"][id="${item.key}"]`, {
+            checked: initialValue,
+            parent: container,
+        });
+    }
+    else {
+        input = $el(`input[id="${item.key}"]`, {
+            value: initialValue,
+            parent: container,
+        });
+    }
+    $el("div.fieldrow-value", { children: [input], parent: container });
+    return container;
+}
 export class RgthreeConfigDialog extends RgthreeDialog {
     constructor() {
         const content = $el("div");
         const features = $el(`fieldset`, { children: [$el(`legend[text="Features"]`)] });
         for (const feature of CONFIGURABLE.features) {
-            const label = $el(`label[for="${feature.key}"]`, {
-                children: [$el(`span[text="${feature.label}"]`)],
-            });
-            if (feature.description) {
-                label.appendChild($el("small", { html: feature.description }));
+            const container = $el("div.formrow");
+            container.appendChild(fieldrow(feature));
+            if (feature.subconfig) {
+                for (const subfeature of feature.subconfig) {
+                    container.appendChild(fieldrow(subfeature));
+                }
             }
-            let input;
-            const initialValue = getObjectValue(rgthreeConfig, feature.key);
-            console.log(feature.key, initialValue, typeof initialValue);
-            if (feature.type === ConfigType.BOOLEAN) {
-                input = $el(`input[type="checkbox"][id="${feature.key}"]`, {});
-                input.checked = initialValue;
-            }
-            else {
-                input = $el("input");
-            }
-            features.appendChild($el(`div.formrow.-type-${TYPE_TO_STRING[feature.type]}`, {
-                dataset: {
-                    name: feature.key,
-                    initial: initialValue,
-                    type: feature.type,
-                },
-                children: [label, $el("div.formrow-value", { children: [input] })],
-            }));
+            features.appendChild(container);
         }
         content.appendChild(features);
+        content.addEventListener("input", (e) => {
+            const changed = this.getChangedFormData();
+            $$(".save-button", this.element)[0].disabled =
+                !Object.keys(changed).length;
+        });
         content.addEventListener("change", (e) => {
             const changed = this.getChangedFormData();
             $$(".save-button", this.element)[0].disabled =
@@ -109,7 +148,6 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                     callback: async (e) => {
                         const changed = this.getChangedFormData();
                         if (!Object.keys(changed).length) {
-                            console.log("nothing has changed.");
                             this.close();
                             return;
                         }
@@ -141,6 +179,13 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             let currentValue = null;
             if (type === String(ConfigType.BOOLEAN)) {
                 currentValue = currentValueEl.checked;
+                el.classList.toggle("-checked", currentValue);
+            }
+            else {
+                currentValue = currentValueEl === null || currentValueEl === void 0 ? void 0 : currentValueEl.value;
+                if (type === String(ConfigType.NUMBER)) {
+                    currentValue = Number(currentValue) || initialValue;
+                }
             }
             if (currentValue !== initialValue) {
                 acc[name] = currentValue;
@@ -162,7 +207,6 @@ app.ui.settings.addSetting({
                     child: $el('button.rgthree-button.-blue[text="rgthree-comfy settings"]', {
                         events: {
                             click: (e) => {
-                                console.log("click!", e);
                                 new RgthreeConfigDialog().show();
                             },
                         },

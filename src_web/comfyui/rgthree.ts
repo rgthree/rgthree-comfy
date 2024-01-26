@@ -192,10 +192,19 @@ class Rgthree extends EventTarget {
    * Initializes the top progress bar, if it's configured.
    */
   initializeProgressBar() {
+    let bar = $$(RgthreeProgressBar.NAME)[0];
     if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
-      document.body.appendChild(RgthreeProgressBar.create());
+      if (!bar) {
+        bar = RgthreeProgressBar.create();
+        document.body.appendChild(bar);
+      }
+      const height = CONFIG_SERVICE.getConfigValue("features.progress_bar.height") || 14;
+      bar.style.height = `${height}px`;
+      const fontSize = Math.max(10, Number(height) - 10);
+      bar.style.fontSize = `${fontSize}px`;
+      bar.style.fontWeight = fontSize <= 12 ? 'bold' : 'normal';
     } else {
-      $$(RgthreeProgressBar.NAME)[0]?.remove();
+      bar?.remove();
     }
   }
 

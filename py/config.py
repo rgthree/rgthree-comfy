@@ -56,7 +56,8 @@ USER_CONFIG_FILE = os.path.join(THIS_DIR, '..', 'rgthree_config.json')
 DEFAULT_CONFIG = get_rgthree_default_config()
 
 # Shim in unreleased features.
-DEFAULT_CONFIG["features"]["progress_bar"] = {"enabled": False}
+if 'progress_bar' not in DEFAULT_CONFIG["features"]:
+  DEFAULT_CONFIG["features"]["progress_bar"] = {"enabled": False}
 
 USER_CONFIG = get_rgthree_user_config()
 

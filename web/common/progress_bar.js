@@ -77,11 +77,7 @@ class ProgressBarService extends EventTarget {
             var _a;
             if (!((_a = e.detail) === null || _a === void 0 ? void 0 : _a.exec_info))
                 return;
-            if (e.detail.exec_info.queue_remaining > this.lastQueueRemaining) {
-                this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
-            }
-            else if (e.detail.exec_info.queue_remaining === this.lastQueueRemaining) {
-            }
+            this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
             this.dispatchProgressUpdate();
         });
         api.addEventListener("execution_start", (e) => {
@@ -175,7 +171,7 @@ export class RgthreeProgressBar extends HTMLElement {
         return ((_a = window === null || window === void 0 ? void 0 : window.app) === null || _a === void 0 ? void 0 : _a.canvas) || null;
     }
     onProgressUpdate(e) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d;
         const prompt = e.detail.prompt;
         this.currentPromptExecution = prompt;
         if (prompt === null || prompt === void 0 ? void 0 : prompt.errorDetails) {
@@ -189,20 +185,25 @@ export class RgthreeProgressBar extends HTMLElement {
             this.progressNodesEl.classList.remove("-error");
             this.progressStepsEl.classList.remove("-error");
             const current = prompt === null || prompt === void 0 ? void 0 : prompt.currentlyExecuting;
-            this.progressNodesEl.style.width = `${Math.min(2, prompt.executedNodeIds.length / prompt.totalNodes) * 100}%`;
             let progressText = `(${e.detail.queue}) `;
-            progressText += `Node ${prompt.executedNodeIds.length + 1} of ${prompt.totalNodes || "?"}`;
+            if (!prompt.totalNodes) {
+                progressText += `??%`;
+                this.progressNodesEl.style.width = `0%`;
+            }
+            else {
+                const percent = (prompt.executedNodeIds.length / prompt.totalNodes) * 100;
+                this.progressNodesEl.style.width = `${Math.max(2, percent)}%`;
+                progressText += `${Math.round(percent)}%`;
+            }
             let nodeLabel = (_d = current.nodeLabel) === null || _d === void 0 ? void 0 : _d.trim();
             let stepsLabel = "";
-            if (((_e = prompt.currentlyExecuting) === null || _e === void 0 ? void 0 : _e.step) != null && prompt.currentlyExecuting.maxSteps) {
-                this.progressStepsEl.style.width = `${(prompt.currentlyExecuting.step / prompt.currentlyExecuting.maxSteps) * 100}%`;
-                stepsLabel += `Step ${prompt.currentlyExecuting.step} of ${prompt.currentlyExecuting.maxSteps}`;
+            if (current.step != null && current.maxSteps) {
+                const percent = (current.step / current.maxSteps) * 100;
+                this.progressStepsEl.style.width = `${percent}%`;
+                stepsLabel += `${Math.round(percent)}%`;
             }
-            if (nodeLabel && stepsLabel) {
-                progressText += ` [${nodeLabel} : ${stepsLabel}]`;
-            }
-            else if (nodeLabel || stepsLabel) {
-                progressText += ` [${nodeLabel || stepsLabel}]`;
+            if (nodeLabel || stepsLabel) {
+                progressText += ` - ${nodeLabel || '???'}${stepsLabel ? ` (${stepsLabel})` : ''}`;
             }
             if (!stepsLabel) {
                 this.progressStepsEl.style.width = `0%`;
@@ -210,7 +211,12 @@ export class RgthreeProgressBar extends HTMLElement {
             this.progressTextEl.innerText = progressText;
         }
         else {
-            this.progressTextEl.innerText = "Idle";
+            if (e === null || e === void 0 ? void 0 : e.detail.queue) {
+                this.progressTextEl.innerText = `(${e.detail.queue}) Running... in another tab`;
+            }
+            else {
+                this.progressTextEl.innerText = 'Idle';
+            }
             this.progressNodesEl.style.width = `0%`;
             this.progressStepsEl.style.width = `0%`;
         }
@@ -277,13 +283,11 @@ export class RgthreeProgressBar extends HTMLElement {
         justify-content: start;
         color: #fff;
         text-shadow: black 0px 0px 2px;
-        font-weight: bold;
       }
 
       :host > div.bar[style*="width: 0%"]:first-child,
       :host > div.bar[style*="width:0%"]:first-child {
         height: 0%;
-
       }
       :host > div.bar[style*="width: 0%"]:first-child + div,
       :host > div.bar[style*="width:0%"]:first-child + div {
@@ -301,6 +305,7 @@ export class RgthreeProgressBar extends HTMLElement {
         this.progressStepsEl.classList.add("bar");
         this.shadow.appendChild(this.progressStepsEl);
         this.progressTextEl = document.createElement("span");
+        this.progressTextEl.innerText = "Idle";
         this.shadow.appendChild(this.progressTextEl);
         overlayEl.addEventListener("click", (e) => {
             this.onClick(e);

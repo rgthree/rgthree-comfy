@@ -126,12 +126,10 @@ class ProgressBarService extends EventTarget {
     };
 
     api.addEventListener("status", (e: CustomEvent<ComfyApiEventDetailStatus>) => {
+      // console.log("status", JSON.stringify(e.detail));
       // Sometimes a status message is fired when the app loades w/o any details.
       if (!e.detail?.exec_info) return;
-      if (e.detail.exec_info.queue_remaining > this.lastQueueRemaining) {
-        this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
-      } else if (e.detail.exec_info.queue_remaining === this.lastQueueRemaining) {
-      }
+      this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
       this.dispatchProgressUpdate();
     });
 
@@ -270,32 +268,45 @@ export class RgthreeProgressBar extends HTMLElement {
     if (prompt?.currentlyExecuting) {
       this.progressNodesEl.classList.remove("-error");
       this.progressStepsEl.classList.remove("-error");
+
       const current = prompt?.currentlyExecuting;
-      this.progressNodesEl.style.width = `${
-        Math.min(2, prompt.executedNodeIds.length / prompt.totalNodes) * 100
-      }%`;
+
       let progressText = `(${e.detail.queue}) `;
-      progressText += `Node ${prompt.executedNodeIds.length + 1} of ${prompt.totalNodes || "?"}`;
-      let nodeLabel = current.nodeLabel?.trim();
-      let stepsLabel = "";
-      if (prompt.currentlyExecuting?.step != null && prompt.currentlyExecuting.maxSteps) {
-        this.progressStepsEl.style.width = `${
-          (prompt.currentlyExecuting.step / prompt.currentlyExecuting.maxSteps) * 100
-        }%`;
-        stepsLabel += `Step ${prompt.currentlyExecuting.step} of ${prompt.currentlyExecuting.maxSteps}`;
-      }
-      if (nodeLabel && stepsLabel) {
-        progressText += ` [${nodeLabel} : ${stepsLabel}]`;
-      } else if (nodeLabel || stepsLabel) {
-        progressText += ` [${nodeLabel || stepsLabel}]`;
+
+      // Sometimes we may get status updates for a workflow that was already running. In that case
+      // we don't know totalNodes.
+      if (!prompt.totalNodes) {
+        progressText += `??%`;
+        this.progressNodesEl.style.width = `0%`;
+      } else {
+        const percent = (prompt.executedNodeIds.length / prompt.totalNodes) * 100;
+        this.progressNodesEl.style.width = `${Math.max(2, percent)}%`;
+        // progressText += `Node ${prompt.executedNodeIds.length + 1} of ${prompt.totalNodes || "?"}`;
+        progressText += `${Math.round(percent)}%`;
       }
 
+      let nodeLabel = current.nodeLabel?.trim();
+      let stepsLabel = "";
+      if (current.step != null && current.maxSteps) {
+        const percent = (current.step / current.maxSteps) * 100;
+        this.progressStepsEl.style.width = `${percent}%`;
+        // stepsLabel += `Step ${current.step} of ${current.maxSteps}`;
+        stepsLabel += `${Math.round(percent)}%`;
+      }
+
+      if (nodeLabel || stepsLabel) {
+        progressText += ` - ${nodeLabel || '???'}${stepsLabel ? ` (${stepsLabel})` : ''}`;
+      }
       if (!stepsLabel) {
         this.progressStepsEl.style.width = `0%`;
       }
       this.progressTextEl.innerText = progressText;
     } else {
-      this.progressTextEl.innerText = "Idle";
+      if (e?.detail.queue)  {
+        this.progressTextEl.innerText = `(${e.detail.queue}) Running... in another tab`;
+      } else {
+        this.progressTextEl.innerText = 'Idle';
+      }
       this.progressNodesEl.style.width = `0%`;
       this.progressStepsEl.style.width = `0%`;
     }
@@ -364,13 +375,11 @@ export class RgthreeProgressBar extends HTMLElement {
         justify-content: start;
         color: #fff;
         text-shadow: black 0px 0px 2px;
-        font-weight: bold;
       }
 
       :host > div.bar[style*="width: 0%"]:first-child,
       :host > div.bar[style*="width:0%"]:first-child {
         height: 0%;
-
       }
       :host > div.bar[style*="width: 0%"]:first-child + div,
       :host > div.bar[style*="width:0%"]:first-child + div {
@@ -392,6 +401,7 @@ export class RgthreeProgressBar extends HTMLElement {
     this.shadow.appendChild(this.progressStepsEl);
 
     this.progressTextEl = document.createElement("span");
+    this.progressTextEl.innerText = "Idle";
     this.shadow.appendChild(this.progressTextEl);
 
     overlayEl.addEventListener("click", (e: MouseEvent) => {

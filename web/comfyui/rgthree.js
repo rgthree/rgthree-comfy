@@ -117,12 +117,20 @@ class Rgthree extends EventTarget {
         }));
     }
     initializeProgressBar() {
-        var _a;
+        let bar = $$(RgthreeProgressBar.NAME)[0];
         if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
-            document.body.appendChild(RgthreeProgressBar.create());
+            if (!bar) {
+                bar = RgthreeProgressBar.create();
+                document.body.appendChild(bar);
+            }
+            const height = CONFIG_SERVICE.getConfigValue("features.progress_bar.height") || 14;
+            bar.style.height = `${height}px`;
+            const fontSize = Math.max(10, Number(height) - 10);
+            bar.style.fontSize = `${fontSize}px`;
+            bar.style.fontWeight = fontSize <= 12 ? 'bold' : 'normal';
         }
         else {
-            (_a = $$(RgthreeProgressBar.NAME)[0]) === null || _a === void 0 ? void 0 : _a.remove();
+            bar === null || bar === void 0 ? void 0 : bar.remove();
         }
     }
     async initializeGraphAndCanvasHooks() {
