@@ -1,3 +1,4 @@
+@charset "UTF-8";
 .rgthree-top-messages-container {
   position: fixed;
   z-index: 9999;
@@ -20,9 +21,11 @@
   transition: all 0.33s ease-in-out;
   z-index: 3;
 }
+
 .rgthree-top-messages-container > div:last-child {
   z-index: 2;
 }
+
 .rgthree-top-messages-container > div:not(.-show) {
   z-index: 1;
 }
@@ -52,22 +55,25 @@
   font-family: Arial, sans-serif;
   font-size: 14px;
 }
+
 .rgthree-top-messages-container > div > div > span {
   display: flex;
   flex-direction: row;
   align-items: center;
   justify-content: center;
 }
+
 .rgthree-top-messages-container > div > div > span svg {
   width: 20px;
   height: auto;
   margin-right: 8px;
 }
+
 .rgthree-top-messages-container > div > div > span svg.icon-checkmark {
   fill: #2e9720;
 }
 
-.rgthree-top-messages-container [type="warn"]::before {
+.rgthree-top-messages-container [type=warn]::before {
   content: "⚠️";
   display: inline-block;
   flex: 0 0 auto;
@@ -101,9 +107,11 @@
 .comfy-multiline-input {
   z-index: 1 !important;
 }
+
 .comfy-multiline-input:focus {
   z-index: 2 !important;
 }
+
 .litegraph .dialog {
   z-index: 3 !important; /* This is set to 1, but goes under the multi-line inputs, so bump it. */
 }
@@ -114,10 +122,7 @@
   border-radius: 6px;
   background: #414141;
   color: #fff;
-  box-shadow:
-    inset 1px 1px 0px rgba(255, 255, 255, 0.05),
-    inset -1px -1px 0px rgba(0, 0, 0, 0.5),
-    2px 2px 20px rgb(0, 0, 0);
+  box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.05), inset -1px -1px 0px rgba(0, 0, 0, 0.5), 2px 2px 20px rgb(0, 0, 0);
   max-width: 800px;
   box-sizing: border-box;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -125,6 +130,7 @@
   padding: 0;
   max-height: calc(100% - 32px);
 }
+
 .rgthree-dialog-container {
   padding: 16px;
 }
@@ -144,9 +150,11 @@
   pointer-events: none;
   z-index: -1;
 }
+
 .rgthree-dialog.-iconed.-help::after {
   content: "🛟";
 }
+
 .rgthree-dialog.-iconed.-settings::after {
   content: "⚙️";
 }
@@ -156,7 +164,6 @@
     max-width: calc(100% - 32px);
   }
 }
-
 .rgthree-dialog-container-title {
   margin-bottom: 16px;
   display: flex;
@@ -164,19 +171,21 @@
   align-items: center;
   justify-content: start;
 }
+
 .rgthree-dialog-container-title > svg:first-child {
   width: 36px;
   height: 36px;
   margin-right: 16px;
 }
+
 .rgthree-dialog-container-title h2 {
-  font-size: calc(22rem / 16);
+  font-size: 1.375rem;
   margin: 0;
   font-weight: bold;
 }
 
 .rgthree-dialog-container-title h2 small {
-  font-size: calc(13rem / 16);
+  font-size: 0.8125rem;
   font-weight: normal;
   opacity: 0.75;
 }
@@ -185,8 +194,9 @@
   overflow: auto;
   max-height: calc(100vh - 200px); /* Arbitrary height to copensate for margin, title, and footer.*/
 }
+
 .rgthree-dialog-container-content p {
-  font-size: calc(13rem / 16);
+  font-size: 0.8125rem;
   margin-top: 0;
 }
 
@@ -229,12 +239,11 @@
   background: rgba(0, 0, 0, 0.5);
   color: white;
   font-family: system-ui, sans-serif;
-  font-size: calc(16rem / 16);
+  font-size: 1rem;
   line-height: 1;
   white-space: nowrap;
   text-decoration: none;
   margin: 0.25rem;
-  cursor: pointer;
   box-shadow: 0px 0px 2px rgb(0, 0, 0);
   background: #212121;
   transition: all 0.1s ease-in-out;
@@ -244,9 +253,7 @@
   align-items: center;
   justify-content: center;
 }
-
-:not(#fakeid) .rgthree-button::before,
-:not(#fakeid) .rgthree-button::after {
+:not(#fakeid) .rgthree-button::before, :not(#fakeid) .rgthree-button::after {
   content: "";
   display: block;
   position: absolute;
@@ -255,34 +262,24 @@
   top: 0;
   width: 100%;
   height: 100%;
-  box-shadow:
-    inset 1px 1px 0px rgba(255, 255, 255, 0.12),
-    inset -1px -1px 0px rgba(0, 0, 0, 0.75);
+  box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.12), inset -1px -1px 0px rgba(0, 0, 0, 0.75);
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.15));
   mix-blend-mode: screen;
 }
 :not(#fakeid) .rgthree-button::after {
   mix-blend-mode: multiply;
 }
-
 :not(#fakeid) .rgthree-button:hover {
   background: #303030;
 }
 :not(#fakeid) .rgthree-button:active {
   box-shadow: 0px 0px 0px rgba(0, 0, 0, 0);
   background: #121212;
-  padding: calc(var(--padding-top) + 1px) calc(var(--padding-x) - 1px)
-    calc(var(--padding-bottom) - 1px) calc(var(--padding-x) + 1px);
+  padding: calc(var(--padding-top) + 1px) calc(var(--padding-x) - 1px) calc(var(--padding-bottom) - 1px) calc(var(--padding-x) + 1px);
 }
-
-:not(#fakeid) .rgthree-button:active::before,
-:not(#fakeid) .rgthree-button:active::after {
-  box-shadow:
-    1px 1px 0px rgba(255, 255, 255, 0.15),
-    inset 1px 1px 0px rgba(0, 0, 0, 0.5),
-    inset 1px 3px 5px rgba(0, 0, 0, 0.33);
+:not(#fakeid) .rgthree-button:active::before, :not(#fakeid) .rgthree-button:active::after {
+  box-shadow: 1px 1px 0px rgba(255, 255, 255, 0.15), inset 1px 1px 0px rgba(0, 0, 0, 0.5), inset 1px 3px 5px rgba(0, 0, 0, 0.33);
 }
-
 :not(#fakeid) .rgthree-button.-blue {
   background: #346599 !important;
 }
@@ -292,7 +289,6 @@
 :not(#fakeid) .rgthree-button.-blue:active {
   background: #1d5086 !important;
 }
-
 :not(#fakeid) .rgthree-button.-green {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.06), rgba(0, 0, 0, 0.15)), #14580b;
 }
@@ -302,16 +298,126 @@
 :not(#fakeid) .rgthree-button.-green:active {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.15), rgba(255, 255, 255, 0.06)), #0f3f09;
 }
-
 :not(#fakeid) .rgthree-button[disabled] {
   box-shadow: none;
   background: #666 !important;
   color: #aaa;
   pointer-events: none;
 }
-:not(#fakeid) .rgthree-button[disabled]::before,
-:not(#fakeid) .rgthree-button[disabled]::after {
+:not(#fakeid) .rgthree-button[disabled]::before, :not(#fakeid) .rgthree-button[disabled]::after {
   display: none;
+}
+
+.rgthree-dialog {
+  outline: 0;
+  border: 0;
+  border-radius: 6px;
+  background: #414141;
+  color: #fff;
+  box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.05), inset -1px -1px 0px rgba(0, 0, 0, 0.5), 2px 2px 20px rgb(0, 0, 0);
+  max-width: 800px;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 1rem;
+  padding: 0;
+  max-height: calc(100% - 32px);
+}
+
+.rgthree-dialog-container {
+  padding: 16px;
+}
+
+.rgthree-dialog.-iconed::after {
+  content: "";
+  font-size: 276px;
+  position: absolute;
+  right: 0px;
+  bottom: 0px;
+  opacity: 0.15;
+  display: block;
+  width: 237px;
+  overflow: hidden;
+  height: 186px;
+  line-height: 1;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.rgthree-dialog.-iconed.-help::after {
+  content: "🛟";
+}
+
+.rgthree-dialog.-iconed.-settings::after {
+  content: "⚙️";
+}
+
+@media (max-width: 832px) {
+  .rgthree-dialog {
+    max-width: calc(100% - 32px);
+  }
+}
+.rgthree-dialog-container-title {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: start;
+}
+
+.rgthree-dialog-container-title > svg:first-child {
+  width: 36px;
+  height: 36px;
+  margin-right: 16px;
+}
+
+.rgthree-dialog-container-title h2 {
+  font-size: 1.375rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.rgthree-dialog-container-title h2 small {
+  font-size: 0.8125rem;
+  font-weight: normal;
+  opacity: 0.75;
+}
+
+.rgthree-dialog-container-content {
+  overflow: auto;
+  max-height: calc(100vh - 200px); /* Arbitrary height to copensate for margin, title, and footer.*/
+}
+
+.rgthree-dialog-container-content p {
+  font-size: 0.8125rem;
+  margin-top: 0;
+}
+
+.rgthree-dialog-container-content ul li p {
+  margin-bottom: 4px;
+}
+
+.rgthree-dialog-container-content ul li p + p {
+  margin-top: 0.5em;
+}
+
+.rgthree-dialog-container-content ul li ul {
+  margin-top: 0.5em;
+  margin-bottom: 1em;
+}
+
+.rgthree-dialog-container-content p code {
+  display: inline-block;
+  padding: 2px 4px;
+  margin: 0px 2px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rgthree-dialog-container-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-container) {
@@ -321,55 +427,68 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
 .rgthree-dialog.-settings {
   width: 100%;
 }
+
 .rgthree-dialog.-settings fieldset {
   border: 1px solid rgba(255, 255, 255, 0.25);
   padding: 0 12px 8px;
   margin-bottom: 16px;
 }
+
 .rgthree-dialog.-settings fieldset > legend {
   margin-left: 8px;
   padding: 0 8px;
   opacity: 0.5;
 }
+
 .rgthree-dialog.-settings .formrow {
   display: flex;
   flex-direction: column;
 }
+
 .rgthree-dialog.-settings .formrow + .formrow {
   border-top: 1px solid rgba(255, 255, 255, 0.25);
 }
+
 .rgthree-dialog.-settings .fieldrow {
   display: flex;
   flex-direction: row;
 }
+
 .rgthree-dialog.-settings .fieldrow > label {
   flex: 1 1 auto;
   user-select: none;
   padding: 8px 12px 12px;
 }
+
 .rgthree-dialog.-settings .fieldrow > label span {
   font-weight: bold;
 }
+
 .rgthree-dialog.-settings .fieldrow > label small {
   display: block;
   margin-top: 4px;
-  font-size: calc(11rem / 16);
+  font-size: 0.6875rem;
   opacity: 0.75;
   padding-left: 16px;
 }
+
 .rgthree-dialog.-settings .fieldrow ~ .fieldrow {
   font-size: 0.9rem;
   border-top: 1px dotted rgba(255, 255, 255, 0.25);
 }
+
 .rgthree-dialog.-settings .fieldrow ~ .fieldrow label {
   padding-left: 28px;
 }
+
 .rgthree-dialog.-settings .fieldrow:not(.-checked) ~ .fieldrow {
   display: none;
 }
+
 .rgthree-dialog.-settings .fieldrow:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.1);
 }
+
 .rgthree-dialog.-settings .fieldrow ~ .fieldrow span {
   font-weight: normal;
 }
@@ -382,15 +501,114 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   width: 50%;
   max-width: 230px;
 }
+
 .rgthree-dialog.-settings .fieldrow.-type-boolean > .fieldrow-value {
   max-width: 64px;
 }
+
 .rgthree-dialog.-settings .fieldrow.-type-number input {
   width: 48px;
   text-align: right;
 }
 
-.rgthree-dialog.-settings .fieldrow input[type="checkbox"] {
+.rgthree-dialog.-settings .fieldrow input[type=checkbox] {
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+}
+
+body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-container) {
+  filter: blur(5px);
+}
+
+.rgthree-dialog.-settings {
+  width: 100%;
+}
+
+.rgthree-dialog.-settings fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 0 12px 8px;
+  margin-bottom: 16px;
+}
+
+.rgthree-dialog.-settings fieldset > legend {
+  margin-left: 8px;
+  padding: 0 8px;
+  opacity: 0.5;
+}
+
+.rgthree-dialog.-settings .formrow {
+  display: flex;
+  flex-direction: column;
+}
+
+.rgthree-dialog.-settings .formrow + .formrow {
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.rgthree-dialog.-settings .fieldrow {
+  display: flex;
+  flex-direction: row;
+}
+
+.rgthree-dialog.-settings .fieldrow > label {
+  flex: 1 1 auto;
+  user-select: none;
+  padding: 8px 12px 12px;
+}
+
+.rgthree-dialog.-settings .fieldrow > label span {
+  font-weight: bold;
+}
+
+.rgthree-dialog.-settings .fieldrow > label small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.6875rem;
+  opacity: 0.75;
+  padding-left: 16px;
+}
+
+.rgthree-dialog.-settings .fieldrow ~ .fieldrow {
+  font-size: 0.9rem;
+  border-top: 1px dotted rgba(255, 255, 255, 0.25);
+}
+
+.rgthree-dialog.-settings .fieldrow ~ .fieldrow label {
+  padding-left: 28px;
+}
+
+.rgthree-dialog.-settings .fieldrow:not(.-checked) ~ .fieldrow {
+  display: none;
+}
+
+.rgthree-dialog.-settings .fieldrow:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.rgthree-dialog.-settings .fieldrow ~ .fieldrow span {
+  font-weight: normal;
+}
+
+.rgthree-dialog.-settings .fieldrow > .fieldrow-value {
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  flex: 0 0 auto;
+  width: 50%;
+  max-width: 230px;
+}
+
+.rgthree-dialog.-settings .fieldrow.-type-boolean > .fieldrow-value {
+  max-width: 64px;
+}
+
+.rgthree-dialog.-settings .fieldrow.-type-number input {
+  width: 48px;
+  text-align: right;
+}
+
+.rgthree-dialog.-settings .fieldrow input[type=checkbox] {
   width: 24px;
   height: 24px;
   cursor: pointer;
@@ -402,12 +620,12 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   align-items: center;
   justify-content: end;
 }
+
 .rgthree-comfyui-settings-row div svg {
   width: 36px;
   height: 36px;
   margin-right: 16px;
 }
-
 
 .litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy,
 .litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item {
@@ -424,6 +642,7 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   height: 16px;
   margin-right: 6px;
 }
+
 .litegraph.litecontextmenu .litemenu-entry.rgthree-contextmenu-item svg.github-star {
   fill: rgb(227, 179, 65);
 }
@@ -439,6 +658,7 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   padding: 4px;
   font-weight: bold;
 }
+
 .litegraph.litecontextmenu .litemenu-title .rgthree-contextmenu-title-rgthree-comfy {
   font-size: 1.1em;
   color: #fff;
@@ -459,7 +679,5 @@ rgthree-progress-bar {
   overflow: hidden;
   background: rgba(23, 23, 23, 0.9);
   box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.25);
-  box-shadow:
-    inset 0px -1px 0px rgba(0, 0, 0, 0.25),
-    0px 1px 0px rgba(255, 255, 255, 0.125);
+  box-shadow: inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
 }
