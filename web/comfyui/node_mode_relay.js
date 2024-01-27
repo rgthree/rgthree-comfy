@@ -44,6 +44,10 @@ class NodeModeRelay extends BaseCollectorNode {
         this.properties['on_any_active_inputs'] = 'ACTIVE';
     }
     onDrawForeground(ctx, canvas) {
+        var _a;
+        if ((_a = this.flags) === null || _a === void 0 ? void 0 : _a.collapsed) {
+            return;
+        }
         if (this.properties['on_muted_inputs'] !== 'MUTE' ||
             this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
             this.properties['on_any_active_inputs'] != 'ACTIVE') {

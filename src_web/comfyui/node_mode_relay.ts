@@ -96,6 +96,9 @@ class NodeModeRelay extends BaseCollectorNode {
   }
 
   override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: LGraphCanvas): void {
+    if (this.flags?.collapsed) {
+      return;
+    }
     if (
         this.properties['on_muted_inputs'] !== 'MUTE' ||
         this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
