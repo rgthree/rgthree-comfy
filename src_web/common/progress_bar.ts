@@ -1,224 +1,8 @@
 /**
- * Progress bar web component and prompt execution service.
+ * Progress bar web component.
  */
 
-import type {
-  ComfyApiEventDetailCached,
-  ComfyApiEventDetailError,
-  ComfyApiEventDetailExecuted,
-  ComfyApiEventDetailExecuting,
-  ComfyApiEventDetailExecutionStart,
-  ComfyApiEventDetailProgress,
-  ComfyApiEventDetailStatus,
-  ComfyApiPrompt,
-} from "typings/comfy.js";
-// @ts-ignore
-import { api } from "../../scripts/api.js";
-import type { LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "typings/litegraph.js";
-
-/**
- * Wraps general data of a prompt's execution.
- */
-class PromptExecution {
-  id: string;
-  nodesIds: string[] = [];
-  executedNodeIds: string[] = [];
-  totalNodes: number = 0;
-  currentlyExecuting: {
-    nodeId: string;
-    nodeLabel?: string;
-    step?: number;
-    maxSteps?: number;
-  } | null = null;
-  errorDetails: any | null = null;
-
-  constructor(id: string) {
-    this.id = id;
-  }
-
-  /**
-   * Sets the prompt and prompt-related data. This can technically come in lazily, like if the web
-   * socket fires the 'execution-start' event before we actually get a response back from the
-   * initial prompt call.
-   */
-  setPrompt(prompt: ComfyApiPrompt) {
-    this.nodesIds = Object.keys(prompt.output);
-    this.totalNodes = this.nodesIds.length;
-  }
-
-  /**
-   * Updates the execution data depending on the passed data, fed from api events.
-   */
-  executing(nodeId: string | null, step?: number, maxSteps?: number) {
-    if (nodeId == null) {
-      // We're done, any left over nodes must be skipped...
-      this.currentlyExecuting = null;
-      return;
-    }
-    if (this.currentlyExecuting?.nodeId !== nodeId) {
-      if (this.currentlyExecuting != null) {
-        this.executedNodeIds.push(nodeId);
-      }
-      this.currentlyExecuting = { nodeId };
-      const graph = this.maybeGetComfyGraph();
-      if (graph) {
-        const node = graph.getNodeById(Number(nodeId));
-        this.currentlyExecuting.nodeLabel = node?.title || node?.type || undefined;
-      }
-    }
-    if (step != null) {
-      this.currentlyExecuting!.step = step;
-      this.currentlyExecuting!.maxSteps = maxSteps;
-    }
-  }
-
-  /**
-   * If there's an error, we add the details.
-   */
-  error(details: any) {
-    this.errorDetails = details;
-  }
-
-  private maybeGetComfyGraph(): TLGraph | null {
-    return ((window as any)?.app?.graph as TLGraph) || null;
-  }
-}
-
-/**
- * A singleton service that wraps the Comfy API and simplifies the event data being fired.
- */
-class ProgressBarService extends EventTarget {
-  promptsMap: Map<string, PromptExecution> = new Map();
-  currentExecution: PromptExecution | null = null;
-  lastQueueRemaining = 0;
-
-  constructor(api: any) {
-    super();
-    const that = this;
-
-    // Patch the queuePrompt method so we can capture new data going through.
-    const queuePrompt = api.queuePrompt;
-    api.queuePrompt = async function (num: number, prompt: ComfyApiPrompt) {
-      let response;
-      try {
-        response = await queuePrompt.apply(api, [...arguments]);
-      } catch (e) {
-        const promptExecution = that.getOrMakePrompt("error");
-        promptExecution.error({ exception_type: "Unknown." });
-        // console.log("ERROR QUEUE PROMPT", response, arguments);
-        throw e;
-      }
-      // console.log("QUEUE PROMPT", response, arguments);
-      const promptExecution = that.getOrMakePrompt(response.prompt_id);
-      promptExecution.setPrompt(prompt);
-      if (!that.currentExecution) {
-        that.currentExecution = promptExecution;
-      }
-      that.promptsMap.set(response.prompt_id, promptExecution);
-      that.dispatchEvent(
-        new CustomEvent("queue-prompt", {
-          detail: {
-            prompt: promptExecution,
-          },
-        }),
-      );
-      return response;
-    };
-
-    api.addEventListener("status", (e: CustomEvent<ComfyApiEventDetailStatus>) => {
-      // console.log("status", JSON.stringify(e.detail));
-      // Sometimes a status message is fired when the app loades w/o any details.
-      if (!e.detail?.exec_info) return;
-      this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
-      this.dispatchProgressUpdate();
-    });
-
-    api.addEventListener("execution_start", (e: CustomEvent<ComfyApiEventDetailExecutionStart>) => {
-      // console.log("execution_start", JSON.stringify(e.detail));
-      if (!this.promptsMap.has(e.detail.prompt_id)) {
-        console.warn("'execution_start' fired before prompt was made.");
-      }
-      const prompt = this.getOrMakePrompt(e.detail.prompt_id);
-      this.currentExecution = prompt;
-      this.dispatchProgressUpdate();
-    });
-
-    api.addEventListener("executing", (e: CustomEvent<ComfyApiEventDetailExecuting>) => {
-      // console.log("executing", JSON.stringify(e.detail));
-      if (!this.currentExecution) {
-        this.currentExecution = this.getOrMakePrompt("unknown");
-        console.warn("'executing' fired before prompt was made.");
-      }
-      this.currentExecution.executing(e.detail);
-      this.dispatchProgressUpdate();
-      if (e.detail == null) {
-        this.currentExecution = null;
-      }
-    });
-
-    api.addEventListener("progress", (e: CustomEvent<ComfyApiEventDetailProgress>) => {
-      // console.log("progress", JSON.stringify(e.detail));
-      if (!this.currentExecution) {
-        this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-        console.warn("'progress' fired before prompt was made.");
-      }
-      this.currentExecution.executing(e.detail.node, e.detail.value, e.detail.max);
-      this.dispatchProgressUpdate();
-    });
-
-    api.addEventListener("execution_cached", (e: CustomEvent<ComfyApiEventDetailCached>) => {
-      // console.log("execution_cached", JSON.stringify(e.detail));
-      if (!this.currentExecution) {
-        this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-        console.warn("'execution_cached' fired before prompt was made.");
-      }
-      for (const cached of e.detail.nodes) {
-        this.currentExecution.executing(cached);
-      }
-      this.dispatchProgressUpdate();
-    });
-
-    api.addEventListener("executed", (e: CustomEvent<ComfyApiEventDetailExecuted>) => {
-      // console.log("executed", JSON.stringify(e.detail));
-      if (!this.currentExecution) {
-        this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-        console.warn("'executed' fired before prompt was made.");
-      }
-    });
-
-    api.addEventListener("execution_error", (e: CustomEvent<ComfyApiEventDetailError>) => {
-      // console.log("execution_error", e.detail);
-      if (!this.currentExecution) {
-        this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-        console.warn("'execution_error' fired before prompt was made.");
-      }
-      this.currentExecution?.error(e.detail);
-      this.dispatchProgressUpdate();
-    });
-  }
-
-  dispatchProgressUpdate() {
-    this.dispatchEvent(
-      new CustomEvent("progress-update", {
-        detail: {
-          queue: this.lastQueueRemaining,
-          prompt: this.currentExecution,
-        },
-      }),
-    );
-  }
-
-  getOrMakePrompt(id: string) {
-    let prompt = this.promptsMap.get(id);
-    if (!prompt) {
-      prompt = new PromptExecution(id);
-      this.promptsMap.set(id, prompt);
-    }
-    return prompt;
-  }
-}
-
-const SERVICE = new ProgressBarService(api);
+import { SERVICE as PROMPT_SERVICE, type PromptExecution } from "rgthree/common/prompt_service.js";
 
 /**
  * The progress bar web component.
@@ -293,6 +77,13 @@ export class RgthreeProgressBar extends HTMLElement {
         const percent = (current.step / current.maxSteps) * 100;
         this.progressStepsEl.style.width = `${percent}%`;
         // stepsLabel += `Step ${current.step} of ${current.maxSteps}`;
+        if (current.pass > 1 || current.maxPasses != null) {
+          stepsLabel += `#${current.pass}`;
+          if (current.maxPasses && current.maxPasses > 0) {
+            stepsLabel += `/${current.maxPasses}`;
+          }
+          stepsLabel += ` - `;
+        }
         stepsLabel += `${Math.round(percent)}%`;
       }
 
@@ -316,7 +107,7 @@ export class RgthreeProgressBar extends HTMLElement {
 
   connectedCallback() {
     if (!this.connected) {
-      SERVICE.addEventListener("progress-update", this.onProgressUpdateBound as EventListener);
+      PROMPT_SERVICE.addEventListener("progress-update", this.onProgressUpdateBound as EventListener);
       this.connected = true;
     }
     // We were already connected, so we just need to reset.
@@ -416,7 +207,7 @@ export class RgthreeProgressBar extends HTMLElement {
 
   disconnectedCallback() {
     this.connected = false;
-    SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound as EventListener);
+    PROMPT_SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound as EventListener);
   }
 
 }

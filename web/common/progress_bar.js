@@ -1,156 +1,4 @@
-import { api } from "../../scripts/api.js";
-class PromptExecution {
-    constructor(id) {
-        this.nodesIds = [];
-        this.executedNodeIds = [];
-        this.totalNodes = 0;
-        this.currentlyExecuting = null;
-        this.errorDetails = null;
-        this.id = id;
-    }
-    setPrompt(prompt) {
-        this.nodesIds = Object.keys(prompt.output);
-        this.totalNodes = this.nodesIds.length;
-    }
-    executing(nodeId, step, maxSteps) {
-        var _a;
-        if (nodeId == null) {
-            this.currentlyExecuting = null;
-            return;
-        }
-        if (((_a = this.currentlyExecuting) === null || _a === void 0 ? void 0 : _a.nodeId) !== nodeId) {
-            if (this.currentlyExecuting != null) {
-                this.executedNodeIds.push(nodeId);
-            }
-            this.currentlyExecuting = { nodeId };
-            const graph = this.maybeGetComfyGraph();
-            if (graph) {
-                const node = graph.getNodeById(Number(nodeId));
-                this.currentlyExecuting.nodeLabel = (node === null || node === void 0 ? void 0 : node.title) || (node === null || node === void 0 ? void 0 : node.type) || undefined;
-            }
-        }
-        if (step != null) {
-            this.currentlyExecuting.step = step;
-            this.currentlyExecuting.maxSteps = maxSteps;
-        }
-    }
-    error(details) {
-        this.errorDetails = details;
-    }
-    maybeGetComfyGraph() {
-        var _a;
-        return ((_a = window === null || window === void 0 ? void 0 : window.app) === null || _a === void 0 ? void 0 : _a.graph) || null;
-    }
-}
-class ProgressBarService extends EventTarget {
-    constructor(api) {
-        super();
-        this.promptsMap = new Map();
-        this.currentExecution = null;
-        this.lastQueueRemaining = 0;
-        const that = this;
-        const queuePrompt = api.queuePrompt;
-        api.queuePrompt = async function (num, prompt) {
-            let response;
-            try {
-                response = await queuePrompt.apply(api, [...arguments]);
-            }
-            catch (e) {
-                const promptExecution = that.getOrMakePrompt("error");
-                promptExecution.error({ exception_type: "Unknown." });
-                throw e;
-            }
-            const promptExecution = that.getOrMakePrompt(response.prompt_id);
-            promptExecution.setPrompt(prompt);
-            if (!that.currentExecution) {
-                that.currentExecution = promptExecution;
-            }
-            that.promptsMap.set(response.prompt_id, promptExecution);
-            that.dispatchEvent(new CustomEvent("queue-prompt", {
-                detail: {
-                    prompt: promptExecution,
-                },
-            }));
-            return response;
-        };
-        api.addEventListener("status", (e) => {
-            var _a;
-            if (!((_a = e.detail) === null || _a === void 0 ? void 0 : _a.exec_info))
-                return;
-            this.lastQueueRemaining = e.detail.exec_info.queue_remaining;
-            this.dispatchProgressUpdate();
-        });
-        api.addEventListener("execution_start", (e) => {
-            if (!this.promptsMap.has(e.detail.prompt_id)) {
-                console.warn("'execution_start' fired before prompt was made.");
-            }
-            const prompt = this.getOrMakePrompt(e.detail.prompt_id);
-            this.currentExecution = prompt;
-            this.dispatchProgressUpdate();
-        });
-        api.addEventListener("executing", (e) => {
-            if (!this.currentExecution) {
-                this.currentExecution = this.getOrMakePrompt("unknown");
-                console.warn("'executing' fired before prompt was made.");
-            }
-            this.currentExecution.executing(e.detail);
-            this.dispatchProgressUpdate();
-            if (e.detail == null) {
-                this.currentExecution = null;
-            }
-        });
-        api.addEventListener("progress", (e) => {
-            if (!this.currentExecution) {
-                this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-                console.warn("'progress' fired before prompt was made.");
-            }
-            this.currentExecution.executing(e.detail.node, e.detail.value, e.detail.max);
-            this.dispatchProgressUpdate();
-        });
-        api.addEventListener("execution_cached", (e) => {
-            if (!this.currentExecution) {
-                this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-                console.warn("'execution_cached' fired before prompt was made.");
-            }
-            for (const cached of e.detail.nodes) {
-                this.currentExecution.executing(cached);
-            }
-            this.dispatchProgressUpdate();
-        });
-        api.addEventListener("executed", (e) => {
-            if (!this.currentExecution) {
-                this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-                console.warn("'executed' fired before prompt was made.");
-            }
-        });
-        api.addEventListener("execution_error", (e) => {
-            var _a;
-            if (!this.currentExecution) {
-                this.currentExecution = this.getOrMakePrompt(e.detail.prompt_id);
-                console.warn("'execution_error' fired before prompt was made.");
-            }
-            (_a = this.currentExecution) === null || _a === void 0 ? void 0 : _a.error(e.detail);
-            this.dispatchProgressUpdate();
-        });
-    }
-    dispatchProgressUpdate() {
-        this.dispatchEvent(new CustomEvent("progress-update", {
-            detail: {
-                queue: this.lastQueueRemaining,
-                prompt: this.currentExecution,
-            },
-        }));
-    }
-    getOrMakePrompt(id) {
-        let prompt = this.promptsMap.get(id);
-        if (!prompt) {
-            prompt = new PromptExecution(id);
-            this.promptsMap.set(id, prompt);
-        }
-        return prompt;
-    }
-}
-const SERVICE = new ProgressBarService(api);
+import { SERVICE as PROMPT_SERVICE } from "../common/prompt_service.js";
 export class RgthreeProgressBar extends HTMLElement {
     static create() {
         return document.createElement(RgthreeProgressBar.NAME);
@@ -200,6 +48,13 @@ export class RgthreeProgressBar extends HTMLElement {
             if (current.step != null && current.maxSteps) {
                 const percent = (current.step / current.maxSteps) * 100;
                 this.progressStepsEl.style.width = `${percent}%`;
+                if (current.pass > 1 || current.maxPasses != null) {
+                    stepsLabel += `#${current.pass}`;
+                    if (current.maxPasses && current.maxPasses > 0) {
+                        stepsLabel += `/${current.maxPasses}`;
+                    }
+                    stepsLabel += ` - `;
+                }
                 stepsLabel += `${Math.round(percent)}%`;
             }
             if (nodeLabel || stepsLabel) {
@@ -223,7 +78,7 @@ export class RgthreeProgressBar extends HTMLElement {
     }
     connectedCallback() {
         if (!this.connected) {
-            SERVICE.addEventListener("progress-update", this.onProgressUpdateBound);
+            PROMPT_SERVICE.addEventListener("progress-update", this.onProgressUpdateBound);
             this.connected = true;
         }
         if (this.shadow) {
@@ -316,7 +171,7 @@ export class RgthreeProgressBar extends HTMLElement {
     }
     disconnectedCallback() {
         this.connected = false;
-        SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound);
+        PROMPT_SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound);
     }
 }
 RgthreeProgressBar.NAME = "rgthree-progress-bar";
