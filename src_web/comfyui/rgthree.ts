@@ -11,8 +11,7 @@ import type {
 import { app } from "../../scripts/app.js";
 // @ts-ignore
 import { api } from "../../scripts/api.js";
-// @ts-ignore
-import { SERVICE as CONFIG_SERVICE } from "./config.js";
+import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";

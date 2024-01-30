@@ -1,11 +1,9 @@
 import { app } from "../../scripts/app.js";
-import { rgthreeConfig } from "../../rgthree/config.js";
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
-import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
-import { getObjectValue, setObjectValue } from "../../rgthree/common/shared_utils.js";
 import { createElement as $el, querySelectorAll as $$ } from "../../rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "../../rgthree/common/media/svgs.js";
 import { rgthree } from "./rgthree.js";
+import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 var ConfigType;
 (function (ConfigType) {
     ConfigType[ConfigType["UNKNOWN"] = 0] = "UNKNOWN";
@@ -50,29 +48,8 @@ const CONFIGURABLE = {
         },
     ],
 };
-class ConfigService extends EventTarget {
-    getConfigValue(key, def) {
-        return getObjectValue(rgthreeConfig, key, def);
-    }
-    async setConfigValues(changed) {
-        const body = new FormData();
-        body.append("json", JSON.stringify(changed));
-        const response = await rgthreeApi.fetchJson("/config", { method: "POST", body });
-        if (response.status === "ok") {
-            for (const [key, value] of Object.entries(changed)) {
-                setObjectValue(rgthreeConfig, key, value);
-                this.dispatchEvent(new CustomEvent("config-change", { detail: { key, value } }));
-            }
-        }
-        else {
-            return false;
-        }
-        return true;
-    }
-}
-export const SERVICE = new ConfigService();
 function fieldrow(item) {
-    const initialValue = SERVICE.getConfigValue(item.key);
+    const initialValue = CONFIG_SERVICE.getConfigValue(item.key);
     const container = $el(`div.fieldrow.-type-${TYPE_TO_STRING[item.type]}`, {
         dataset: {
             name: item.key,
@@ -151,7 +128,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                             this.close();
                             return;
                         }
-                        const success = await SERVICE.setConfigValues(changed);
+                        const success = await CONFIG_SERVICE.setConfigValues(changed);
                         if (success) {
                             this.close();
                             rgthree.showMessage({
@@ -174,7 +151,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         return $$("[data-name]", this.contentElement).reduce((acc, el) => {
             const name = el.dataset["name"];
             const type = el.dataset["type"];
-            const initialValue = getObjectValue(rgthreeConfig, name);
+            const initialValue = CONFIG_SERVICE.getConfigValue(name);
             let currentValueEl = $$("input, textarea", el)[0];
             let currentValue = null;
             if (type === String(ConfigType.BOOLEAN)) {
