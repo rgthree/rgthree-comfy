@@ -33,7 +33,7 @@ app.registerExtension({
                         const foundIdx = options.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes("Copy Image"));
                         if (img && foundIdx === -1) {
                             const menuItem = {
-                                content: "Copy Image",
+                                content: "Copy Image (rgthree)",
                                 callback: () => {
                                     const canvas = document.createElement("canvas");
                                     const ctx = canvas.getContext("2d");

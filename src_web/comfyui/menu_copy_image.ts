@@ -47,7 +47,7 @@ app.registerExtension({
             const foundIdx = options.findIndex((option) => option?.content.includes("Copy Image"));
             if (img && foundIdx === -1) {
               const menuItem: ContextMenuItem = {
-                content: "Copy Image",
+                content: "Copy Image (rgthree)",
                 callback: () => {
                   const canvas = document.createElement("canvas");
                   const ctx = canvas.getContext("2d")!;
