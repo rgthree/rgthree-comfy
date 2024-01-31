@@ -218,7 +218,7 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 
 ## Progress Bar
 > A minimal progress bar that run alongs the top of the app window that shows the queue size, the current progress of the a prompt execution (within the same window), and the progress of multi-step nodes as well.
-> 
+>
 > <i>You can remove/enable from rgthree-comfy settings, as well as configure the height/size.</i>
 
 
@@ -236,9 +236,22 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > </details>
 
 
+## "Queue Node" in right-click menu for output nodes
+> Sometimes you want to just equeue a single node, without executing the entire workflow. Well, now you can do just that by right-clicking on an output node and selecting `Queue Node (rgthree)`.
+>
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Note that this can have side-effects on the entire workflow.
+>
+>    - The whole workflow is serialized, and then we trim what we don't want for the backend. So things like all seed random/increment/decrement will run even if that node isn't being sent in the end, etc.
+>
+> </details>
+
+
 ## "Copy Image" in right-click menu
 > Right clicking on a node that has an image should have a context-menu item of "Copy Image" will allow you to copy the image right to your clipboard
-> 
+>
 > <i>🎓 I believe this has graduated, with ComfyUI recently adding this setting too. You won't get two menu items; my code checks that there isn't already a "Copy Image" item there before adding it.</i>
 
 

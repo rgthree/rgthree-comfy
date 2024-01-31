@@ -100,6 +100,8 @@ export type ComfyObjectInfo = {
 	};
 	output?: string[];
 	output_name: string[];
+	// @rgthree
+	output_node?: boolean;
 };
 
 export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any];

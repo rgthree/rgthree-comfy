@@ -82,6 +82,7 @@ class Rgthree extends EventTarget {
         this.api = api;
         this.settingsDialog = null;
         this.progressBarEl = null;
+        this.queueNodeId = null;
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
@@ -269,6 +270,33 @@ class Rgthree extends EventTarget {
             },
         ];
     }
+    async queueOutputNode(nodeId) {
+        var _a;
+        try {
+            this.queueNodeId = nodeId;
+            await app.queuePrompt();
+        }
+        catch (e) {
+            const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing node #${nodeId}`, e);
+            (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+        }
+        finally {
+            this.queueNodeId = null;
+        }
+    }
+    recursiveAddNodes(nodeId, oldOutput, newOutput) {
+        let currentId = nodeId;
+        let currentNode = oldOutput[currentId];
+        if (newOutput[currentId] == null) {
+            newOutput[currentId] = currentNode;
+            for (const inputValue of Object.values(currentNode.inputs || [])) {
+                if (Array.isArray(inputValue)) {
+                    this.recursiveAddNodes(inputValue[0], oldOutput, newOutput);
+                }
+            }
+        }
+        return newOutput;
+    }
     initializeComfyUIHooks() {
         const rgthree = this;
         const queuePrompt = app.queuePrompt;
@@ -297,7 +325,12 @@ class Rgthree extends EventTarget {
         app.graphToPrompt = async function () {
             rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
             let promise = graphToPrompt.apply(app, [...arguments]);
-            await promise;
+            const result = await promise;
+            if (rgthree.queueNodeId != null) {
+                const oldOutput = result.output;
+                const newOutput = rgthree.recursiveAddNodes(String(rgthree.queueNodeId), oldOutput, {});
+                result.output = newOutput;
+            }
             rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
             return promise;
         };
@@ -479,6 +512,9 @@ class Rgthree extends EventTarget {
     }
     log(levelOrMessage, message, ...args) {
         this.logger.log(levelOrMessage, message, ...args);
+    }
+    logParts(levelOrMessage, message, ...args) {
+        return this.logger.logParts(levelOrMessage, message, ...args);
     }
     newLogSession(name) {
         return this.logger.newSession(name);

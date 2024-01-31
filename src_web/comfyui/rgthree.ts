@@ -7,6 +7,7 @@ import type {
   ContextMenuItem,
   LGraph as TLGraph,
 } from "typings/litegraph.js";
+import type { ComfyApiFormat, ComfyApiPrompt } from "typings/comfy.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
@@ -142,6 +143,9 @@ class Rgthree extends EventTarget {
   readonly api = api;
   private settingsDialog: RgthreeConfigDialog | null = null;
   private progressBarEl: RgthreeProgressBar | null = null;
+
+  /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
+  private queueNodeId: number | null = null;
 
   /** Are any functional keys pressed in this given moment? */
   ctrlKey = false;
@@ -388,6 +392,40 @@ class Rgthree extends EventTarget {
   }
 
   /**
+   * Wraps an `app.queuePrompt` call setting a specific node id that we will inspect and change the
+   * serialized graph when set (below, in our `graphToPrompt` override).
+   */
+  async queueOutputNode(nodeId: number) {
+    try {
+      this.queueNodeId = nodeId;
+      await app.queuePrompt();
+    } catch(e) {
+      const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing node #${nodeId}`, e);
+      console[n]?.(...v);
+    } finally {
+      this.queueNodeId = null;
+    }
+  }
+
+  /**
+   * Recusively walks backwards from a node adding its inputs to the `newOutput` from `oldOutput`.
+   */
+  private recursiveAddNodes(nodeId: string, oldOutput: ComfyApiFormat, newOutput: ComfyApiFormat) {
+    let currentId = nodeId;
+    let currentNode = oldOutput[currentId]!;
+    if (newOutput[currentId] == null) {
+      newOutput[currentId] = currentNode;
+      for (const inputValue of Object.values(currentNode.inputs || [])) {
+        if (Array.isArray(inputValue)) {
+          this.recursiveAddNodes(inputValue[0], oldOutput, newOutput);
+        }
+      }
+    }
+    return newOutput;
+  }
+
+
+  /**
    * Initialize a bunch of hooks into ComfyUI and/or LiteGraph itself so we can either keep state or
    * context on what's happening so nodes can respond appropriately. This is usually to fix broken
    * assumptions in the unowned code [🤮], but sometimes to add features or enhancements too [⭐].
@@ -426,7 +464,14 @@ class Rgthree extends EventTarget {
     app.graphToPrompt = async function () {
       rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
       let promise = graphToPrompt.apply(app, [...arguments]);
-      await promise;
+      const result = (await promise as ComfyApiPrompt);
+      // If queueNodeId is set, then we wonly want to queue one node. We'll capture that and rewrite
+      // the api format, 'output' field.
+      if (rgthree.queueNodeId != null) {
+        const oldOutput = result.output;
+        const newOutput = rgthree.recursiveAddNodes(String(rgthree.queueNodeId), oldOutput, {});
+        result.output = newOutput;
+      }
       rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
       return promise;
     };
@@ -677,6 +722,10 @@ class Rgthree extends EventTarget {
 
   log(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
     this.logger.log(levelOrMessage, message, ...args);
+  }
+
+  logParts(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
+    return this.logger.logParts(levelOrMessage, message, ...args);
   }
 
   newLogSession(name?: string) {
