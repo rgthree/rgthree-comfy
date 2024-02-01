@@ -101,8 +101,19 @@ log(f'Loaded {len(nodes)} {random.choice(adjs)} nodes.', color='BRIGHT_GREEN')
 # other nodes' (like "pipe" nodes, efficieny nodes). With `Context Big` nodes being
 # introduced, the number of input recursion that happens in these methods is exponential with a
 # saving of 1000's of percentage points over.
+
+# We'll use this to check if we _can_ patch execution. Other work to change the execution may
+# remove these methods, and we want to ensure people's apps do not break.
+could_patch_execution = (hasattr(execution, 'recursive_output_delete_if_changed') and
+                         hasattr(execution, 'recursive_will_execute') and
+                         hasattr(execution.PromptExecutor, 'execute'))
+
 if get_config_value('features.patch_recursive_execution') is True:
-  log("Will use rgthree's optimized recursive execution.", color='BRIGHT_GREEN')
+  if not could_patch_execution:
+    log("NOTE: Will NOT use rgthree's optimized recursive execution as ComfyUI has changed.",
+        color='YELLOW')
+  else:
+    log("Will use rgthree's optimized recursive execution.", color='BRIGHT_GREEN')
 
 
 class RgthreePatchRecursiveExecute_Set_patch_recursive_execution_to_false_if_not_working:
@@ -163,24 +174,27 @@ execution.rgthree_is_currently_optimized = False
 def rgthree_execute(self, *args, **kwargs):
   """ A patch of ComfyUI's default execution for optimization (or un-optimization) via config."""
   if get_config_value('features.patch_recursive_execution') is True:
-    log("Using rgthree's optimized recursive execution.", color='GREEN')
-    # When we execute, we'll reset our global cache here.
-    execution.rgthree_cache_recursive_output_delete_if_changed_output = {}
-    execution.rgthree_cache_recursive_will_execute = {}
 
-    if not execution.rgthree_is_currently_optimized:
-      log("First run patching recursive_output_delete_if_changed and recursive_will_execute.",
-          color='GREEN',
-          msg_color='RESET')
-      log("Note: \33[0mIf execution seems broken due to forward ComfyUI changes, you can disable " +
+    if could_patch_execution:
+      log("Using rgthree's optimized recursive execution.", color='GREEN')
+      # When we execute, we'll reset our global cache here.
+      execution.rgthree_cache_recursive_output_delete_if_changed_output = {}
+      execution.rgthree_cache_recursive_will_execute = {}
+
+      if not execution.rgthree_is_currently_optimized:
+        log("First run patching recursive_output_delete_if_changed and recursive_will_execute.",
+            color='GREEN',
+            msg_color='RESET')
+        log(
+          "Note: \33[0mIf execution seems broken due to forward ComfyUI changes, you can disable " +
           "the optimization from rgthree settings in ComfyUI.",
           color='YELLOW')
-      execution.rgthree_old_recursive_output_delete_if_changed = execution.recursive_output_delete_if_changed
-      execution.recursive_output_delete_if_changed = rgthree_recursive_output_delete_if_changed
+        execution.rgthree_old_recursive_output_delete_if_changed = execution.recursive_output_delete_if_changed
+        execution.recursive_output_delete_if_changed = rgthree_recursive_output_delete_if_changed
 
-      execution.rgthree_old_recursive_will_execute = execution.recursive_will_execute
-      execution.recursive_will_execute = rgthree_recursive_will_execute
-      execution.rgthree_is_currently_optimized = True
+        execution.rgthree_old_recursive_will_execute = execution.recursive_will_execute
+        execution.recursive_will_execute = rgthree_recursive_will_execute
+        execution.rgthree_is_currently_optimized = True
 
   elif execution.rgthree_is_currently_optimized:
     log("Removing optimizations to recursive_output_delete_if_changed and recursive_will_execute.",
