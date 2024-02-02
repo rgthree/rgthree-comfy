@@ -137,7 +137,7 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 > Same as Fast Muter but sets the connected nodes to "Bypass"
 
 ## Fast Actions Button
-> Oh boy, this node allows you to semi-automate connected nodes and/ror ConfyUI.
+> Oh boy, this node allows you to semi-automate connected nodes and/or ConfyUI.
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
