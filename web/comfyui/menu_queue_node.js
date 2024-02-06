@@ -34,6 +34,7 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
+            getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
             showQueueNodesMenuIfOutputNodesAreSelected(options, this);
         };
     },

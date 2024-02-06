@@ -62,6 +62,7 @@ app.registerExtension({
       canvas: TLGraphCanvas,
       options: ContextMenuItem[],
     ) {
+      getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
       showQueueNodesMenuIfOutputNodesAreSelected(options, this);
     };
   },
