@@ -145,7 +145,7 @@ class Rgthree extends EventTarget {
   private progressBarEl: RgthreeProgressBar | null = null;
 
   /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
-  private queueNodeId: number | null = null;
+  private queueNodeIds: number[] | null = null;
 
   /** Are any functional keys pressed in this given moment? */
   ctrlKey = false;
@@ -402,15 +402,15 @@ class Rgthree extends EventTarget {
    * Wraps an `app.queuePrompt` call setting a specific node id that we will inspect and change the
    * serialized graph when set (below, in our `graphToPrompt` override).
    */
-  async queueOutputNode(nodeId: number) {
+  async queueOutputNodes(nodeIds: number[]) {
     try {
-      this.queueNodeId = nodeId;
+      this.queueNodeIds = nodeIds;
       await app.queuePrompt();
     } catch(e) {
-      const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing node #${nodeId}`, e);
+      const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing nodes ${nodeIds}`, e);
       console[n]?.(...v);
     } finally {
-      this.queueNodeId = null;
+      this.queueNodeIds = null;
     }
   }
 
@@ -472,11 +472,15 @@ class Rgthree extends EventTarget {
       rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
       let promise = graphToPrompt.apply(app, [...arguments]);
       const result = (await promise as ComfyApiPrompt);
-      // If queueNodeId is set, then we wonly want to queue one node. We'll capture that and rewrite
-      // the api format, 'output' field.
-      if (rgthree.queueNodeId != null) {
+      // If queueNodeIds is set, then we only want to queue those nodes. We'll capture that and
+      // rewrite the api format, 'output' field, so only those are evaluated.
+      if (rgthree.queueNodeIds?.length) {
         const oldOutput = result.output;
-        const newOutput = rgthree.recursiveAddNodes(String(rgthree.queueNodeId), oldOutput, {});
+        let newOutput = {};
+        for (const queueNodeId of rgthree.queueNodeIds) {
+          rgthree.recursiveAddNodes(String(queueNodeId), oldOutput, newOutput);
+        }
+        console.log('newOutput', newOutput);
         result.output = newOutput;
       }
       rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));

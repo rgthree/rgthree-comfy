@@ -25,7 +25,7 @@ type ConfigurationSchema = {
   key: string;
   type: ConfigType;
   label: string;
-  options?: string[]|number[];
+  options?: string[] | number[];
   description?: string;
   subconfig?: ConfigurationSchema[];
 };
@@ -63,6 +63,14 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       ],
     },
     {
+      key: "features.menu_queue_selected_nodes",
+      type: ConfigType.BOOLEAN,
+      label: "Show 'Queue Selected Output Nodes' menu item",
+      description:
+        "Will show a menu item in the right-click context menus to queue (only) the selected " +
+        "output nodes.",
+    },
+    {
       key: "features.show_alerts_for_corrupt_workflows",
       type: ConfigType.BOOLEAN,
       label: "Detect Corrupt Workflows",
@@ -72,7 +80,6 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
     },
   ],
 };
-
 
 /**
  * Creates a new fieldrow for main or sub configuration items.
@@ -99,12 +106,12 @@ function fieldrow(item: ConfigurationSchema) {
   if (item.options?.length) {
     input = $el<HTMLSelectElement>(`select[id="${item.key}"]`, {
       parent: container,
-      children: item.options.map(o => {
+      children: item.options.map((o) => {
         return $el<HTMLOptionElement>(`option[value="${String(o)}"]`, {
           text: String(o),
-          selected: o === initialValue
+          selected: o === initialValue,
         });
-      })
+      }),
     });
   } else if (item.type === ConfigType.BOOLEAN) {
     container.classList.toggle("-checked", initialValue);
@@ -112,7 +119,6 @@ function fieldrow(item: ConfigurationSchema) {
       parent: container,
       checked: initialValue,
     });
-
   } else {
     input = $el(`input[id="${item.key}"]`, {
       parent: container,

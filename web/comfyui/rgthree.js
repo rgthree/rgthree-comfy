@@ -82,7 +82,7 @@ class Rgthree extends EventTarget {
         this.api = api;
         this.settingsDialog = null;
         this.progressBarEl = null;
-        this.queueNodeId = null;
+        this.queueNodeIds = null;
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
@@ -278,18 +278,18 @@ class Rgthree extends EventTarget {
             },
         ];
     }
-    async queueOutputNode(nodeId) {
+    async queueOutputNodes(nodeIds) {
         var _a;
         try {
-            this.queueNodeId = nodeId;
+            this.queueNodeIds = nodeIds;
             await app.queuePrompt();
         }
         catch (e) {
-            const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing node #${nodeId}`, e);
+            const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing nodes ${nodeIds}`, e);
             (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
         }
         finally {
-            this.queueNodeId = null;
+            this.queueNodeIds = null;
         }
     }
     recursiveAddNodes(nodeId, oldOutput, newOutput) {
@@ -331,12 +331,17 @@ class Rgthree extends EventTarget {
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {
+            var _a;
             rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
             let promise = graphToPrompt.apply(app, [...arguments]);
             const result = await promise;
-            if (rgthree.queueNodeId != null) {
+            if ((_a = rgthree.queueNodeIds) === null || _a === void 0 ? void 0 : _a.length) {
                 const oldOutput = result.output;
-                const newOutput = rgthree.recursiveAddNodes(String(rgthree.queueNodeId), oldOutput, {});
+                let newOutput = {};
+                for (const queueNodeId of rgthree.queueNodeIds) {
+                    rgthree.recursiveAddNodes(String(queueNodeId), oldOutput, newOutput);
+                }
+                console.log('newOutput', newOutput);
                 result.output = newOutput;
             }
             rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));

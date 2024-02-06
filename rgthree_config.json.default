@@ -4,6 +4,7 @@
     "patch_recursive_execution": true,
     "show_alerts_for_corrupt_workflows": false,
     "monitor_for_corrupt_links": false,
+    "menu_queue_selected_nodes": true,
     "progress_bar": {
       "enabled": true,
       "height": 16,

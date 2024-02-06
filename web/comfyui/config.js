@@ -46,6 +46,13 @@ const CONFIGURABLE = {
             ],
         },
         {
+            key: "features.menu_queue_selected_nodes",
+            type: ConfigType.BOOLEAN,
+            label: "Show 'Queue Selected Output Nodes' menu item",
+            description: "Will show a menu item in the right-click context menus to queue (only) the selected " +
+                "output nodes.",
+        },
+        {
             key: "features.show_alerts_for_corrupt_workflows",
             type: ConfigType.BOOLEAN,
             label: "Detect Corrupt Workflows",
@@ -75,12 +82,12 @@ function fieldrow(item) {
     if ((_a = item.options) === null || _a === void 0 ? void 0 : _a.length) {
         input = $el(`select[id="${item.key}"]`, {
             parent: container,
-            children: item.options.map(o => {
+            children: item.options.map((o) => {
                 return $el(`option[value="${String(o)}"]`, {
                     text: String(o),
-                    selected: o === initialValue
+                    selected: o === initialValue,
                 });
-            })
+            }),
         });
     }
     else if (item.type === ConfigType.BOOLEAN) {
