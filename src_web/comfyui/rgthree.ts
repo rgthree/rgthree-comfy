@@ -246,6 +246,13 @@ class Rgthree extends EventTarget {
       const fontSize = Math.max(10, Number(height) - 10);
       this.progressBarEl.style.fontSize = `${fontSize}px`;
       this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
+      if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
+        this.progressBarEl.style.bottom = `0px`;
+        this.progressBarEl.style.top = `auto`;
+      } else {
+        this.progressBarEl.style.top = `0px`;
+        this.progressBarEl.style.bottom = `auto`;
+      }
     } else {
       this.progressBarEl?.remove();
     }

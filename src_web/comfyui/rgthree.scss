@@ -221,10 +221,6 @@
 @import '../common/css/buttons.scss';
 @import '../common/css/dialog.scss';
 
-body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-container) {
-  filter: blur(5px);
-}
-
 .rgthree-dialog.-settings {
   width: 100%;
 }
@@ -271,7 +267,7 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
 .rgthree-dialog.-settings .fieldrow ~ .fieldrow label {
   padding-left: 28px;
 }
-.rgthree-dialog.-settings .fieldrow:not(.-checked) ~ .fieldrow {
+.rgthree-dialog.-settings .fieldrow:first-child:not(.-checked) ~ .fieldrow {
   display: none;
 }
 .rgthree-dialog.-settings .fieldrow:hover {

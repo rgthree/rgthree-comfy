@@ -160,7 +160,7 @@ function getChild(value: any) : HTMLElement|DocumentFragment|Text|null {
 
 
 export function setAttribute(element: HTMLElement, attribute: string, value: any) {
-  const isRemoving = value == null;
+  let isRemoving = value == null;
 
   if (attribute === 'default') {
     attribute = RGX_DEFAULT_VALUE_PROP.test(element.nodeName) ? 'value' : 'text';
@@ -227,8 +227,13 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
     }
 
   } else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
-      // Could be input, button, etc. We are not discriminate.
-      (element as HTMLInputElement)[attribute as 'checked'] = !!value;
+    // Could be input, button, etc. We are not discriminate.
+    (element as HTMLInputElement)[attribute as 'checked'] = !!value;
+    if (!value) {
+      (element as HTMLInputElement).removeAttribute(attribute);
+    } else {
+      (element as HTMLInputElement).setAttribute(attribute, attribute);
+    }
 
   } else if (DIRECT_ATTRIBUTE_MAP.hasOwnProperty(attribute)) {
     if (isRemoving) {

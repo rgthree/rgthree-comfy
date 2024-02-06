@@ -6,7 +6,8 @@
     "monitor_for_corrupt_links": false,
     "progress_bar": {
       "enabled": true,
-      "height": 16
+      "height": 16,
+      "position": "top"
     }
   },
   "nodes": {

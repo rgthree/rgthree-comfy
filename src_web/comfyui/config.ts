@@ -25,6 +25,7 @@ type ConfigurationSchema = {
   key: string;
   type: ConfigType;
   label: string;
+  options?: string[]|number[];
   description?: string;
   subconfig?: ConfigurationSchema[];
 };
@@ -52,6 +53,12 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
           key: "features.progress_bar.height",
           type: ConfigType.NUMBER,
           label: "Height of the bar",
+        },
+        {
+          key: "features.progress_bar.position",
+          type: ConfigType.STRING,
+          label: "Position at top or bottom of window",
+          options: ["top", "bottom"],
         },
       ],
     },
@@ -89,16 +96,27 @@ function fieldrow(item: ConfigurationSchema) {
   });
 
   let input;
-  if (item.type === ConfigType.BOOLEAN) {
+  if (item.options?.length) {
+    input = $el<HTMLSelectElement>(`select[id="${item.key}"]`, {
+      parent: container,
+      children: item.options.map(o => {
+        return $el<HTMLOptionElement>(`option[value="${String(o)}"]`, {
+          text: String(o),
+          selected: o === initialValue
+        });
+      })
+    });
+  } else if (item.type === ConfigType.BOOLEAN) {
     container.classList.toggle("-checked", initialValue);
     input = $el<HTMLInputElement>(`input[type="checkbox"][id="${item.key}"]`, {
-      checked: initialValue,
       parent: container,
+      checked: initialValue,
     });
+
   } else {
     input = $el(`input[id="${item.key}"]`, {
-      value: initialValue,
       parent: container,
+      value: initialValue,
     });
   }
   $el("div.fieldrow-value", { children: [input], parent: container });
@@ -184,7 +202,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
       const name = el.dataset["name"]!;
       const type = el.dataset["type"]!;
       const initialValue = CONFIG_SERVICE.getConfigValue(name);
-      let currentValueEl = $$("input, textarea", el)[0] as HTMLInputElement;
+      let currentValueEl = $$("input, textarea, select", el)[0] as HTMLInputElement;
       let currentValue: any = null;
       if (type === String(ConfigType.BOOLEAN)) {
         currentValue = currentValueEl.checked;

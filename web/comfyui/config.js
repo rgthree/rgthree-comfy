@@ -37,6 +37,12 @@ const CONFIGURABLE = {
                     type: ConfigType.NUMBER,
                     label: "Height of the bar",
                 },
+                {
+                    key: "features.progress_bar.position",
+                    type: ConfigType.STRING,
+                    label: "Position at top or bottom of window",
+                    options: ["top", "bottom"],
+                },
             ],
         },
         {
@@ -49,6 +55,7 @@ const CONFIGURABLE = {
     ],
 };
 function fieldrow(item) {
+    var _a;
     const initialValue = CONFIG_SERVICE.getConfigValue(item.key);
     const container = $el(`div.fieldrow.-type-${TYPE_TO_STRING[item.type]}`, {
         dataset: {
@@ -65,17 +72,28 @@ function fieldrow(item) {
         parent: container,
     });
     let input;
-    if (item.type === ConfigType.BOOLEAN) {
+    if ((_a = item.options) === null || _a === void 0 ? void 0 : _a.length) {
+        input = $el(`select[id="${item.key}"]`, {
+            parent: container,
+            children: item.options.map(o => {
+                return $el(`option[value="${String(o)}"]`, {
+                    text: String(o),
+                    selected: o === initialValue
+                });
+            })
+        });
+    }
+    else if (item.type === ConfigType.BOOLEAN) {
         container.classList.toggle("-checked", initialValue);
         input = $el(`input[type="checkbox"][id="${item.key}"]`, {
-            checked: initialValue,
             parent: container,
+            checked: initialValue,
         });
     }
     else {
         input = $el(`input[id="${item.key}"]`, {
-            value: initialValue,
             parent: container,
+            value: initialValue,
         });
     }
     $el("div.fieldrow-value", { children: [input], parent: container });
@@ -152,7 +170,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             const name = el.dataset["name"];
             const type = el.dataset["type"];
             const initialValue = CONFIG_SERVICE.getConfigValue(name);
-            let currentValueEl = $$("input, textarea", el)[0];
+            let currentValueEl = $$("input, textarea, select", el)[0];
             let currentValue = null;
             if (type === String(ConfigType.BOOLEAN)) {
                 currentValue = currentValueEl.checked;

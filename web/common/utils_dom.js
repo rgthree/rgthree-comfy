@@ -140,7 +140,7 @@ function getChild(value) {
     return null;
 }
 export function setAttribute(element, attribute, value) {
-    const isRemoving = value == null;
+    let isRemoving = value == null;
     if (attribute === 'default') {
         attribute = RGX_DEFAULT_VALUE_PROP.test(element.nodeName) ? 'value' : 'text';
     }
@@ -205,6 +205,12 @@ export function setAttribute(element, attribute, value) {
     }
     else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
         element[attribute] = !!value;
+        if (!value) {
+            element.removeAttribute(attribute);
+        }
+        else {
+            element.setAttribute(attribute, attribute);
+        }
     }
     else if (DIRECT_ATTRIBUTE_MAP.hasOwnProperty(attribute)) {
         if (isRemoving) {
