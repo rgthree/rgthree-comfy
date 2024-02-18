@@ -16,6 +16,13 @@ export var LogLevel;
     LogLevel[LogLevel["INFO"] = 4] = "INFO";
     LogLevel[LogLevel["DEBUG"] = 5] = "DEBUG";
 })(LogLevel || (LogLevel = {}));
+const LogLevelKeyToLogLevel = {
+    IMPORTANT: LogLevel.IMPORTANT,
+    ERROR: LogLevel.ERROR,
+    WARN: LogLevel.WARN,
+    INFO: LogLevel.INFO,
+    DEBUG: LogLevel.DEBUG,
+};
 const LogLevelToMethod = {
     [LogLevel.IMPORTANT]: "log",
     [LogLevel.ERROR]: "error",
@@ -24,13 +31,13 @@ const LogLevelToMethod = {
     [LogLevel.DEBUG]: "debug",
 };
 const LogLevelToCSS = {
-    [LogLevel.IMPORTANT]: "font-weight:bold; color:blue;",
+    [LogLevel.IMPORTANT]: "font-weight: bold; color: blue;",
     [LogLevel.ERROR]: "",
     [LogLevel.WARN]: "",
-    [LogLevel.INFO]: "",
-    [LogLevel.DEBUG]: "font-style: italic;",
+    [LogLevel.INFO]: "font-style: italic; color: blue;",
+    [LogLevel.DEBUG]: "font-style: italic; color: #333;",
 };
-let GLOBAL_LOG_LEVEL = LogLevel.DEBUG;
+let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
 class Logger {
     log(level, message, ...args) {
         var _a;
@@ -69,6 +76,9 @@ class LogSession {
     info(message, ...args) {
         this.log(LogLevel.INFO, message, ...args);
     }
+    infoParts(message, ...args) {
+        return this.logParts(LogLevel.INFO, message, ...args);
+    }
     error(message, ...args) {
         this.log(LogLevel.ERROR, message, ...args);
     }
@@ -78,6 +88,7 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     constructor() {
+        var _a;
         super();
         this.api = api;
         this.settingsDialog = null;
@@ -97,6 +108,8 @@ class Rgthree extends EventTarget {
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
+        const logLevel = (_a = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _a !== void 0 ? _a : GLOBAL_LOG_LEVEL;
+        this.setLogLevel(logLevel);
         window.addEventListener("keydown", (e) => {
             this.handleKeydown(e);
         });

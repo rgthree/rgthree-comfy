@@ -251,6 +251,13 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > </details>
 
 
+## Auto-Nest Subdirectories in long Combos
+> _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
+>
+> Automatically detect top-level subdirectories in long combo lists (like, Load Checkpoint) and break out into sub directories.
+
+
+
 ## "Copy Image" in right-click menu
 > Right clicking on a node that has an image should have a context-menu item of "Copy Image" will allow you to copy the image right to your clipboard
 >

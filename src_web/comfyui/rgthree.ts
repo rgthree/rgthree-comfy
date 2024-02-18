@@ -32,6 +32,14 @@ export enum LogLevel {
   DEBUG,
 }
 
+const LogLevelKeyToLogLevel: { [key: string]: LogLevel } = {
+  IMPORTANT: LogLevel.IMPORTANT,
+  ERROR: LogLevel.ERROR,
+  WARN: LogLevel.WARN,
+  INFO: LogLevel.INFO,
+  DEBUG: LogLevel.DEBUG,
+};
+
 type ConsoleLogFns = "log" | "error" | "warn" | "debug" | "info";
 const LogLevelToMethod: { [key in LogLevel]: ConsoleLogFns } = {
   [LogLevel.IMPORTANT]: "log",
@@ -41,14 +49,14 @@ const LogLevelToMethod: { [key in LogLevel]: ConsoleLogFns } = {
   [LogLevel.DEBUG]: "debug",
 };
 const LogLevelToCSS: { [key in LogLevel]: string } = {
-  [LogLevel.IMPORTANT]: "font-weight:bold; color:blue;",
+  [LogLevel.IMPORTANT]: "font-weight: bold; color: blue;",
   [LogLevel.ERROR]: "",
   [LogLevel.WARN]: "",
-  [LogLevel.INFO]: "",
-  [LogLevel.DEBUG]: "font-style: italic;",
+  [LogLevel.INFO]: "font-style: italic; color: blue;",
+  [LogLevel.DEBUG]: "font-style: italic; color: #333;",
 };
 
-let GLOBAL_LOG_LEVEL = LogLevel.DEBUG;
+let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
 
 /** A basic wrapper around logger. */
 class Logger {
@@ -113,6 +121,10 @@ class LogSession {
     this.log(LogLevel.INFO, message, ...args);
   }
 
+  infoParts(message?: string, ...args: any[]) {
+    return this.logParts(LogLevel.INFO, message, ...args);
+  }
+
   error(message?: string, ...args: any[]) {
     this.log(LogLevel.ERROR, message, ...args);
   }
@@ -170,6 +182,11 @@ class Rgthree extends EventTarget {
 
   constructor() {
     super();
+
+    const logLevel =
+      LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")] ?? GLOBAL_LOG_LEVEL;
+    this.setLogLevel(logLevel);
+
     window.addEventListener("keydown", (e) => {
       this.handleKeydown(e);
     });
@@ -406,8 +423,12 @@ class Rgthree extends EventTarget {
     try {
       this.queueNodeIds = nodeIds;
       await app.queuePrompt();
-    } catch(e) {
-      const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing nodes ${nodeIds}`, e);
+    } catch (e) {
+      const [n, v] = this.logParts(
+        LogLevel.ERROR,
+        `There was an error queuing nodes ${nodeIds}`,
+        e,
+      );
       console[n]?.(...v);
     } finally {
       this.queueNodeIds = null;
@@ -430,7 +451,6 @@ class Rgthree extends EventTarget {
     }
     return newOutput;
   }
-
 
   /**
    * Initialize a bunch of hooks into ComfyUI and/or LiteGraph itself so we can either keep state or
@@ -476,12 +496,11 @@ class Rgthree extends EventTarget {
       return promise;
     };
 
-
     // Override the queuePrompt for api to intercept the prompt output and, if queueNodeIds is set,
     // then we only want to queue those nodes, by rewriting the api format (prompt 'output' field)
     // so only those are evaluated.
     const apiQueuePrompt = api.queuePrompt as Function;
-    api.queuePrompt = async function(index: number, prompt: ComfyApiPrompt) {
+    api.queuePrompt = async function (index: number, prompt: ComfyApiPrompt) {
       if (rgthree.queueNodeIds?.length && prompt.output) {
         const oldOutput = prompt.output;
         let newOutput = {};

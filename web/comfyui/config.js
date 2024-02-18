@@ -48,9 +48,16 @@ const CONFIGURABLE = {
         {
             key: "features.menu_queue_selected_nodes",
             type: ConfigType.BOOLEAN,
-            label: "Show 'Queue Selected Output Nodes' menu item",
+            label: "(Menu) Show 'Queue Selected Output Nodes'",
             description: "Will show a menu item in the right-click context menus to queue (only) the selected " +
                 "output nodes.",
+        },
+        {
+            key: "features.menu_auto_nest.subdirs",
+            type: ConfigType.BOOLEAN,
+            label: "(Menu) Auto Nest Subdirectories",
+            description: "When a large, flat list of values contain sub-directories, auto nest them. (Like, for " +
+                "a large list of checkpoints).",
         },
         {
             key: "features.show_alerts_for_corrupt_workflows",
