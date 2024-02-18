@@ -236,15 +236,17 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > </details>
 
 
-## "Queue Node" in right-click menu for output nodes
-> Sometimes you want to just equeue a single node, without executing the entire workflow. Well, now you can do just that by right-clicking on an output node and selecting `Queue Node (rgthree)`.
+## "Queue Selected Output Nodes" in right-click menu
+> Sometimes you want to just queue one or two paths to specific output node(s) without executing the entire workflow. Well, now you can do just that by right-clicking on an output node and selecting `Queue Selected Output Nodes (rgthree)`.
 >
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
->    - Note that this can have side-effects on the entire workflow.
+>    - Select the _output_ nodes you want to execute.
 >
->    - The whole workflow is serialized, and then we trim what we don't want for the backend. So things like all seed random/increment/decrement will run even if that node isn't being sent in the end, etc.
+>    - Note: Only output nodes are captured and traversed, not all selected nodes. So if you select an output AND a node from a different path, only the path connected to the output will be executed and not non-output nodes, even if they were selected.
+>
+>    - Note: The whole workflow is serialized, and then we trim what we don't want for the backend. So things like all seed random/increment/decrement will run even if that node isn't being sent in the end, etc.
 >
 > </details>
 

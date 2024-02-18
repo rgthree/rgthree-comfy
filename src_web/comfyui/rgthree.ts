@@ -400,7 +400,7 @@ class Rgthree extends EventTarget {
 
   /**
    * Wraps an `app.queuePrompt` call setting a specific node id that we will inspect and change the
-   * serialized graph when set (below, in our `graphToPrompt` override).
+   * serialized graph right before being sent (below, in our `api.queuePrompt` override).
    */
   async queueOutputNodes(nodeIds: number[]) {
     try {
@@ -471,20 +471,26 @@ class Rgthree extends EventTarget {
     app.graphToPrompt = async function () {
       rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
       let promise = graphToPrompt.apply(app, [...arguments]);
-      const result = (await promise as ComfyApiPrompt);
-      // If queueNodeIds is set, then we only want to queue those nodes. We'll capture that and
-      // rewrite the api format, 'output' field, so only those are evaluated.
-      if (rgthree.queueNodeIds?.length) {
-        const oldOutput = result.output;
+      await promise;
+      rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
+      return promise;
+    };
+
+
+    // Override the queuePrompt for api to intercept the prompt output and, if queueNodeIds is set,
+    // then we only want to queue those nodes, by rewriting the api format (prompt 'output' field)
+    // so only those are evaluated.
+    const apiQueuePrompt = api.queuePrompt as Function;
+    api.queuePrompt = async function(index: number, prompt: ComfyApiPrompt) {
+      if (rgthree.queueNodeIds?.length && prompt.output) {
+        const oldOutput = prompt.output;
         let newOutput = {};
         for (const queueNodeId of rgthree.queueNodeIds) {
           rgthree.recursiveAddNodes(String(queueNodeId), oldOutput, newOutput);
         }
-        console.log('newOutput', newOutput);
-        result.output = newOutput;
+        prompt.output = newOutput;
       }
-      rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
-      return promise;
+      return apiQueuePrompt.apply(app, [index, prompt]);
     };
 
     // Hook into a clean call; allow us to clear and rgthree messages.

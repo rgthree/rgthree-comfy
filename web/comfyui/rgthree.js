@@ -331,21 +331,24 @@ class Rgthree extends EventTarget {
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {
-            var _a;
             rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
             let promise = graphToPrompt.apply(app, [...arguments]);
-            const result = await promise;
-            if ((_a = rgthree.queueNodeIds) === null || _a === void 0 ? void 0 : _a.length) {
-                const oldOutput = result.output;
+            await promise;
+            rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
+            return promise;
+        };
+        const apiQueuePrompt = api.queuePrompt;
+        api.queuePrompt = async function (index, prompt) {
+            var _a;
+            if (((_a = rgthree.queueNodeIds) === null || _a === void 0 ? void 0 : _a.length) && prompt.output) {
+                const oldOutput = prompt.output;
                 let newOutput = {};
                 for (const queueNodeId of rgthree.queueNodeIds) {
                     rgthree.recursiveAddNodes(String(queueNodeId), oldOutput, newOutput);
                 }
-                console.log('newOutput', newOutput);
-                result.output = newOutput;
+                prompt.output = newOutput;
             }
-            rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
-            return promise;
+            return apiQueuePrompt.apply(app, [index, prompt]);
         };
         const clean = app.clean;
         app.clean = function () {
