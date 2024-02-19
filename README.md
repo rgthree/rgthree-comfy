@@ -65,6 +65,15 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    ![Router Node](./docs/rgthree_router.png)
 >    </details>
 
+## Bookmark (🔖)
+> Place the bookmark node anywhere on screen to quickly navigate to that with a shortcut key.
+> <details>
+>    <summary>ℹ️ <i>See More Information</i></summary>
+>
+>    - Define the `sahortvut_key` to press to go right to that bookmark node, anchored in the top left
+>    - You can also define the zoom level as well!
+>    </details>
+
 
 ## Context / Context Big
 > Pass along in general flow properties, and merge in new data. Similar to some other node suites "pipes" but easier merging, is more easily interoperable with standard nodes by both combining and exploding all in a single node.
@@ -78,6 +87,21 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    ![Context Node](./docs/rgthree_context.png)
 >    </details>
 
+## Image Comparer
+> The Image Comparer node compares two images on top of each other.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - **Note:** The right-click menu may show image options (Open Image, Save Image, etc.) which will correspond to the first image (image_a) if clicked on the left-half of the node, or the second image if on the right half of the node.
+>    - **Inputs:**
+>      - `image_a` _Required._ The first image to use to compare. If image_b is not supplied and image_a is a batch, the comparer will use the first two images of image_a.
+>      - `image_b` _Optional._ The second image to use to compare. Optional only if image_a is a batch with two images.
+>    - **Properties:** You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):
+>      - `comparer_mode` - Choose between "Slide" and "Click". Defaults to "Slide".
+
+
+## Image Inset Crop
+> The node that lets you crop an input image by either pixel value, or percentage value.
 
 
 ## Display Any
@@ -99,10 +123,8 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >      needing a separate Lora Loaders
 >    </details>
 
-
 ## Power Prompt - Simple
 > Same as Power Prompt above, but without LORA support; made for a slightly cleaner negative prompt _(since negative prompts do not support loras)_.
-
 
 ## SDXL Power Prompt - Positive
 > The SDXL sibling to the Power Prompt above. It contains the text_g and text_l as separate text inputs, as well a couple more input slots necessary to ensure proper clipe encoding. Combine with
@@ -119,13 +141,49 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
 >    - Pass in several context nodes and the Context Switch will automatically choose the first non-null context to continue onward with.
->    - Wondering how to toggle contexts to null? Use in conjuction with the **Fast Muter**
+>    - Wondering how to toggle contexts to null? Use in conjuction with the **Fast Muter** or **Fast Groups Muter**
+>
+>    </details>
+
+## Any Switch
+> A powerful node to similar to the Context Switch above, that chooses the first input that is not null/empty.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Pass in several inmputs of the same type and the Any Switch will automatically choose the first non-null value to continue onward with.
+>    - Wondering how to toggle contexts to null? Use in conjuction with the **Fast Muter** or **Fast Groups Muter**
 >
 >    </details>
 
 
+## Fast Groups Muter
+> The Fast Groups Muter is an input-less node that automatically collects all groups in your current workflow and allows you to quickly mute and unmute all nodes within the group.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Groups will automatically be shown, though you can filter, sort and more from the **node Properties** _(by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu)_. Properties include:
+>    -  `matchColors` - Only add groups that match the provided colors. Can be ComfyUI colors (red, pale_blue) or hex codes (#a4d399). Multiple can be added, comma delimited.
+>    -  `matchTitle` - Filter the list of toggles by title match (string match, or regular expression).
+>    -  `showNav` - Add / remove a quick navigation arrow to take you to the group. (default: true)
+>    -  `sort` - Sort the toggles' order by "alphanumeric", graph "position", or "custom alphabet". (default: "position")
+>    -  `customSortAlphabet` - When the sort property is "custom alphabet" you can define the alphabet to use here, which will match the beginning of each group name and sort against it. If group titles do not match any custom alphabet entry, then they will be put after groups that do, ordered alphanumerically.
+>        
+>        This can be a list of single characters, like "zyxw..." or comma delimited strings for more control, like "sdxl,pro,sd,n,p".
+>        
+>        Note, when two group title match the same custom alphabet entry, the normal alphanumeric alphabet breaks the tie. For instance, a custom alphabet of "e,s,d" will order groups names like "SDXL, SEGS, Detailer" eventhough the custom alphabet has an "e" before "d" (where one may expect "SE" to be before "SD").
+>        
+>        To have "SEGS" appear before "SDXL" you can use longer strings. For instance, the custom alphabet value of "se,s,f" would work here.
+>    -  `toggleRestriction` - Optionally, attempt to restrict the number of widgets that can be enabled to a maximum of one, or always one.
+>
+>        _Note: If using "max one" or "always one" then this is only enforced when clicking a toggle on this node; if nodes within groups are changed outside of the initial toggle click, then these restriction will not be enforced, and could result in a state where more than one toggle is enabled. This could also happen if nodes are overlapped with multiple groups._
+>    </details>
+
+## Fast Groups Bypasser
+> _Same as **Fast Groups Muter** above, but sets the connected nodes to "Bypass" instead of "Mute"_
+
+
 ## Fast Muter
-> A powerful 'control panel' node to quickly toggle connected node allowing it to quickly be muted or enabled
+> A powerful 'control panel' node to quickly toggle connected nodes allowing them to quickly be muted or enabled
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
@@ -137,7 +195,7 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 > Same as Fast Muter but sets the connected nodes to "Bypass"
 
 ## Fast Actions Button
-> Oh boy, this node allows you to semi-automate connected nodes and/ror ConfyUI.
+> Oh boy, this node allows you to semi-automate connected nodes and/or ConfyUI.
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
@@ -172,6 +230,14 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    </details>
 
 
+## Random Unmuter
+> An advanced node used to unmute one of its inputs randomly when the graph is queued (and, immediately mute it back).
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - **Note:** All input nodes MUST be muted to start; if not this node will not randomly unmute another. (This is powerful, as the generated image can be dragged in and the chosen input will already by unmuted and work w/o any further action.)
+>    - **Tip:** Connect a Repeater's output to this nodes input and place that Repeater on a group without any other inputs, and it will mute/unmute the entire group.
+>    </details>
 
 
 # Advanced Techniques
