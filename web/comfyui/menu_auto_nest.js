@@ -18,11 +18,13 @@ app.registerExtension({
                     const [n, v] = logger.infoParts('Skipping context menu auto nesting for incompatible menu.');
                     (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
                 }
+                console.log('just pass through.');
                 return existingContextMenu.apply(this, [...arguments]);
             }
             const compatValues = values;
             const originalValues = [...compatValues];
             const folders = {};
+            const specialOps = [];
             const folderless = [];
             for (const value of compatValues) {
                 const splitBy = value.indexOf('/') > -1 ? '/' : '\\';
@@ -32,17 +34,20 @@ app.registerExtension({
                     folders[key] = folders[key] || [];
                     folders[key].push(valueSplit.join(splitBy));
                 }
+                else if (value === 'CHOOSE' || value.startsWith('DISABLE ')) {
+                    specialOps.push(value);
+                }
                 else {
                     folderless.push(value);
                 }
             }
-            const oldcallback = options.callback;
-            options.callback = null;
-            const newCallback = (item, options) => {
-                oldcallback(originalValues.find(i => i.endsWith(item.content), options));
-            };
             const foldersCount = Object.values(folders).length;
-            if (Object.values(folders).length > 0) {
+            if (foldersCount > 0) {
+                const oldcallback = options.callback;
+                options.callback = null;
+                const newCallback = (item, options) => {
+                    oldcallback(originalValues.find(i => i.endsWith(item.content), options));
+                };
                 const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
                 (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
                 const newValues = [];
@@ -59,7 +64,10 @@ app.registerExtension({
                         }
                     });
                 }
-                values = newValues.concat(folderless.map(f => ({
+                values = [].concat(specialOps.map(f => ({
+                    content: f,
+                    callback: newCallback
+                })), newValues, folderless.map(f => ({
                     content: f,
                     callback: newCallback
                 })));

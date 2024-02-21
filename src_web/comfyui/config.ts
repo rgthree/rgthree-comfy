@@ -77,6 +77,13 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       description:
         "When a large, flat list of values contain sub-directories, auto nest them. (Like, for " +
         "a large list of checkpoints).",
+      subconfig: [
+        {
+          key: "features.menu_auto_nest.threshold",
+          type: ConfigType.NUMBER,
+          label: "Number of items needed to trigger nesting.",
+        },
+      ],
     },
     {
       key: "features.show_alerts_for_corrupt_workflows",

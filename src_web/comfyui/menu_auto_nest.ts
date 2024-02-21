@@ -35,6 +35,7 @@ app.registerExtension({
           const [n, v] = logger.infoParts('Skipping context menu auto nesting for incompatible menu.');
           console[n]?.(...v);
         }
+        console.log('just pass through.')
         return existingContextMenu.apply(this as any, [...arguments] as any);
       }
 
@@ -42,6 +43,7 @@ app.registerExtension({
       const compatValues = values as unknown as string[];
       const originalValues = [...compatValues];
       const folders: {[key:string]: string[]} = {};
+      const specialOps: string[] = [];
       const folderless: string[] = [];
       for (const value of compatValues) {
         const splitBy = value.indexOf('/') > -1 ? '/' : '\\';
@@ -50,17 +52,19 @@ app.registerExtension({
           const key = valueSplit.shift()!;
           folders[key] = folders[key] || [];
           folders[key]!.push(valueSplit.join(splitBy));
+        } else if (value === 'CHOOSE' || value.startsWith('DISABLE ')) {
+          specialOps.push(value);
         } else {
           folderless.push(value);
         }
       }
-      const oldcallback = options.callback;
-      options.callback = null;
-      const newCallback = (item: ContextMenuItem, options: any) => {
-        oldcallback(originalValues.find(i => i.endsWith(item!.content), options));
-      };
       const foldersCount = Object.values(folders).length;
-      if (Object.values(folders).length > 0) {
+      if (foldersCount > 0) {
+        const oldcallback = options.callback;
+        options.callback = null;
+        const newCallback = (item: ContextMenuItem, options: any) => {
+          oldcallback(originalValues.find(i => i.endsWith(item!.content), options));
+        };
         const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
         console[n]?.(...v);
         const newValues: ContextMenuItem[] = [];
@@ -77,7 +81,10 @@ app.registerExtension({
             }
           });
         }
-        values = newValues.concat(folderless.map(f => ({
+        values = ([] as ContextMenuItem[]).concat(specialOps.map(f => ({
+          content: f,
+          callback: newCallback
+        })), newValues, folderless.map(f => ({
           content: f,
           callback: newCallback
         })));
