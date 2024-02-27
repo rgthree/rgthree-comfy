@@ -34,7 +34,7 @@ class RgthreeDisplayAny:
     value = 'None'
     if source is not None:
       try:
-        value = json.dumps(source)
+        value = json.dumps(source, ensure_ascii=False)
       except Exception:
         try:
           value = str(source)
