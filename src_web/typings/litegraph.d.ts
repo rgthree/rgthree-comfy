@@ -179,6 +179,8 @@ export interface IContextMenuItem {
         options: ContextMenuItem[];
     } & IContextMenuOptions;
     className?: string;
+    // @rgthree - Added for menu_auto_nest
+    rgthree_originalValue?: IContextMenuItem;
 }
 export interface IContextMenuOptions {
     callback?: ContextMenuEventListener;
@@ -192,6 +194,8 @@ export interface IContextMenuOptions {
     left?: number;
     // @rgthree
     top?: number;
+    // @rgthree - Added for menu_auto_nest
+    rgthree_originalCallback?: ContextMenuEventListener;
 }
 
 export type ContextMenuItem = IContextMenuItem | null;

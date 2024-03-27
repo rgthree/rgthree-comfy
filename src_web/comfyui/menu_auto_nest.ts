@@ -1,12 +1,16 @@
-
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type { ContextMenuItem, LiteGraph as TLiteGraph, ContextMenu, } from "typings/litegraph.js";
-import {rgthree} from "./rgthree.js"
+import type {
+  ContextMenuItem,
+  LiteGraph as TLiteGraph,
+  LGraphNode,
+  ContextMenu,
+  IContextMenuOptions,
+} from "typings/litegraph.js";
+import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
-
 
 /**
  * Handles a large, flat list of string values given ContextMenu and breaks it up into subfolder, if
@@ -15,86 +19,125 @@ declare const LiteGraph: typeof TLiteGraph;
 app.registerExtension({
   name: "rgthree.ContextMenuAutoNest",
   async setup() {
+    const logger = rgthree.newLogSession("[ContextMenuAutoNest]");
 
-    const logger = rgthree.newLogSession('[ContextMenuAutoNest]');
-
-
-		const existingContextMenu = LiteGraph.ContextMenu;
+    const existingContextMenu = LiteGraph.ContextMenu;
 
     // @ts-ignore: TypeScript doesn't like this override.
-		LiteGraph.ContextMenu = function (values: ContextMenuItem[], options: any) {
+    LiteGraph.ContextMenu = function (values: ContextMenuItem[], options: IContextMenuOptions) {
       const threshold = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.threshold", 20);
       const enabled = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.subdirs", false);
 
       // If we're not enabled, or are incompatible, then just call out safely.
-      if (!enabled
-          || (values?.length || 0) <= threshold
-          || !options?.callback
-          || values.some(i => typeof i !== 'string')) {
+      let incompatible: string | boolean = !enabled;
+      if (!incompatible) {
+        if (values.length <= threshold) {
+          incompatible = `Skipping context menu auto nesting b/c threshold is not met (${threshold})`;
+        }
+        // If there's a rgthree_originalCallback, then we're nested and don't need to check things
+        // we only expect on the first nesting.
+        if (!options.parentMenu?.options.rgthree_originalCallback) {
+          // On first context menu, we require a callback and a flat list of options as strings.
+          if (!options?.callback) {
+            incompatible = `Skipping context menu auto nesting b/c a callback was expected.`;
+          } else if (values.some((i) => typeof i !== "string")) {
+            incompatible = `Skipping context menu auto nesting b/c not all values were strings.`;
+          }
+        }
+      }
+      if (incompatible) {
         if (enabled) {
-          const [n, v] = logger.infoParts('Skipping context menu auto nesting for incompatible menu.');
+          const [n, v] = logger.infoParts(
+            "Skipping context menu auto nesting for incompatible menu.",
+          );
           console[n]?.(...v);
         }
-        console.log('just pass through.')
         return existingContextMenu.apply(this as any, [...arguments] as any);
       }
 
-      // For now, only allow string values.
-      const compatValues = values as unknown as string[];
-      const originalValues = [...compatValues];
-      const folders: {[key:string]: string[]} = {};
-      const specialOps: string[] = [];
-      const folderless: string[] = [];
-      for (const value of compatValues) {
-        const splitBy = value.indexOf('/') > -1 ? '/' : '\\';
-        const valueSplit = value.split(splitBy);
+      const folders: { [key: string]: ContextMenuItem[] } = {};
+      const specialOps: ContextMenuItem[] = [];
+      const folderless: ContextMenuItem[] = [];
+      for (const value of values) {
+        if (!value) {
+          folderless.push(value);
+          continue;
+        }
+        const newValue = typeof value === "string" ? { content: value } : Object.assign({}, value);
+        newValue.rgthree_originalValue = value.rgthree_originalValue || value;
+        const valueContent = newValue.content;
+        const splitBy = valueContent.indexOf("/") > -1 ? "/" : "\\";
+        const valueSplit = valueContent.split(splitBy);
         if (valueSplit.length > 1) {
           const key = valueSplit.shift()!;
+          newValue.content = valueSplit.join(splitBy);
           folders[key] = folders[key] || [];
-          folders[key]!.push(valueSplit.join(splitBy));
-        } else if (value === 'CHOOSE' || value.startsWith('DISABLE ')) {
-          specialOps.push(value);
+          folders[key]!.push(newValue);
+        } else if (valueContent === "CHOOSE" || valueContent.startsWith("DISABLE ")) {
+          specialOps.push(newValue);
         } else {
-          folderless.push(value);
+          folderless.push(newValue);
         }
       }
+
       const foldersCount = Object.values(folders).length;
       if (foldersCount > 0) {
-        const oldcallback = options.callback;
-        options.callback = null;
-        const newCallback = (item: ContextMenuItem, options: any) => {
-          oldcallback(originalValues.find(i => i.endsWith(item!.content), options));
+        // Propogate the original callback down through the options.
+        options.rgthree_originalCallback =
+          options.rgthree_originalCallback ||
+          options.parentMenu?.options.rgthree_originalCallback ||
+          options.callback;
+        const oldCallback = options.rgthree_originalCallback;
+        options.callback = undefined;
+        const newCallback = (
+          item: ContextMenuItem,
+          options: IContextMenuOptions,
+          event: MouseEvent,
+          parentMenu: ContextMenu | undefined,
+          node: LGraphNode,
+        ) => {
+          oldCallback?.(item?.rgthree_originalValue!, options, event, undefined, node);
         };
         const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
         console[n]?.(...v);
         const newValues: ContextMenuItem[] = [];
-        for (const [folderName, folder] of Object.entries(folders)) {
+        for (const [folderName, folderValues] of Object.entries(folders)) {
           newValues.push({
-            content: folderName,
+            content: `📁 ${folderName}`,
             has_submenu: true,
-            callback: () => { /* no-op */},
+            callback: () => {
+              /* no-op, use the item callback. */
+            },
             submenu: {
-              options: folder.map(f => ({
-                content: f,
-                callback: newCallback
-              })),
-            }
+              options: folderValues.map((value) => {
+                value!.callback = newCallback;
+                return value;
+              }),
+            },
           });
         }
-        values = ([] as ContextMenuItem[]).concat(specialOps.map(f => ({
-          content: f,
-          callback: newCallback
-        })), newValues, folderless.map(f => ({
-          content: f,
-          callback: newCallback
-        })));
+        values = ([] as ContextMenuItem[]).concat(
+          specialOps.map((f) => {
+            if (typeof f === "string") {
+              f = { content: f };
+            }
+            f!.callback = newCallback;
+            return f;
+          }),
+          newValues,
+          folderless.map((f) => {
+            if (typeof f === "string") {
+              f = { content: f };
+            }
+            f!.callback = newCallback;
+            return f;
+          }),
+        );
       }
 
       return existingContextMenu.call(this as any, values, options);
     };
 
-		LiteGraph.ContextMenu.prototype = existingContextMenu.prototype;
+    LiteGraph.ContextMenu.prototype = existingContextMenu.prototype;
   },
 });
-
-
