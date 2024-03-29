@@ -93,8 +93,10 @@ class FastGroupsService {
         }
     }
     getGroupsUnsorted(now) {
+        const canvas = app.canvas;
         const graph = app.graph;
-        if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
+        if (!canvas.selected_group_moving &&
+            (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)) {
             this.groupsUnsorted = [...graph._groups];
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
@@ -360,13 +362,13 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                     const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
                     let newValue = force != null ? force : !hasAnyActiveNodes;
                     if (skipOtherNodeCheck !== true) {
-                        if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(' one'))) {
+                        if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(" one"))) {
                             for (const widget of this.widgets) {
                                 widget.doModeChange(false, true);
                             }
                         }
-                        else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION]) === 'always one') {
-                            newValue = this.widgets.every(w => !w.value || w === widget);
+                        else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION]) === "always one") {
+                            newValue = this.widgets.every((w) => !w.value || w === widget);
                         }
                     }
                     for (const node of group._nodes) {

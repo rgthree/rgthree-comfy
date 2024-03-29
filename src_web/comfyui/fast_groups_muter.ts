@@ -42,11 +42,11 @@ class FastGroupsService {
 
   private readonly fastGroupNodes: FastGroupsMuter[] = [];
 
-  private runScheduledForMs: number|null = null;
-  private runScheduleTimeout: number|null = null;
-  private runScheduleAnimation: number|null = null;
+  private runScheduledForMs: number | null = null;
+  private runScheduleTimeout: number | null = null;
+  private runScheduleAnimation: number | null = null;
 
-  private cachedNodeBoundings: {[key: number]: Vector4}|null = null;
+  private cachedNodeBoundings: { [key: number]: Vector4 } | null = null;
 
   constructor() {
     // Don't need to do anything, wait until a signal.
@@ -148,8 +148,14 @@ class FastGroupsService {
    * each time). So, we'll do our own dang thing, once.
    */
   private getGroupsUnsorted(now: number) {
+    const canvas = app.canvas as TLGraphCanvas;
     const graph = app.graph as TLGraph;
-    if (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold) {
+
+    if (
+      // Don't recalculate nodes if we're moving a group (added by ComfyUI in app.js)
+      !canvas.selected_group_moving &&
+      (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)
+    ) {
       this.groupsUnsorted = [...graph._groups];
       for (const group of this.groupsUnsorted) {
         this.recomputeInsideNodesForGroup(group);
@@ -386,7 +392,13 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             ctx.strokeStyle = outline_color;
             ctx.fillStyle = background_color;
             ctx.beginPath();
-            ctx.roundRect(margin, posY, width - margin * 2, height, lowQuality ? [0] : [height * 0.5]);
+            ctx.roundRect(
+              margin,
+              posY,
+              width - margin * 2,
+              height,
+              lowQuality ? [0] : [height * 0.5],
+            );
             ctx.fill();
             if (!lowQuality) {
               ctx.stroke();
@@ -445,7 +457,11 @@ export class FastGroupsMuter extends RgthreeBaseNode {
               ctx.textAlign = "left";
               let maxLabelWidth = width - margin - 10 - (width - currentX);
               if (label != null) {
-                ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+                ctx.fillText(
+                  fitString(ctx, label, maxLabelWidth),
+                  margin + 10,
+                  posY + height * 0.7,
+                );
               }
             }
           },
@@ -488,12 +504,12 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
           let newValue = force != null ? force : !hasAnyActiveNodes;
           if (skipOtherNodeCheck !== true) {
-            if (newValue && this.properties?.[PROPERTY_RESTRICTION]?.includes(' one')) {
+            if (newValue && this.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
               for (const widget of this.widgets) {
                 (widget as any).doModeChange(false, true);
               }
-            } else if (!newValue && this.properties?.[PROPERTY_RESTRICTION] === 'always one') {
-              newValue = this.widgets.every(w => !w.value || w === widget);
+            } else if (!newValue && this.properties?.[PROPERTY_RESTRICTION] === "always one") {
+              newValue = this.widgets.every((w) => !w.value || w === widget);
             }
           }
           for (const node of group._nodes) {

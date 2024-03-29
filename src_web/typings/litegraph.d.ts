@@ -1637,6 +1637,9 @@ export declare class LGraphCanvas {
     getExtraMenuOptions?(): ContextMenuItem[];
     /** Called when mouse right click */
     processContextMenu(node: LGraphNode, event: Event): void;
+
+    // @rgthree - Adding this for ComfyUI, since they add this in their own overload in app.js
+    selected_group_moving?: boolean;
 }
 
 declare class ContextMenu {
