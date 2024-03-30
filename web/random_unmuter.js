@@ -12,6 +12,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
         this.modeOff = MODE_MUTE;
         this.tempEnabledNode = null;
         this.processingQueue = false;
+        this.previousMatches = [];
         this.onQueueBound = this.onQueue.bind(this);
         this.onQueueEndBound = this.onQueueEnd.bind(this);
         this.onGraphtoPromptBound = this.onGraphtoPrompt.bind(this);
@@ -48,7 +49,20 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
                 }
             }
             if (allMuted) {
-                this.tempEnabledNode = linkedNodes[Math.floor(Math.random() * linkedNodes.length)] || null;
+                let n = Math.floor(Math.random() * linkedNodes.length);
+                if (linkedNodes.length > 1) {
+                    if (linkedNodes.length <= this.previousMatches.length) {
+                        this.previousMatches = [this.previousMatches[0]];
+                    }
+                    while (this.previousMatches.find((element) => element === n) !== undefined) {
+                        n = Math.floor(Math.random() * linkedNodes.length);
+                        // console.log("choosing random node:", n);
+                    }
+                    this.previousMatches.unshift(n);
+                }
+                // console.log("selected random node:", n, this.previousMatches)
+
+                this.tempEnabledNode = linkedNodes[n] || null;
                 if (this.tempEnabledNode) {
                     this.tempEnabledNode.mode = this.modeOn;
                 }
