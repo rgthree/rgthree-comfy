@@ -167,11 +167,11 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    -  `showNav` - Add / remove a quick navigation arrow to take you to the group. (default: true)
 >    -  `sort` - Sort the toggles' order by "alphanumeric", graph "position", or "custom alphabet". (default: "position")
 >    -  `customSortAlphabet` - When the sort property is "custom alphabet" you can define the alphabet to use here, which will match the beginning of each group name and sort against it. If group titles do not match any custom alphabet entry, then they will be put after groups that do, ordered alphanumerically.
->        
+>
 >        This can be a list of single characters, like "zyxw..." or comma delimited strings for more control, like "sdxl,pro,sd,n,p".
->        
+>
 >        Note, when two group title match the same custom alphabet entry, the normal alphanumeric alphabet breaks the tie. For instance, a custom alphabet of "e,s,d" will order groups names like "SDXL, SEGS, Detailer" eventhough the custom alphabet has an "e" before "d" (where one may expect "SE" to be before "SD").
->        
+>
 >        To have "SEGS" appear before "SDXL" you can use longer strings. For instance, the custom alphabet value of "se,s,f" would work here.
 >    -  `toggleRestriction` - Optionally, attempt to restrict the number of widgets that can be enabled to a maximum of one, or always one.
 >
@@ -321,6 +321,12 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
 >
 > Automatically detect top-level subdirectories in long combo lists (like, Load Checkpoint) and break out into sub directories.
+
+
+## Quick Mute/Bypass Toggles in Group Headers
+> _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
+>
+> Adds a mute and/or bypass toggle icons in the top-right of Group Headers for one-click toggling of groups you may be currently looking at.
 
 
 
