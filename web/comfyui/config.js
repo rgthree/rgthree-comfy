@@ -10,12 +10,14 @@ var ConfigType;
     ConfigType[ConfigType["BOOLEAN"] = 1] = "BOOLEAN";
     ConfigType[ConfigType["STRING"] = 2] = "STRING";
     ConfigType[ConfigType["NUMBER"] = 3] = "NUMBER";
+    ConfigType[ConfigType["ARRAY"] = 4] = "ARRAY";
 })(ConfigType || (ConfigType = {}));
 const TYPE_TO_STRING = {
     [ConfigType.UNKNOWN]: "unknown",
     [ConfigType.BOOLEAN]: "boolean",
     [ConfigType.STRING]: "string",
     [ConfigType.NUMBER]: "number",
+    [ConfigType.ARRAY]: "array",
 };
 const CONFIGURABLE = {
     features: [
@@ -67,6 +69,33 @@ const CONFIGURABLE = {
             ],
         },
         {
+            key: "features.group_header_fast_toggle.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "(Groups) Show fast toggles in Group Headers",
+            description: "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
+            subconfig: [
+                {
+                    key: "features.group_header_fast_toggle.toggles",
+                    type: ConfigType.ARRAY,
+                    label: "Which toggles to show.",
+                    options: [
+                        { value: ['mute'], label: 'mute only' },
+                        { value: ['bypass'], label: 'bypass only' },
+                        { value: ['mute', 'bypass'], label: 'mute and bypass' },
+                    ],
+                },
+                {
+                    key: "features.group_header_fast_toggle.show",
+                    type: ConfigType.STRING,
+                    label: "When to show them.",
+                    options: [
+                        { value: 'hover', label: 'on hover' },
+                        { value: 'always', label: 'always' },
+                    ],
+                },
+            ],
+        },
+        {
             key: "features.show_alerts_for_corrupt_workflows",
             type: ConfigType.BOOLEAN,
             label: "Detect Corrupt Workflows",
@@ -97,15 +126,18 @@ function fieldrow(item) {
         input = $el(`select[id="${item.key}"]`, {
             parent: container,
             children: item.options.map((o) => {
-                return $el(`option[value="${String(o)}"]`, {
-                    text: String(o),
-                    selected: o === initialValue,
+                const label = o.label || String(o);
+                const value = o.value || o;
+                const valueSerialized = JSON.stringify({ value: value });
+                return $el(`option[value="${valueSerialized}"]`, {
+                    text: label,
+                    selected: valueSerialized === JSON.stringify({ value: initialValue }),
                 });
             }),
         });
     }
     else if (item.type === ConfigType.BOOLEAN) {
-        container.classList.toggle("-checked", initialValue);
+        container.classList.toggle("-checked", !!initialValue);
         input = $el(`input[type="checkbox"][id="${item.key}"]`, {
             parent: container,
             checked: initialValue,
@@ -145,7 +177,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             $$(".save-button", this.element)[0].disabled =
                 !Object.keys(changed).length;
         });
-        const options = {
+        const dialogOptions = {
             class: "-iconed -settings",
             title: logoRgthree + `<h2>Settings - rgthree-comfy</h2>`,
             content,
@@ -184,7 +216,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                 },
             ],
         };
-        super(options);
+        super(dialogOptions);
     }
     getChangedFormData() {
         return $$("[data-name]", this.contentElement).reduce((acc, el) => {
@@ -199,11 +231,14 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             }
             else {
                 currentValue = currentValueEl === null || currentValueEl === void 0 ? void 0 : currentValueEl.value;
-                if (type === String(ConfigType.NUMBER)) {
+                if (currentValueEl.nodeName === 'SELECT') {
+                    currentValue = JSON.parse(currentValue).value;
+                }
+                else if (type === String(ConfigType.NUMBER)) {
                     currentValue = Number(currentValue) || initialValue;
                 }
             }
-            if (currentValue !== initialValue) {
+            if (JSON.stringify(currentValue) !== JSON.stringify(initialValue)) {
                 acc[name] = currentValue;
             }
             return acc;

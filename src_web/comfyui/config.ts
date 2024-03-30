@@ -12,6 +12,7 @@ enum ConfigType {
   BOOLEAN,
   STRING,
   NUMBER,
+  ARRAY,
 }
 
 const TYPE_TO_STRING = {
@@ -19,16 +20,19 @@ const TYPE_TO_STRING = {
   [ConfigType.BOOLEAN]: "boolean",
   [ConfigType.STRING]: "string",
   [ConfigType.NUMBER]: "number",
+  [ConfigType.ARRAY]: "array",
 };
 
 type ConfigurationSchema = {
   key: string;
   type: ConfigType;
   label: string;
-  options?: string[] | number[];
+  options?: string[] | number[] | ConfigurationSchemaOption[];
   description?: string;
   subconfig?: ConfigurationSchema[];
 };
+
+type ConfigurationSchemaOption = {value: any, label: string};
 
 /**
  * A static schema of sorts to layout options found in the config.
@@ -86,6 +90,34 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       ],
     },
     {
+      key: "features.group_header_fast_toggle.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "(Groups) Show fast toggles in Group Headers",
+      description:
+        "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
+      subconfig: [
+        {
+          key: "features.group_header_fast_toggle.toggles",
+          type: ConfigType.ARRAY,
+          label: "Which toggles to show.",
+          options: [
+            {value: ['mute'], label: 'mute only'},
+            {value: ['bypass'], label: 'bypass only'},
+            {value: ['mute', 'bypass'], label: 'mute and bypass'},
+          ],
+        },
+        {
+          key: "features.group_header_fast_toggle.show",
+          type: ConfigType.STRING,
+          label: "When to show them.",
+          options: [
+            {value: 'hover', label: 'on hover'},
+            {value: 'always', label: 'always'},
+          ],
+        },
+      ],
+    },
+    {
       key: "features.show_alerts_for_corrupt_workflows",
       type: ConfigType.BOOLEAN,
       label: "Detect Corrupt Workflows",
@@ -122,14 +154,18 @@ function fieldrow(item: ConfigurationSchema) {
     input = $el<HTMLSelectElement>(`select[id="${item.key}"]`, {
       parent: container,
       children: item.options.map((o) => {
-        return $el<HTMLOptionElement>(`option[value="${String(o)}"]`, {
-          text: String(o),
-          selected: o === initialValue,
+        const label = (o as ConfigurationSchemaOption).label || String(o);
+        const value = (o as ConfigurationSchemaOption).value || o;
+        const valueSerialized = JSON.stringify({value: value});
+        return $el<HTMLOptionElement>(`option[value="${valueSerialized}"]`, {
+          text: label,
+          selected: valueSerialized === JSON.stringify({value: initialValue}),
         });
       }),
     });
+
   } else if (item.type === ConfigType.BOOLEAN) {
-    container.classList.toggle("-checked", initialValue);
+    container.classList.toggle("-checked", !!initialValue);
     input = $el<HTMLInputElement>(`input[type="checkbox"][id="${item.key}"]`, {
       parent: container,
       checked: initialValue,
@@ -177,7 +213,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         !Object.keys(changed).length;
     });
 
-    const options: RgthreeDialogOptions = {
+    const dialogOptions: RgthreeDialogOptions = {
       class: "-iconed -settings",
       title: logoRgthree + `<h2>Settings - rgthree-comfy</h2>`,
       content,
@@ -215,7 +251,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         },
       ],
     };
-    super(options);
+    super(dialogOptions);
   }
 
   getChangedFormData() {
@@ -231,11 +267,13 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         el.classList.toggle("-checked", currentValue);
       } else {
         currentValue = currentValueEl?.value;
-        if (type === String(ConfigType.NUMBER)) {
+        if (currentValueEl.nodeName === 'SELECT') {
+          currentValue = JSON.parse(currentValue).value;
+        } else if (type === String(ConfigType.NUMBER)) {
           currentValue = Number(currentValue) || initialValue;
         }
       }
-      if (currentValue !== initialValue) {
+      if (JSON.stringify(currentValue) !== JSON.stringify(initialValue)) {
         acc[name] = currentValue;
       }
       return acc;

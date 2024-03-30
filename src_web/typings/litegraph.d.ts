@@ -1642,6 +1642,14 @@ export declare class LGraphCanvas {
     selected_group_moving?: boolean;
 }
 
+// @rgthree - The adjusted pointer event after calling adjustMouseEvent
+export interface AdjustedMouseEvent extends PointerEvent {
+    deltaX: number;
+    deltaY: number;
+    canvasX: number;
+    canvasY: number;
+}
+
 declare class ContextMenu {
     static trigger(
         element: HTMLElement,

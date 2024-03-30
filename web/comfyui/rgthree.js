@@ -105,6 +105,10 @@ class Rgthree extends EventTarget {
         this.processingQueue = false;
         this.loadingApiJson = false;
         this.replacingReroute = null;
+        this.processingMouseDown = false;
+        this.processingMouseUp = false;
+        this.processingMouseMove = false;
+        this.lastAdjustedMouseEvent = null;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
@@ -189,26 +193,48 @@ class Rgthree extends EventTarget {
     }
     async initializeGraphAndCanvasHooks() {
         const rgthree = this;
-        const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
-        const onSerialize = graph.onSerialize;
-        graph.onSerialize = (data) => {
-            this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-            onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.call(graph, data);
+        const processMouseDown = LGraphCanvas.prototype.processMouseDown;
+        LGraphCanvas.prototype.processMouseDown = function (e) {
+            rgthree.processingMouseDown = true;
+            const returnVal = processMouseDown.apply(this, [...arguments]);
+            rgthree.dispatchCustomEvent("on-process-mouse-down", { originalEvent: e });
+            rgthree.processingMouseDown = false;
+            return returnVal;
         };
+        const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
+        LGraphCanvas.prototype.adjustMouseEvent = function (e) {
+            adjustMouseEvent.apply(this, [...arguments]);
+            rgthree.lastAdjustedMouseEvent = e;
+        };
+        (async () => {
+            const graph = waitForGraph();
+            const onSerialize = graph.onSerialize;
+            graph.onSerialize = (data) => {
+                this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
+                onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.call(graph, data);
+            };
+        })();
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
         LGraphCanvas.prototype.copyToClipboard = function (nodes) {
             rgthree.canvasCurrentlyCopyingToClipboard = true;
             rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes =
                 Object.values(nodes || this.selected_nodes || []).length > 1;
-            copyToClipboard.apply(canvas, [...arguments]);
+            copyToClipboard.apply(this, [...arguments]);
             rgthree.canvasCurrentlyCopyingToClipboard = false;
             rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         };
         const onGroupAdd = LGraphCanvas.onGroupAdd;
         LGraphCanvas.onGroupAdd = function (...args) {
-            onGroupAdd.apply(canvas, [...args]);
+            const graph = app.graph;
+            onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
         };
+    }
+    dispatchCustomEvent(event, detail) {
+        if (detail != null) {
+            return this.dispatchEvent(new CustomEvent(event, { detail }));
+        }
+        return this.dispatchEvent(new CustomEvent(event));
     }
     async initializeContextMenu() {
         const that = this;
@@ -322,14 +348,14 @@ class Rgthree extends EventTarget {
         const rgthree = this;
         const queuePrompt = app.queuePrompt;
         app.queuePrompt = async function () {
-            rgthree.dispatchEvent(new CustomEvent("queue"));
+            rgthree.dispatchCustomEvent("queue");
             rgthree.processingQueue = true;
             try {
                 await queuePrompt.apply(app, [...arguments]);
             }
             finally {
                 rgthree.processingQueue = false;
-                rgthree.dispatchEvent(new CustomEvent("queue-end"));
+                rgthree.dispatchCustomEvent("queue-end");
             }
         };
         const loadApiJson = app.loadApiJson;
@@ -344,10 +370,10 @@ class Rgthree extends EventTarget {
         };
         const graphToPrompt = app.graphToPrompt;
         app.graphToPrompt = async function () {
-            rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
+            rgthree.dispatchCustomEvent("graph-to-prompt");
             let promise = graphToPrompt.apply(app, [...arguments]);
             await promise;
-            rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
+            rgthree.dispatchCustomEvent("graph-to-prompt-end");
             return promise;
         };
         const apiQueuePrompt = api.queuePrompt;

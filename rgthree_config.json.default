@@ -10,6 +10,11 @@
       "subdirs": null,
       "threshold": 20
     },
+    "group_header_fast_toggle": {
+      "enabled": null,
+      "toggles": ["mute", "bypass"],
+      "show": "hover"
+    },
     "progress_bar": {
       "enabled": true,
       "height": 16,

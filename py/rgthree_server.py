@@ -70,7 +70,7 @@ def api_get_user_config_file(request):
 @routes.get('/rgthree/api/config')
 def api_get_user_config(request):
   """ Returns the user configuration. """
-  return web.json_response(json.dumps(RGTHREE_CONFIG))
+  return web.json_response(RGTHREE_CONFIG)
 
 @routes.post('/rgthree/api/config')
 async def api_set_user_config(request):

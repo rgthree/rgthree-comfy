@@ -12,6 +12,11 @@ class ConfigService extends EventTarget {
     return getObjectValue(rgthreeConfig, key, def);
   }
 
+  getFeatureValue(key: string, def?: any) {
+    key = 'features.' + key.replace(/^features\./, '');
+    return getObjectValue(rgthreeConfig, key, def);
+  }
+
   /**
    * Given an object of key:value changes it will send to the server and wait for a successful
    * response before setting the values on the local rgthreeConfig.

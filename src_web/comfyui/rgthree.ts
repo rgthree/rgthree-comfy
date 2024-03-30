@@ -1,11 +1,13 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
+  LGraphGroup as TLGraphGroup,
   SerializedLGraphNode,
   serializedLGraph,
   LiteGraph as TLiteGraph,
   ContextMenuItem,
   LGraph as TLGraph,
+  AdjustedMouseEvent,
 } from "typings/litegraph.js";
 import type { ComfyApiFormat, ComfyApiPrompt } from "typings/comfy.js";
 // @ts-ignore
@@ -23,6 +25,7 @@ import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/comm
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
+declare const LGraphGroup: typeof TLGraphGroup;
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -174,6 +177,10 @@ class Rgthree extends EventTarget {
   processingQueue = false;
   loadingApiJson = false;
   replacingReroute: number | null = null;
+  processingMouseDown = false;
+  processingMouseUp = false;
+  processingMouseMove = false;
+  lastAdjustedMouseEvent: AdjustedMouseEvent | null = null;
 
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
@@ -282,18 +289,39 @@ class Rgthree extends EventTarget {
    */
   private async initializeGraphAndCanvasHooks() {
     const rgthree = this;
-    const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
+
+    // Overrides LiteGraphs' processMouseDown to both keep state as well as dispatch a custom event.
+    const processMouseDown = LGraphCanvas.prototype.processMouseDown;
+    LGraphCanvas.prototype.processMouseDown = function (e: AdjustedMouseEvent) {
+      rgthree.processingMouseDown = true;
+      const returnVal = processMouseDown.apply(this, [...arguments] as any);
+      rgthree.dispatchCustomEvent("on-process-mouse-down", {originalEvent: e});
+      rgthree.processingMouseDown = false;
+      return returnVal;
+    };
+
+    // Overrides LiteGraph's `adjustMouseEvent` to capture the last even coming in and out. Useful
+    // to capture the last `canvasX` and `canvasY` properties, which are not the same as LiteGraph's
+    // `canvas.last_mouse_position`, unfortunately.
+    const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
+    LGraphCanvas.prototype.adjustMouseEvent = function(e: PointerEvent) {
+      adjustMouseEvent.apply(this, [...arguments] as any);
+      rgthree.lastAdjustedMouseEvent = e as AdjustedMouseEvent;
+    };
 
     // [🤮] To mitigate changes from https://github.com/rgthree/rgthree-comfy/issues/69
     // and https://github.com/comfyanonymous/ComfyUI/issues/2193 we can try to store the workflow
     // node so our nodes can find the seralized node. Works with method
     // `getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff` to find a node
     // while serializing. What a way to work around...
-    const onSerialize = (graph as any).onSerialize;
-    (graph as any).onSerialize = (data: any) => {
-      this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-      onSerialize?.call(graph, data);
-    };
+    (async () => {
+      const graph = waitForGraph();
+      const onSerialize = (graph as any).onSerialize;
+      (graph as any).onSerialize = (data: any) => {
+        this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
+        onSerialize?.call(graph, data);
+      };
+    })();
 
     // [🤮] Copying to clipboard clones nodes and then manipulats the linking data manually which
     // does not allow a node to handle connections. This harms nodes that manually handle inputs,
@@ -304,7 +332,7 @@ class Rgthree extends EventTarget {
       rgthree.canvasCurrentlyCopyingToClipboard = true;
       rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes =
         Object.values(nodes || this.selected_nodes || []).length > 1;
-      copyToClipboard.apply(canvas, [...arguments] as any);
+      copyToClipboard.apply(this, [...arguments] as any);
       rgthree.canvasCurrentlyCopyingToClipboard = false;
       rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
     };
@@ -312,7 +340,8 @@ class Rgthree extends EventTarget {
     // [⭐] Make it so when we add a group, we get to name it immediately.
     const onGroupAdd = LGraphCanvas.onGroupAdd;
     LGraphCanvas.onGroupAdd = function (...args: any[]) {
-      onGroupAdd.apply(canvas, [...args] as any);
+      const graph = app.graph as TLGraph;
+      onGroupAdd.apply(this, [...args] as any);
       LGraphCanvas.onShowPropertyEditor(
         {},
         null,
@@ -321,6 +350,16 @@ class Rgthree extends EventTarget {
         graph._groups[graph._groups.length - 1],
       );
     };
+  }
+
+  /**
+   * Wraps `dispatchEvent` for easier CustomEvent dispatching.
+   */
+  private dispatchCustomEvent(event: string, detail?: any) {
+    if (detail != null) {
+      return this.dispatchEvent(new CustomEvent(event, {detail}));
+    }
+    return this.dispatchEvent(new CustomEvent(event));
   }
 
   /**
@@ -465,13 +504,13 @@ class Rgthree extends EventTarget {
     // for saving the workflow (and keep -1, etc.).
     const queuePrompt = app.queuePrompt as Function;
     app.queuePrompt = async function () {
-      rgthree.dispatchEvent(new CustomEvent("queue"));
+      rgthree.dispatchCustomEvent("queue");
       rgthree.processingQueue = true;
       try {
         await queuePrompt.apply(app, [...arguments]);
       } finally {
         rgthree.processingQueue = false;
-        rgthree.dispatchEvent(new CustomEvent("queue-end"));
+        rgthree.dispatchCustomEvent("queue-end");
       }
     };
 
@@ -489,10 +528,10 @@ class Rgthree extends EventTarget {
     // Keep state for when the app is serizalizing the graph to prompt.
     const graphToPrompt = app.graphToPrompt as Function;
     app.graphToPrompt = async function () {
-      rgthree.dispatchEvent(new CustomEvent("graph-to-prompt"));
+      rgthree.dispatchCustomEvent("graph-to-prompt");
       let promise = graphToPrompt.apply(app, [...arguments]);
       await promise;
-      rgthree.dispatchEvent(new CustomEvent("graph-to-prompt-end"));
+      rgthree.dispatchCustomEvent("graph-to-prompt-end");
       return promise;
     };
 

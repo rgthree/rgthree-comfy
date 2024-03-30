@@ -5,6 +5,10 @@ class ConfigService extends EventTarget {
     getConfigValue(key, def) {
         return getObjectValue(rgthreeConfig, key, def);
     }
+    getFeatureValue(key, def) {
+        key = 'features.' + key.replace(/^features\./, '');
+        return getObjectValue(rgthreeConfig, key, def);
+    }
     async setConfigValues(changed) {
         const body = new FormData();
         body.append("json", JSON.stringify(changed));
