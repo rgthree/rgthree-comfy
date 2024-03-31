@@ -42,6 +42,9 @@ export class PromptExecution {
             this.currentlyExecuting = { nodeId, nodeLabel: this.getNodeLabel(nodeId), pass: 0 };
             this.apiPrompt.promise.then(() => {
                 var _a;
+                if (this.currentlyExecuting == null) {
+                    return;
+                }
                 const apiNode = this.getApiNode(nodeId);
                 if (!this.currentlyExecuting.nodeLabel) {
                     this.currentlyExecuting.nodeLabel = this.getNodeLabel(nodeId);

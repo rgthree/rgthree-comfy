@@ -87,9 +87,15 @@ export class PromptExecution {
       // allow the progress bar to handle intial rendering. If we're not, that's OK, the data will
       // be shown with the second pass.
       this.apiPrompt.promise.then(() => {
+        // If we execute with a null node id and clear the currently executing, then we can just
+        // move on. This seems to only happen with a super-fast execution (like, just seed node
+        // and display any for testing).
+        if (this.currentlyExecuting == null) {
+          return;
+        }
         const apiNode = this.getApiNode(nodeId);
-        if (!this.currentlyExecuting!.nodeLabel) {
-          this.currentlyExecuting!.nodeLabel = this.getNodeLabel(nodeId);
+        if (!this.currentlyExecuting.nodeLabel) {
+          this.currentlyExecuting.nodeLabel = this.getNodeLabel(nodeId);
         }
         if (apiNode?.class_type === "UltimateSDUpscale") {
           // From what I can tell, UltimateSDUpscale, does an initial pass that isn't actually a
@@ -97,10 +103,10 @@ export class PromptExecution {
           // "0" and "1" will start with the first tile. This way, a user knows they have 4 tiles,
           // know this pass counter will go to 4 (and not 5). Also, we cannot calculate maxPasses
           // for 'UltimateSDUpscale' :(
-          this.currentlyExecuting!.pass--;
-          this.currentlyExecuting!.maxPasses = -1;
+          this.currentlyExecuting.pass--;
+          this.currentlyExecuting.maxPasses = -1;
         } else if (apiNode?.class_type === "IterativeImageUpscale") {
-          this.currentlyExecuting!.maxPasses = (apiNode?.inputs["steps"] as number) ?? -1;
+          this.currentlyExecuting.maxPasses = (apiNode?.inputs["steps"] as number) ?? -1;
         }
       });
     }
