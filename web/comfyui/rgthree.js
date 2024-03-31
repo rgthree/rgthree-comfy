@@ -193,6 +193,12 @@ class Rgthree extends EventTarget {
     }
     async initializeGraphAndCanvasHooks() {
         const rgthree = this;
+        const graphSerialize = LGraph.prototype.serialize;
+        LGraph.prototype.serialize = function () {
+            const response = graphSerialize.apply(this, [...arguments]);
+            rgthree.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = response;
+            return response;
+        };
         const processMouseDown = LGraphCanvas.prototype.processMouseDown;
         LGraphCanvas.prototype.processMouseDown = function (e) {
             rgthree.processingMouseDown = true;
@@ -206,14 +212,6 @@ class Rgthree extends EventTarget {
             adjustMouseEvent.apply(this, [...arguments]);
             rgthree.lastAdjustedMouseEvent = e;
         };
-        (async () => {
-            const graph = waitForGraph();
-            const onSerialize = graph.onSerialize;
-            graph.onSerialize = (data) => {
-                this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-                onSerialize === null || onSerialize === void 0 ? void 0 : onSerialize.call(graph, data);
-            };
-        })();
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
         LGraphCanvas.prototype.copyToClipboard = function (nodes) {
             rgthree.canvasCurrentlyCopyingToClipboard = true;

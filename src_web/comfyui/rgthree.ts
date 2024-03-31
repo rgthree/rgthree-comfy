@@ -25,6 +25,7 @@ import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/comm
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
+declare const LGraph: typeof TLGraph;
 declare const LGraphGroup: typeof TLGraphGroup;
 
 export enum LogLevel {
@@ -290,6 +291,18 @@ class Rgthree extends EventTarget {
   private async initializeGraphAndCanvasHooks() {
     const rgthree = this;
 
+    // [🤮] To mitigate changes from https://github.com/rgthree/rgthree-comfy/issues/69
+    // and https://github.com/comfyanonymous/ComfyUI/issues/2193 we can try to store the workflow
+    // node so our nodes can find the seralized node. Works with method
+    // `getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff` to find a node
+    // while serializing. What a way to work around...
+    const graphSerialize = LGraph.prototype.serialize;
+    LGraph.prototype.serialize = function() {
+      const response = graphSerialize.apply(this, [...arguments] as any) as any;
+      rgthree.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = response;
+      return response;
+    }
+
     // Overrides LiteGraphs' processMouseDown to both keep state as well as dispatch a custom event.
     const processMouseDown = LGraphCanvas.prototype.processMouseDown;
     LGraphCanvas.prototype.processMouseDown = function (e: AdjustedMouseEvent) {
@@ -308,20 +321,6 @@ class Rgthree extends EventTarget {
       adjustMouseEvent.apply(this, [...arguments] as any);
       rgthree.lastAdjustedMouseEvent = e as AdjustedMouseEvent;
     };
-
-    // [🤮] To mitigate changes from https://github.com/rgthree/rgthree-comfy/issues/69
-    // and https://github.com/comfyanonymous/ComfyUI/issues/2193 we can try to store the workflow
-    // node so our nodes can find the seralized node. Works with method
-    // `getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff` to find a node
-    // while serializing. What a way to work around...
-    (async () => {
-      const graph = waitForGraph();
-      const onSerialize = (graph as any).onSerialize;
-      (graph as any).onSerialize = (data: any) => {
-        this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = data;
-        onSerialize?.call(graph, data);
-      };
-    })();
 
     // [🤮] Copying to clipboard clones nodes and then manipulats the linking data manually which
     // does not allow a node to handle connections. This harms nodes that manually handle inputs,
