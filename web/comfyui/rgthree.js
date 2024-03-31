@@ -79,6 +79,9 @@ class LogSession {
     infoParts(message, ...args) {
         return this.logParts(LogLevel.INFO, message, ...args);
     }
+    warnParts(message, ...args) {
+        return this.logParts(LogLevel.WARN, message, ...args);
+    }
     error(message, ...args) {
         this.log(LogLevel.ERROR, message, ...args);
     }
@@ -385,7 +388,9 @@ class Rgthree extends EventTarget {
                 }
                 prompt.output = newOutput;
             }
-            return apiQueuePrompt.apply(app, [index, prompt]);
+            const response = apiQueuePrompt.apply(app, [index, prompt]);
+            rgthree.dispatchCustomEvent("comfy-api-queue-prompt-end");
+            return response;
         };
         const clean = app.clean;
         app.clean = function () {

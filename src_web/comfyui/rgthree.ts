@@ -129,6 +129,10 @@ class LogSession {
     return this.logParts(LogLevel.INFO, message, ...args);
   }
 
+  warnParts(message?: string, ...args: any[]) {
+    return this.logParts(LogLevel.WARN, message, ...args);
+  }
+
   error(message?: string, ...args: any[]) {
     this.log(LogLevel.ERROR, message, ...args);
   }
@@ -547,7 +551,9 @@ class Rgthree extends EventTarget {
         }
         prompt.output = newOutput;
       }
-      return apiQueuePrompt.apply(app, [index, prompt]);
+      const response = apiQueuePrompt.apply(app, [index, prompt]);
+      rgthree.dispatchCustomEvent("comfy-api-queue-prompt-end");
+      return response;
     };
 
     // Hook into a clean call; allow us to clear and rgthree messages.
