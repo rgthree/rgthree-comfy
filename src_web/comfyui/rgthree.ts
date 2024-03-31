@@ -140,7 +140,7 @@ class LogSession {
 export type RgthreeUiMessage = {
   id: string;
   message: string;
-  type?: "warn" | null;
+  type?: "warn" | "info" | "success" | null;
   timeout?: number;
   // closeable?: boolean; // TODO
   actions?: Array<{

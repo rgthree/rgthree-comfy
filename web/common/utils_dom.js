@@ -29,8 +29,8 @@ const RGX_ATTR_CLASS = new RegExp(`(^|\\S)\\.([a-z0-9_\\-\\.]+)`, 'gi');
 const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
-export function querySelectorAll(query, parent = document) {
-    return [].slice.call(parent.querySelectorAll(query));
+export function query(selector, parent = document) {
+    return Array.from(parent.querySelectorAll(selector)).filter(n => !!n);
 }
 export function createText(text) {
     return document.createTextNode(text);

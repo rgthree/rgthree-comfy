@@ -169,7 +169,7 @@ export interface ITextWidget extends IWidget<string, {}> {
 
 export interface IContextMenuItem {
     content: string;
-    value?: string;
+    value?: any;
     callback?: ContextMenuEventListener;
     /** Used as innerHTML for extra child element */
     title?: string;
@@ -191,9 +191,13 @@ export interface IContextMenuOptions {
     title?: string;
     extra?: any;
     // @rgthree
+    scale?: number;
+    // @rgthree
     left?: number;
     // @rgthree
     top?: number;
+    // @rgthree
+    className?: string;
     // @rgthree - Added for menu_auto_nest
     rgthree_originalCallback?: ContextMenuEventListener;
 }
@@ -1659,7 +1663,7 @@ declare class ContextMenu {
     ): void;
     static isCursorOverElement(event: MouseEvent, element: HTMLElement): void;
     static closeAllContextMenus(window: Window): void;
-    constructor(values: ContextMenuItem[], options?: IContextMenuOptions, window?: Window);
+    constructor(values: ContextMenuItem[]|string[], options?: IContextMenuOptions, window?: Window);
     options: IContextMenuOptions;
     parentMenu?: ContextMenu;
     lock: boolean;

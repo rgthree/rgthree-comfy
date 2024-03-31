@@ -71,3 +71,7 @@ export function setObjectValue(obj, objKey, value, createMissingObjects = true) 
     }
     return obj;
 }
+export function moveArrayItem(arr, itemOrFrom, to) {
+    const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
+    arr.splice(to, 0, arr.splice(from, 1)[0]);
+}

@@ -1,8 +1,8 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { fitString } from "./utils_canvas.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
+import { drawNodeWidget, fitString } from "./utils_canvas.js";
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
@@ -129,26 +129,17 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                     disabled: false,
                     options: { on: "yes", off: "no" },
                     draw: function (ctx, node, width, posY, height) {
-                        var _a, _b;
-                        const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) <= 0.5;
-                        let margin = 15;
-                        let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
-                        let background_color = LiteGraph.WIDGET_BGCOLOR;
-                        let text_color = LiteGraph.WIDGET_TEXT_COLOR;
-                        let secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
-                        const showNav = ((_b = node.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_SHOW_NAV]) !== false;
-                        ctx.strokeStyle = outline_color;
-                        ctx.fillStyle = background_color;
-                        ctx.beginPath();
-                        ctx.roundRect(margin, posY, width - margin * 2, height, lowQuality ? [0] : [height * 0.5]);
-                        ctx.fill();
-                        if (!lowQuality) {
-                            ctx.stroke();
-                        }
-                        let currentX = width - margin;
-                        if (!lowQuality && showNav) {
+                        var _a;
+                        const widgetData = drawNodeWidget(ctx, {
+                            width,
+                            height,
+                            posY,
+                        });
+                        const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
+                        let currentX = widgetData.width - widgetData.margin;
+                        if (!widgetData.lowQuality && showNav) {
                             currentX -= 7;
-                            const midY = posY + height * 0.5;
+                            const midY = widgetData.posY + widgetData.height * 0.5;
                             ctx.fillStyle = ctx.strokeStyle = "#89A";
                             ctx.lineJoin = "round";
                             ctx.lineCap = "round";
@@ -157,10 +148,10 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                             ctx.stroke(arrow);
                             currentX -= 14;
                             currentX -= 7;
-                            ctx.strokeStyle = outline_color;
-                            ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
+                            ctx.strokeStyle = widgetData.colorOutline;
+                            ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
                         }
-                        else if (lowQuality && showNav) {
+                        else if (widgetData.lowQuality && showNav) {
                             currentX -= 28;
                         }
                         currentX -= 7;
@@ -170,10 +161,10 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                         ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
                         ctx.fill();
                         currentX -= toggleRadius * 2;
-                        if (!lowQuality) {
+                        if (!widgetData.lowQuality) {
                             currentX -= 4;
                             ctx.textAlign = "right";
-                            ctx.fillStyle = this.value ? text_color : secondary_text_color;
+                            ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
                             const label = this.label || this.name;
                             const toggleLabelOn = this.options.on || "true";
                             const toggleLabelOff = this.options.off || "false";
@@ -181,9 +172,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                             currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
                             currentX -= 7;
                             ctx.textAlign = "left";
-                            let maxLabelWidth = width - margin - 10 - (width - currentX);
+                            let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
                             if (label != null) {
-                                ctx.fillText(fitString(ctx, label, maxLabelWidth), margin + 10, posY + height * 0.7);
+                                ctx.fillText(fitString(ctx, label, maxLabelWidth), widgetData.margin + 10, posY + height * 0.7);
                             }
                         }
                     },

@@ -14,8 +14,8 @@ import {
   LGraphGroup,
   Vector4,
 } from "typings/litegraph.js";
-import { fitString } from "./utils_canvas.js";
 import {SERVICE as FAST_GROUPS_SERVICE} from "./fast_groups_service.js";
+import { drawNodeWidget, fitString } from "./utils_canvas.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
@@ -194,39 +194,23 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             posY: number,
             height: number,
           ) {
-            const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
 
-            let margin = 15;
-            let outline_color = LiteGraph.WIDGET_OUTLINE_COLOR;
-            let background_color = LiteGraph.WIDGET_BGCOLOR;
-            let text_color = LiteGraph.WIDGET_TEXT_COLOR;
-            let secondary_text_color = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
-            const showNav = node.properties?.[PROPERTY_SHOW_NAV] !== false;
-
-            // Draw background.
-            ctx.strokeStyle = outline_color;
-            ctx.fillStyle = background_color;
-            ctx.beginPath();
-            ctx.roundRect(
-              margin,
-              posY,
-              width - margin * 2,
+            const widgetData = drawNodeWidget(ctx, {
+              width,
               height,
-              lowQuality ? [0] : [height * 0.5],
-            );
-            ctx.fill();
-            if (!lowQuality) {
-              ctx.stroke();
-            }
+              posY,
+            });
+
+            const showNav = node.properties?.[PROPERTY_SHOW_NAV] !== false;
 
             // Render from right to left, since the text on left will take available space.
             // `currentX` markes the current x position moving backwards.
-            let currentX = width - margin;
+            let currentX = widgetData.width - widgetData.margin;
 
             // The nav arrow
-            if (!lowQuality && showNav) {
+            if (!widgetData.lowQuality && showNav) {
               currentX -= 7; // Arrow space margin
-              const midY = posY + height * 0.5;
+              const midY = widgetData.posY + widgetData.height * 0.5;
               ctx.fillStyle = ctx.strokeStyle = "#89A";
               ctx.lineJoin = "round";
               ctx.lineCap = "round";
@@ -236,9 +220,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
               currentX -= 14;
 
               currentX -= 7;
-              ctx.strokeStyle = outline_color;
-              ctx.stroke(new Path2D(`M ${currentX} ${posY} v ${height}`));
-            } else if (lowQuality && showNav) {
+              ctx.strokeStyle = widgetData.colorOutline;
+              ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
+            } else if (widgetData.lowQuality && showNav) {
               currentX -= 28;
             }
 
@@ -251,10 +235,10 @@ export class FastGroupsMuter extends RgthreeBaseNode {
             ctx.fill();
             currentX -= toggleRadius * 2;
 
-            if (!lowQuality) {
+            if (!widgetData.lowQuality) {
               currentX -= 4;
               ctx.textAlign = "right";
-              ctx.fillStyle = this.value ? text_color : secondary_text_color;
+              ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
               const label = this.label || this.name;
               const toggleLabelOn = this.options.on || "true";
               const toggleLabelOff = this.options.off || "false";
@@ -270,13 +254,9 @@ export class FastGroupsMuter extends RgthreeBaseNode {
 
               currentX -= 7;
               ctx.textAlign = "left";
-              let maxLabelWidth = width - margin - 10 - (width - currentX);
+              let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
               if (label != null) {
-                ctx.fillText(
-                  fitString(ctx, label, maxLabelWidth),
-                  margin + 10,
-                  posY + height * 0.7,
-                );
+                ctx.fillText(fitString(ctx, label, maxLabelWidth), widgetData.margin + 10, posY + height * 0.7);
               }
             }
           },

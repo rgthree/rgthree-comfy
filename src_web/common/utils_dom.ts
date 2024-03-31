@@ -38,8 +38,8 @@ const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 
-export function querySelectorAll(query: string, parent: HTMLElement|Document = document) : HTMLElement[] {
-  return [].slice.call(parent.querySelectorAll(query));
+export function query<T extends HTMLElement>(selector: string, parent: HTMLElement|Document = document) : T[] {
+  return Array.from(parent.querySelectorAll<T>(selector)).filter(n => !!n);
 }
 
 export function createText(text: string) {

@@ -73,13 +73,18 @@
   fill: #2e9720;
 }
 
-.rgthree-top-messages-container [type=warn]::before {
+.rgthree-top-messages-container [type=warn]::before,
+.rgthree-top-messages-container [type=success]::before {
   content: "⚠️";
   display: inline-block;
   flex: 0 0 auto;
   font-size: 18px;
   margin-right: 4px;
   line-height: 1;
+}
+
+.rgthree-top-messages-container [type=success]::before {
+  content: "🎉";
 }
 
 .rgthree-top-messages-container a {
