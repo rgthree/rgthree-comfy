@@ -132,7 +132,7 @@ export type ComfyApiFormat = {
 
 // @rgthree
 export type ComfyApiPrompt = {
-  workflow: any,
+  workflow: {nodes: SerializedLGraphNode[]},
   output: ComfyApiFormat,
 }
 

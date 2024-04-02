@@ -13,21 +13,25 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     constructor(title = RgthreeSeed.title) {
         super(title);
         this.serialize_widgets = true;
+        this.logger = rgthree.newLogSession(`[Seed]`);
         this.lastSeed = undefined;
         this.serializedCtx = {};
         this.lastSeedValue = null;
         this.randMax = 1125899906842624;
         this.randMin = 0;
         this.randomRange = 1125899906842624;
-        this.handleSeedWidgetSerializationBound = this.handleSeedWidgetSerialization.bind(this);
-        this.handleResetSeedWidgetBound = this.handleResetSeedWidget.bind(this);
-        this.logger = rgthree.newLogSession(`[Seed]`);
-        rgthree.addEventListener('graph-to-prompt', this.handleSeedWidgetSerializationBound);
-        rgthree.addEventListener('comfy-api-queue-prompt-end', this.handleResetSeedWidgetBound);
+        this.handleApiHijackingBound = this.handleApiHijacking.bind(this);
+        rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
     }
     onRemoved() {
-        rgthree.removeEventListener('graph-to-prompt', this.handleSeedWidgetSerializationBound);
-        rgthree.removeEventListener('comfy-api-queue-prompt-end', this.handleResetSeedWidgetBound);
+        rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
+    }
+    configure(info) {
+        var _a;
+        super.configure(info);
+        if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a["showLastSeed"]) {
+            this.addLastSeedValue();
+        }
     }
     async handleAction(action) {
         if (action === "Randomize Each Time") {
@@ -92,17 +96,6 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.lastSeedValue.inputEl.readOnly = true;
         this.lastSeedValue.inputEl.style.fontSize = "0.75rem";
         this.lastSeedValue.inputEl.style.textAlign = "center";
-        this.lastSeedValue.serializeValue = async (node, index) => {
-            const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
-            if (n) {
-                n.widgets_values[index] = "";
-            }
-            else {
-                console.warn('No serialized node found in workflow. May be attributed to '
-                    + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
-            }
-            return "";
-        };
         this.computeSize();
     }
     removeLastSeedValue() {
@@ -113,72 +106,60 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.lastSeedValue = null;
         this.computeSize();
     }
-    handleSeedWidgetSerialization() {
-        var _a, _b, _c;
-        const inputSeed = this.seedWidget.value;
-        if (!rgthree.processingQueue) {
-            return inputSeed;
-        }
-        if ((_a = this.serializedCtx) === null || _a === void 0 ? void 0 : _a.inputSeed) {
-            const [n, v] = this.logger.debugParts("Not handling seed widget serialization b/c we have not cleared the existing context; "
-                + "Assuming this run was called outside of a prompt (like from cg-use-everywhere "
-                + "analyzation)");
-            (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
-            return inputSeed;
-        }
+    handleApiHijacking(e) {
+        var _a, _b, _c, _d;
         if (this.mode === LiteGraph.NEVER || this.mode === 4) {
-            return inputSeed;
+            return;
         }
-        this.serializedCtx = {
-            inputSeed: this.seedWidget.value,
-        };
-        if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed)) {
-            if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
-                if (inputSeed === SPECIAL_SEED_INCREMENT) {
-                    this.serializedCtx.seedUsed = this.lastSeed + 1;
-                }
-                else if (inputSeed === SPECIAL_SEED_DECREMENT) {
-                    this.serializedCtx.seedUsed = this.lastSeed - 1;
-                }
-            }
-            if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
-                this.serializedCtx.seedUsed =
-                    Math.floor(Math.random() * this.randomRange) * ((this.seedWidget.options.step || 1) / 10) + this.randMin;
-            }
+        const workflow = e.detail.workflow;
+        const output = e.detail.output;
+        let workflowNode = (_b = (_a = workflow === null || workflow === void 0 ? void 0 : workflow.nodes) === null || _a === void 0 ? void 0 : _a.find((n) => n.id === this.id)) !== null && _b !== void 0 ? _b : null;
+        let outputInputs = (_c = output === null || output === void 0 ? void 0 : output[this.id]) === null || _c === void 0 ? void 0 : _c.inputs;
+        if (!workflowNode ||
+            !outputInputs ||
+            outputInputs[this.seedWidget.name || "seed"] === undefined) {
+            const [n, v] = this.logger.warnParts(`Node ${this.id} not found in prompt data sent to server. This may be fine if only ` +
+                `queuing part of the workflow. If not, then this could be a bug.`);
+            (_d = console[n]) === null || _d === void 0 ? void 0 : _d.call(console, ...v);
+            return;
         }
-        else {
-            this.serializedCtx.seedUsed = this.seedWidget.value;
-        }
-        const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(this);
-        const index = this.widgets.indexOf(this.seedWidget);
-        if (n) {
-            n.widgets_values[index] = this.serializedCtx.seedUsed;
-        }
-        else {
-            const [n, v] = this.logger.warnParts("No serialized node found in workflow. May be attributed to "
-                + "https://github.com/comfyanonymous/ComfyUI/issues/2193");
-            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
-        }
-        this.seedWidget.value = this.serializedCtx.seedUsed;
-        this.lastSeed = this.serializedCtx.seedUsed;
-        if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed)) {
-            this.lastSeedButton.name = `♻️ ${this.serializedCtx.seedUsed}`;
+        const seedToUse = this.getSeedToUse();
+        const seedWidgetndex = this.widgets.indexOf(this.seedWidget);
+        workflowNode.widgets_values[seedWidgetndex] = seedToUse;
+        outputInputs[this.seedWidget.name || "seed"] = seedToUse;
+        this.lastSeed = seedToUse;
+        if (seedToUse != this.seedWidget.value) {
+            this.lastSeedButton.name = `♻️ ${this.lastSeed}`;
             this.lastSeedButton.disabled = false;
-            if (this.lastSeedValue) {
-                this.lastSeedValue.value = `Last Seed: ${this.serializedCtx.seedUsed}`;
-            }
         }
         else {
             this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
         }
-        return this.serializedCtx.seedUsed;
-    }
-    handleResetSeedWidget() {
-        if (this.serializedCtx.inputSeed) {
-            this.seedWidget.value = this.serializedCtx.inputSeed;
+        if (this.lastSeedValue) {
+            this.lastSeedValue.value = `Last Seed: ${this.lastSeed}`;
         }
-        this.serializedCtx = {};
+    }
+    getSeedToUse() {
+        const inputSeed = this.seedWidget.value;
+        let seedToUse = null;
+        if (SPECIAL_SEEDS.includes(inputSeed)) {
+            if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
+                if (inputSeed === SPECIAL_SEED_INCREMENT) {
+                    seedToUse = this.lastSeed + 1;
+                }
+                else if (inputSeed === SPECIAL_SEED_DECREMENT) {
+                    seedToUse = this.lastSeed - 1;
+                }
+            }
+            if (seedToUse == null || SPECIAL_SEEDS.includes(seedToUse)) {
+                seedToUse =
+                    Math.floor(Math.random() * this.randomRange) *
+                        ((this.seedWidget.options.step || 1) / 10) +
+                        this.randMin;
+            }
+        }
+        return seedToUse !== null && seedToUse !== void 0 ? seedToUse : inputSeed;
     }
     static setUp(comfyClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeSeed);

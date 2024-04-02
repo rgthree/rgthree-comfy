@@ -507,8 +507,8 @@ class Rgthree extends EventTarget {
     // for saving the workflow (and keep -1, etc.).
     const queuePrompt = app.queuePrompt as Function;
     app.queuePrompt = async function () {
-      rgthree.dispatchCustomEvent("queue");
       rgthree.processingQueue = true;
+      rgthree.dispatchCustomEvent("queue");
       try {
         await queuePrompt.apply(app, [...arguments]);
       } finally {
@@ -551,6 +551,10 @@ class Rgthree extends EventTarget {
         }
         prompt.output = newOutput;
       }
+      rgthree.dispatchCustomEvent("comfy-api-queue-prompt-before", {
+        workflow: prompt.workflow,
+        output: prompt.output,
+      });
       const response = apiQueuePrompt.apply(app, [index, prompt]);
       rgthree.dispatchCustomEvent("comfy-api-queue-prompt-end");
       return response;

@@ -11,8 +11,14 @@ import type {
   LiteGraph as TLiteGraph,
   IWidget,
   LGraphCanvas,
+  SerializedLGraphNode,
 } from "typings/litegraph.js";
-import type { ComfyObjectInfo, ComfyWidget, ComfyNodeConstructor } from "typings/comfy.js";
+import type {
+  ComfyObjectInfo,
+  ComfyWidget,
+  ComfyNodeConstructor,
+  ComfyApiPrompt,
+} from "typings/comfy.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
@@ -40,7 +46,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
   override serialize_widgets = true;
 
-  private logger; // Instantiated in constructor.
+  private logger = rgthree.newLogSession(`[Seed]`);
 
   static override exposedActions = ["Randomize Each Time", "Use Last Queued Seed"];
 
@@ -57,23 +63,29 @@ class RgthreeSeed extends RgthreeBaseServerNode {
   randMin = 0;
   randomRange = 1125899906842624;
 
-  private handleSeedWidgetSerializationBound = this.handleSeedWidgetSerialization.bind(this);
-  private handleResetSeedWidgetBound = this.handleResetSeedWidget.bind(this);
+  private handleApiHijackingBound = this.handleApiHijacking.bind(this);
 
   constructor(title = RgthreeSeed.title) {
     super(title);
 
-    this.logger = rgthree.newLogSession(`[Seed]`);
-
-    rgthree.addEventListener('graph-to-prompt', this.handleSeedWidgetSerializationBound);
-    // Use this rgthree state event rather than widget.afterQueue because a try/catch may mean we
-    // never get to it.
-    rgthree.addEventListener('comfy-api-queue-prompt-end', this.handleResetSeedWidgetBound);
+    rgthree.addEventListener(
+      "comfy-api-queue-prompt-before",
+      this.handleApiHijackingBound as EventListener,
+    );
   }
 
   override onRemoved() {
-    rgthree.removeEventListener('graph-to-prompt', this.handleSeedWidgetSerializationBound);
-    rgthree.removeEventListener('comfy-api-queue-prompt-end', this.handleResetSeedWidgetBound);
+    rgthree.addEventListener(
+      "comfy-api-queue-prompt-before",
+      this.handleApiHijackingBound as EventListener,
+    );
+  }
+
+  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+    super.configure(info);
+    if (this.properties?.["showLastSeed"]) {
+      this.addLastSeedValue();
+    }
   }
 
   override async handleAction(action: string) {
@@ -91,7 +103,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     // Grab the already available widgets, and remove the built-in control_after_generate
     for (const [i, w] of this.widgets.entries()) {
       if (w.name === "seed") {
-        this.seedWidget = w;// as ComfyWidget;
+        this.seedWidget = w; // as ComfyWidget;
         this.seedWidget.value = SPECIAL_SEED_RANDOM;
       } else if (w.name === "control_after_generate") {
         this.widgets.splice(i, 1);
@@ -139,7 +151,6 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       { width: 50, serialize: false },
     );
     this.lastSeedButton.disabled = true;
-
   }
 
   override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
@@ -174,16 +185,6 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     this.lastSeedValue!.inputEl!.readOnly = true;
     this.lastSeedValue!.inputEl!.style.fontSize = "0.75rem";
     this.lastSeedValue!.inputEl!.style.textAlign = "center";
-    this.lastSeedValue!.serializeValue = async (node: TLGraphNode, index: number) => {
-      const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
-      if (n) {
-        n.widgets_values![index] = "";
-      } else {
-        console.warn('No serialized node found in workflow. May be attributed to '
-          + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
-      }
-      return "";
-    };
     this.computeSize();
   }
 
@@ -196,108 +197,88 @@ class RgthreeSeed extends RgthreeBaseServerNode {
   }
 
   /**
-   * Handles the serialization of the seed widget for establishing the seed in the widget itself
-   * for the workflow saving, and also for the api format sent to the server.
+   * Intercepts the prompt right before ComfyUI sends it to the server (as fired from rgthree) so we
+   * can inspect the prompt and workflow data and change swap in the seeds.
    *
-   * This should check if we have a special seed and, if so, replace it with a "real" seed, then
-   * change back to the original (handled below).
+   * Note, the original implementation tried to change the widget value itself when the graph was
+   * queued (and the relied on ComfyUI serializing the data changed data) and then changing it back.
+   * This worked well until other extensions kept calling graphToPrompt during asynchronous
+   * operations within, causing the widget to get confused without a reliable state to reflect upon.
    */
-  handleSeedWidgetSerialization() {
-    const inputSeed = this.seedWidget.value;
-
-    // Unfortunately, it's possible comfy and/or other extensions (namely, cg-use-everywhere) call
-    // methods that end up triggering the widget serialization even when we're not trying to
-    // execute a workflow. We don't want to do any work in those cases. The base `rgthree` instance
-    // keeps track if we are processing a queue for sending to the server. If we're not, then we
-    // can stop.
-    if (!rgthree.processingQueue) {
-      // This msg is too noisy since extensions call serialize graph every half second...
-      // const [n, v] = this.logger.infoParts(
-      //   "Not handling seed widget serialization b/c called when not handling a queue.",
-      // );
-      // console[n]?.(...v);
-      return inputSeed;
-    }
-    // Also, it's possible that these other extensions end up calling through when we're in the
-    // middle of a large batch. We need to stop this or else the widget will re-set thinking it's
-    // actual value is the state of the real seed, and then refuce to re-set back to a randomize.
-    // We check this by seeing if the `serializedCtx` has data that we expect to be reset when we
-    // re-enter the next time.
-    if (this.serializedCtx?.inputSeed) {
-      const [n, v] = this.logger.debugParts(
-        "Not handling seed widget serialization b/c we have not cleared the existing context; "
-        + "Assuming this run was called outside of a prompt (like from cg-use-everywhere "
-        + "analyzation)",
-      );
-      console[n]?.(...v);
-      return inputSeed;
-    }
-    // Don't do work if we're muted/bypassed.
+  handleApiHijacking(e: CustomEvent<ComfyApiPrompt>) {
+    // Don't do any work if we're muted/bypassed.
     if (this.mode === LiteGraph.NEVER || this.mode === 4) {
-      return inputSeed;
+      return;
     }
 
-    this.serializedCtx = {
-      inputSeed: this.seedWidget.value,
-    };
+    const workflow = e.detail.workflow;
+    const output = e.detail.output;
 
-    // If our input seed was a special seed, then handle it.
-    if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed!)) {
-      // If the last seed was not a special seed and we have increment/decrement, then do that on
-      // the last seed.
-      if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
-        if (inputSeed === SPECIAL_SEED_INCREMENT) {
-          this.serializedCtx.seedUsed = this.lastSeed + 1;
-        } else if (inputSeed === SPECIAL_SEED_DECREMENT) {
-          this.serializedCtx.seedUsed = this.lastSeed - 1;
-        }
-      }
-      // If we don't have a seed to use, or it's special seed (like we incremented into one), then
-      // we randomize.
-      if (!this.serializedCtx.seedUsed || SPECIAL_SEEDS.includes(this.serializedCtx.seedUsed)) {
-        this.serializedCtx.seedUsed =
-          Math.floor(Math.random() * this.randomRange) * ((this.seedWidget.options.step || 1) / 10) + this.randMin;
-      }
-    } else {
-      this.serializedCtx.seedUsed = this.seedWidget.value;
-    }
+    let workflowNode = workflow?.nodes?.find((n: SerializedLGraphNode) => n.id === this.id) ?? null;
+    let outputInputs = output?.[this.id]?.inputs;
 
-    const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(this);
-    const index = this.widgets.indexOf(this.seedWidget);
-    if (n) {
-      n.widgets_values![index] = this.serializedCtx.seedUsed;
-    } else {
+    if (
+      !workflowNode ||
+      !outputInputs ||
+      outputInputs[this.seedWidget.name || "seed"] === undefined
+    ) {
       const [n, v] = this.logger.warnParts(
-        "No serialized node found in workflow. May be attributed to "
-        + "https://github.com/comfyanonymous/ComfyUI/issues/2193",
+        `Node ${this.id} not found in prompt data sent to server. This may be fine if only ` +
+          `queuing part of the workflow. If not, then this could be a bug.`,
       );
       console[n]?.(...v);
+      return;
     }
-    this.seedWidget.value = this.serializedCtx.seedUsed;
-    this.lastSeed = this.serializedCtx.seedUsed!;
-    // Enabled the 'Last seed' Button
-    if (SPECIAL_SEEDS.includes(this.serializedCtx.inputSeed!)) {
-      this.lastSeedButton.name = `♻️ ${this.serializedCtx.seedUsed}`;
+
+    const seedToUse = this.getSeedToUse();
+    const seedWidgetndex = this.widgets.indexOf(this.seedWidget);
+
+    workflowNode.widgets_values![seedWidgetndex] = seedToUse;
+    outputInputs[this.seedWidget.name || "seed"] = seedToUse;
+
+    this.lastSeed = seedToUse;
+    if (seedToUse != this.seedWidget.value) {
+      this.lastSeedButton.name = `♻️ ${this.lastSeed}`;
       this.lastSeedButton.disabled = false;
-      if (this.lastSeedValue) {
-        this.lastSeedValue.value = `Last Seed: ${this.serializedCtx.seedUsed}`;
-      }
     } else {
       this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
       this.lastSeedButton.disabled = true;
     }
-    return this.serializedCtx.seedUsed;
+    if (this.lastSeedValue) {
+      this.lastSeedValue.value = `Last Seed: ${this.lastSeed}`;
+    }
   }
 
   /**
-   * Handles resetting the seed widget when it's been sent to the server, if we have context data
-   * to reset.
+   * Determines a seed to use depending on the seed widget's current value and the last used seed.
+   * There are no sideffects to calling this method.
    */
-  handleResetSeedWidget() {
-    if (this.serializedCtx.inputSeed) {
-      this.seedWidget.value = this.serializedCtx.inputSeed;
+  private getSeedToUse() {
+    const inputSeed: number = this.seedWidget.value;
+    let seedToUse: number | null = null;
+
+    // If our input seed was a special seed, then handle it.
+    if (SPECIAL_SEEDS.includes(inputSeed)) {
+      // If the last seed was not a special seed and we have increment/decrement, then do that on
+      // the last seed.
+      if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {
+        if (inputSeed === SPECIAL_SEED_INCREMENT) {
+          seedToUse = this.lastSeed + 1;
+        } else if (inputSeed === SPECIAL_SEED_DECREMENT) {
+          seedToUse = this.lastSeed - 1;
+        }
+      }
+      // If we don't have a seed to use, or it's special seed (like we incremented into one), then
+      // we randomize.
+      if (seedToUse == null || SPECIAL_SEEDS.includes(seedToUse)) {
+        seedToUse =
+          Math.floor(Math.random() * this.randomRange) *
+            ((this.seedWidget.options.step || 1) / 10) +
+          this.randMin;
+      }
     }
-    this.serializedCtx = {};
+
+    return seedToUse ?? inputSeed;
   }
 
   static override setUp(comfyClass: any) {
@@ -313,9 +294,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       RgthreeSeed.category = comfyClass.category;
     });
   }
-
 }
-
 
 app.registerExtension({
   name: "rgthree.Seed",
