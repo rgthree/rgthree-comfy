@@ -12,6 +12,7 @@ random.seed(datetime.now().timestamp())
 rgthree_seed_random_state = random.getstate()
 random.setstate(initial_random_state)
 
+
 def new_random_seed():
   """ Gets a new random seed from the rgthree_seed_random_state and resetting the previous state."""
   global rgthree_seed_random_state
@@ -69,12 +70,12 @@ class RgthreeSeed:
                       msg_color="YELLOW")
 
       original_seed = seed
-      print(random.randint(1, 1125899906842624))
       seed = new_random_seed()
       log_node_info(self.NAME, f'Server-generated random seed {seed} and saving to workflow.')
-      log_node_warn(self.NAME,
-                    'NOTE: Re-queues cannot be cached with server-generated random seed!',
-                    msg_color="YELLOW")
+      log_node_warn(
+        self.NAME,
+        'NOTE: Re-queues passing in "{seed}" and server-generated random seed won\'t be cached.',
+        msg_color="YELLOW")
 
       if unique_id is None:
         log_node_warn(
