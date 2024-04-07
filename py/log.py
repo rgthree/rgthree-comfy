@@ -46,29 +46,30 @@ COLORS = {
 }
 
 
-def log_node_success(node_name, message):
+def log_node_success(node_name, message, msg_color='RESET'):
   """Logs a success message."""
-  _log_node("BRIGHT_GREEN", node_name, message)
+  _log_node("BRIGHT_GREEN", node_name, message, msg_color=msg_color)
 
 
-def log_node_info(node_name, message):
+def log_node_info(node_name, message, msg_color='RESET'):
   """Logs an info message."""
-  _log_node("CYAN", node_name, message)
+  _log_node("CYAN", node_name, message, msg_color=msg_color)
 
 
-def log_node_warn(node_name, message):
+def log_node_warn(node_name, message, msg_color='RESET'):
   """Logs an warn message."""
-  _log_node("YELLOW", node_name, message)
+  _log_node("YELLOW", node_name, message, msg_color=msg_color)
 
 
-def log_node(node_name, message):
+def log_node(node_name, message, msg_color='RESET'):
   """Logs a message."""
-  _log_node("CYAN", node_name, message)
+  _log_node("CYAN", node_name, message, msg_color=msg_color)
 
 
-def _log_node(color, node_name, message):
+def _log_node(color, node_name, message, msg_color='RESET'):
   """Logs for a node message."""
-  log(message, color=color, prefix=node_name.replace(" (rgthree)", ""), msg_color='RESET')
+  log(message, color=color, prefix=node_name.replace(" (rgthree)", ""), msg_color=msg_color)
+
 
 def log(message, color=None, msg_color=None, prefix=None):
   """Basic logging."""
