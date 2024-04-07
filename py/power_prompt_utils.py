@@ -22,7 +22,7 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
       log_node_info(log_node, f'Skipping "{tag_path}" with strength of zero')
       continue
 
-    lora_path = get_lora_by_filename(tag_path, lora_paths, log_node)
+    lora_path = get_lora_by_filename(tag_path, lora_paths, log_node=None if silent else log_node)
     if lora_path is None:
       continue
 
