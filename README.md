@@ -107,8 +107,13 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 ## Display Any
 > Displays most any piece of text data from the backend _after execution_.
 
+## Power Lora Loader
+> A super-simply Lora Loader node that can load multiple Loras at once, and quick toggle each, all in an ultra-condensed node.
 
-## Lora Loader Stack
+
+## ~~Lora Loader Stack~~
+> _**Deprecated.** Used the `Power Lora Loader` instead._
+>
 > A simplified Lora Loader stack. Much like other suites, but more interoperable with standard inputs/outputs.
 
 

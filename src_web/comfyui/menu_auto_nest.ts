@@ -12,6 +12,8 @@ import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
+const SPECIAL_ENTRIES = ["CHOOSE", "NONE", "DISABLE"];
+
 /**
  * Handles a large, flat list of string values given ContextMenu and breaks it up into subfolder, if
  * they exist. This is experimental and initially built to work for CheckpointLoaderSimple.
@@ -73,7 +75,10 @@ app.registerExtension({
           newValue.content = valueSplit.join(splitBy);
           folders[key] = folders[key] || [];
           folders[key]!.push(newValue);
-        } else if (valueContent === "CHOOSE" || valueContent.startsWith("DISABLE ")) {
+        } else if (
+          SPECIAL_ENTRIES.includes(valueContent.toLocaleUpperCase()) ||
+          valueContent.startsWith("DISABLE ")
+        ) {
           specialOps.push(newValue);
         } else {
           folderless.push(newValue);

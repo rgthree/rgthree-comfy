@@ -6,8 +6,9 @@ import type {
   LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
+  AdjustedMouseEvent,
 } from "../typings/litegraph.js";
-import { drawNodeWidget, fitString, isLowQuality } from "./utils_canvas.js";
+import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -40,6 +41,137 @@ export function drawLabelAndValue(
   ctx.textAlign = "right";
   ctx.fillText(fitString(ctx, value, valueXRight - valueXLeft), valueXRight, midY);
   ctx.restore();
+}
+
+/**
+ * A base widget that handles mouse events more properly.
+ */
+export abstract class RgthreeBaseWidget {
+  name: string;
+  last_y: number = 0;
+  protected mouseDowned: Vector2 | null = null;
+  protected isMouseDownedAndOver: boolean = false;
+
+  constructor(name: string) {
+    this.name = name;
+  }
+
+  mouse(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) {
+    const canvas = app.canvas as TLGraphCanvas;
+
+    if (event.type == "pointerdown") {
+      this.mouseDowned = [...pos];
+      this.isMouseDownedAndOver = true;
+      return this.onMouseDown(event, pos, node) ?? true;
+    }
+
+    // This only fires when LiteGraph has a node_widget (meaning it's pressed), but we may not be
+    // the original widget pressed, so we still need `mouseDowned`.
+    if (event.type == "pointerup") {
+      if (!this.mouseDowned) return true;
+      this.cancelMouseDown();
+      return this.onMouseUp(event, pos, node) ?? true;
+    }
+
+    // This only fires when LiteGraph has a node_widget (meaning it's pressed).
+    if (event.type == "pointermove") {
+      this.isMouseDownedAndOver = !!this.mouseDowned;
+      // If we've moved off the button while pressing, then consider us no longer pressing.
+      if (
+        this.mouseDowned &&
+        (pos[0] < 15 ||
+          pos[0] > node.size[0] - 15 ||
+          pos[1] < this.last_y ||
+          pos[1] > this.last_y + LiteGraph.NODE_WIDGET_HEIGHT)
+      ) {
+        this.isMouseDownedAndOver = false;
+      }
+      return this.onMouseMove(event, pos, node) ?? true;
+    }
+    console.log(event);
+    return false;
+  }
+
+  /** Sometimes we want to cancel a mouse down, so that an up/move aren't fired. */
+  cancelMouseDown() {
+    this.mouseDowned = null;
+    this.isMouseDownedAndOver = false;
+  }
+
+  /** An event that fires when the pointer is pressed down (once). */
+  onMouseDown(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+    return false;
+  }
+
+  /**
+   * An event that fires when the pointer is let go. Only fires if this was the widget that was
+   * originally pressed down.
+   */
+  onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+    return false;
+  }
+
+  /**
+   * An event that fires when the pointer is moving after pressing down. Will fire both on and off
+   * of the widget. Check `isMouseDownedAndOver` to determine if the mouse is currently over the
+   * widget or not.
+   */
+  onMouseMove(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+    return false;
+  }
+}
+
+/**
+ * A better implementation of the LiteGraph button widget.
+ */
+export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWidget<string> {
+
+  value: string = "";
+  mouseUpCallback: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+
+  constructor(
+    name: string,
+    mouseUpCallback: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void,
+  ) {
+    super(name);
+    this.mouseUpCallback = mouseUpCallback;
+  }
+
+  draw(ctx: CanvasRenderingContext2D, node: LGraphNode, width: number, y: number, height: number) {
+
+    // First, add a shadow if we're not down or lowquality.
+    if (!isLowQuality() && !this.isMouseDownedAndOver) {
+      drawRoundedRectangle(ctx, {
+        width: width - 30 - 2,
+        height,
+        posY: y + 1,
+        posX: 15 + 1,
+        borderRadius: 4,
+        colorBackground: '#000000aa',
+        colorStroke: '#000000aa',
+      });
+    }
+
+    drawRoundedRectangle(ctx, {
+      width: width - 30,
+      height,
+      posY: y + (this.isMouseDownedAndOver ? 1 : 0),
+      posX: 15,
+      borderRadius: isLowQuality() ? 0 : 4,
+      colorBackground: this.isMouseDownedAndOver ? "#444" : LiteGraph.WIDGET_BGCOLOR,
+    });
+
+    if (!isLowQuality()) {
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      ctx.fillStyle =  LiteGraph.WIDGET_TEXT_COLOR;
+      ctx.fillText(this.name, node.size[0] / 2, (y + height / 2) + (this.isMouseDownedAndOver ? 1 : 0));
+    }
+  }
+
+  override onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) {
+    return this.mouseUpCallback(event, pos, node);
+  }
 }
 
 /**

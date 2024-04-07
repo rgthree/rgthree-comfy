@@ -122,3 +122,11 @@ export function moveArrayItem<T>(arr: T[], itemOrFrom:T|number, to: number) {
   const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
   arr.splice(to, 0, arr.splice(from, 1)[0]!);
 }
+
+/**
+ * Moves an item in an array (by item or its index) to another index.
+ */
+export function removeArrayItem<T>(arr: T[], itemOrIndex:T|number) {
+  const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+  arr.splice(index, 1);
+}

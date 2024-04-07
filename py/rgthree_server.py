@@ -1,12 +1,10 @@
+import os
+import json
+
 from server import PromptServer
 from aiohttp import web
 
-import comfy.samplers
 import folder_paths
-
-import os
-import time
-import json
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/../web/')
@@ -56,14 +54,15 @@ set_default_page_resources("common")
 
 set_default_page_routes("link_fixer")
 
-
 # Configuration
 from .config import RGTHREE_CONFIG, set_user_config
+
 
 @routes.get('/rgthree/config.js')
 def api_get_user_config_file(request):
   """ Returns the user configuration as a jsavascript file. """
-  text=f'export const rgthreeConfig = {json.dumps(RGTHREE_CONFIG, sort_keys=True, indent=2, separators=(",", ": "))}'
+  data_str = json.dumps(RGTHREE_CONFIG, sort_keys=True, indent=2, separators=(",", ": "))
+  text = f'export const rgthreeConfig = {data_str}'
   return web.Response(text=text, content_type='application/javascript')
 
 
@@ -72,6 +71,7 @@ def api_get_user_config(request):
   """ Returns the user configuration. """
   return web.json_response(RGTHREE_CONFIG)
 
+
 @routes.post('/rgthree/api/config')
 async def api_set_user_config(request):
   """ Returns the user configuration. """
@@ -79,3 +79,13 @@ async def api_set_user_config(request):
   data = json.loads(post.get("json"))
   set_user_config(data)
   return web.json_response({"status": "ok"})
+
+
+# General
+
+
+@routes.get('/rgthree/api/loras')
+async def api_get_loras(request):
+  """ Returns a list of loras user configuration. """
+  data = folder_paths.get_filename_list("loras")
+  return web.json_response(list(data))

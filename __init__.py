@@ -36,6 +36,7 @@ from .py.any_switch import RgthreeAnySwitch
 from .py.context_merge import RgthreeContextMerge
 from .py.context_merge_big import RgthreeContextMergeBig
 from .py.image_comparer import RgthreeImageComparer
+from .py.power_lora_loader import RgthreePowerLoraLoader
 
 NODE_CLASS_MAPPINGS = {
   RgthreeBigContext.NAME: RgthreeBigContext,
@@ -57,6 +58,7 @@ NODE_CLASS_MAPPINGS = {
   RgthreeSDXLPowerPromptSimple.NAME: RgthreeSDXLPowerPromptSimple,
   RgthreeAnySwitch.NAME: RgthreeAnySwitch,
   RgthreeImageComparer.NAME: RgthreeImageComparer,
+  RgthreePowerLoraLoader.NAME: RgthreePowerLoraLoader,
 }
 
 # WEB_DIRECTORY is the comfyui nodes directory that ComfyUI will link and auto-load.

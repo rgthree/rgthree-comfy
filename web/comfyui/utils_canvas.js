@@ -16,12 +16,15 @@ function binarySearch(max, getValue, match) {
 export function fitString(ctx, str, maxWidth) {
     let width = ctx.measureText(str).width;
     const ellipsis = "…";
-    const ellipsisWidth = ctx.measureText(ellipsis).width;
+    const ellipsisWidth = measureText(ctx, ellipsis);
     if (width <= maxWidth || width <= ellipsisWidth) {
         return str;
     }
-    const index = binarySearch(str.length, (guess) => ctx.measureText(str.substring(0, guess)).width, maxWidth - ellipsisWidth);
+    const index = binarySearch(str.length, (guess) => measureText(ctx, str.substring(0, guess)), maxWidth - ellipsisWidth);
     return str.substring(0, index) + ellipsis;
+}
+export function measureText(ctx, str) {
+    return ctx.measureText(str).width;
 }
 export function isLowQuality() {
     var _a;
@@ -50,4 +53,14 @@ export function drawNodeWidget(ctx, options) {
         ctx.stroke();
     }
     return data;
+}
+export function drawRoundedRectangle(ctx, options) {
+    const lowQuality = isLowQuality();
+    options = { ...options };
+    ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
+    ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
+    ctx.beginPath();
+    ctx.roundRect(options.posX, options.posY, options.width, options.height, lowQuality ? [0] : options.borderRadius ? [options.borderRadius] : [options.height * 0.5]);
+    ctx.fill();
+    !lowQuality && ctx.stroke();
 }

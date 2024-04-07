@@ -75,3 +75,7 @@ export function moveArrayItem(arr, itemOrFrom, to) {
     const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
     arr.splice(to, 0, arr.splice(from, 1)[0]);
 }
+export function removeArrayItem(arr, itemOrIndex) {
+    const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+    arr.splice(index, 1);
+}

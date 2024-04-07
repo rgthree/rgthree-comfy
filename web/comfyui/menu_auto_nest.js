@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+const SPECIAL_ENTRIES = ["CHOOSE", "NONE", "DISABLE"];
 app.registerExtension({
     name: "rgthree.ContextMenuAutoNest",
     async setup() {
@@ -50,7 +51,8 @@ app.registerExtension({
                     folders[key] = folders[key] || [];
                     folders[key].push(newValue);
                 }
-                else if (valueContent === "CHOOSE" || valueContent.startsWith("DISABLE ")) {
+                else if (SPECIAL_ENTRIES.includes(valueContent.toLocaleUpperCase()) ||
+                    valueContent.startsWith("DISABLE ")) {
                     specialOps.push(newValue);
                 }
                 else {

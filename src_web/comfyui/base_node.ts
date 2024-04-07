@@ -7,6 +7,8 @@ import type {
   LGraphNode as TLGraphNode,
   LGraphCanvas,
   ContextMenuItem,
+  INodeOutputSlot,
+  INodeInputSlot,
 } from "typings/litegraph.js";
 // @ts-ignore
 import { ComfyWidgets } from "../../scripts/widgets.js";
@@ -116,6 +118,29 @@ export class RgthreeBaseNode extends LGraphNode {
         this.widgets.splice(index, 1);
       }
     }
+  }
+
+  /**
+   * A default version of the logive when a node does not set `getSlotMenuOptions`. This is
+   * necessary because child nodes may want to define getSlotMenuOptions but LiteGraph then won't do
+   * it's default logic. This bakes it so child nodes can call this instead (and this doesn't set
+   * getSlotMenuOptions for all child nodes in case it doesn't exist).
+   */
+  defaultGetSlotMenuOptions(slot: {input?: INodeInputSlot, output?: INodeOutputSlot}): ContextMenuItem[] | null {
+    const menu_info: ContextMenuItem[] = [];
+    if (slot?.output?.links?.length) {
+      menu_info.push({ content: "Disconnect Links", slot: slot });
+    }
+    let inputOrOutput = slot.input || slot.output;
+    if (inputOrOutput) {
+      if (inputOrOutput.removable) {
+        menu_info.push(inputOrOutput.locked ? {content: "Cannot remove"} : {content: "Remove Slot", slot});
+      }
+      if (!inputOrOutput.nameLocked) {
+        menu_info.push({ content: "Rename Slot", slot });
+      }
+    }
+    return menu_info;
   }
 
   override onRemoved(): void {

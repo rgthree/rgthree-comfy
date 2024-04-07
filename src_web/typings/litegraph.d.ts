@@ -38,6 +38,8 @@ export interface INodeSlot {
     hidden?: boolean;
     // @rgthree
     disabled?: boolean;
+    // @rgthree - Found this checked in getSlotMenuOptions default.
+    removable?: boolean;
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -140,6 +142,8 @@ export interface IWidget<TValue = any, TOptions = any> {
     computeSize?(width: number): [number, number];
     // @rgthree - make optional, since it is in the code.
     serializeValue?(serializedNode: SerializedLGraphNode, widgetIndex: number): TValue;
+    // @rgthree - Checked in LGraphCanvas.prototype.processNodeWidgets, and figured I'd use it too.
+    width?: number;
 }
 export interface IButtonWidget extends IWidget<null, {}> {
     type: "button";
@@ -181,11 +185,13 @@ export interface IContextMenuItem {
     className?: string;
     // @rgthree - Added for menu_auto_nest
     rgthree_originalValue?: IContextMenuItem;
+    // @rgthree - this was missing and passed through for getSlotMenuOptions default.
+    slot?: {input?: INodeInputSlot, output?: INodeOutputSlot};
 }
 export interface IContextMenuOptions {
     callback?: ContextMenuEventListener;
     ignore_item_callbacks?: Boolean;
-    event?: MouseEvent | CustomEvent;
+    event?: MouseEvent | CustomEvent | AdjustedMouseEvent;
     parentMenu?: ContextMenu;
     autoopen?: boolean;
     title?: string;
@@ -1157,7 +1163,9 @@ export declare class LGraphNode {
 
     /** Called by `LGraphCanvas.processContextMenu` */
     getMenuOptions?(graphCanvas: LGraphCanvas): ContextMenuItem[];
-    getSlotMenuOptions?(slot: INodeSlot): ContextMenuItem[];
+    // @rgthree. This is fixed because the INodeSlot is wrong and, also, null can be returned to not trigger a menu.
+    // getSlotMenuOptions?(slot: INodeSlot): ContextMenuItem[];
+    getSlotMenuOptions(slot: {input?: INodeInputSlot, output?: INodeOutputSlot}): ContextMenuItem[] | null;
 
     getExtraMenuOptions?(canvas: LGraphCanvas, options: ContextMenuItem[]): void;
 }
@@ -1314,6 +1322,8 @@ export declare class LGraphCanvas {
     bgctx: CanvasRenderingContext2D;
     canvas: HTMLCanvasElement;
     canvas_mouse: Vector2;
+    // @rgthree - Looks like this is to replace canvas_mouse.
+    graph_mouse: Vector2;
     clear_background: boolean;
     connecting_node: LGraphNode | null;
     // @rgthree - for overriding.

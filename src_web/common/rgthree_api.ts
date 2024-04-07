@@ -22,6 +22,13 @@ class RgthreeApi {
     const r = await this.fetchApi(route, options);
     return await r.json();
   }
+
+  getLoras(force = false) {
+    if (!this.getLorasPromise || force) {
+      this.getLorasPromise = this.fetchJson("/loras", { cache: "no-store" });
+    }
+    return this.getLorasPromise;
+  }
 }
 
 export const rgthreeApi = new RgthreeApi();

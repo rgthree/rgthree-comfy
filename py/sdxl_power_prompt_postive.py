@@ -105,15 +105,15 @@ class RgthreeSDXLPowerPromptPositive:
            values_insert_saved=None):
 
     if insert_lora == 'DISABLE LORAS':
-      prompt_g, loras_g = get_and_strip_loras(prompt_g, True)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l, True)
+      prompt_g, loras_g = get_and_strip_loras(prompt_g, True, log_node=self.NAME)
+      prompt_l, loras_l = get_and_strip_loras(prompt_l, True, log_node=self.NAME)
       loras = loras_g + loras_l
       log_node_info(
         NODE_NAME,
         f'Disabling all found loras ({len(loras)}) and stripping lora tags for TEXT output.')
     elif opt_model != None and opt_clip != None:
-      prompt_g, loras_g = get_and_strip_loras(prompt_g)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l)
+      prompt_g, loras_g = get_and_strip_loras(prompt_g, log_node=self.NAME)
+      prompt_l, loras_l = get_and_strip_loras(prompt_l, log_node=self.NAME)
       loras = loras_g + loras_l
       if len(loras):
         for lora in loras:
@@ -122,8 +122,8 @@ class RgthreeSDXLPowerPromptPositive:
           log_node_success(NODE_NAME, f'Loaded "{lora["lora"]}" from prompt')
         log_node_info(NODE_NAME, f'{len(loras)} Loras processed; stripping tags for TEXT output.')
     elif '<lora:' in prompt_g or '<lora:' in prompt_l:
-      _prompt_stripped_g, loras_g = get_and_strip_loras(prompt_g, True)
-      _prompt_stripped_l, loras_l = get_and_strip_loras(prompt_l, True)
+      _prompt_stripped_g, loras_g = get_and_strip_loras(prompt_g, True, log_node=self.NAME)
+      _prompt_stripped_l, loras_l = get_and_strip_loras(prompt_l, True, log_node=self.NAME)
       loras = loras_g + loras_l
       if len(loras):
         log_node_warn(

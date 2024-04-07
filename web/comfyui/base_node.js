@@ -56,6 +56,23 @@ export class RgthreeBaseNode extends LGraphNode {
             }
         }
     }
+    defaultGetSlotMenuOptions(slot) {
+        var _a, _b;
+        const menu_info = [];
+        if ((_b = (_a = slot === null || slot === void 0 ? void 0 : slot.output) === null || _a === void 0 ? void 0 : _a.links) === null || _b === void 0 ? void 0 : _b.length) {
+            menu_info.push({ content: "Disconnect Links", slot: slot });
+        }
+        let inputOrOutput = slot.input || slot.output;
+        if (inputOrOutput) {
+            if (inputOrOutput.removable) {
+                menu_info.push(inputOrOutput.locked ? { content: "Cannot remove" } : { content: "Remove Slot", slot });
+            }
+            if (!inputOrOutput.nameLocked) {
+                menu_info.push({ content: "Rename Slot", slot });
+            }
+        }
+        return menu_info;
+    }
     onRemoved() {
         var _a;
         (_a = super.onRemoved) === null || _a === void 0 ? void 0 : _a.call(this);

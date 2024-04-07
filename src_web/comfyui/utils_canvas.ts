@@ -29,18 +29,23 @@ function binarySearch(max: number, getValue: (n: number) => number, match: numbe
 export function fitString(ctx: CanvasRenderingContext2D, str: string, maxWidth: number) {
   let width = ctx.measureText(str).width;
   const ellipsis = "…";
-  const ellipsisWidth = ctx.measureText(ellipsis).width;
+  const ellipsisWidth = measureText(ctx, ellipsis);
   if (width <= maxWidth || width <= ellipsisWidth) {
     return str;
   }
 
   const index = binarySearch(
     str.length,
-    (guess) => ctx.measureText(str.substring(0, guess)).width,
+    (guess) => measureText(ctx, str.substring(0, guess)),
     maxWidth - ellipsisWidth,
   );
 
   return str.substring(0, index) + ellipsis;
+}
+
+/** Measures the width of text for a canvas context. */
+export function measureText(ctx: CanvasRenderingContext2D, str: string) {
+  return ctx.measureText(str).width;
 }
 
 export type WidgetRenderingOptionsPart = {
@@ -55,6 +60,7 @@ export type WidgetRenderingOptionsPart = {
 type WidgetRenderingOptions = {
   width: number;
   height: number;
+  posX?: number;
   posY: number;
   borderRadius?: number;
   colorStroke?: string;
@@ -105,4 +111,22 @@ export function drawNodeWidget(ctx: CanvasRenderingContext2D, options: WidgetRen
   }
 
   return data;
+}
+
+/** Draws a rounded rectangle. */
+export function drawRoundedRectangle(ctx: CanvasRenderingContext2D, options: WidgetRenderingOptions) {
+  const lowQuality = isLowQuality();
+  options = {...options};
+  ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
+  ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
+  ctx.beginPath();
+  ctx.roundRect(
+    options.posX!,
+    options.posY,
+    options.width,
+    options.height,
+    lowQuality ? [0] : options.borderRadius ? [options.borderRadius] : [options.height * 0.5],
+  );
+  ctx.fill();
+  !lowQuality && ctx.stroke();
 }

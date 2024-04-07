@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { drawNodeWidget, fitString, isLowQuality } from "./utils_canvas.js";
+import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 export function drawLabelAndValue(ctx, label, value, width, posY, height, options) {
     var _a;
     const outerMargin = 15;
@@ -17,6 +17,92 @@ export function drawLabelAndValue(ctx, label, value, width, posY, height, option
     ctx.textAlign = "right";
     ctx.fillText(fitString(ctx, value, valueXRight - valueXLeft), valueXRight, midY);
     ctx.restore();
+}
+export class RgthreeBaseWidget {
+    constructor(name) {
+        this.last_y = 0;
+        this.mouseDowned = null;
+        this.isMouseDownedAndOver = false;
+        this.name = name;
+    }
+    mouse(event, pos, node) {
+        var _a, _b, _c;
+        const canvas = app.canvas;
+        if (event.type == "pointerdown") {
+            this.mouseDowned = [...pos];
+            this.isMouseDownedAndOver = true;
+            return (_a = this.onMouseDown(event, pos, node)) !== null && _a !== void 0 ? _a : true;
+        }
+        if (event.type == "pointerup") {
+            if (!this.mouseDowned)
+                return true;
+            this.cancelMouseDown();
+            return (_b = this.onMouseUp(event, pos, node)) !== null && _b !== void 0 ? _b : true;
+        }
+        if (event.type == "pointermove") {
+            this.isMouseDownedAndOver = !!this.mouseDowned;
+            if (this.mouseDowned &&
+                (pos[0] < 15 ||
+                    pos[0] > node.size[0] - 15 ||
+                    pos[1] < this.last_y ||
+                    pos[1] > this.last_y + LiteGraph.NODE_WIDGET_HEIGHT)) {
+                this.isMouseDownedAndOver = false;
+            }
+            return (_c = this.onMouseMove(event, pos, node)) !== null && _c !== void 0 ? _c : true;
+        }
+        console.log(event);
+        return false;
+    }
+    cancelMouseDown() {
+        this.mouseDowned = null;
+        this.isMouseDownedAndOver = false;
+    }
+    onMouseDown(event, pos, node) {
+        return false;
+    }
+    onMouseUp(event, pos, node) {
+        return false;
+    }
+    onMouseMove(event, pos, node) {
+        return false;
+    }
+}
+export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {
+    constructor(name, mouseUpCallback) {
+        super(name);
+        this.value = "";
+        this.mouseUpCallback = mouseUpCallback;
+    }
+    draw(ctx, node, width, y, height) {
+        if (!isLowQuality() && !this.isMouseDownedAndOver) {
+            drawRoundedRectangle(ctx, {
+                width: width - 30 - 2,
+                height,
+                posY: y + 1,
+                posX: 15 + 1,
+                borderRadius: 4,
+                colorBackground: '#000000aa',
+                colorStroke: '#000000aa',
+            });
+        }
+        drawRoundedRectangle(ctx, {
+            width: width - 30,
+            height,
+            posY: y + (this.isMouseDownedAndOver ? 1 : 0),
+            posX: 15,
+            borderRadius: isLowQuality() ? 0 : 4,
+            colorBackground: this.isMouseDownedAndOver ? "#444" : LiteGraph.WIDGET_BGCOLOR,
+        });
+        if (!isLowQuality()) {
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "center";
+            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+            ctx.fillText(this.name, node.size[0] / 2, (y + height / 2) + (this.isMouseDownedAndOver ? 1 : 0));
+        }
+    }
+    onMouseUp(event, pos, node) {
+        return this.mouseUpCallback(event, pos, node);
+    }
 }
 export class RgthreeBetterTextWidget {
     constructor(name, value) {

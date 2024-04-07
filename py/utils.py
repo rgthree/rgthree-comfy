@@ -5,6 +5,11 @@ class AnyType(str):
   def __ne__(self, __value: object) -> bool:
     return False
 
+class ContainsAnyDict(dict):
+  """A special class that always returns true for contains check ('prop' in my_dict)."""
+
+  def __contains__(self, key):
+    return True
 
 any_type = AnyType("*")
 
