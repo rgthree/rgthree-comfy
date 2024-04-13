@@ -1,25 +1,32 @@
+var _a;
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
-import { drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
+import { drawNumberWidgetPart, drawRoundedRectangle, drawTogglePart, fitString, isLowQuality, } from "./utils_canvas.js";
 import { RgthreeBaseWidget, RgthreeBetterButtonWidget, RgthreeDividerWidget, } from "./utils_widgets.js";
 import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
 import { showLoraChooser } from "./utils_menu.js";
 import { moveArrayItem, removeArrayItem } from "../../rgthree/common/shared_utils.js";
+const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
+const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
+const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
+const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
 class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
         super(title);
-        this.logger = rgthree.newLogSession(`[Power Lora Stack]`);
-        this.widgetButtonSpacer = null;
-        this.loraWidgetsCounter = 0;
         this.serialize_widgets = true;
+        this.logger = rgthree.newLogSession(`[Power Lora Stack]`);
+        this.loraWidgetsCounter = 0;
+        this.widgetButtonSpacer = null;
+        this.properties = this.properties || {};
+        this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
         rgthreeApi.getLoras();
     }
     configure(info) {
-        var _a;
-        while ((_a = this.widgets) === null || _a === void 0 ? void 0 : _a.length)
+        var _b;
+        while ((_b = this.widgets) === null || _b === void 0 ? void 0 : _b.length)
             this.removeWidget(0);
         this.widgetButtonSpacer = null;
         super.configure(info);
@@ -38,9 +45,14 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         }, 100);
     }
     onNodeCreated() {
-        var _a;
-        (_a = super.onNodeCreated) === null || _a === void 0 ? void 0 : _a.call(this);
+        var _b;
+        (_b = super.onNodeCreated) === null || _b === void 0 ? void 0 : _b.call(this);
         this.addNonLoraWidgets();
+        const computed = this.computeSize();
+        this.size = this.size || [0, 0];
+        this.size[0] = Math.max(this.size[0], computed[0]);
+        this.size[1] = Math.max(this.size[1], computed[1]);
+        this.setDirtyCanvas(true, true);
     }
     addNewLoraWidget(lora) {
         this.loraWidgetsCounter++;
@@ -53,15 +65,20 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         return widget;
     }
     addNonLoraWidgets() {
-        const initialSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
-        moveArrayItem(this.widgets, initialSpacer, 0);
+        this.widgets = this.widgets || [];
+        moveArrayItem(this.widgets, this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 })), 0);
+        moveArrayItem(this.widgets, this.addCustomWidget(new PowerLoraLoaderHeaderWidget()), 1);
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("➕ Add Lora", (event, pos, node) => {
             showLoraChooser(event, (value) => {
+                var _b;
                 if (typeof value === "string") {
                     if (value !== "NONE") {
                         this.addNewLoraWidget(value);
-                        this.size[1] = Math.max(this._tempHeight, this.computeSize()[1]);
+                        const computed = this.computeSize();
+                        const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
+                        this.size[1] = Math.max(tempHeight, computed[1]);
+                        this.setDirtyCanvas(true, true);
                     }
                 }
             });
@@ -69,7 +86,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         }));
     }
     getSlotInPosition(canvasX, canvasY) {
-        var _a;
+        var _b;
         const slot = super.getSlotInPosition(canvasX, canvasY);
         if (!slot) {
             let lastWidget = null;
@@ -82,19 +99,19 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                 }
                 break;
             }
-            if ((_a = lastWidget === null || lastWidget === void 0 ? void 0 : lastWidget.name) === null || _a === void 0 ? void 0 : _a.startsWith("lora_")) {
+            if ((_b = lastWidget === null || lastWidget === void 0 ? void 0 : lastWidget.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
                 return { widget: lastWidget, output: { type: "LORA WIDGET" } };
             }
         }
         return slot;
     }
     getSlotMenuOptions(slot) {
-        var _a, _b, _c, _d, _e, _f;
-        if ((_b = (_a = slot === null || slot === void 0 ? void 0 : slot.widget) === null || _a === void 0 ? void 0 : _a.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
+        var _b, _c, _d, _e, _f, _g;
+        if ((_c = (_b = slot === null || slot === void 0 ? void 0 : slot.widget) === null || _b === void 0 ? void 0 : _b.name) === null || _c === void 0 ? void 0 : _c.startsWith("lora_")) {
             const widget = slot.widget;
             const index = this.widgets.indexOf(widget);
-            const canMoveUp = !!((_d = (_c = this.widgets[index - 1]) === null || _c === void 0 ? void 0 : _c.name) === null || _d === void 0 ? void 0 : _d.startsWith("lora_"));
-            const canMoveDown = !!((_f = (_e = this.widgets[index + 1]) === null || _e === void 0 ? void 0 : _e.name) === null || _f === void 0 ? void 0 : _f.startsWith("lora_"));
+            const canMoveUp = !!((_e = (_d = this.widgets[index - 1]) === null || _d === void 0 ? void 0 : _d.name) === null || _e === void 0 ? void 0 : _e.startsWith("lora_"));
+            const canMoveDown = !!((_g = (_f = this.widgets[index + 1]) === null || _f === void 0 ? void 0 : _f.name) === null || _g === void 0 ? void 0 : _g.startsWith("lora_"));
             const menuItems = [
                 {
                     content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
@@ -133,6 +150,36 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     refreshComboInNode(defs) {
         rgthreeApi.getLoras(true);
     }
+    hasLoraWidgets() {
+        var _b;
+        return !!((_b = this.widgets) === null || _b === void 0 ? void 0 : _b.find((w) => { var _b; return (_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_"); }));
+    }
+    allLorasState() {
+        var _b, _c, _d;
+        let allOn = true;
+        let allOff = true;
+        for (const widget of this.widgets) {
+            if ((_b = widget.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
+                const on = (_c = widget.value) === null || _c === void 0 ? void 0 : _c.on;
+                allOn = allOn && on === true;
+                allOff = allOff && on === false;
+                if (!allOn && !allOff) {
+                    return null;
+                }
+            }
+        }
+        return allOn && ((_d = this.widgets) === null || _d === void 0 ? void 0 : _d.length) ? true : false;
+    }
+    toggleAllLoras() {
+        var _b;
+        const allOn = this.allLorasState();
+        const toggledTo = !allOn ? true : false;
+        for (const widget of this.widgets) {
+            if ((_b = widget.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
+                widget.value.on = toggledTo;
+            }
+        }
+    }
     static setUp(comfyClass) {
         NODE_CLASS.registerForOverride(comfyClass, NODE_CLASS);
     }
@@ -145,37 +192,130 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             NODE_CLASS.category = comfyClass.category;
         });
     }
+    getHelp() {
+        return `
+      <p>
+        The ${this.type.replace("(rgthree)", "")} is a powerful node that condenses 100s of pixels
+        of functionality in a single, dynamic node that allows you to add loras, change strengths,
+        and quickly toggle on/off all without taking up half your screen.
+      </p>
+      <ul>
+        <li><p>
+          Add as many Lora's as you would like by clicking the "+ Add Lora" button.
+          There's no real limit!
+        </p></li>
+        <li><p>
+          Right-click on a Lora widget for special options to move the lora up or down
+          (no image affect, only presentational), toggle it on/off, or delete the row all together.
+        </p></li>
+        <li>
+          <p>
+            <strong>Properties.</strong> You can change the following properties (by right-clicking
+            on the node, and select "Properties" or "Properties Panel" from the menu):
+          </p>
+          <ul>
+            <li><p>
+              <code>${PROP_LABEL_SHOW_STRENGTHS}</code> - Change between showing a single, simple
+              strength (which will be used for both model and clip), or a more advanced view with
+              both model and clip strengths being modifiable.
+            </p></li>
+          </ul>
+        </li>
+      </ul>`;
+    }
 }
+_a = PROP_LABEL_SHOW_STRENGTHS_STATIC;
 RgthreePowerLoraLoader.title = NodeTypesString.POWER_LORA_LOADER;
 RgthreePowerLoraLoader.type = NodeTypesString.POWER_LORA_LOADER;
 RgthreePowerLoraLoader.comfyClass = NodeTypesString.POWER_LORA_LOADER;
+RgthreePowerLoraLoader[_a] = {
+    type: "combo",
+    values: [PROP_VALUE_SHOW_STRENGTHS_SINGLE, PROP_VALUE_SHOW_STRENGTHS_SEPARATE],
+};
+class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
+    constructor(name = "PowerLoraLoaderHeaderWidget") {
+        super(name);
+        this.showModelAndClip = null;
+        this.value = { type: "PowerLoraLoaderHeaderWidget" };
+        this.hitAreas = {
+            toggle: { bounds: [0, 0], onDown: this.onToggleDown },
+        };
+    }
+    draw(ctx, node, w, posY, height) {
+        if (!node.hasLoraWidgets()) {
+            return;
+        }
+        this.showModelAndClip =
+            node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
+        const margin = 10;
+        const innerMargin = margin * 0.33;
+        const lowQuality = isLowQuality();
+        const allLoraState = node.allLorasState();
+        posY += 2;
+        const midY = posY + height * 0.5;
+        let posX = 10;
+        ctx.save();
+        this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: allLoraState });
+        if (!lowQuality) {
+            posX += this.hitAreas.toggle.bounds[1] + innerMargin;
+            ctx.globalAlpha = app.canvas.editor_alpha * 0.55;
+            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            ctx.fillText("Toggle All", posX, midY);
+            let rposX = node.size[0] - margin - innerMargin - innerMargin;
+            ctx.textAlign = "center";
+            ctx.fillText(this.showModelAndClip ? "Clip" : "Strength", rposX - drawNumberWidgetPart.WIDTH_TOTAL / 2, midY);
+            if (this.showModelAndClip) {
+                rposX = rposX - drawNumberWidgetPart.WIDTH_TOTAL - innerMargin * 2;
+                ctx.fillText("Model", rposX - drawNumberWidgetPart.WIDTH_TOTAL / 2, midY);
+            }
+        }
+        ctx.restore();
+    }
+    onToggleDown(event, pos, node) {
+        node.toggleAllLoras();
+        this.cancelMouseDown();
+        return true;
+    }
+}
 const DEFAULT_LORA_WIDGET_DATA = {
     on: true,
     lora: null,
     strength: 1,
+    strengthTwo: null,
 };
 class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     constructor(name) {
         super(name);
-        this.isDownOnStrength = false;
         this.haveMouseMovedStrength = false;
+        this.showModelAndClip = null;
+        this.hitAreas = {
+            toggle: { bounds: [0, 0], onDown: this.onToggleDown },
+            lora: { bounds: [0, 0], onDown: this.onLoraDown },
+            strengthDec: { bounds: [0, 0], onDown: this.onStrengthDecDown },
+            strengthVal: { bounds: [0, 0], onUp: this.onStrengthValUp },
+            strengthInc: { bounds: [0, 0], onDown: this.onStrengthIncDown },
+            strengthAny: { bounds: [0, 0], onMove: this.onStrengthAnyMove },
+            strengthTwoDec: { bounds: [0, 0], onDown: this.onStrengthTwoDecDown },
+            strengthTwoVal: { bounds: [0, 0], onUp: this.onStrengthTwoValUp },
+            strengthTwoInc: { bounds: [0, 0], onDown: this.onStrengthTwoIncDown },
+            strengthTwoAny: { bounds: [0, 0], onMove: this.onStrengthTwoAnyMove },
+        };
         this._value = {
             on: true,
             lora: null,
             strength: 1,
-        };
-        this.renderData = {
-            toggleX: [0, 0],
-            loraX: [0, 0],
-            strengthArrowLessX: [0, 0],
-            strengthX: [0, 0],
-            strengthArrowMoreX: [0, 0],
+            strengthTwo: null,
         };
     }
     set value(v) {
         this._value = v;
         if (typeof this._value !== "object") {
             this._value = { ...DEFAULT_LORA_WIDGET_DATA };
+            if (this.showModelAndClip) {
+                this._value.strengthTwo = this._value.strength;
+            }
         }
     }
     get value() {
@@ -185,7 +325,24 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this._value.lora = lora;
     }
     draw(ctx, node, w, posY, height) {
-        var _a;
+        var _b, _c, _d, _e;
+        let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
+        if (this.showModelAndClip !== currentShowModelAndClip) {
+            let oldShowModelAndClip = this.showModelAndClip;
+            this.showModelAndClip = currentShowModelAndClip;
+            if (this.showModelAndClip) {
+                if (oldShowModelAndClip != null) {
+                    this.value.strengthTwo = (_b = this.value.strength) !== null && _b !== void 0 ? _b : 1;
+                }
+            }
+            else {
+                this.value.strengthTwo = null;
+                this.hitAreas.strengthTwoDec.bounds = [0, -1];
+                this.hitAreas.strengthTwoVal.bounds = [0, -1];
+                this.hitAreas.strengthTwoInc.bounds = [0, -1];
+                this.hitAreas.strengthTwoAny.bounds = [0, -1];
+            }
+        }
         ctx.save();
         const margin = 10;
         const innerMargin = margin * 0.33;
@@ -193,25 +350,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const midY = posY + height * 0.5;
         let posX = margin;
         drawRoundedRectangle(ctx, { posX, posY, height, width: node.size[0] - margin * 2 });
-        const toggleRadius = height * 0.36;
-        const toggleBgWidth = height * 1.5;
-        if (!lowQuality) {
-            ctx.beginPath();
-            ctx.roundRect(posX + 4, posY + 4, toggleBgWidth - 8, height - 8, [height * 0.5]);
-            ctx.globalAlpha = app.canvas.editor_alpha * 0.25;
-            ctx.fillStyle = "#888";
-            ctx.fill();
-            ctx.globalAlpha = app.canvas.editor_alpha;
-        }
-        ctx.fillStyle = this.value.on ? "#89B" : !lowQuality ? "#777" : "#333";
-        const toggleX = !lowQuality && this.value.on ? posX + height : posX + height * 0.5;
-        ctx.beginPath();
-        ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
-        ctx.fill();
-        this.renderData.toggleX[0] = posX;
-        this.renderData.toggleX[1] = posX + toggleBgWidth;
-        posX = this.renderData.toggleX[1];
-        posX += innerMargin;
+        this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: this.value.on });
+        posX += this.hitAreas.toggle.bounds[1] + innerMargin;
         if (lowQuality) {
             ctx.restore();
             return;
@@ -219,94 +359,120 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         if (!this.value.on) {
             ctx.globalAlpha = app.canvas.editor_alpha * 0.4;
         }
-        const arrowWidth = 10;
-        const strengthValueWidth = 36;
-        const arrowHeight = 10;
-        const strengthWidth = innerMargin +
-            arrowWidth +
-            innerMargin +
-            strengthValueWidth +
-            innerMargin +
-            arrowWidth +
-            innerMargin * 2;
-        const loraWidth = node.size[0] - margin - posX - strengthWidth;
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+        let rposX = node.size[0] - margin - innerMargin - innerMargin;
+        const strengthValue = this.showModelAndClip
+            ? (_c = this.value.strengthTwo) !== null && _c !== void 0 ? _c : 1
+            : (_d = this.value.strength) !== null && _d !== void 0 ? _d : 1;
+        const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
+            posX: node.size[0] - margin - innerMargin - innerMargin,
+            posY,
+            height,
+            value: strengthValue,
+            direction: -1,
+        });
+        this.hitAreas.strengthDec.bounds = leftArrow;
+        this.hitAreas.strengthVal.bounds = text;
+        this.hitAreas.strengthInc.bounds = rightArrow;
+        this.hitAreas.strengthAny.bounds = [leftArrow[0], rightArrow[0] + rightArrow[1] - leftArrow[0]];
+        rposX = leftArrow[0] - innerMargin;
+        if (this.showModelAndClip) {
+            rposX -= innerMargin;
+            this.hitAreas.strengthTwoDec.bounds = this.hitAreas.strengthDec.bounds;
+            this.hitAreas.strengthTwoVal.bounds = this.hitAreas.strengthVal.bounds;
+            this.hitAreas.strengthTwoInc.bounds = this.hitAreas.strengthInc.bounds;
+            this.hitAreas.strengthTwoAny.bounds = this.hitAreas.strengthAny.bounds;
+            const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
+                posX: rposX,
+                posY,
+                height,
+                value: (_e = this.value.strength) !== null && _e !== void 0 ? _e : 1,
+                direction: -1,
+            });
+            this.hitAreas.strengthDec.bounds = leftArrow;
+            this.hitAreas.strengthVal.bounds = text;
+            this.hitAreas.strengthInc.bounds = rightArrow;
+            this.hitAreas.strengthAny.bounds = [
+                leftArrow[0],
+                rightArrow[0] + rightArrow[1] - leftArrow[0],
+            ];
+            rposX = leftArrow[0] - innerMargin;
+        }
+        const loraWidth = rposX - posX;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         const loraLabel = String(this.value.lora || "None");
         ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
-        this.renderData.loraX[0] = posX;
-        this.renderData.loraX[1] = posX + loraWidth;
-        posX = this.renderData.loraX[1];
-        posX += innerMargin;
-        ctx.fill(new Path2D(`M ${posX} ${midY} l ${arrowWidth} ${arrowHeight / 2} l 0 -${arrowHeight} L ${posX} ${midY} z`));
-        this.renderData.strengthArrowLessX[0] = posX;
-        this.renderData.strengthArrowLessX[1] = posX + arrowWidth;
-        posX = this.renderData.strengthArrowLessX[1];
-        posX += innerMargin;
-        ctx.textAlign = "center";
-        ctx.fillText(fitString(ctx, ((_a = this.value.strength) !== null && _a !== void 0 ? _a : 1).toFixed(2), strengthValueWidth), posX + strengthValueWidth / 2, midY);
-        this.renderData.strengthX[0] = posX;
-        this.renderData.strengthX[1] = posX + strengthValueWidth;
-        posX = this.renderData.strengthX[1];
-        posX += innerMargin;
-        ctx.fill(new Path2D(`M ${posX} ${midY - arrowHeight / 2} l ${arrowWidth} ${arrowHeight / 2} l -${arrowWidth} ${arrowHeight / 2} v -${arrowHeight} z`));
-        this.renderData.strengthArrowMoreX[0] = posX;
-        this.renderData.strengthArrowMoreX[1] = posX + arrowWidth;
-        posX = this.renderData.strengthArrowMoreX[1];
+        this.hitAreas.lora.bounds = [posX, loraWidth];
+        posX += loraWidth + innerMargin;
         ctx.globalAlpha = app.canvas.editor_alpha;
         ctx.restore();
     }
     serializeValue(serializedNode, widgetIndex) {
-        return this.value;
+        var _b;
+        const v = { ...this.value };
+        if (!this.showModelAndClip) {
+            delete v.strengthTwo;
+        }
+        else {
+            this.value.strengthTwo = (_b = this.value.strengthTwo) !== null && _b !== void 0 ? _b : 1;
+            v.strengthTwo = this.value.strengthTwo;
+        }
+        return v;
     }
-    onMouseDown(event, pos, node) {
-        var _a, _b;
-        const bounds = this.renderData;
-        this.isDownOnStrength = false;
-        this.haveMouseMovedStrength = false;
-        if (pos[0] >= bounds.toggleX[0] && pos[0] <= bounds.toggleX[1]) {
-            this.value.on = !this.value.on;
-            this.cancelMouseDown();
-        }
-        else if (pos[0] >= bounds.loraX[0] && pos[0] <= bounds.loraX[1]) {
-            showLoraChooser(event, (value) => {
-                if (typeof value === "string") {
-                    this.value.lora = value;
-                }
-                node.setDirtyCanvas(true, true);
-            });
-            this.cancelMouseDown();
-        }
-        else if (pos[0] >= bounds.strengthArrowLessX[0] && pos[0] <= bounds.strengthArrowLessX[1]) {
-            let strength = ((_a = this.value.strength) !== null && _a !== void 0 ? _a : 1) - 0.05;
-            this.value.strength = Math.round(strength * 100) / 100;
-        }
-        else if (pos[0] >= bounds.strengthArrowMoreX[0] && pos[0] <= bounds.strengthArrowMoreX[1]) {
-            let strength = ((_b = this.value.strength) !== null && _b !== void 0 ? _b : 1) + 0.05;
-            this.value.strength = Math.round(strength * 100) / 100;
-        }
-        if (pos[0] >= bounds.strengthArrowLessX[0] && pos[0] <= bounds.strengthArrowMoreX[1]) {
-            this.isDownOnStrength = true;
-        }
+    onToggleDown(event, pos, node) {
+        this.value.on = !this.value.on;
+        this.cancelMouseDown();
+        return true;
     }
-    onMouseUp(event, pos, node) {
-        const canvas = app.canvas;
-        const bounds = this.renderData;
-        if (!this.haveMouseMovedStrength &&
-            pos[0] >= bounds.strengthX[0] &&
-            pos[0] <= bounds.strengthX[1]) {
-            canvas.prompt("Value", this.value.strength, (v) => {
-                this.value.strength = Number(v);
-            }, event);
-        }
+    onLoraDown(event, pos, node) {
+        showLoraChooser(event, (value) => {
+            if (typeof value === "string") {
+                this.value.lora = value;
+            }
+            node.setDirtyCanvas(true, true);
+        });
+        this.cancelMouseDown();
     }
-    onMouseMove(event, pos, node) {
-        let step = 0.5;
-        if (this.isDownOnStrength && event.deltaX) {
+    onStrengthDecDown(event, pos, node) {
+        this.stepStrength(-1, false);
+    }
+    onStrengthIncDown(event, pos, node) {
+        this.stepStrength(1, false);
+    }
+    onStrengthTwoDecDown(event, pos, node) {
+        this.stepStrength(-1, true);
+    }
+    onStrengthTwoIncDown(event, pos, node) {
+        this.stepStrength(1, true);
+    }
+    onStrengthAnyMove(event, pos, node, isTwo = false) {
+        var _b;
+        if (event.deltaX) {
+            let prop = isTwo ? "strengthTwo" : "strength";
             this.haveMouseMovedStrength = true;
-            this.value.strength += event.deltaX * 0.1 * step;
+            this.value[prop] = ((_b = this.value[prop]) !== null && _b !== void 0 ? _b : 1) + event.deltaX * 0.05;
         }
+    }
+    onStrengthTwoAnyMove(event, pos, node) {
+        this.onStrengthAnyMove(event, pos, node, true);
+    }
+    onStrengthValUp(event, pos, node, isTwo = false) {
+        if (this.haveMouseMovedStrength)
+            return;
+        let prop = isTwo ? "strengthTwo" : "strength";
+        const canvas = app.canvas;
+        canvas.prompt("Value", this.value[prop], (v) => (this.value[prop] = Number(v)), event);
+    }
+    onStrengthTwoValUp(event, pos, node, two = false) {
+        this.onStrengthValUp(event, pos, node, true);
+    }
+    stepStrength(direction, isTwo = false) {
+        var _b;
+        let step = 0.05;
+        let prop = isTwo ? "strengthTwo" : "strength";
+        let strength = ((_b = this.value[prop]) !== null && _b !== void 0 ? _b : 1) + step * direction;
+        this.value[prop] = Math.round(strength * 100) / 100;
     }
 }
 const NODE_CLASS = RgthreePowerLoraLoader;

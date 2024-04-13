@@ -16,12 +16,18 @@ import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
-import { drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 import {
+  drawNumberWidgetPart,
+  drawRoundedRectangle,
+  drawTogglePart,
+  fitString,
+  isLowQuality,
+} from "./utils_canvas.js";
+import {
+  RgthreeBaseHitAreas,
   RgthreeBaseWidget,
   RgthreeBetterButtonWidget,
   RgthreeDividerWidget,
-  drawLabelAndValue,
 } from "./utils_widgets.js";
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 import { showLoraChooser } from "./utils_menu.js";
@@ -30,26 +36,42 @@ import { moveArrayItem, removeArrayItem } from "rgthree/common/shared_utils.js";
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
 
+const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
+const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
+const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
+const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
+
 /**
- * The Power Lora Loader is a super-simply Lora Loader node that can load multiple Loras at once,
- * and quick toggle each, all in an ultra-condensed node.
+ * The Power Lora Loader is a super-simply Lora Loader node that can load multiple Loras at once
+ * in an ultra-condensed node allowing fast toggling, and advanced strength setting.
  */
 class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
   static override title = NodeTypesString.POWER_LORA_LOADER;
   static override type = NodeTypesString.POWER_LORA_LOADER;
   static comfyClass = NodeTypesString.POWER_LORA_LOADER;
 
+  override serialize_widgets = true;
+
   private logger = rgthree.newLogSession(`[Power Lora Stack]`);
 
-  /** Keep track of the spacer, new lora widgets will go before it when it exists. */
-  private widgetButtonSpacer: IWidget | null = null;
+  static [PROP_LABEL_SHOW_STRENGTHS_STATIC] = {
+    type: "combo",
+    values: [PROP_VALUE_SHOW_STRENGTHS_SINGLE, PROP_VALUE_SHOW_STRENGTHS_SEPARATE],
+  };
+
   /** Counts the number of lora widgets. This is used to give unique names.  */
   private loraWidgetsCounter = 0;
 
-  override serialize_widgets = true;
+  /** Keep track of the spacer, new lora widgets will go before it when it exists. */
+  private widgetButtonSpacer: IWidget | null = null;
 
   constructor(title = NODE_CLASS.title) {
     super(title);
+
+    this.properties = this.properties || {};
+    this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
+
+    // Prefetch loras list.
     rgthreeApi.getLoras();
   }
 
@@ -87,9 +109,14 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
   override onNodeCreated() {
     super.onNodeCreated?.();
     this.addNonLoraWidgets();
+    const computed = this.computeSize();
+    this.size = this.size || [0, 0];
+    this.size[0] = Math.max(this.size[0], computed[0]);
+    this.size[1] = Math.max(this.size[1], computed[1]);
+    this.setDirtyCanvas(true, true);
   }
 
-  /** Adds a new lora widget in the proper space. */
+  /** Adds a new lora widget in the proper slot. */
   private addNewLoraWidget(lora?: string) {
     this.loraWidgetsCounter++;
     const widget = this.addCustomWidget(
@@ -104,10 +131,15 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
   /** Adds the non-lora widgets around any lora ones that may be there from configuration. */
   private addNonLoraWidgets() {
-    const initialSpacer = this.addCustomWidget(
-      new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }),
+    this.widgets = this.widgets || [];
+    moveArrayItem(
+      this.widgets,
+      this.addCustomWidget(
+        new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }),
+      ),
+      0,
     );
-    moveArrayItem(this.widgets, initialSpacer, 0);
+    moveArrayItem(this.widgets, this.addCustomWidget(new PowerLoraLoaderHeaderWidget()), 1);
 
     this.widgetButtonSpacer = this.addCustomWidget(
       new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }),
@@ -121,7 +153,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             if (typeof value === "string") {
               if (value !== "NONE") {
                 this.addNewLoraWidget(value);
-                this.size[1] = Math.max((this as any)._tempHeight, this.computeSize()[1]);
+                const computed = this.computeSize();
+                const tempHeight = (this as any)._tempHeight ?? 15;
+                this.size[1] = Math.max(tempHeight, computed[1]);
+                this.setDirtyCanvas(true, true);
               }
             }
           });
@@ -132,11 +167,25 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
   }
 
   /**
-   * Hacks the `getSlotInPosition` call amde from LiteGraph. This should only get Inputs or Outputs
-   * but we also want to provide some options when clicking a widget. So, we'll see if we clicked a
-   * widget, then pass some data. LiteGraph will then immediately call `getSlotMenuOptions` with
-   * that data. It will also later check `slot.input.type` (or output) to set the title, so we can
-   * also override that. Otherwise, this should be pretty clean.
+   * Hacks the `getSlotInPosition` call made from LiteGraph so we can show a custom context menu
+   * for widgets.
+   *
+   * Normally this method, called from LiteGraph's processContextMenu, will only get Inputs or
+   * Outputs. But that's not good enough because we we also want to provide a custom menu when
+   * clicking a widget for this node... so we are left to HACK once again!
+   *
+   * To achieve this:
+   *  - Here, in LiteGraph's processContextMenu it asks the clicked node to tell it which input or
+   *    output the user clicked on in `getSlotInPosition`
+   *  - We check, and if we didn't, then we see if we clicked a widget and, if so, pass back some
+   *    data that looks like we clicked an output to fool LiteGraph like a silly child.
+   *  - As LiteGraph continues in its `processContextMenu`, it will then immediately call
+   *    the clicked node's `getSlotMenuOptions` when `getSlotInPosition` returns data.
+   *  - So, just below, we can then give LiteGraph the ContextMenu options we have.
+   *
+   * The only issue is that LiteGraph also checks `input/output.type` to set the ContextMenu title,
+   * so we need to supply that property (and set it to what we want our title). Otherwise, this
+   * should be pretty clean.
    */
   override getSlotInPosition(canvasX: number, canvasY: number): any {
     const slot = super.getSlotInPosition(canvasX, canvasY);
@@ -222,6 +271,46 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     rgthreeApi.getLoras(true);
   }
 
+  /**
+   * Returns true if there are any Lora Widgets. Useful for widgets to ask as they render.
+   */
+  hasLoraWidgets() {
+    return !!this.widgets?.find((w) => w.name?.startsWith("lora_"));
+  }
+
+  /**
+   * This will return true when all lora widgets are on, false when all are off, or null if it's
+   * mixed.
+   */
+  allLorasState() {
+    let allOn = true;
+    let allOff = true;
+    for (const widget of this.widgets) {
+      if (widget.name?.startsWith("lora_")) {
+        const on = widget.value?.on;
+        allOn = allOn && on === true;
+        allOff = allOff && on === false;
+        if (!allOn && !allOff) {
+          return null;
+        }
+      }
+    }
+    return allOn && this.widgets?.length ? true : false;
+  }
+
+  /**
+   * Toggles all the loras on or off.
+   */
+  toggleAllLoras() {
+    const allOn = this.allLorasState();
+    const toggledTo = !allOn ? true : false;
+    for (const widget of this.widgets) {
+      if (widget.name?.startsWith("lora_")) {
+        widget.value.on = toggledTo;
+      }
+    }
+  }
+
   static override setUp(comfyClass: any) {
     NODE_CLASS.registerForOverride(comfyClass, NODE_CLASS);
   }
@@ -235,22 +324,158 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       NODE_CLASS.category = comfyClass.category;
     });
   }
+
+  override getHelp() {
+    return `
+      <p>
+        The ${this.type!.replace("(rgthree)", "")} is a powerful node that condenses 100s of pixels
+        of functionality in a single, dynamic node that allows you to add loras, change strengths,
+        and quickly toggle on/off all without taking up half your screen.
+      </p>
+      <ul>
+        <li><p>
+          Add as many Lora's as you would like by clicking the "+ Add Lora" button.
+          There's no real limit!
+        </p></li>
+        <li><p>
+          Right-click on a Lora widget for special options to move the lora up or down
+          (no image affect, only presentational), toggle it on/off, or delete the row all together.
+        </p></li>
+        <li>
+          <p>
+            <strong>Properties.</strong> You can change the following properties (by right-clicking
+            on the node, and select "Properties" or "Properties Panel" from the menu):
+          </p>
+          <ul>
+            <li><p>
+              <code>${PROP_LABEL_SHOW_STRENGTHS}</code> - Change between showing a single, simple
+              strength (which will be used for both model and clip), or a more advanced view with
+              both model and clip strengths being modifiable.
+            </p></li>
+          </ul>
+        </li>
+      </ul>`;
+  }
+}
+
+/**
+ * The PowerLoraLoaderHeaderWidget that renders a toggle all switch, as well as some title info
+ * (more necessary for the double model & clip strengths to label them).
+ */
+class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget implements IWidget {
+  private showModelAndClip: boolean | null = null;
+
+  value = { type: "PowerLoraLoaderHeaderWidget" };
+
+  protected override hitAreas: RgthreeBaseHitAreas<"toggle"> = {
+    toggle: { bounds: [0, 0] as Vector2, onDown: this.onToggleDown },
+  };
+
+  constructor(name: string = "PowerLoraLoaderHeaderWidget") {
+    super(name);
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    node: RgthreePowerLoraLoader,
+    w: number,
+    posY: number,
+    height: number,
+  ) {
+    if (!node.hasLoraWidgets()) {
+      return;
+    }
+    // Since draw is the loop that runs, this is where we'll check the property state (rather than
+    // expect the node to tell us it's state etc).
+    this.showModelAndClip =
+      node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
+    const margin = 10;
+    const innerMargin = margin * 0.33;
+    const lowQuality = isLowQuality();
+    const allLoraState = node.allLorasState();
+
+    // Move slightly down. We don't have a border and this feels a bit nicer.
+    posY += 2;
+    const midY = posY + height * 0.5;
+    let posX = 10;
+    ctx.save();
+    this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: allLoraState });
+
+    if (!lowQuality) {
+      posX += this.hitAreas.toggle.bounds[1] + innerMargin;
+
+      ctx.globalAlpha = app.canvas.editor_alpha * 0.55;
+      ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+      ctx.textAlign = "left";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Toggle All", posX, midY);
+
+      let rposX = node.size[0] - margin - innerMargin - innerMargin;
+      ctx.textAlign = "center";
+      ctx.fillText(
+        this.showModelAndClip ? "Clip" : "Strength",
+        rposX - drawNumberWidgetPart.WIDTH_TOTAL / 2,
+        midY,
+      );
+      if (this.showModelAndClip) {
+        rposX = rposX - drawNumberWidgetPart.WIDTH_TOTAL - innerMargin * 2;
+        ctx.fillText("Model", rposX - drawNumberWidgetPart.WIDTH_TOTAL / 2, midY);
+      }
+    }
+    ctx.restore();
+  }
+
+  /**
+   * Handles a pointer down on the toggle's defined hit area.
+   */
+  onToggleDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    (node as RgthreePowerLoraLoader).toggleAllLoras();
+    this.cancelMouseDown();
+    return true;
+  }
 }
 
 const DEFAULT_LORA_WIDGET_DATA = {
   on: true,
   lora: null as string | null,
   strength: 1,
+  strengthTwo: null as number | null,
 };
 
 /**
  * The PowerLoaderWidget that combines several custom drawing and functionality in a single row.
  */
 class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
-  /** Whether the current mouse is down on any strength portion (for mouse move). */
-  private isDownOnStrength = false;
   /** Whether the strength has changed with mouse move (to cancel mouse up). */
   private haveMouseMovedStrength = false;
+
+  private showModelAndClip: boolean | null = null;
+
+  protected override hitAreas: RgthreeBaseHitAreas<
+    | "toggle"
+    | "lora"
+    | "strengthDec"
+    | "strengthVal"
+    | "strengthInc"
+    | "strengthAny"
+    | "strengthTwoDec"
+    | "strengthTwoVal"
+    | "strengthTwoInc"
+    | "strengthTwoAny"
+  > = {
+    toggle: { bounds: [0, 0] as Vector2, onDown: this.onToggleDown },
+    lora: { bounds: [0, 0] as Vector2, onDown: this.onLoraDown },
+
+    strengthDec: { bounds: [0, 0] as Vector2, onDown: this.onStrengthDecDown },
+    strengthVal: { bounds: [0, 0] as Vector2, onUp: this.onStrengthValUp },
+    strengthInc: { bounds: [0, 0] as Vector2, onDown: this.onStrengthIncDown },
+    strengthAny: { bounds: [0, 0] as Vector2, onMove: this.onStrengthAnyMove },
+
+    strengthTwoDec: { bounds: [0, 0] as Vector2, onDown: this.onStrengthTwoDecDown },
+    strengthTwoVal: { bounds: [0, 0] as Vector2, onUp: this.onStrengthTwoValUp },
+    strengthTwoInc: { bounds: [0, 0] as Vector2, onDown: this.onStrengthTwoIncDown },
+    strengthTwoAny: { bounds: [0, 0] as Vector2, onMove: this.onStrengthTwoAnyMove },
+  };
 
   constructor(name: string) {
     super(name);
@@ -260,15 +485,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     on: true,
     lora: null as string | null,
     strength: 1,
-  };
-
-  /** The X Bounds in the widget that each were drawn at. */
-  private renderData = {
-    toggleX: [0, 0] as Vector2,
-    loraX: [0, 0] as Vector2,
-    strengthArrowLessX: [0, 0] as Vector2,
-    strengthX: [0, 0] as Vector2,
-    strengthArrowMoreX: [0, 0] as Vector2,
+    strengthTwo: null as number | null,
   };
 
   set value(v) {
@@ -276,6 +493,9 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     // In case widgets are messed up, we can correct course here.
     if (typeof this._value !== "object") {
       this._value = { ...DEFAULT_LORA_WIDGET_DATA };
+      if (this.showModelAndClip) {
+        this._value.strengthTwo = this._value.strength;
+      }
     }
   }
 
@@ -289,6 +509,27 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
 
   /** Draws our widget with a toggle, lora selector, and number selector all in a single row. */
   draw(ctx: CanvasRenderingContext2D, node: TLGraphNode, w: number, posY: number, height: number) {
+    // Since draw is the loop that runs, this is where we'll check the property state (rather than
+    // expect the node to tell us it's state etc).
+    let currentShowModelAndClip =
+      node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
+    if (this.showModelAndClip !== currentShowModelAndClip) {
+      let oldShowModelAndClip = this.showModelAndClip;
+      this.showModelAndClip = currentShowModelAndClip;
+      if (this.showModelAndClip) {
+        // If we're setting show both AND we're not null, then re-set to the current strength.
+        if (oldShowModelAndClip != null) {
+          this.value.strengthTwo = this.value.strength ?? 1;
+        }
+      } else {
+        this.value.strengthTwo = null;
+        this.hitAreas.strengthTwoDec.bounds = [0, -1];
+        this.hitAreas.strengthTwoVal.bounds = [0, -1];
+        this.hitAreas.strengthTwoInc.bounds = [0, -1];
+        this.hitAreas.strengthTwoAny.bounds = [0, -1];
+      }
+    }
+
     ctx.save();
     const margin = 10;
     const innerMargin = margin * 0.33;
@@ -301,34 +542,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     // Draw the background.
     drawRoundedRectangle(ctx, { posX, posY, height, width: node.size[0] - margin * 2 });
 
-    const toggleRadius = height * 0.36; // This is the standard toggle height calc.
-    const toggleBgWidth = height * 1.5; // We don't draw a separate bg, but this would be it.
+    // Draw the toggle
+    this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: this.value.on });
+    posX += this.hitAreas.toggle.bounds[1] + innerMargin;
 
-    // Toggle Track
-    if (!lowQuality) {
-      ctx.beginPath();
-      ctx.roundRect(posX + 4, posY + 4, toggleBgWidth - 8, height - 8, [height * 0.5]);
-      ctx.globalAlpha = app.canvas.editor_alpha * 0.25;
-      ctx.fillStyle = "#888";
-      ctx.fill();
-      ctx.globalAlpha = app.canvas.editor_alpha;
-    }
-
-    // Toggle itself
-    ctx.fillStyle = this.value.on ? "#89B" : !lowQuality ? "#777" : "#333"; // "#89A" : "#333";
-    const toggleX = !lowQuality && this.value.on ? posX + height : posX + height * 0.5;
-    ctx.beginPath();
-    ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Set the rendering data...
-    this.renderData.toggleX[0] = posX;
-    this.renderData.toggleX[1] = posX + toggleBgWidth;
-    // ... and move posX along
-    posX = this.renderData.toggleX[1];
-    posX += innerMargin;
-
-    // IF low qualirty, then we're done rendering.
+    // If low quality, then we're done rendering.
     if (lowQuality) {
       ctx.restore();
       return;
@@ -339,148 +557,141 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
       ctx.globalAlpha = app.canvas.editor_alpha * 0.4;
     }
 
-    // Pre-calculate strength widths wince lora label is flexible.
-    const arrowWidth = 10;
-    const strengthValueWidth = 36;
-    const arrowHeight = 10; //height * 0.36 * 2;
-    const strengthWidth =
-      innerMargin +
-      arrowWidth +
-      innerMargin +
-      strengthValueWidth +
-      innerMargin +
-      arrowWidth +
-      innerMargin * 2;
+    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+
+    // Now, we draw the strength number part on the right, so we know the width of it to draw the
+    // lora label as flexible.
+    let rposX = node.size[0] - margin - innerMargin - innerMargin;
+
+    const strengthValue = this.showModelAndClip
+      ? this.value.strengthTwo ?? 1
+      : this.value.strength ?? 1;
+
+    const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
+      posX: node.size[0] - margin - innerMargin - innerMargin,
+      posY,
+      height,
+      value: strengthValue,
+      direction: -1,
+    });
+
+    this.hitAreas.strengthDec.bounds = leftArrow;
+    this.hitAreas.strengthVal.bounds = text;
+    this.hitAreas.strengthInc.bounds = rightArrow;
+    this.hitAreas.strengthAny.bounds = [leftArrow[0], rightArrow[0] + rightArrow[1] - leftArrow[0]];
+
+    rposX = leftArrow[0] - innerMargin;
+
+    if (this.showModelAndClip) {
+      rposX -= innerMargin;
+      // If we're showing both, then the rightmost we just drew is our "strengthTwo", so reset and
+      // then draw our model ("strength" one) to the left.
+      this.hitAreas.strengthTwoDec.bounds = this.hitAreas.strengthDec.bounds;
+      this.hitAreas.strengthTwoVal.bounds = this.hitAreas.strengthVal.bounds;
+      this.hitAreas.strengthTwoInc.bounds = this.hitAreas.strengthInc.bounds;
+      this.hitAreas.strengthTwoAny.bounds = this.hitAreas.strengthAny.bounds;
+
+      const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
+        posX: rposX,
+        posY,
+        height,
+        value: this.value.strength ?? 1,
+        direction: -1,
+      });
+      this.hitAreas.strengthDec.bounds = leftArrow;
+      this.hitAreas.strengthVal.bounds = text;
+      this.hitAreas.strengthInc.bounds = rightArrow;
+      this.hitAreas.strengthAny.bounds = [
+        leftArrow[0],
+        rightArrow[0] + rightArrow[1] - leftArrow[0],
+      ];
+      rposX = leftArrow[0] - innerMargin;
+    }
 
     // Draw lora label
-    const loraWidth = node.size[0] - margin - posX - strengthWidth;
-    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+    const loraWidth = rposX - posX;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
     const loraLabel = String(this.value.lora || "None");
     ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
 
-    this.renderData.loraX[0] = posX;
-    this.renderData.loraX[1] = posX + loraWidth;
-    posX = this.renderData.loraX[1];
-    posX += innerMargin;
-
-    // Draw the strength left arrow.
-    ctx.fill(
-      new Path2D(
-        `M ${posX} ${midY} l ${arrowWidth} ${
-          arrowHeight / 2
-        } l 0 -${arrowHeight} L ${posX} ${midY} z`,
-      ),
-    );
-    this.renderData.strengthArrowLessX[0] = posX;
-    this.renderData.strengthArrowLessX[1] = posX + arrowWidth;
-    posX = this.renderData.strengthArrowLessX[1];
-    posX += innerMargin;
-
-    // Draw the strength text.
-    ctx.textAlign = "center";
-    ctx.fillText(
-      fitString(ctx, (this.value.strength ?? 1).toFixed(2), strengthValueWidth),
-      posX + strengthValueWidth / 2,
-      midY,
-    );
-    this.renderData.strengthX[0] = posX;
-    this.renderData.strengthX[1] = posX + strengthValueWidth;
-    posX = this.renderData.strengthX[1];
-    posX += innerMargin;
-
-    // Draw the strength right arrow.
-    ctx.fill(
-      new Path2D(
-        `M ${posX} ${midY - arrowHeight / 2} l ${arrowWidth} ${arrowHeight / 2} l -${arrowWidth} ${
-          arrowHeight / 2
-        } v -${arrowHeight} z`,
-      ),
-    );
-    this.renderData.strengthArrowMoreX[0] = posX;
-    this.renderData.strengthArrowMoreX[1] = posX + arrowWidth;
-    posX = this.renderData.strengthArrowMoreX[1];
+    this.hitAreas.lora.bounds = [posX, loraWidth];
+    posX += loraWidth + innerMargin;
 
     ctx.globalAlpha = app.canvas.editor_alpha;
     ctx.restore();
   }
 
   serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number) {
-    return this.value;
+    const v = { ...this.value };
+    // Never send the second value to the backend if we're not showing it, otherwise, let's just
+    // make sure it's not null.
+    if (!this.showModelAndClip) {
+      delete (v as any).strengthTwo;
+    } else {
+      this.value.strengthTwo = this.value.strengthTwo ?? 1;
+      v.strengthTwo = this.value.strengthTwo;
+    }
+    return v;
   }
 
-  /** Handles the mouse down on the widget. */
-  override onMouseDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
-    const bounds = this.renderData;
-    this.isDownOnStrength = false;
-    this.haveMouseMovedStrength = false;
-    // Clicked the toggler.
-    if (pos[0] >= bounds.toggleX[0] && pos[0] <= bounds.toggleX[1]) {
-      this.value.on = !this.value.on;
-      this.cancelMouseDown(); // Clear the down since we handle it.
-
-      // Clicked the lora loader.
-    } else if (pos[0] >= bounds.loraX[0] && pos[0] <= bounds.loraX[1]) {
-      showLoraChooser(event, (value: ContextMenuItem) => {
-        if (typeof value === "string") {
-          this.value.lora = value;
-        }
-        node.setDirtyCanvas(true, true);
-      });
-      this.cancelMouseDown(); // Clear the down since we handle it.
-
-      // Clicked the strength arrow left.
-    } else if (pos[0] >= bounds.strengthArrowLessX[0] && pos[0] <= bounds.strengthArrowLessX[1]) {
-      let strength = (this.value.strength ?? 1) - 0.05;
-      this.value.strength = Math.round(strength * 100) / 100;
-
-      // Clicked the strength arrow right.
-    } else if (pos[0] >= bounds.strengthArrowMoreX[0] && pos[0] <= bounds.strengthArrowMoreX[1]) {
-      let strength = (this.value.strength ?? 1) + 0.05;
-      this.value.strength = Math.round(strength * 100) / 100;
-    }
-    // If we're down over any of strength parts, then allow us to move the number with mouse move.
-    if (pos[0] >= bounds.strengthArrowLessX[0] && pos[0] <= bounds.strengthArrowMoreX[1]) {
-      this.isDownOnStrength = true;
-    }
+  onToggleDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.value.on = !this.value.on;
+    this.cancelMouseDown(); // Clear the down since we handle it.
+    return true;
   }
 
-  /**
-   * Handles the mouse up on the widget, fired from `RgthreeBaseWidget` when we've clicked on it and
-   * released.
-   */
-  override onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
-    const canvas = app.canvas as LGraphCanvas;
-    const bounds = this.renderData;
-    // Clicked and released the strength text, show the prompt.
-    if (
-      !this.haveMouseMovedStrength &&
-      pos[0] >= bounds.strengthX[0] &&
-      pos[0] <= bounds.strengthX[1]
-    ) {
-      canvas.prompt(
-        "Value",
-        this.value.strength,
-        (v: string) => {
-          this.value.strength = Number(v);
-        },
-        event,
-      );
-    }
+  onLoraDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    showLoraChooser(event, (value: ContextMenuItem) => {
+      if (typeof value === "string") {
+        this.value.lora = value;
+      }
+      node.setDirtyCanvas(true, true);
+    });
+    this.cancelMouseDown();
   }
 
-  /**
-   * Handles the mouse move on the widget, fired from `RgthreeBaseWidget` when we've clicked on it
-   * and have moved the mouse, even if off of the widget itself (could check check
-   * `isMouseDownedAndOver` if necessary).
-   */
-  override onMouseMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
-    let step = 0.5;
-    if (this.isDownOnStrength && event.deltaX) {
+  onStrengthDecDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.stepStrength(-1, false);
+  }
+  onStrengthIncDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.stepStrength(1, false);
+  }
+  onStrengthTwoDecDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.stepStrength(-1, true);
+  }
+  onStrengthTwoIncDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.stepStrength(1, true);
+  }
+
+  onStrengthAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, isTwo = false) {
+    if (event.deltaX) {
+      let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
       this.haveMouseMovedStrength = true;
-      this.value.strength += event.deltaX * 0.1 * step;
+      this.value[prop] = ( this.value[prop] ?? 1) + event.deltaX * 0.05;
     }
+  }
+
+  onStrengthTwoAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.onStrengthAnyMove(event, pos, node, true);
+  }
+
+  onStrengthValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, isTwo = false) {
+    if (this.haveMouseMovedStrength) return;
+    let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
+    const canvas = app.canvas as LGraphCanvas;
+    canvas.prompt("Value", this.value[prop], (v: string) => (this.value[prop] = Number(v)), event);
+  }
+
+  onStrengthTwoValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, two = false) {
+    this.onStrengthValUp(event, pos, node, true);
+  }
+
+  private stepStrength(direction: -1 | 1, isTwo = false) {
+    let step = 0.05;
+    let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
+    let strength = (this.value[prop] ?? 1) + step * direction;
+    this.value[prop] = Math.round(strength * 100) / 100;
   }
 }
 

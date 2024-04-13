@@ -4,6 +4,7 @@ import type {
   LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
+  Vector2,
 } from "../typings/litegraph.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -49,7 +50,7 @@ export function measureText(ctx: CanvasRenderingContext2D, str: string) {
 }
 
 export type WidgetRenderingOptionsPart = {
-  type?: 'toggle'|'custom';
+  type?: "toggle" | "custom";
   margin?: number;
   fillStyle?: string;
   strokeStyle?: string;
@@ -92,7 +93,7 @@ export function drawNodeWidget(ctx: CanvasRenderingContext2D, options: WidgetRen
     colorBackground: LiteGraph.WIDGET_BGCOLOR,
     colorText: LiteGraph.WIDGET_TEXT_COLOR,
     colorTextSecondary: LiteGraph.WIDGET_SECONDARY_TEXT_COLOR,
-  }
+  };
 
   // Draw background.
   ctx.strokeStyle = options.colorStroke || data.colorOutline;
@@ -114,9 +115,12 @@ export function drawNodeWidget(ctx: CanvasRenderingContext2D, options: WidgetRen
 }
 
 /** Draws a rounded rectangle. */
-export function drawRoundedRectangle(ctx: CanvasRenderingContext2D, options: WidgetRenderingOptions) {
+export function drawRoundedRectangle(
+  ctx: CanvasRenderingContext2D,
+  options: WidgetRenderingOptions,
+) {
   const lowQuality = isLowQuality();
-  options = {...options};
+  options = { ...options };
   ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
   ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
   ctx.beginPath();
@@ -129,4 +133,133 @@ export function drawRoundedRectangle(ctx: CanvasRenderingContext2D, options: Wid
   );
   ctx.fill();
   !lowQuality && ctx.stroke();
+}
+
+type DrawNumberWidgetPartOptions = {
+  posX: number;
+  posY: number;
+  height: number;
+  value: number;
+  direction?: 1 | -1;
+};
+
+/**
+ * Draws a number picker with arrows off to each side.
+ *
+ * This is for internal widgets that may have many hit areas (full-width, default number widgets put
+ * the arrows on either side of the full-width row).
+ */
+export function drawNumberWidgetPart(
+  ctx: CanvasRenderingContext2D,
+  options: DrawNumberWidgetPartOptions,
+): [Vector2, Vector2, Vector2] {
+  const arrowWidth = 9;
+  const arrowHeight = 10;
+  const innerMargin = 3;
+  const numberWidth = 32;
+
+  const xBoundsArrowLess: Vector2 = [0, 0];
+  const xBoundsNumber: Vector2 = [0, 0];
+  const xBoundsArrowMore: Vector2 = [0, 0];
+
+  ctx.save();
+
+  let posX = options.posX;
+  const { posY, height, value } = options;
+  const midY = posY + height / 2;
+
+  // If we're drawing parts from right to left (usually when something in the middle will be
+  // flexible), then we can simply move left the expected width of our widget and draw forwards.
+  if (options.direction === -1) {
+    posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
+  }
+
+  // Draw the strength left arrow.
+  ctx.fill(
+    new Path2D(
+      `M ${posX} ${midY} l ${arrowWidth} ${
+        arrowHeight / 2
+      } l 0 -${arrowHeight} L ${posX} ${midY} z`,
+    ),
+  );
+
+  xBoundsArrowLess[0] = posX;
+  xBoundsArrowLess[1] = arrowWidth;
+  posX += arrowWidth + innerMargin;
+
+  // Draw the strength text.
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+
+  xBoundsNumber[0] = posX;
+  xBoundsNumber[1] = numberWidth;
+  posX += numberWidth + innerMargin;
+
+  // Draw the strength right arrow.
+  ctx.fill(
+    new Path2D(
+      `M ${posX} ${midY - arrowHeight / 2} l ${arrowWidth} ${arrowHeight / 2} l -${arrowWidth} ${
+        arrowHeight / 2
+      } v -${arrowHeight} z`,
+    ),
+  );
+
+  xBoundsArrowMore[0] = posX;
+  xBoundsArrowMore[1] = arrowWidth;
+
+  ctx.restore();
+
+  return [xBoundsArrowLess, xBoundsNumber, xBoundsArrowMore];
+}
+drawNumberWidgetPart.WIDTH_TOTAL = 9 + 3 + 32 + 3 + 9;
+
+type DrawTogglePartOptions = {
+  posX: number;
+  posY: number;
+  height: number;
+  value: boolean | null;
+};
+
+/**
+ * Draws a toggle for a widget. The toggle is a three-way switch with left being false, right being
+ * true, and a middle state being null.
+ */
+export function drawTogglePart(
+  ctx: CanvasRenderingContext2D,
+  options: DrawTogglePartOptions,
+): Vector2 {
+  const lowQuality = isLowQuality();
+  ctx.save();
+
+  const { posX, posY, height, value } = options;
+
+  const toggleRadius = height * 0.36; // This is the standard toggle height calc.
+  const toggleBgWidth = height * 1.5; // We don't draw a separate bg, but this would be it.
+
+  // Toggle Track
+  if (!lowQuality) {
+    ctx.beginPath();
+    ctx.roundRect(posX + 4, posY + 4, toggleBgWidth - 8, height - 8, [height * 0.5]);
+    ctx.globalAlpha = app.canvas.editor_alpha * 0.25;
+    ctx.fillStyle = "rgba(255,255,255,0.45)";
+    ctx.fill();
+    ctx.globalAlpha = app.canvas.editor_alpha;
+  }
+
+  // Toggle itself
+  ctx.fillStyle = value === true ? "#89B" : "#888";
+  const toggleX =
+    lowQuality || value === false
+      ? posX + height * 0.5
+      : value === true
+      ? posX + height
+      : posX + height * 0.75;
+  ctx.beginPath();
+  ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+
+  return [posX, toggleBgWidth];
 }

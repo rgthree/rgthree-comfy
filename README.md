@@ -109,6 +109,16 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 
 ## Power Lora Loader
 > A super-simply Lora Loader node that can load multiple Loras at once, and quick toggle each, all in an ultra-condensed node.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Add as many Lora's as you would like by clicking the "+ Add Lora" button. There's no real limit!
+>    - Right-click on a Lora widget for special options to move the lora up or down
+>      _(no affect on image, just presentation)_, toggle it on/off, or delete the row all together.
+>    - from the properties, change the `Show Strengths` to choose between showing a single, simple
+>      strength value (which will be used for both model and clip), or a more advanced view with
+>      both model and clip strengths being modifiable.
+>    </details>
 
 
 ## ~~Lora Loader Stack~~

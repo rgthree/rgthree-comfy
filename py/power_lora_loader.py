@@ -31,10 +31,14 @@ class RgthreePowerLoraLoader:
     for key, value in kwargs.items():
       key = key.upper()
       if key.startswith('LORA_') and 'on' in value and 'lora' in value and 'strength' in value:
-        if value['on'] and value['strength'] != 0:
+        strength_model = value['strength']
+        # If we just passed one strtength value, then use it for both, if we passed a strengthTwo
+        # as well, then our `strength` will be for the model, and `strengthTwo` for clip.
+        strength_clip = value['strengthTwo'] if 'strengthTwo' in value and value[
+          'strengthTwo'] is not None else strength_model
+        if value['on'] and (strength_model != 0 or strength_clip != 0):
           lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
           if lora is not None:
-            model, clip = LoraLoader().load_lora(model, clip, lora, value['strength'],
-                                                 value['strength'])
+            model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
 
     return (model, clip)

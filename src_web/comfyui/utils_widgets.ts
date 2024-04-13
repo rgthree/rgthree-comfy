@@ -7,6 +7,7 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   AdjustedMouseEvent,
+  Vector4,
 } from "../typings/litegraph.js";
 import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 
@@ -43,17 +44,44 @@ export function drawLabelAndValue(
   ctx.restore();
 }
 
+export type RgthreeBaseWidgetBounds = {
+  /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
+  bounds: Vector2 | Vector4;
+  onDown?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  onUp?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  onMove?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+};
+
+export type RgthreeBaseHitAreas<Keys extends string> = {
+  [K in Keys]: RgthreeBaseWidgetBounds;
+};
+
 /**
  * A base widget that handles mouse events more properly.
  */
 export abstract class RgthreeBaseWidget {
   name: string;
   last_y: number = 0;
+
   protected mouseDowned: Vector2 | null = null;
   protected isMouseDownedAndOver: boolean = false;
 
+  // protected hitAreas: {[key: string]: RgthreeBaseWidgetBounds} = {};
+  protected readonly hitAreas: RgthreeBaseHitAreas<any> = {};
+  private downedHitAreasForMove: RgthreeBaseWidgetBounds[] = [];
+
   constructor(name: string) {
     this.name = name;
+  }
+
+  private clickWasWithinBounds(pos: Vector2, bounds: Vector2 | Vector4) {
+    let xStart = bounds[0];
+    let xEnd = xStart + (bounds.length > 2 ? bounds[2]! : bounds[1]!);
+    const clickedX = pos[0] >= xStart && pos[0] <= xEnd;
+    if (bounds.length === 2) {
+      return clickedX;
+    }
+    return clickedX && pos[1] <= bounds[1] && pos[1] >= bounds[1] + bounds[3];
   }
 
   mouse(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) {
@@ -62,15 +90,37 @@ export abstract class RgthreeBaseWidget {
     if (event.type == "pointerdown") {
       this.mouseDowned = [...pos];
       this.isMouseDownedAndOver = true;
-      return this.onMouseDown(event, pos, node) ?? true;
+      this.downedHitAreasForMove.length = 0;
+      // Loop over out bounds data and call any specifics.
+      let anyHandled = false;
+      for (const part of Object.values(this.hitAreas)) {
+        if ((part.onDown || part.onMove) && this.clickWasWithinBounds(pos, part.bounds)) {
+          if (part.onMove) {
+            this.downedHitAreasForMove.push(part);
+          }
+          if (part.onDown) {
+            const thisHandled = part.onDown.apply(this, [event, pos, node]);
+            anyHandled = anyHandled || thisHandled == true;
+          }
+        }
+      }
+      return this.onMouseDown(event, pos, node) ?? anyHandled;
     }
 
     // This only fires when LiteGraph has a node_widget (meaning it's pressed), but we may not be
     // the original widget pressed, so we still need `mouseDowned`.
     if (event.type == "pointerup") {
       if (!this.mouseDowned) return true;
+      this.downedHitAreasForMove.length = 0;
       this.cancelMouseDown();
-      return this.onMouseUp(event, pos, node) ?? true;
+      let anyHandled = false;
+      for (const part of Object.values(this.hitAreas)) {
+        if (part.onUp && this.clickWasWithinBounds(pos, part.bounds)) {
+          const thisHandled = part.onUp.apply(this, [event, pos, node]);
+          anyHandled = anyHandled || thisHandled == true;
+        }
+      }
+      return this.onMouseUp(event, pos, node) ?? anyHandled;
     }
 
     // This only fires when LiteGraph has a node_widget (meaning it's pressed).
@@ -86,9 +136,11 @@ export abstract class RgthreeBaseWidget {
       ) {
         this.isMouseDownedAndOver = false;
       }
+      for (const part of this.downedHitAreasForMove) {
+        part.onMove!.apply(this, [event, pos, node]);
+      }
       return this.onMouseMove(event, pos, node) ?? true;
     }
-    console.log(event);
     return false;
   }
 
@@ -96,6 +148,7 @@ export abstract class RgthreeBaseWidget {
   cancelMouseDown() {
     this.mouseDowned = null;
     this.isMouseDownedAndOver = false;
+    this.downedHitAreasForMove.length = 0;
   }
 
   /** An event that fires when the pointer is pressed down (once). */
@@ -125,7 +178,6 @@ export abstract class RgthreeBaseWidget {
  * A better implementation of the LiteGraph button widget.
  */
 export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWidget<string> {
-
   value: string = "";
   mouseUpCallback: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
 
@@ -138,7 +190,6 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWid
   }
 
   draw(ctx: CanvasRenderingContext2D, node: LGraphNode, width: number, y: number, height: number) {
-
     // First, add a shadow if we're not down or lowquality.
     if (!isLowQuality() && !this.isMouseDownedAndOver) {
       drawRoundedRectangle(ctx, {
@@ -147,8 +198,8 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWid
         posY: y + 1,
         posX: 15 + 1,
         borderRadius: 4,
-        colorBackground: '#000000aa',
-        colorStroke: '#000000aa',
+        colorBackground: "#000000aa",
+        colorStroke: "#000000aa",
       });
     }
 
@@ -164,8 +215,12 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWid
     if (!isLowQuality()) {
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
-      ctx.fillStyle =  LiteGraph.WIDGET_TEXT_COLOR;
-      ctx.fillText(this.name, node.size[0] / 2, (y + height / 2) + (this.isMouseDownedAndOver ? 1 : 0));
+      ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+      ctx.fillText(
+        this.name,
+        node.size[0] / 2,
+        y + height / 2 + (this.isMouseDownedAndOver ? 1 : 0),
+      );
     }
   }
 

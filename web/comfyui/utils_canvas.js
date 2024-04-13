@@ -64,3 +64,61 @@ export function drawRoundedRectangle(ctx, options) {
     ctx.fill();
     !lowQuality && ctx.stroke();
 }
+export function drawNumberWidgetPart(ctx, options) {
+    const arrowWidth = 9;
+    const arrowHeight = 10;
+    const innerMargin = 3;
+    const numberWidth = 32;
+    const xBoundsArrowLess = [0, 0];
+    const xBoundsNumber = [0, 0];
+    const xBoundsArrowMore = [0, 0];
+    ctx.save();
+    let posX = options.posX;
+    const { posY, height, value } = options;
+    const midY = posY + height / 2;
+    if (options.direction === -1) {
+        posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
+    }
+    ctx.fill(new Path2D(`M ${posX} ${midY} l ${arrowWidth} ${arrowHeight / 2} l 0 -${arrowHeight} L ${posX} ${midY} z`));
+    xBoundsArrowLess[0] = posX;
+    xBoundsArrowLess[1] = arrowWidth;
+    posX += arrowWidth + innerMargin;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+    xBoundsNumber[0] = posX;
+    xBoundsNumber[1] = numberWidth;
+    posX += numberWidth + innerMargin;
+    ctx.fill(new Path2D(`M ${posX} ${midY - arrowHeight / 2} l ${arrowWidth} ${arrowHeight / 2} l -${arrowWidth} ${arrowHeight / 2} v -${arrowHeight} z`));
+    xBoundsArrowMore[0] = posX;
+    xBoundsArrowMore[1] = arrowWidth;
+    ctx.restore();
+    return [xBoundsArrowLess, xBoundsNumber, xBoundsArrowMore];
+}
+drawNumberWidgetPart.WIDTH_TOTAL = 9 + 3 + 32 + 3 + 9;
+export function drawTogglePart(ctx, options) {
+    const lowQuality = isLowQuality();
+    ctx.save();
+    const { posX, posY, height, value } = options;
+    const toggleRadius = height * 0.36;
+    const toggleBgWidth = height * 1.5;
+    if (!lowQuality) {
+        ctx.beginPath();
+        ctx.roundRect(posX + 4, posY + 4, toggleBgWidth - 8, height - 8, [height * 0.5]);
+        ctx.globalAlpha = app.canvas.editor_alpha * 0.25;
+        ctx.fillStyle = "rgba(255,255,255,0.45)";
+        ctx.fill();
+        ctx.globalAlpha = app.canvas.editor_alpha;
+    }
+    ctx.fillStyle = value === true ? "#89B" : "#888";
+    const toggleX = lowQuality || value === false
+        ? posX + height * 0.5
+        : value === true
+            ? posX + height
+            : posX + height * 0.75;
+    ctx.beginPath();
+    ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    return [posX, toggleBgWidth];
+}

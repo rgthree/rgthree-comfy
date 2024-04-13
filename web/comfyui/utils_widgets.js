@@ -23,7 +23,18 @@ export class RgthreeBaseWidget {
         this.last_y = 0;
         this.mouseDowned = null;
         this.isMouseDownedAndOver = false;
+        this.hitAreas = {};
+        this.downedHitAreasForMove = [];
         this.name = name;
+    }
+    clickWasWithinBounds(pos, bounds) {
+        let xStart = bounds[0];
+        let xEnd = xStart + (bounds.length > 2 ? bounds[2] : bounds[1]);
+        const clickedX = pos[0] >= xStart && pos[0] <= xEnd;
+        if (bounds.length === 2) {
+            return clickedX;
+        }
+        return clickedX && pos[1] <= bounds[1] && pos[1] >= bounds[1] + bounds[3];
     }
     mouse(event, pos, node) {
         var _a, _b, _c;
@@ -31,13 +42,34 @@ export class RgthreeBaseWidget {
         if (event.type == "pointerdown") {
             this.mouseDowned = [...pos];
             this.isMouseDownedAndOver = true;
-            return (_a = this.onMouseDown(event, pos, node)) !== null && _a !== void 0 ? _a : true;
+            this.downedHitAreasForMove.length = 0;
+            let anyHandled = false;
+            for (const part of Object.values(this.hitAreas)) {
+                if ((part.onDown || part.onMove) && this.clickWasWithinBounds(pos, part.bounds)) {
+                    if (part.onMove) {
+                        this.downedHitAreasForMove.push(part);
+                    }
+                    if (part.onDown) {
+                        const thisHandled = part.onDown.apply(this, [event, pos, node]);
+                        anyHandled = anyHandled || thisHandled == true;
+                    }
+                }
+            }
+            return (_a = this.onMouseDown(event, pos, node)) !== null && _a !== void 0 ? _a : anyHandled;
         }
         if (event.type == "pointerup") {
             if (!this.mouseDowned)
                 return true;
+            this.downedHitAreasForMove.length = 0;
             this.cancelMouseDown();
-            return (_b = this.onMouseUp(event, pos, node)) !== null && _b !== void 0 ? _b : true;
+            let anyHandled = false;
+            for (const part of Object.values(this.hitAreas)) {
+                if (part.onUp && this.clickWasWithinBounds(pos, part.bounds)) {
+                    const thisHandled = part.onUp.apply(this, [event, pos, node]);
+                    anyHandled = anyHandled || thisHandled == true;
+                }
+            }
+            return (_b = this.onMouseUp(event, pos, node)) !== null && _b !== void 0 ? _b : anyHandled;
         }
         if (event.type == "pointermove") {
             this.isMouseDownedAndOver = !!this.mouseDowned;
@@ -48,14 +80,17 @@ export class RgthreeBaseWidget {
                     pos[1] > this.last_y + LiteGraph.NODE_WIDGET_HEIGHT)) {
                 this.isMouseDownedAndOver = false;
             }
+            for (const part of this.downedHitAreasForMove) {
+                part.onMove.apply(this, [event, pos, node]);
+            }
             return (_c = this.onMouseMove(event, pos, node)) !== null && _c !== void 0 ? _c : true;
         }
-        console.log(event);
         return false;
     }
     cancelMouseDown() {
         this.mouseDowned = null;
         this.isMouseDownedAndOver = false;
+        this.downedHitAreasForMove.length = 0;
     }
     onMouseDown(event, pos, node) {
         return false;
@@ -81,8 +116,8 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {
                 posY: y + 1,
                 posX: 15 + 1,
                 borderRadius: 4,
-                colorBackground: '#000000aa',
-                colorStroke: '#000000aa',
+                colorBackground: "#000000aa",
+                colorStroke: "#000000aa",
             });
         }
         drawRoundedRectangle(ctx, {
@@ -97,7 +132,7 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {
             ctx.textBaseline = "middle";
             ctx.textAlign = "center";
             ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
-            ctx.fillText(this.name, node.size[0] / 2, (y + height / 2) + (this.isMouseDownedAndOver ? 1 : 0));
+            ctx.fillText(this.name, node.size[0] / 2, y + height / 2 + (this.isMouseDownedAndOver ? 1 : 0));
         }
     }
     onMouseUp(event, pos, node) {
