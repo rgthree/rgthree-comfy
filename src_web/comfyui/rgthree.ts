@@ -9,7 +9,7 @@ import type {
   LGraph as TLGraph,
   AdjustedMouseEvent,
 } from "typings/litegraph.js";
-import type { ComfyApiFormat, ComfyApiPrompt } from "typings/comfy.js";
+import type { ComfyApiFormat, ComfyApiPrompt, ComfyApp } from "typings/comfy.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 // @ts-ignore
@@ -34,6 +34,7 @@ export enum LogLevel {
   WARN,
   INFO,
   DEBUG,
+  DEV,
 }
 
 const LogLevelKeyToLogLevel: { [key: string]: LogLevel } = {
@@ -42,6 +43,7 @@ const LogLevelKeyToLogLevel: { [key: string]: LogLevel } = {
   WARN: LogLevel.WARN,
   INFO: LogLevel.INFO,
   DEBUG: LogLevel.DEBUG,
+  DEV: LogLevel.DEV,
 };
 
 type ConsoleLogFns = "log" | "error" | "warn" | "debug" | "info";
@@ -50,17 +52,41 @@ const LogLevelToMethod: { [key in LogLevel]: ConsoleLogFns } = {
   [LogLevel.ERROR]: "error",
   [LogLevel.WARN]: "warn",
   [LogLevel.INFO]: "info",
-  [LogLevel.DEBUG]: "debug",
+  [LogLevel.DEBUG]: "log",
+  [LogLevel.DEV]: "log",
 };
 const LogLevelToCSS: { [key in LogLevel]: string } = {
   [LogLevel.IMPORTANT]: "font-weight: bold; color: blue;",
   [LogLevel.ERROR]: "",
   [LogLevel.WARN]: "",
   [LogLevel.INFO]: "font-style: italic; color: blue;",
-  [LogLevel.DEBUG]: "font-style: italic; color: #333;",
+  [LogLevel.DEBUG]: "font-style: italic; color: #444;",
+  [LogLevel.DEV]: "color: #004b68;",
 };
 
 let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
+
+/**
+ * A blocklist of extensions to disallow hooking into rgthree's base classes when calling the
+ * `rgthree.invokeExtensionsAsync` method (which runs outside of ComfyNode's
+ * `app.invokeExtensionsAsync` which is private).
+ *
+ * In Apr 2024 the base rgthree node class added support for other extensions using `nodeCreated`
+ * and `beforeRegisterNodeDef` which allows other extensions to modify the class. However, since it
+ * had been months since divorcing the ComfyNode in rgthree-comfy due to instability and
+ * inflexibility, this was a bit risky as other extensions hadn't ever run with this ability. This
+ * list attempts to block extensions from being able to call into rgthree-comfy nodes via the
+ * `nodeCreated` and `beforeRegisterNodeDef` callbacks now that rgthree-comfy is utilizing them
+ * because they do not work. Oddly, it's ComfyUI's own extension that is broken.
+ */
+const INVOKE_EXTENSIONS_BLOCKLIST = [
+  {
+    name: "Comfy.WidgetInputs",
+    reason:
+      "Major conflict with rgthree-comfy nodes' inputs causing instability and " +
+      "repeated link disconnections.",
+  },
+];
 
 /** A basic wrapper around logger. */
 class Logger {
@@ -85,44 +111,65 @@ class Logger {
   logParts(level: LogLevel, message: string, ...args: any[]): [ConsoleLogFns, any[]] {
     if (level <= GLOBAL_LOG_LEVEL) {
       const css = LogLevelToCSS[level] || "";
+      if (level === LogLevel.DEV) {
+        message = `🔧 ${message}`;
+      }
       return [LogLevelToMethod[level], [`%c${message}`, css, ...args]];
     }
     return ["none" as "info", []];
   }
 }
 
+
 /**
  * A log session, with the name as the prefix. A new session will stack prefixes.
  */
 class LogSession {
-  logger = new Logger();
+
+  readonly logger = new Logger();
+  readonly logsCache: {[key: string]: {lastShownTime: number}} = {};
+
   constructor(readonly name?: string) {}
 
-  log(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
-    const [n, v] = this.logParts(levelOrMessage, message, ...args);
-    console[n]?.(...v);
-  }
-
-  logParts(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
-    let level = typeof levelOrMessage === "string" ? LogLevel.INFO : levelOrMessage;
-    message = typeof levelOrMessage === "string" ? levelOrMessage : message;
+  /**
+   * Returns the console log method to use and the arguments to pass so the call site can log from
+   * there. This extra work at the call site allows for easier debugging in the dev console.
+   *
+   *     const [logMethod, logArgs] = logger.logParts(LogLevel.DEBUG, message, ...args);
+   *     console[logMethod]?.(...logArgs);
+   */
+  logParts(level: LogLevel, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+    message = `${this.name || ""}${message ? " " + message : ""}`;
     return this.logger.logParts(
       level,
-      `${this.name || ""}${message ? " " + message : ""}`,
+      message,
       ...args,
     );
   }
 
-  debug(message?: string, ...args: any[]) {
-    this.log(LogLevel.DEBUG, message, ...args);
+  logPartsOnceForTime(level: LogLevel, time: number, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+    message = `${this.name || ""}${message ? " " + message : ""}`;
+    const cacheKey = `${level}:${message}`;
+    const cacheEntry = this.logsCache[cacheKey];
+    const now = +new Date();
+    if (cacheEntry && cacheEntry.lastShownTime + time > now) {
+      return ["none" as "info", []];
+    }
+    const parts = this.logger.logParts(
+      level,
+      message,
+      ...args,
+    );
+    if (console[parts[0]]) {
+      this.logsCache[cacheKey] = this.logsCache[cacheKey] || {} as {lastShownTime: number};
+      this.logsCache[cacheKey]!.lastShownTime = now;
+    }
+    return parts;
+
   }
 
   debugParts(message?: string, ...args: any[]) {
     return this.logParts(LogLevel.DEBUG, message, ...args);
-  }
-
-  info(message?: string, ...args: any[]) {
-    this.log(LogLevel.INFO, message, ...args);
   }
 
   infoParts(message?: string, ...args: any[]) {
@@ -131,10 +178,6 @@ class LogSession {
 
   warnParts(message?: string, ...args: any[]) {
     return this.logParts(LogLevel.WARN, message, ...args);
-  }
-
-  error(message?: string, ...args: any[]) {
-    this.log(LogLevel.ERROR, message, ...args);
   }
 
   newSession(name?: string) {
@@ -301,18 +344,18 @@ class Rgthree extends EventTarget {
     // `getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff` to find a node
     // while serializing. What a way to work around...
     const graphSerialize = LGraph.prototype.serialize;
-    LGraph.prototype.serialize = function() {
+    LGraph.prototype.serialize = function () {
       const response = graphSerialize.apply(this, [...arguments] as any) as any;
       rgthree.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = response;
       return response;
-    }
+    };
 
     // Overrides LiteGraphs' processMouseDown to both keep state as well as dispatch a custom event.
     const processMouseDown = LGraphCanvas.prototype.processMouseDown;
     LGraphCanvas.prototype.processMouseDown = function (e: AdjustedMouseEvent) {
       rgthree.processingMouseDown = true;
       const returnVal = processMouseDown.apply(this, [...arguments] as any);
-      rgthree.dispatchCustomEvent("on-process-mouse-down", {originalEvent: e});
+      rgthree.dispatchCustomEvent("on-process-mouse-down", { originalEvent: e });
       rgthree.processingMouseDown = false;
       return returnVal;
     };
@@ -321,7 +364,7 @@ class Rgthree extends EventTarget {
     // to capture the last `canvasX` and `canvasY` properties, which are not the same as LiteGraph's
     // `canvas.last_mouse_position`, unfortunately.
     const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
-    LGraphCanvas.prototype.adjustMouseEvent = function(e: PointerEvent) {
+    LGraphCanvas.prototype.adjustMouseEvent = function (e: PointerEvent) {
       adjustMouseEvent.apply(this, [...arguments] as any);
       rgthree.lastAdjustedMouseEvent = e as AdjustedMouseEvent;
     };
@@ -356,11 +399,61 @@ class Rgthree extends EventTarget {
   }
 
   /**
+   * [🤮] Handles the same exact thing as ComfyApp's `invokeExtensionsAsync`, but done here since
+   * it is #private in ComfyApp because... of course it us. This is necessary since we purposefully
+   * avoid using the ComfyNode due to historical instability and inflexibility for all the advanced
+   * ui stuff rgthree-comfy nodes do, but we can still have other custom nodes know what's happening
+   * with rgthree-comfy; specifically, for `nodeCreated` as of now.
+   */
+  async invokeExtensionsAsync(method: "nodeCreated", ...args: any[]) {
+    const comfyapp = app as ComfyApp;
+    if (CONFIG_SERVICE.getConfigValue("features.invoke_extensions_async.node_created") === false) {
+      const [m, a] = this.logParts(
+        LogLevel.INFO,
+        `Skipping invokeExtensionsAsync for applicable rgthree-comfy nodes`,
+      );
+      console[m]?.(...a);
+      return Promise.resolve();
+    }
+    return await Promise.all(
+      comfyapp.extensions.map(async (ext) => {
+        if (ext?.[method]) {
+          try {
+            const blocked = INVOKE_EXTENSIONS_BLOCKLIST.find((block) =>
+              ext.name.toLowerCase().startsWith(block.name.toLowerCase()),
+            );
+            if (blocked) {
+              const [n, v] = this.logger.logPartsOnceForTime(
+                LogLevel.WARN,
+                5000,
+                `Blocked extension '${ext.name}' method '${method}' for rgthree-nodes because: ${blocked.reason}`,
+              );
+              console[n]?.(...v);
+              return Promise.resolve();
+            }
+            // @ts-ignore
+            return await ext[method]!(...args, comfyapp);
+          } catch (error) {
+            const [n, v] = this.logParts(
+              LogLevel.ERROR,
+              `Error calling extension '${ext.name}' method '${method}' for rgthree-node.`,
+              { error },
+              { extension: ext },
+              { args },
+            );
+            console[n]?.(...v);
+          }
+        }
+      }),
+    );
+  }
+
+  /**
    * Wraps `dispatchEvent` for easier CustomEvent dispatching.
    */
   private dispatchCustomEvent(event: string, detail?: any) {
     if (detail != null) {
-      return this.dispatchEvent(new CustomEvent(event, {detail}));
+      return this.dispatchEvent(new CustomEvent(event, { detail }));
     }
     return this.dispatchEvent(new CustomEvent(event));
   }
@@ -590,12 +683,13 @@ class Rgthree extends EventTarget {
         const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
         const fixBadLinksResult = fixBadLinks(graphToUse);
         if (fixBadLinksResult.hasBadLinks) {
-          rgthree.log(
+          const [n, v] = rgthree.logParts(
             LogLevel.WARN,
             `The workflow you've loaded has corrupt linking data. Open ${
               new URL(location.href).origin
             }/rgthree/link_fixer to try to fix.`,
           );
+          console[n]?.(...v);
           if (CONFIG_SERVICE.getConfigValue("features.show_alerts_for_corrupt_workflows")) {
             rgthree.showMessage({
               id: "bad-links",
@@ -800,20 +894,25 @@ class Rgthree extends EventTarget {
     document.head.appendChild(link);
   }
 
-  setLogLevel(level: LogLevel) {
-    GLOBAL_LOG_LEVEL = level;
+  setLogLevel(level?: LogLevel|string) {
+    if (typeof level === 'string') {
+      level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
+    }
+    if (level != null) {
+      GLOBAL_LOG_LEVEL = level;
+    }
   }
 
-  log(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
-    this.logger.log(levelOrMessage, message, ...args);
-  }
-
-  logParts(levelOrMessage: LogLevel | string, message?: string, ...args: any[]) {
-    return this.logger.logParts(levelOrMessage, message, ...args);
+  logParts(level: LogLevel, message?: string, ...args: any[]) {
+    return this.logger.logParts(level, message, ...args);
   }
 
   newLogSession(name?: string) {
     return this.logger.newSession(name);
+  }
+
+  isDevMode() {
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
   }
 
   monitorBadLinks() {

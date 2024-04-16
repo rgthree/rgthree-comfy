@@ -281,8 +281,8 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     return seedToUse ?? inputSeed;
   }
 
-  static override setUp(comfyClass: any) {
-    RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeSeed);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeSeed);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -300,9 +300,7 @@ app.registerExtension({
   name: "rgthree.Seed",
   async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
     if (nodeData.name === RgthreeSeed.type) {
-      RgthreeSeed.nodeType = nodeType;
-      RgthreeSeed.nodeData = nodeData;
-      RgthreeSeed.setUp(nodeType as any);
+      RgthreeSeed.setUp(nodeType, nodeData);
     }
   },
 });

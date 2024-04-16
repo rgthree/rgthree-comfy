@@ -239,11 +239,11 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
       </ul>`;
   }
 
-  static override setUp(comfyClass: any) {
-    RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeImageComparer);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeImageComparer);
   }
 
-  static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
+  static override onRegisteredForOverride(comfyClass: any) {
     addConnectionLayoutSupport(RgthreeImageComparer, app, [
       ["Left", "Right"],
       ["Right", "Left"],
@@ -258,9 +258,7 @@ app.registerExtension({
   name: "rgthree.ImageComparer",
   async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
     if (nodeData.name === RgthreeImageComparer.type) {
-      RgthreeImageComparer.nodeType = nodeType;
-      RgthreeImageComparer.nodeData = nodeData;
-      RgthreeImageComparer.setUp(nodeType as any);
+      RgthreeImageComparer.setUp(nodeType, nodeData);
     }
   },
 });

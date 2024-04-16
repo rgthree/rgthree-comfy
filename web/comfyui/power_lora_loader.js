@@ -180,8 +180,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             }
         }
     }
-    static setUp(comfyClass) {
-        NODE_CLASS.registerForOverride(comfyClass, NODE_CLASS);
+    static setUp(comfyClass, nodeData) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         addConnectionLayoutSupport(NODE_CLASS, app, [
@@ -480,9 +480,7 @@ app.registerExtension({
     name: "rgthree.PowerLoraLoader",
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name === NODE_CLASS.type) {
-            NODE_CLASS.nodeType = nodeType;
-            NODE_CLASS.nodeData = nodeData;
-            NODE_CLASS.setUp(nodeType);
+            NODE_CLASS.setUp(nodeType, nodeData);
         }
     },
 });

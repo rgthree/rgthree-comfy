@@ -3,7 +3,7 @@ import { app } from "../../scripts/app.js";
 import { RgthreeDialog, RgthreeDialogOptions } from "rgthree/common/dialog.js";
 import { createElement as $el, query as $$ } from "rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "rgthree/common/media/svgs.js";
-import { rgthree } from "./rgthree.js";
+import { LogLevel, rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
 /** Types of config used as a hint for the form handling. */
@@ -30,6 +30,8 @@ type ConfigurationSchema = {
   options?: string[] | number[] | ConfigurationSchemaOption[];
   description?: string;
   subconfig?: ConfigurationSchema[];
+  isDevOnly?: boolean;
+  onSave?: (value: any) => void;
 };
 
 type ConfigurationSchemaOption = {value: any, label: string};
@@ -125,6 +127,32 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
         "Will show a message at the top of the screen when loading a workflow that has " +
         "corrupt linking data.",
     },
+    {
+      key: "log_level",
+      type: ConfigType.STRING,
+      label: "Log level for browser dev console.",
+      description:
+        "Further down the list, the more verbose logs to the console will be. For instance, " +
+        "selecting 'IMPORTANT' means only important message will be logged to the browser " +
+        "console, while selecting 'WARN' will log all messages at or higher than WARN, including " +
+        "'ERROR' and 'IMPORTANT' etc.",
+      options: ["IMPORTANT", "ERROR", "WARN", "INFO", "DEBUG", "DEV"],
+      isDevOnly: true,
+      onSave: function(value: LogLevel) {
+        rgthree.setLogLevel(value);
+      }
+    },
+    {
+      key: "features.invoke_extensions_async.node_created",
+      type: ConfigType.BOOLEAN,
+      label: "Allow other extensions to call nodeCreated on rgthree-nodes.",
+      isDevOnly: true,
+      description:
+        "Do not disable unless you are having trouble (and then file an issue at rgthree-comfy)." +
+        "Prior to Apr 2024 it was not possible for other extensions to invoke their nodeCreated " +
+        "event on some rgthree-comfy nodes. Now it's possible and this option is only here in " +
+        "for easy if something is wrong.",
+    },
   ],
 };
 
@@ -189,6 +217,9 @@ export class RgthreeConfigDialog extends RgthreeDialog {
     const features = $el(`fieldset`, { children: [$el(`legend[text="Features"]`)] });
 
     for (const feature of CONFIGURABLE.features) {
+      if (feature.isDevOnly && !rgthree.isDevMode()) {
+        continue;
+      }
       const container = $el("div.formrow");
       container.appendChild(fieldrow(feature));
 
@@ -237,6 +268,9 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             }
             const success = await CONFIG_SERVICE.setConfigValues(changed);
             if (success) {
+              for (const key of Object.keys(changed)) {
+                CONFIGURABLE.features.find(f => f.key === key)?.onSave?.(changed[key]);
+              }
               this.close();
               rgthree.showMessage({
                 id: "config-success",

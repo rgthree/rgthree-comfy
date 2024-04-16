@@ -697,7 +697,8 @@ export declare class LGraphNode {
     constructor(title?: string);
 
     title: string;
-    type: null | string;
+    // @rgthree - made undefined since ComfyNode does it (even through LiteGraph does not..)
+    type?: null | string;
     size: Vector2;
     graph: null | LGraph;
     graph_version: number;

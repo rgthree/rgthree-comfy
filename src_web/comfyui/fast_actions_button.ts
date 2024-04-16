@@ -30,6 +30,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   static override type = NodeTypesString.FAST_ACTIONS_BUTTON;
   static override title = NodeTypesString.FAST_ACTIONS_BUTTON;
 
+  readonly logger = rgthree.newLogSession("[FastActionsButton]");
+
   static "@buttonText" = { type: "string" };
   static "@shortcutModifier" = {
     type: "combo",
@@ -181,7 +183,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           this.widgetToData.delete(widget);
           this.removeWidget(widget);
         } else {
-          rgthree.logger.debug('Fast Action Button - Connected widget is not in widgets... weird.');
+          const [m, a] = this.logger.debugParts('Connected widget is not in widgets... weird.');
+          console[m]?.(...a);
         }
       }
     }
@@ -191,7 +194,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     for (const [index, node] of linkedNodes.entries()) {
       // Sometimes linkedNodes is stale.
       if (!node) {
-        rgthree.logger.debug('Fast Action Button - linkedNode provided that does not exist. ');
+        const [m, a] = this.logger.debugParts('linkedNode provided that does not exist. ');
+        console[m]?.(...a);
         badNodes.push(node);
         continue;
       }
@@ -266,7 +270,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       const { comfy, node } = this.widgetToData.get(widget) ?? {};
       if (comfy) {
         if (action === "Queue Prompt") {
-          await comfy.queuePrompt();
+          await comfy.queuePrompt(0);
         }
         continue;
       }

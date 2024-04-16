@@ -15,6 +15,7 @@ export var LogLevel;
     LogLevel[LogLevel["WARN"] = 3] = "WARN";
     LogLevel[LogLevel["INFO"] = 4] = "INFO";
     LogLevel[LogLevel["DEBUG"] = 5] = "DEBUG";
+    LogLevel[LogLevel["DEV"] = 6] = "DEV";
 })(LogLevel || (LogLevel = {}));
 const LogLevelKeyToLogLevel = {
     IMPORTANT: LogLevel.IMPORTANT,
@@ -22,22 +23,32 @@ const LogLevelKeyToLogLevel = {
     WARN: LogLevel.WARN,
     INFO: LogLevel.INFO,
     DEBUG: LogLevel.DEBUG,
+    DEV: LogLevel.DEV,
 };
 const LogLevelToMethod = {
     [LogLevel.IMPORTANT]: "log",
     [LogLevel.ERROR]: "error",
     [LogLevel.WARN]: "warn",
     [LogLevel.INFO]: "info",
-    [LogLevel.DEBUG]: "debug",
+    [LogLevel.DEBUG]: "log",
+    [LogLevel.DEV]: "log",
 };
 const LogLevelToCSS = {
     [LogLevel.IMPORTANT]: "font-weight: bold; color: blue;",
     [LogLevel.ERROR]: "",
     [LogLevel.WARN]: "",
     [LogLevel.INFO]: "font-style: italic; color: blue;",
-    [LogLevel.DEBUG]: "font-style: italic; color: #333;",
+    [LogLevel.DEBUG]: "font-style: italic; color: #444;",
+    [LogLevel.DEV]: "color: #004b68;",
 };
 let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
+const INVOKE_EXTENSIONS_BLOCKLIST = [
+    {
+        name: "Comfy.WidgetInputs",
+        reason: "Major conflict with rgthree-comfy nodes' inputs causing instability and " +
+            "repeated link disconnections.",
+    },
+];
 class Logger {
     log(level, message, ...args) {
         var _a;
@@ -47,6 +58,9 @@ class Logger {
     logParts(level, message, ...args) {
         if (level <= GLOBAL_LOG_LEVEL) {
             const css = LogLevelToCSS[level] || "";
+            if (level === LogLevel.DEV) {
+                message = `🔧 ${message}`;
+            }
             return [LogLevelToMethod[level], [`%c${message}`, css, ...args]];
         }
         return ["none", []];
@@ -56,34 +70,35 @@ class LogSession {
     constructor(name) {
         this.name = name;
         this.logger = new Logger();
+        this.logsCache = {};
     }
-    log(levelOrMessage, message, ...args) {
-        var _a;
-        const [n, v] = this.logParts(levelOrMessage, message, ...args);
-        (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+    logParts(level, message, ...args) {
+        message = `${this.name || ""}${message ? " " + message : ""}`;
+        return this.logger.logParts(level, message, ...args);
     }
-    logParts(levelOrMessage, message, ...args) {
-        let level = typeof levelOrMessage === "string" ? LogLevel.INFO : levelOrMessage;
-        message = typeof levelOrMessage === "string" ? levelOrMessage : message;
-        return this.logger.logParts(level, `${this.name || ""}${message ? " " + message : ""}`, ...args);
-    }
-    debug(message, ...args) {
-        this.log(LogLevel.DEBUG, message, ...args);
+    logPartsOnceForTime(level, time, message, ...args) {
+        message = `${this.name || ""}${message ? " " + message : ""}`;
+        const cacheKey = `${level}:${message}`;
+        const cacheEntry = this.logsCache[cacheKey];
+        const now = +new Date();
+        if (cacheEntry && cacheEntry.lastShownTime + time > now) {
+            return ["none", []];
+        }
+        const parts = this.logger.logParts(level, message, ...args);
+        if (console[parts[0]]) {
+            this.logsCache[cacheKey] = this.logsCache[cacheKey] || {};
+            this.logsCache[cacheKey].lastShownTime = now;
+        }
+        return parts;
     }
     debugParts(message, ...args) {
         return this.logParts(LogLevel.DEBUG, message, ...args);
-    }
-    info(message, ...args) {
-        this.log(LogLevel.INFO, message, ...args);
     }
     infoParts(message, ...args) {
         return this.logParts(LogLevel.INFO, message, ...args);
     }
     warnParts(message, ...args) {
         return this.logParts(LogLevel.WARN, message, ...args);
-    }
-    error(message, ...args) {
-        this.log(LogLevel.ERROR, message, ...args);
     }
     newSession(name) {
         return new LogSession(`${this.name}${name}`);
@@ -230,6 +245,33 @@ class Rgthree extends EventTarget {
             onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
         };
+    }
+    async invokeExtensionsAsync(method, ...args) {
+        var _a;
+        const comfyapp = app;
+        if (CONFIG_SERVICE.getConfigValue("features.invoke_extensions_async.node_created") === false) {
+            const [m, a] = this.logParts(LogLevel.INFO, `Skipping invokeExtensionsAsync for applicable rgthree-comfy nodes`);
+            (_a = console[m]) === null || _a === void 0 ? void 0 : _a.call(console, ...a);
+            return Promise.resolve();
+        }
+        return await Promise.all(comfyapp.extensions.map(async (ext) => {
+            var _a, _b;
+            if (ext === null || ext === void 0 ? void 0 : ext[method]) {
+                try {
+                    const blocked = INVOKE_EXTENSIONS_BLOCKLIST.find((block) => ext.name.toLowerCase().startsWith(block.name.toLowerCase()));
+                    if (blocked) {
+                        const [n, v] = this.logger.logPartsOnceForTime(LogLevel.WARN, 5000, `Blocked extension '${ext.name}' method '${method}' for rgthree-nodes because: ${blocked.reason}`);
+                        (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+                        return Promise.resolve();
+                    }
+                    return await ext[method](...args, comfyapp);
+                }
+                catch (error) {
+                    const [n, v] = this.logParts(LogLevel.ERROR, `Error calling extension '${ext.name}' method '${method}' for rgthree-node.`, { error }, { extension: ext }, { args });
+                    (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
+                }
+            }
+        }));
     }
     dispatchCustomEvent(event, detail) {
         if (detail != null) {
@@ -416,13 +458,14 @@ class Rgthree extends EventTarget {
                 graphCopy = null;
             }
             setTimeout(() => {
-                var _a, _b;
+                var _a, _b, _c;
                 const wasLoadingAborted = (_b = (_a = document
                     .querySelector(".comfy-modal-content")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.includes("Loading aborted due");
                 const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
                 const fixBadLinksResult = fixBadLinks(graphToUse);
                 if (fixBadLinksResult.hasBadLinks) {
-                    rgthree.log(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/rgthree/link_fixer to try to fix.`);
+                    const [n, v] = rgthree.logParts(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/rgthree/link_fixer to try to fix.`);
+                    (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
                     if (CONFIG_SERVICE.getConfigValue("features.show_alerts_for_corrupt_workflows")) {
                         rgthree.showMessage({
                             id: "bad-links",
@@ -570,16 +613,21 @@ class Rgthree extends EventTarget {
         document.head.appendChild(link);
     }
     setLogLevel(level) {
-        GLOBAL_LOG_LEVEL = level;
+        if (typeof level === 'string') {
+            level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
+        }
+        if (level != null) {
+            GLOBAL_LOG_LEVEL = level;
+        }
     }
-    log(levelOrMessage, message, ...args) {
-        this.logger.log(levelOrMessage, message, ...args);
-    }
-    logParts(levelOrMessage, message, ...args) {
-        return this.logger.logParts(levelOrMessage, message, ...args);
+    logParts(level, message, ...args) {
+        return this.logger.logParts(level, message, ...args);
     }
     newLogSession(name) {
         return this.logger.newSession(name);
+    }
+    isDevMode() {
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
     }
     monitorBadLinks() {
         const badLinksFound = fixBadLinks(app.graph);

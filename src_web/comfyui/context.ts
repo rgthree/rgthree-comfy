@@ -2,8 +2,6 @@
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  LGraph,
-  LLink,
   LGraphCanvas as TLGraphCanvas,
   LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
@@ -15,12 +13,12 @@ import {
   IoDirection,
   addConnectionLayoutSupport,
   addMenuItem,
-  applyMixins,
   matchLocalSlotsToServer,
   replaceNode,
 } from "./utils.js";
-import { RgthreeBaseNode, RgthreeBaseServerNode } from "./base_node.js";
+import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
+import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -30,49 +28,53 @@ declare const LGraphCanvas: typeof TLGraphCanvas;
  * Takes a non-context node and determins for its input or output slot, if there is a valid
  * connection for an opposite context output or input slot.
  */
-function findMatchingIndexByTypeOrName(otherNode: TLGraphNode, otherSlot: INodeInputSlot|INodeOutputSlot, ctxSlots: INodeInputSlot[]|INodeOutputSlot[]) {
-  const otherNodeType = (otherNode.type || '').toUpperCase();
-  const otherNodeName = (otherNode.title || '').toUpperCase();
+function findMatchingIndexByTypeOrName(
+  otherNode: TLGraphNode,
+  otherSlot: INodeInputSlot | INodeOutputSlot,
+  ctxSlots: INodeInputSlot[] | INodeOutputSlot[],
+) {
+  const otherNodeType = (otherNode.type || "").toUpperCase();
+  const otherNodeName = (otherNode.title || "").toUpperCase();
   let otherSlotType = otherSlot.type as string;
-  if (Array.isArray(otherSlotType) || otherSlotType.includes(',')) {
-    otherSlotType = 'COMBO';
+  if (Array.isArray(otherSlotType) || otherSlotType.includes(",")) {
+    otherSlotType = "COMBO";
   }
-  const otherSlotName = otherSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+  const otherSlotName = otherSlot.name.toUpperCase().replace("OPT_", "").replace("_NAME", "");
   let ctxSlotIndex = -1;
   if (["CONDITIONING", "INT", "STRING", "FLOAT", "COMBO"].includes(otherSlotType)) {
     ctxSlotIndex = ctxSlots.findIndex((ctxSlot) => {
-      const ctxSlotName = ctxSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+      const ctxSlotName = ctxSlot.name.toUpperCase().replace("OPT_", "").replace("_NAME", "");
       let ctxSlotType = ctxSlot.type as string;
-      if (Array.isArray(ctxSlotType) || ctxSlotType.includes(',')) {
-        ctxSlotType = 'COMBO';
+      if (Array.isArray(ctxSlotType) || ctxSlotType.includes(",")) {
+        ctxSlotType = "COMBO";
       }
       if (ctxSlotType !== otherSlotType) {
         return false;
       }
       // Straightforward matches.
-      if(ctxSlotName === otherSlotName
-            || (ctxSlotName === "SEED" && otherSlotName.includes("SEED"))
-            || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP"))
-            || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))) {
+      if (
+        ctxSlotName === otherSlotName ||
+        (ctxSlotName === "SEED" && otherSlotName.includes("SEED")) ||
+        (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP")) ||
+        (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))
+      ) {
         return true;
       }
       // If postive other node, try to match conditining and text.
-      if ((otherNodeType.includes('POSITIVE') || otherNodeName.includes('POSITIVE')) &&
-          (
-            (ctxSlotName === 'POSITIVE' && otherSlotType === 'CONDITIONING')
-            || (ctxSlotName === 'TEXT_POS_G' && otherSlotName.includes("TEXT_G"))
-            || (ctxSlotName === 'TEXT_POS_L' && otherSlotName.includes("TEXT_L"))
-          )
-          ) {
+      if (
+        (otherNodeType.includes("POSITIVE") || otherNodeName.includes("POSITIVE")) &&
+        ((ctxSlotName === "POSITIVE" && otherSlotType === "CONDITIONING") ||
+          (ctxSlotName === "TEXT_POS_G" && otherSlotName.includes("TEXT_G")) ||
+          (ctxSlotName === "TEXT_POS_L" && otherSlotName.includes("TEXT_L")))
+      ) {
         return true;
       }
-      if ((otherNodeType.includes('NEGATIVE') || otherNodeName.includes('NEGATIVE')) &&
-          (
-            (ctxSlotName === 'NEGATIVE' && otherSlotType === 'CONDITIONING')
-            || (ctxSlotName === 'TEXT_NEG_G' && otherSlotName.includes("TEXT_G"))
-            || (ctxSlotName === 'TEXT_NEG_L' && otherSlotName.includes("TEXT_L"))
-          )
-          ) {
+      if (
+        (otherNodeType.includes("NEGATIVE") || otherNodeName.includes("NEGATIVE")) &&
+        ((ctxSlotName === "NEGATIVE" && otherSlotType === "CONDITIONING") ||
+          (ctxSlotName === "TEXT_NEG_G" && otherSlotName.includes("TEXT_G")) ||
+          (ctxSlotName === "TEXT_NEG_L" && otherSlotName.includes("TEXT_L")))
+      ) {
         return true;
       }
       return false;
@@ -82,7 +84,6 @@ function findMatchingIndexByTypeOrName(otherNode: TLGraphNode, otherSlot: INodeI
   }
   return ctxSlotIndex;
 }
-
 
 /**
  * A Base Context node for other context based nodes to extend.
@@ -103,7 +104,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
 
   override set _collapsed_width(width: number) {
     const canvas = app.canvas as TLGraphCanvas;
-    const ctx = canvas.canvas.getContext('2d')!;
+    const ctx = canvas.canvas.getContext("2d")!;
     const oldFont = ctx.font;
     ctx.font = canvas.title_text_font;
     let title = this.title.trim();
@@ -147,7 +148,12 @@ class BaseContextNode extends RgthreeBaseServerNode {
     return null;
   }
 
-  override connectByTypeOutput<T = any>(slot: string | number, sourceNode: TLGraphNode, sourceSlotType: string, optsIn: string): T | null {
+  override connectByTypeOutput<T = any>(
+    slot: string | number,
+    sourceNode: TLGraphNode,
+    sourceSlotType: string,
+    optsIn: string,
+  ): T | null {
     let canConnect =
       super.connectByTypeOutput &&
       super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
@@ -178,8 +184,12 @@ class BaseContextNode extends RgthreeBaseServerNode {
     return null;
   }
 
-  static override setUp(comfyClass: any, ctxClass: any) {
-    RgthreeBaseServerNode.registerForOverride(comfyClass, ctxClass);
+  static override setUp(
+    comfyClass: ComfyNodeConstructor,
+    nodeData: ComfyObjectInfo,
+    ctxClass: RgthreeBaseServerNodeConstructor,
+  ) {
+    RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -205,8 +215,8 @@ class ContextNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -232,8 +242,8 @@ class ContextBigNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextBigNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextBigNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -259,8 +269,8 @@ class ContextSwitchNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextSwitchNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -286,8 +296,8 @@ class ContextSwitchBigNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextSwitchBigNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchBigNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -313,8 +323,8 @@ class ContextMergeNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextMergeNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextMergeNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -340,8 +350,8 @@ class ContextMergeBigNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: any) {
-    BaseContextNode.setUp(comfyClass, ContextMergeBigNode);
+  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+    BaseContextNode.setUp(comfyClass, nodeData, ContextMergeBigNode);
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -355,15 +365,22 @@ class ContextMergeBigNode extends BaseContextNode {
   }
 }
 
-const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode, ContextMergeNode, ContextMergeBigNode];
+const contextNodes = [
+  ContextNode,
+  ContextBigNode,
+  ContextSwitchNode,
+  ContextSwitchBigNode,
+  ContextMergeNode,
+  ContextMergeBigNode,
+];
 const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
 
 function fixBadConfigs(node: ContextNode) {
   // Dumb mistake, but let's fix our mispelling. This will probably need to stay in perpetuity to
   // keep any old workflows operating.
-  const wrongName = node.outputs.find((o, i) => o.name === 'CLIP_HEIGTH');
+  const wrongName = node.outputs.find((o, i) => o.name === "CLIP_HEIGTH");
   if (wrongName) {
-    wrongName.name = 'CLIP_HEIGHT';
+    wrongName.name = "CLIP_HEIGHT";
   }
 }
 
@@ -371,15 +388,10 @@ app.registerExtension({
   name: "rgthree.Context",
   async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
     // Loop over out context nodes and see if any match the server data.
-    if (nodeData.name === ContextNode.type) {
-    }
-
     for (const ctxClass of contextNodes) {
       if (nodeData.name === ctxClass.type) {
-        ctxClass.nodeData = nodeData;
-        ctxClass.nodeType = nodeType;
         contextTypeToServerDef[ctxClass.type] = nodeData;
-        ctxClass.setUp(nodeType as any);
+        ctxClass.setUp(nodeType, nodeData);
         break;
       }
     }

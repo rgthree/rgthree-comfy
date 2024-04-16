@@ -1,20 +1,45 @@
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { app } from "../../scripts/app.js";
-import { rgthree } from "./rgthree.js";
+import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 export class RgthreeBaseNode extends LGraphNode {
-    constructor(title = RgthreeBaseNode.title) {
+    constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = false) {
         super(title);
+        this.nickname = "rgthree";
         this._tempWidth = 0;
         this.isVirtualNode = false;
         this.removed = false;
         this.configuring = false;
         this.helpDialog = null;
+        this.comfyClass = "rgthree-base-virtual-node";
+        this.__constructed__ = false;
         if (title == "__NEED_NAME__") {
             throw new Error("RgthreeBaseNode needs overrides.");
         }
+        this.widgets = this.widgets || [];
         this.properties = this.properties || {};
+        if (!skipOnConstructedCall) {
+            this.onConstructed();
+        }
+        else {
+            setTimeout(() => {
+                var _a;
+                if (this.onConstructed()) {
+                    const [n, v] = rgthree.logger.logParts(LogLevel.DEV, `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`);
+                    (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+                }
+            });
+        }
+    }
+    onConstructed() {
+        var _a;
+        if (this.__constructed__)
+            return false;
+        this.type = (_a = this.type) !== null && _a !== void 0 ? _a : undefined;
+        this.__constructed__ = true;
+        rgthree.invokeExtensionsAsync("nodeCreated", this);
+        return true;
     }
     configure(info) {
         this.configuring = true;
@@ -88,7 +113,6 @@ export class RgthreeBaseNode extends LGraphNode {
         if (help) {
             this.helpDialog = new RgthreeHelpDialog(this, help).show();
             this.helpDialog.addEventListener("close", (e) => {
-                console.log("close", e);
                 this.helpDialog = null;
             });
         }
@@ -126,18 +150,13 @@ RgthreeBaseNode._category = "rgthree";
 const overriddenServerNodes = new Map();
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {
-        super(title);
+        super(title, true);
         this.serialize_widgets = true;
         this.setupFromServerNodeData();
+        this.onConstructed();
     }
     getWidgets() {
         return ComfyWidgets;
-    }
-    onDrawForeground(ctx, canvas) {
-        var _a, _b;
-        const nodeType = this.constructor.nodeType;
-        (_b = (_a = nodeType === null || nodeType === void 0 ? void 0 : nodeType.prototype) === null || _a === void 0 ? void 0 : _a.onDrawForeground) === null || _b === void 0 ? void 0 : _b.apply(this, [ctx, canvas]);
-        super.onDrawForeground && super.onDrawForeground(ctx, canvas);
     }
     async setupFromServerNodeData() {
         var _a, _b, _c;
@@ -205,13 +224,15 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         this.size = s;
         this.serialize_widgets = true;
     }
-    static registerForOverride(comfyClass, rgthreeClass) {
+    static registerForOverride(comfyClass, nodeData, rgthreeClass) {
         if (overriddenServerNodes.has(comfyClass)) {
-            throw Error(`Already have a class to overridde ${comfyClass.type || comfyClass.name || comfyClass.title}`);
+            throw Error(`Already have a class to override ${comfyClass.type || comfyClass.name || comfyClass.title}`);
         }
         overriddenServerNodes.set(comfyClass, rgthreeClass);
         if (!rgthreeClass.__registeredForOverride__) {
             rgthreeClass.__registeredForOverride__ = true;
+            rgthreeClass.nodeType = comfyClass;
+            rgthreeClass.nodeData = nodeData;
             rgthreeClass.onRegisteredForOverride(comfyClass, rgthreeClass);
         }
     }
@@ -222,12 +243,12 @@ RgthreeBaseServerNode.nodeData = null;
 RgthreeBaseServerNode.nodeType = null;
 RgthreeBaseServerNode.__registeredForOverride__ = false;
 const oldregisterNodeType = LiteGraph.registerNodeType;
-LiteGraph.registerNodeType = function (nodeId, baseClass) {
+LiteGraph.registerNodeType = async function (nodeId, baseClass) {
     var _a;
     const clazz = overriddenServerNodes.get(baseClass) || baseClass;
     if (clazz !== baseClass) {
         const classLabel = clazz.type || clazz.name || clazz.title;
-        const [n, v] = rgthree.logger.debugParts(`${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`);
+        const [n, v] = rgthree.logger.logParts(LogLevel.DEBUG, `${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`);
         (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
     }
     return oldregisterNodeType.call(LiteGraph, nodeId, clazz);

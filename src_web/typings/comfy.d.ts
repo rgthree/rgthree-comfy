@@ -1,7 +1,12 @@
-import type { LGraphNode, IWidget, SerializedLGraphNode } from "./litegraph";
+import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph } from "./litegraph";
 import type {Constructor} from './index';
-import { ComfyApp } from "../../../../web/scripts/app";
-export { ComfyApp } from "../../../../web/scripts/app";
+
+// @rgthree: Types on ComfyApp as needed.
+export interface ComfyApp {
+	extensions: ComfyExtension[];
+	queuePrompt(number: number, batchCount = 1): void;
+	graph: LGraph;
+}
 
 export interface ComfyWidget extends IWidget {
 	// https://github.com/comfyanonymous/ComfyUI/issues/2193 Changes from SerializedLGraphNode to
@@ -21,8 +26,10 @@ export interface ComfyNode extends LGraphNode {
 	comfyClass: string;
 }
 
+// @rgthree
 export interface ComfyNodeConstructor extends Constructor<ComfyNode> {
 	static title: string;
+	static type?: string;
 	static comfyClass: string;
 }
 
@@ -85,7 +92,7 @@ export interface ComfyExtension {
 	 * @param node The node that has been created
 	 * @param app The ComfyUI app instance
 	 */
-	nodeCreated(node: LGraphNode, app: ComfyApp);
+	nodeCreated?(node: LGraphNode, app: ComfyApp);
 }
 
 export type ComfyObjectInfo = {

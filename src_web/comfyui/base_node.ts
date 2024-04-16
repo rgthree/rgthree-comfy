@@ -1,5 +1,4 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-import { NodeMode } from "typings/comfy.js";
+import { ComfyNodeConstructor, ComfyObjectInfo, NodeMode } from "typings/comfy.js";
 import type {
   IWidget,
   SerializedLGraphNode,
@@ -15,15 +14,16 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 
-import { rgthree } from "./rgthree.js";
+import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
+import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
 
 /**
- * A base node with standard methods, extending the LGraphNode.
+ * A base node with standard methods, directly extending the LGraphNode.
  * This can be used for ui-nodes and a further base for server nodes.
  */
 export class RgthreeBaseNode extends LGraphNode {
@@ -38,6 +38,9 @@ export class RgthreeBaseNode extends LGraphNode {
   static category = "rgthree";
   static _category = "rgthree";
 
+  /** Nickname is used by ComfyUI-Manager badge. */
+  readonly nickname = "rgthree";
+
   /** A temporary width value that can be used to ensure compute size operates correctly. */
   _tempWidth = 0;
 
@@ -50,12 +53,55 @@ export class RgthreeBaseNode extends LGraphNode {
 
   helpDialog: RgthreeHelpDialog | null = null;
 
-  constructor(title = RgthreeBaseNode.title) {
+  /**
+   * The comfyClass is property ComfyUI and extensions may care about, even through it is only for
+   * server nodes. RgthreeBaseServerNode below overrides this with the expected value and we just
+   * set it here so extensions that are none the wiser don't break on some unchecked string method
+   * call on an undefined calue.
+   */
+  comfyClass = "rgthree-base-virtual-node";
+
+  /** An internal bool set when `onConstructed` is run. */
+  private __constructed__ = false;
+
+  constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = false) {
     super(title);
     if (title == "__NEED_NAME__") {
       throw new Error("RgthreeBaseNode needs overrides.");
     }
+    // Ensure these exist since some other extensions will break in their onNodeCreated.
+    this.widgets = this.widgets || [];
     this.properties = this.properties || {};
+
+    // Call on constructed unless we were told not to. If we were told not to, then check that we
+    // did in the child constructor. If not, fire off a dev warning.
+    if (!skipOnConstructedCall) {
+      this.onConstructed();
+    } else {
+      setTimeout(() => {
+        if (this.onConstructed()) {
+          const [n, v] = rgthree.logger.logParts(
+            LogLevel.DEV,
+            `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`,
+          );
+          console[n]?.(...v);
+        }
+      });
+    }
+  }
+
+  /**
+   * When a node is finished with construction, we must call this. Failure to do so will result in
+   * an error message from the timeout in this base class. This is broken out and becomes the
+   * responsibility of the child class because
+   */
+  onConstructed() {
+    if (this.__constructed__) return false;
+    // This is kinda a hack, but if this.type is still null, then set it to undefined to match.
+    this.type = this.type ?? undefined;
+    this.__constructed__ = true;
+    rgthree.invokeExtensionsAsync("nodeCreated", this);
+    return true;
   }
 
   override configure(info: SerializedLGraphNode<TLGraphNode>): void {
@@ -126,7 +172,10 @@ export class RgthreeBaseNode extends LGraphNode {
    * it's default logic. This bakes it so child nodes can call this instead (and this doesn't set
    * getSlotMenuOptions for all child nodes in case it doesn't exist).
    */
-  defaultGetSlotMenuOptions(slot: {input?: INodeInputSlot, output?: INodeOutputSlot}): ContextMenuItem[] | null {
+  defaultGetSlotMenuOptions(slot: {
+    input?: INodeInputSlot;
+    output?: INodeOutputSlot;
+  }): ContextMenuItem[] | null {
     const menu_info: ContextMenuItem[] = [];
     if (slot?.output?.links?.length) {
       menu_info.push({ content: "Disconnect Links", slot: slot });
@@ -134,7 +183,9 @@ export class RgthreeBaseNode extends LGraphNode {
     let inputOrOutput = slot.input || slot.output;
     if (inputOrOutput) {
       if (inputOrOutput.removable) {
-        menu_info.push(inputOrOutput.locked ? {content: "Cannot remove"} : {content: "Remove Slot", slot});
+        menu_info.push(
+          inputOrOutput.locked ? { content: "Cannot remove" } : { content: "Remove Slot", slot },
+        );
       }
       if (!inputOrOutput.nameLocked) {
         menu_info.push({ content: "Rename Slot", slot });
@@ -164,7 +215,6 @@ export class RgthreeBaseNode extends LGraphNode {
     if (help) {
       this.helpDialog = new RgthreeHelpDialog(this, help).show();
       this.helpDialog.addEventListener("close", (e) => {
-        console.log("close", e);
         this.helpDialog = null;
       });
     }
@@ -208,27 +258,18 @@ const overriddenServerNodes = new Map<any, any>();
  * seems safer than NOT overriding.
  */
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
-  static nodeData: any | null = null;
-  static nodeType: any | null = null;
-
-  comfyClass!: string;
+  static nodeData: ComfyObjectInfo | null = null;
+  static nodeType: ComfyNodeConstructor | null = null;
 
   constructor(title: string) {
-    super(title);
+    super(title, true);
     this.serialize_widgets = true;
     this.setupFromServerNodeData();
+    this.onConstructed();
   }
 
   getWidgets() {
     return ComfyWidgets;
-  }
-
-  override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: LGraphCanvas): void {
-    const nodeType = (this.constructor as any).nodeType;
-    // This is specifically for ComfyUi-Manager to draw the badge... though could have other
-    // side-effects if other extensions override. If it gets messy, may have to remove.
-    nodeType?.prototype?.onDrawForeground?.apply(this, [ctx, canvas]);
-    super.onDrawForeground && super.onDrawForeground(ctx, canvas);
   }
 
   /**
@@ -317,10 +358,14 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
   }
 
   static __registeredForOverride__: boolean = false;
-  static registerForOverride(comfyClass: any, rgthreeClass: any) {
+  static registerForOverride(
+    comfyClass: ComfyNodeConstructor,
+    nodeData: ComfyObjectInfo,
+    rgthreeClass: RgthreeBaseServerNodeConstructor,
+  ) {
     if (overriddenServerNodes.has(comfyClass)) {
       throw Error(
-        `Already have a class to overridde ${
+        `Already have a class to override ${
           comfyClass.type || comfyClass.name || comfyClass.title
         }`,
       );
@@ -330,6 +375,8 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     // this and certain setups will only want to setup once (like adding context menus, etc).
     if (!rgthreeClass.__registeredForOverride__) {
       rgthreeClass.__registeredForOverride__ = true;
+      rgthreeClass.nodeType = comfyClass;
+      rgthreeClass.nodeData = nodeData;
       rgthreeClass.onRegisteredForOverride(comfyClass, rgthreeClass);
     }
   }
@@ -344,15 +391,21 @@ const oldregisterNodeType = LiteGraph.registerNodeType;
  * ComfyUI calls registerNodeType with its ComfyNode, but we don't trust that will remain stable, so
  * we need to identify it, intercept it, and supply our own class for the node.
  */
-LiteGraph.registerNodeType = function (nodeId: string, baseClass: any) {
+LiteGraph.registerNodeType = async function (nodeId: string, baseClass: any) {
   const clazz = overriddenServerNodes.get(baseClass) || baseClass;
   if (clazz !== baseClass) {
     const classLabel = clazz.type || clazz.name || clazz.title;
-    const [n, v] = rgthree.logger.debugParts(
+    const [n, v] = rgthree.logger.logParts(
+      LogLevel.DEBUG,
       `${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`,
     );
     console[n]?.(...v);
+    // Note, we don't currently call our rgthree.invokeExtensionsAsync w/ beforeRegisterNodeDef as
+    // this runs right after that. However, this does mean that extensions cannot actually change
+    // anything about overriden server rgthree nodes in their beforeRegisterNodeDef (as when comfy
+    // calls it, it's for the wrong ComfyNode class). Calling it here, however, would re-run
+    // everything causing more issues than not. If we wanted to support beforeRegisterNodeDef then
+    // it would mean rewriting ComfyUI's registerNodeDef which, frankly, is not worth it.
   }
-
   return oldregisterNodeType.call(LiteGraph, nodeId, clazz);
 };

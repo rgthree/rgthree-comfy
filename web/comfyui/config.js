@@ -102,6 +102,30 @@ const CONFIGURABLE = {
             description: "Will show a message at the top of the screen when loading a workflow that has " +
                 "corrupt linking data.",
         },
+        {
+            key: "log_level",
+            type: ConfigType.STRING,
+            label: "Log level for browser dev console.",
+            description: "Further down the list, the more verbose logs to the console will be. For instance, " +
+                "selecting 'IMPORTANT' means only important message will be logged to the browser " +
+                "console, while selecting 'WARN' will log all messages at or higher than WARN, including " +
+                "'ERROR' and 'IMPORTANT' etc.",
+            options: ["IMPORTANT", "ERROR", "WARN", "INFO", "DEBUG", "DEV"],
+            isDevOnly: true,
+            onSave: function (value) {
+                rgthree.setLogLevel(value);
+            }
+        },
+        {
+            key: "features.invoke_extensions_async.node_created",
+            type: ConfigType.BOOLEAN,
+            label: "Allow other extensions to call nodeCreated on rgthree-nodes.",
+            isDevOnly: true,
+            description: "Do not disable unless you are having trouble (and then file an issue at rgthree-comfy)." +
+                "Prior to Apr 2024 it was not possible for other extensions to invoke their nodeCreated " +
+                "event on some rgthree-comfy nodes. Now it's possible and this option is only here in " +
+                "for easy if something is wrong.",
+        },
     ],
 };
 function fieldrow(item) {
@@ -157,6 +181,9 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         const content = $el("div");
         const features = $el(`fieldset`, { children: [$el(`legend[text="Features"]`)] });
         for (const feature of CONFIGURABLE.features) {
+            if (feature.isDevOnly && !rgthree.isDevMode()) {
+                continue;
+            }
             const container = $el("div.formrow");
             container.appendChild(fieldrow(feature));
             if (feature.subconfig) {
@@ -194,6 +221,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                     disabled: true,
                     className: "rgthree-button save-button -blue",
                     callback: async (e) => {
+                        var _a, _b;
                         const changed = this.getChangedFormData();
                         if (!Object.keys(changed).length) {
                             this.close();
@@ -201,6 +229,9 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                         }
                         const success = await CONFIG_SERVICE.setConfigValues(changed);
                         if (success) {
+                            for (const key of Object.keys(changed)) {
+                                (_b = (_a = CONFIGURABLE.features.find(f => f.key === key)) === null || _a === void 0 ? void 0 : _a.onSave) === null || _b === void 0 ? void 0 : _b.call(_a, changed[key]);
+                            }
                             this.close();
                             rgthree.showMessage({
                                 id: "config-success",

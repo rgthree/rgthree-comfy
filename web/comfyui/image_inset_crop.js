@@ -1,7 +1,9 @@
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
-import { applyMixins } from "./utils.js";
-class ImageInsetCrop extends RgthreeBaseNode {
+import { RgthreeBaseServerNode } from "./base_node.js";
+class ImageInsetCrop extends RgthreeBaseServerNode {
+    constructor(title = ImageInsetCrop.title) {
+        super(title);
+    }
     onAdded(graph) {
         const measurementWidget = this.widgets[0];
         let callback = measurementWidget.callback;
@@ -18,7 +20,7 @@ class ImageInsetCrop extends RgthreeBaseNode {
     setWidgetStep() {
         const measurementWidget = this.widgets[0];
         for (let i = 1; i <= 4; i++) {
-            if (measurementWidget.value === 'Pixels') {
+            if (measurementWidget.value === "Pixels") {
                 this.widgets[i].options.step = 80;
                 this.widgets[i].options.max = ImageInsetCrop.maxResolution;
             }
@@ -29,32 +31,28 @@ class ImageInsetCrop extends RgthreeBaseNode {
         }
     }
     async handleAction(action) {
-        if (action === 'Reset Crop') {
+        if (action === "Reset Crop") {
             for (const widget of this.widgets) {
-                if (['left', 'right', 'top', 'bottom'].includes(widget.name)) {
+                if (["left", "right", "top", "bottom"].includes(widget.name)) {
                     widget.value = 0;
                 }
             }
         }
     }
-    static setUp(clazz) {
-        ImageInsetCrop.title = clazz.title;
-        ImageInsetCrop.comfyClass = clazz.comfyClass;
-        setTimeout(() => {
-            ImageInsetCrop.category = clazz.category;
-        });
-        applyMixins(clazz, [RgthreeBaseNode, ImageInsetCrop]);
+    static setUp(comfyClass, nodeData) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ImageInsetCrop);
     }
 }
-ImageInsetCrop.type = '__OVERRIDE_ME__';
-ImageInsetCrop.comfyClass = '__OVERRIDE_ME__';
-ImageInsetCrop.exposedActions = ['Reset Crop'];
+ImageInsetCrop.title = "Image Inset Crop (rgthree)";
+ImageInsetCrop.type = "Image Inset Crop (rgthree)";
+ImageInsetCrop.comfyClass = "Image Inset Crop (rgthree)";
+ImageInsetCrop.exposedActions = ["Reset Crop"];
 ImageInsetCrop.maxResolution = 8192;
 app.registerExtension({
     name: "rgthree.ImageInsetCrop",
     async beforeRegisterNodeDef(nodeType, nodeData, _app) {
         if (nodeData.name === "Image Inset Crop (rgthree)") {
-            ImageInsetCrop.setUp(nodeType);
+            ImageInsetCrop.setUp(nodeType, nodeData);
         }
     },
 });

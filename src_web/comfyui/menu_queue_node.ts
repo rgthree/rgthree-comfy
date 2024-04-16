@@ -68,8 +68,6 @@ app.registerExtension({
   },
 
   async setup() {
-    console.log("rgthree-menu-setup");
-
     const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
     LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
       const options = getCanvasMenuOptions.apply(this, [...args] as any);

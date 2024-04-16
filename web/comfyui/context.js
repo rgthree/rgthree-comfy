@@ -3,40 +3,40 @@ import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsTo
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
-    const otherNodeType = (otherNode.type || '').toUpperCase();
-    const otherNodeName = (otherNode.title || '').toUpperCase();
+    const otherNodeType = (otherNode.type || "").toUpperCase();
+    const otherNodeName = (otherNode.title || "").toUpperCase();
     let otherSlotType = otherSlot.type;
-    if (Array.isArray(otherSlotType) || otherSlotType.includes(',')) {
-        otherSlotType = 'COMBO';
+    if (Array.isArray(otherSlotType) || otherSlotType.includes(",")) {
+        otherSlotType = "COMBO";
     }
-    const otherSlotName = otherSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+    const otherSlotName = otherSlot.name.toUpperCase().replace("OPT_", "").replace("_NAME", "");
     let ctxSlotIndex = -1;
     if (["CONDITIONING", "INT", "STRING", "FLOAT", "COMBO"].includes(otherSlotType)) {
         ctxSlotIndex = ctxSlots.findIndex((ctxSlot) => {
-            const ctxSlotName = ctxSlot.name.toUpperCase().replace('OPT_', '').replace('_NAME', '');
+            const ctxSlotName = ctxSlot.name.toUpperCase().replace("OPT_", "").replace("_NAME", "");
             let ctxSlotType = ctxSlot.type;
-            if (Array.isArray(ctxSlotType) || ctxSlotType.includes(',')) {
-                ctxSlotType = 'COMBO';
+            if (Array.isArray(ctxSlotType) || ctxSlotType.includes(",")) {
+                ctxSlotType = "COMBO";
             }
             if (ctxSlotType !== otherSlotType) {
                 return false;
             }
-            if (ctxSlotName === otherSlotName
-                || (ctxSlotName === "SEED" && otherSlotName.includes("SEED"))
-                || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP"))
-                || (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))) {
+            if (ctxSlotName === otherSlotName ||
+                (ctxSlotName === "SEED" && otherSlotName.includes("SEED")) ||
+                (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("AT_STEP")) ||
+                (ctxSlotName === "STEP_REFINER" && otherSlotName.includes("REFINER_STEP"))) {
                 return true;
             }
-            if ((otherNodeType.includes('POSITIVE') || otherNodeName.includes('POSITIVE')) &&
-                ((ctxSlotName === 'POSITIVE' && otherSlotType === 'CONDITIONING')
-                    || (ctxSlotName === 'TEXT_POS_G' && otherSlotName.includes("TEXT_G"))
-                    || (ctxSlotName === 'TEXT_POS_L' && otherSlotName.includes("TEXT_L")))) {
+            if ((otherNodeType.includes("POSITIVE") || otherNodeName.includes("POSITIVE")) &&
+                ((ctxSlotName === "POSITIVE" && otherSlotType === "CONDITIONING") ||
+                    (ctxSlotName === "TEXT_POS_G" && otherSlotName.includes("TEXT_G")) ||
+                    (ctxSlotName === "TEXT_POS_L" && otherSlotName.includes("TEXT_L")))) {
                 return true;
             }
-            if ((otherNodeType.includes('NEGATIVE') || otherNodeName.includes('NEGATIVE')) &&
-                ((ctxSlotName === 'NEGATIVE' && otherSlotType === 'CONDITIONING')
-                    || (ctxSlotName === 'TEXT_NEG_G' && otherSlotName.includes("TEXT_G"))
-                    || (ctxSlotName === 'TEXT_NEG_L' && otherSlotName.includes("TEXT_L")))) {
+            if ((otherNodeType.includes("NEGATIVE") || otherNodeName.includes("NEGATIVE")) &&
+                ((ctxSlotName === "NEGATIVE" && otherSlotType === "CONDITIONING") ||
+                    (ctxSlotName === "TEXT_NEG_G" && otherSlotName.includes("TEXT_G")) ||
+                    (ctxSlotName === "TEXT_NEG_L" && otherSlotName.includes("TEXT_L")))) {
                 return true;
             }
             return false;
@@ -57,7 +57,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
     }
     set _collapsed_width(width) {
         const canvas = app.canvas;
-        const ctx = canvas.canvas.getContext('2d');
+        const ctx = canvas.canvas.getContext("2d");
         const oldFont = ctx.font;
         ctx.font = canvas.title_text_font;
         let title = this.title.trim();
@@ -105,8 +105,8 @@ class BaseContextNode extends RgthreeBaseServerNode {
         }
         return null;
     }
-    static setUp(comfyClass, ctxClass) {
-        RgthreeBaseServerNode.registerForOverride(comfyClass, ctxClass);
+    static setUp(comfyClass, nodeData, ctxClass) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         addConnectionLayoutSupport(ctxClass, app, [
@@ -122,8 +122,8 @@ class ContextNode extends BaseContextNode {
     constructor(title = ContextNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -142,8 +142,8 @@ class ContextBigNode extends BaseContextNode {
     constructor(title = ContextBigNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextBigNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextBigNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -162,8 +162,8 @@ class ContextSwitchNode extends BaseContextNode {
     constructor(title = ContextSwitchNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextSwitchNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -182,8 +182,8 @@ class ContextSwitchBigNode extends BaseContextNode {
     constructor(title = ContextSwitchBigNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextSwitchBigNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchBigNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -202,8 +202,8 @@ class ContextMergeNode extends BaseContextNode {
     constructor(title = ContextMergeNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextMergeNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextMergeNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -222,8 +222,8 @@ class ContextMergeBigNode extends BaseContextNode {
     constructor(title = ContextMergeBigNode.title) {
         super(title);
     }
-    static setUp(comfyClass) {
-        BaseContextNode.setUp(comfyClass, ContextMergeBigNode);
+    static setUp(comfyClass, nodeData) {
+        BaseContextNode.setUp(comfyClass, nodeData, ContextMergeBigNode);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         BaseContextNode.onRegisteredForOverride(comfyClass, ctxClass);
@@ -238,25 +238,28 @@ class ContextMergeBigNode extends BaseContextNode {
 ContextMergeBigNode.title = "Context Merge Big (rgthree)";
 ContextMergeBigNode.type = "Context Merge Big (rgthree)";
 ContextMergeBigNode.comfyClass = "Context Merge Big (rgthree)";
-const contextNodes = [ContextNode, ContextBigNode, ContextSwitchNode, ContextSwitchBigNode, ContextMergeNode, ContextMergeBigNode];
+const contextNodes = [
+    ContextNode,
+    ContextBigNode,
+    ContextSwitchNode,
+    ContextSwitchBigNode,
+    ContextMergeNode,
+    ContextMergeBigNode,
+];
 const contextTypeToServerDef = {};
 function fixBadConfigs(node) {
-    const wrongName = node.outputs.find((o, i) => o.name === 'CLIP_HEIGTH');
+    const wrongName = node.outputs.find((o, i) => o.name === "CLIP_HEIGTH");
     if (wrongName) {
-        wrongName.name = 'CLIP_HEIGHT';
+        wrongName.name = "CLIP_HEIGHT";
     }
 }
 app.registerExtension({
     name: "rgthree.Context",
     async beforeRegisterNodeDef(nodeType, nodeData) {
-        if (nodeData.name === ContextNode.type) {
-        }
         for (const ctxClass of contextNodes) {
             if (nodeData.name === ctxClass.type) {
-                ctxClass.nodeData = nodeData;
-                ctxClass.nodeType = nodeType;
                 contextTypeToServerDef[ctxClass.type] = nodeData;
-                ctxClass.setUp(nodeType);
+                ctxClass.setUp(nodeType, nodeData);
                 break;
             }
         }

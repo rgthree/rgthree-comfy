@@ -161,8 +161,8 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         }
         return seedToUse !== null && seedToUse !== void 0 ? seedToUse : inputSeed;
     }
-    static setUp(comfyClass) {
-        RgthreeBaseServerNode.registerForOverride(comfyClass, RgthreeSeed);
+    static setUp(comfyClass, nodeData) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeSeed);
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         addConnectionLayoutSupport(RgthreeSeed, app, [
@@ -182,9 +182,7 @@ app.registerExtension({
     name: "rgthree.Seed",
     async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name === RgthreeSeed.type) {
-            RgthreeSeed.nodeType = nodeType;
-            RgthreeSeed.nodeData = nodeData;
-            RgthreeSeed.setUp(nodeType);
+            RgthreeSeed.setUp(nodeType, nodeData);
         }
     },
 });

@@ -15,6 +15,8 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
    */
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.REROUTE_ONLY;
 
+  readonly logger = rgthree.newLogSession("[BaseCollectorNode]");
+
   constructor(title?: string) {
     super(title);
     this.addOutput("Output", "*");
@@ -40,20 +42,37 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
       if (allConnectedNodes.includes(outputNode)) {
         // If we're connecting to the same slot, then allow it by replacing the one we have.
         // const slotsOriginNode = getOriginNodeByLink(this.inputs[inputIndex]?.link);
-        rgthree.logger.debug(`BaseCollectorNode: ${outputNode.title} is already connected to ${this.title}.`);
+        const [n, v] = this.logger.debugParts(
+          `${outputNode.title} is already connected to ${this.title}.`,
+        );
+        console[n]?.(...v);
         if (nodesAlreadyInSlot.includes(outputNode)) {
-          rgthree.logger.debug(`... but letting it slide since it's for the same slot.`);
+          const [n, v] = this.logger.debugParts(
+            `... but letting it slide since it's for the same slot.`,
+          );
+          console[n]?.(...v);
         } else {
           canConnect = false;
         }
       }
       if (canConnect && shouldPassThrough(outputNode, PassThroughFollowing.REROUTE_ONLY)) {
-        const connectedNode = getConnectedInputNodesAndFilterPassThroughs(outputNode, undefined, undefined, PassThroughFollowing.REROUTE_ONLY)[0];
+        const connectedNode = getConnectedInputNodesAndFilterPassThroughs(
+          outputNode,
+          undefined,
+          undefined,
+          PassThroughFollowing.REROUTE_ONLY,
+        )[0];
         if (connectedNode && allConnectedNodes.includes(connectedNode)) {
           // If we're connecting to the same slot, then allow it by replacing the one we have.
-          rgthree.logger.debug(`BaseCollectorNode: ${connectedNode.title} is already connected to ${this.title}.`);
+          const [n, v] = this.logger.debugParts(
+            `${connectedNode.title} is already connected to ${this.title}.`,
+          );
+          console[n]?.(...v);
           if (nodesAlreadyInSlot.includes(connectedNode)) {
-          rgthree.logger.debug(`... but letting it slide since it's for the same slot.`);
+            const [n, v] = this.logger.debugParts(
+              `... but letting it slide since it's for the same slot.`,
+            );
+            console[n]?.(...v);
           } else {
             canConnect = false;
           }

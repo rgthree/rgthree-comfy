@@ -9,6 +9,7 @@ const MODE_BYPASS = 4;
 class FastActionsButton extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);
+        this.logger = rgthree.newLogSession("[FastActionsButton]");
         this.isVirtualNode = true;
         this.serialize_widgets = true;
         this.widgetToData = new Map();
@@ -99,7 +100,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
     }
     handleLinkedNodesStabilization(linkedNodes) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         for (const [widget, data] of this.widgetToData.entries()) {
             if (!data.node) {
                 continue;
@@ -111,7 +112,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     this.removeWidget(widget);
                 }
                 else {
-                    rgthree.logger.debug('Fast Action Button - Connected widget is not in widgets... weird.');
+                    const [m, a] = this.logger.debugParts('Connected widget is not in widgets... weird.');
+                    (_a = console[m]) === null || _a === void 0 ? void 0 : _a.call(console, ...a);
                 }
             }
         }
@@ -119,19 +121,20 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         let indexOffset = 1;
         for (const [index, node] of linkedNodes.entries()) {
             if (!node) {
-                rgthree.logger.debug('Fast Action Button - linkedNode provided that does not exist. ');
+                const [m, a] = this.logger.debugParts('linkedNode provided that does not exist. ');
+                (_b = console[m]) === null || _b === void 0 ? void 0 : _b.call(console, ...a);
                 badNodes.push(node);
                 continue;
             }
             let widgetAtSlot = this.widgets[index + indexOffset];
-            if (widgetAtSlot && ((_a = this.widgetToData.get(widgetAtSlot)) === null || _a === void 0 ? void 0 : _a.comfy)) {
+            if (widgetAtSlot && ((_c = this.widgetToData.get(widgetAtSlot)) === null || _c === void 0 ? void 0 : _c.comfy)) {
                 indexOffset++;
                 widgetAtSlot = this.widgets[index + indexOffset];
             }
-            if (!widgetAtSlot || ((_c = (_b = this.widgetToData.get(widgetAtSlot)) === null || _b === void 0 ? void 0 : _b.node) === null || _c === void 0 ? void 0 : _c.id) !== node.id) {
+            if (!widgetAtSlot || ((_e = (_d = this.widgetToData.get(widgetAtSlot)) === null || _d === void 0 ? void 0 : _d.node) === null || _e === void 0 ? void 0 : _e.id) !== node.id) {
                 let widget = null;
                 for (let i = index + indexOffset; i < this.widgets.length; i++) {
-                    if (((_e = (_d = this.widgetToData.get(this.widgets[i])) === null || _d === void 0 ? void 0 : _d.node) === null || _e === void 0 ? void 0 : _e.id) === node.id) {
+                    if (((_g = (_f = this.widgetToData.get(this.widgets[i])) === null || _f === void 0 ? void 0 : _f.node) === null || _g === void 0 ? void 0 : _g.id) === node.id) {
                         widget = this.widgets.splice(i, 1)[0];
                         this.widgets.splice(index + indexOffset, 0, widget);
                         break;
@@ -151,7 +154,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
         for (let i = this.widgets.length - 1; i > linkedNodes.length + indexOffset - 1; i--) {
             const widgetAtSlot = this.widgets[i];
-            if (widgetAtSlot && ((_f = this.widgetToData.get(widgetAtSlot)) === null || _f === void 0 ? void 0 : _f.comfy)) {
+            if (widgetAtSlot && ((_h = this.widgetToData.get(widgetAtSlot)) === null || _h === void 0 ? void 0 : _h.comfy)) {
                 continue;
             }
             this.removeWidget(widgetAtSlot);
@@ -176,7 +179,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
             const { comfy, node } = (_a = this.widgetToData.get(widget)) !== null && _a !== void 0 ? _a : {};
             if (comfy) {
                 if (action === "Queue Prompt") {
-                    await comfy.queuePrompt();
+                    await comfy.queuePrompt(0);
                 }
                 continue;
             }
