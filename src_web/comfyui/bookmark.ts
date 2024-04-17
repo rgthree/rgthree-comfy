@@ -9,6 +9,7 @@ import type {
   LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   INumberWidget,
+  LGraphNode,
   Vector2,
 } from "typings/litegraph.js";
 import { getClosestOrSelf, queryOne } from "rgthree/common/utils_dom.js";
@@ -53,10 +54,11 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   constructor(title = Bookmark.title) {
     super(title);
+    const nextShortcutChar = getNextShortcut();
     this.addWidget(
       "text",
       "shortcut_key",
-      "1",
+      nextShortcutChar,
       (value: string, ...args) => {
         value = value.trim()[0] || "1";
       },
@@ -151,3 +153,26 @@ app.registerExtension({
     Bookmark.setUp(Bookmark);
   },
 });
+
+function isBookmark(node: LGraphNode): node is Bookmark {
+  return node.type === NodeTypesString.BOOKMARK;
+}
+
+function getExistingShortcuts() {
+  const graph: TLGraph = app.graph;
+  const bookmarkNodes = graph._nodes.filter(isBookmark);
+  const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
+  return usedShortcuts;
+}
+
+const SHORTCUT_DEFAULTS = `1234567890abcdefghijklmnopqrstuvwxyz`;
+
+function getNextShortcut() {
+  const existingShortcuts = getExistingShortcuts();
+  for (const char of SHORTCUT_DEFAULTS.split('')) {
+    if (!existingShortcuts.has(char)) {
+      return char;
+    }
+  }
+  return '1';
+}

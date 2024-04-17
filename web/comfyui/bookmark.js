@@ -21,7 +21,8 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
-        this.addWidget("text", "shortcut_key", "1", (value, ...args) => {
+        const nextShortcutChar = getNextShortcut();
+        this.addWidget("text", "shortcut_key", nextShortcutChar, (value, ...args) => {
             value = value.trim()[0] || "1";
         }, {
             y: 8,
@@ -95,3 +96,22 @@ app.registerExtension({
         Bookmark.setUp(Bookmark);
     },
 });
+function isBookmark(node) {
+    return node.type === NodeTypesString.BOOKMARK;
+}
+function getExistingShortcuts() {
+    const graph = app.graph;
+    const bookmarkNodes = graph._nodes.filter(isBookmark);
+    const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
+    return usedShortcuts;
+}
+const SHORTCUT_DEFAULTS = `1234567890abcdefghijklmnopqrstuvwxyz`;
+function getNextShortcut() {
+    const existingShortcuts = getExistingShortcuts();
+    for (const char of SHORTCUT_DEFAULTS.split('')) {
+        if (!existingShortcuts.has(char)) {
+            return char;
+        }
+    }
+    return '1';
+}
