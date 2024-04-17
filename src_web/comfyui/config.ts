@@ -128,6 +128,20 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
         "corrupt linking data.",
     },
     {
+      key: "features.bookmark_menu.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Show bookmark shortcuts in context menu",
+      description:
+        "Will list the bookmarks in the rgthree-comfy context menu",
+      subconfig: [
+        {
+          key: "features.bookmark_menu.labeled_only",
+          type: ConfigType.BOOLEAN,
+          label: "Only show explicitly labeled bookmarks (set in Properties)",
+        },
+      ],
+    },
+    {
       key: "log_level",
       type: ConfigType.STRING,
       label: "Log level for browser dev console.",

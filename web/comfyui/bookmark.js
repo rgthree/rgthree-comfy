@@ -19,6 +19,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
+        this.properties[PROPERTY_LABEL] = "";
         this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
             value = value.trim()[0] || '1';
         }, {
@@ -42,7 +43,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     async onKeypress(event) {
         const target = event.target;
-        if (['input', 'textarea'].includes(target.localName)) {
+        if (['input', 'textarea', 'span'].includes(target.localName)) {
             return;
         }
         if (event.ctrlKey || event.metaKey || event.altKey) {
@@ -72,6 +73,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 Bookmark.type = NodeTypesString.BOOKMARK;
 Bookmark.title = NodeTypesString.BOOKMARK;
 Bookmark.slot_start_y = -20;
+Bookmark["@label"] = { type: "string" };
 app.registerExtension({
     name: "rgthree.Bookmark",
     registerCustomNodes() {

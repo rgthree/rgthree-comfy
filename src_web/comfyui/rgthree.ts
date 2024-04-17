@@ -22,6 +22,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
+import type { Bookmark } from './bookmark';
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -496,6 +497,38 @@ class Rgthree extends EventTarget {
     }
     const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
+    function getBookmarks(): ContextMenuItem[] {
+      const showBookmarks = CONFIG_SERVICE.getFeatureValue("bookmark_menu.enabled");
+
+      if (!showBookmarks) { return []; }
+     
+      const bookmarkNodes = graph._nodes.filter((n): n is Bookmark => n.type == NodeTypesString.BOOKMARK);
+      const labeledOnly = CONFIG_SERVICE.getFeatureValue("bookmark_menu.labeled_only");
+
+      const bookmarksToList = bookmarkNodes
+          .filter((n) => !labeledOnly || n.properties['label'])
+          // Sort by shortcut key.
+          // I could see an option to sort by either Shortcut, Label, or Position.
+          .sort((a, b) => a.shortcutKey.localeCompare(b.shortcutKey));
+      const bookmarkMenuItems = bookmarksToList.map((n) => ({
+          content: `[${n.shortcutKey}] ${n.properties['label']}`,
+          className: "rgthree-contextmenu-item",
+          callback: () => {
+            n.canvasToBookmark(); 
+          },
+        }));
+      return [
+        {
+          content: "🔖 Bookmarks",
+          disabled: true,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+        },
+        ...bookmarkMenuItems,
+      ]
+    }
+
+    const bookmarkMenuItems = getBookmarks();
+
     return [
       {
         content: "Actions",
@@ -535,6 +568,7 @@ class Rgthree extends EventTarget {
           })();
         },
       },
+      ...bookmarkMenuItems,
       {
         content: "More...",
         disabled: true,
