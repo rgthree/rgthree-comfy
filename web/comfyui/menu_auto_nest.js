@@ -8,7 +8,7 @@ app.registerExtension({
         const logger = rgthree.newLogSession("[ContextMenuAutoNest]");
         const existingContextMenu = LiteGraph.ContextMenu;
         LiteGraph.ContextMenu = function (values, options) {
-            var _a, _b, _c, _d;
+            var _a, _b, _c, _d, _e;
             const threshold = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.threshold", 20);
             const enabled = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.subdirs", false);
             let incompatible = !enabled;
@@ -100,6 +100,9 @@ app.registerExtension({
                     f.callback = newCallback;
                     return f;
                 }));
+            }
+            if (options.scale == null) {
+                options.scale = Math.max(((_e = app.canvas.ds) === null || _e === void 0 ? void 0 : _e.scale) || 1, 1);
             }
             return existingContextMenu.call(this, values, options);
         };

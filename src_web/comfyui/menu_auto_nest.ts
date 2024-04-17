@@ -139,7 +139,9 @@ app.registerExtension({
           }),
         );
       }
-
+      if (options.scale == null) {
+        options.scale = Math.max(app.canvas.ds?.scale || 1, 1);
+      }
       return existingContextMenu.call(this as any, values, options);
     };
 
