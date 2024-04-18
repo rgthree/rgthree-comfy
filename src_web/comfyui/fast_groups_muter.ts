@@ -15,6 +15,9 @@ import {
 import {SERVICE as FAST_GROUPS_SERVICE} from "./fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 import { RgthreeToggleNavWidget } from "./utils_widgets.js";
+import {
+  groupHasActiveNode,
+} from "./utils_fast.js";
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -202,7 +205,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         );
         (widget as any).doModeChange = (force?: boolean, skipOtherNodeCheck?: boolean) => {
           group.recomputeInsideNodes();
-          const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+          const hasAnyActiveNodes = groupHasActiveNode(group);
           let newValue = force != null ? force : !hasAnyActiveNodes;
           if (skipOtherNodeCheck !== true) {
             if (newValue && this.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
@@ -216,7 +219,6 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
           for (const node of group._nodes) {
             node.mode = (newValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
           }
-          (group as any)._rgthreeHasAnyActiveNode = newValue;
           widget!.value = newValue;
           app.graph.setDirtyCanvas(true, false);
         };

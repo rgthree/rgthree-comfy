@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { groupHasActiveNode, } from "./utils_fast.js";
 class FastGroupsService {
     constructor() {
         this.msThreshold = 400;
@@ -91,7 +92,7 @@ class FastGroupsService {
             this.groupsUnsorted = [...graph._groups];
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
-                group._rgthreeHasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                const _ = groupHasActiveNode(group);
             }
             this.msLastUnsorted = now;
         }

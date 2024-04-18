@@ -2,7 +2,8 @@ import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
-import { drawNodeWidget, fitString } from "./utils_canvas.js";
+import { RgthreeToggleNavWidget } from "./utils_widgets.js";
+import { groupHasActiveNode, } from "./utils_fast.js";
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
@@ -41,6 +42,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     }
     onRemoved() {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
+    }
+    get showNav() {
+        var _a;
+        return ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
     }
     refreshWidgets() {
         var _a, _b, _c, _d, _e, _f, _g;
@@ -130,99 +135,11 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             let widget = this.widgets.find((w) => w.name === widgetName);
             if (!widget) {
                 this.tempSize = [...this.size];
-                widget = this.addCustomWidget({
-                    name: "RGTHREE_TOGGLE_AND_NAV",
-                    label: "",
-                    value: false,
-                    disabled: false,
-                    options: { on: "yes", off: "no" },
-                    draw: function (ctx, node, width, posY, height) {
-                        var _a;
-                        const widgetData = drawNodeWidget(ctx, {
-                            width,
-                            height,
-                            posY,
-                        });
-                        const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
-                        let currentX = widgetData.width - widgetData.margin;
-                        if (!widgetData.lowQuality && showNav) {
-                            currentX -= 7;
-                            const midY = widgetData.posY + widgetData.height * 0.5;
-                            ctx.fillStyle = ctx.strokeStyle = "#89A";
-                            ctx.lineJoin = "round";
-                            ctx.lineCap = "round";
-                            const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
-                            ctx.fill(arrow);
-                            ctx.stroke(arrow);
-                            currentX -= 14;
-                            currentX -= 7;
-                            ctx.strokeStyle = widgetData.colorOutline;
-                            ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
-                        }
-                        else if (widgetData.lowQuality && showNav) {
-                            currentX -= 28;
-                        }
-                        currentX -= 7;
-                        ctx.fillStyle = this.value ? "#89A" : "#333";
-                        ctx.beginPath();
-                        const toggleRadius = height * 0.36;
-                        ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
-                        ctx.fill();
-                        currentX -= toggleRadius * 2;
-                        if (!widgetData.lowQuality) {
-                            currentX -= 4;
-                            ctx.textAlign = "right";
-                            ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
-                            const label = this.label || this.name;
-                            const toggleLabelOn = this.options.on || "true";
-                            const toggleLabelOff = this.options.off || "false";
-                            ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
-                            currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
-                            currentX -= 7;
-                            ctx.textAlign = "left";
-                            let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
-                            if (label != null) {
-                                ctx.fillText(fitString(ctx, label, maxLabelWidth), widgetData.margin + 10, posY + height * 0.7);
-                            }
-                        }
-                    },
-                    serializeValue(serializedNode, widgetIndex) {
-                        return this.value;
-                    },
-                    mouse(event, pos, node) {
-                        var _a, _b, _c;
-                        if (event.type == "pointerdown") {
-                            if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false &&
-                                pos[0] >= node.size[0] - 15 - 28 - 1) {
-                                const canvas = app.canvas;
-                                const lowQuality = (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1) <= 0.5;
-                                if (!lowQuality) {
-                                    canvas.centerOnNode(group);
-                                    const zoomCurrent = ((_c = canvas.ds) === null || _c === void 0 ? void 0 : _c.scale) || 1;
-                                    const zoomX = canvas.canvas.width / group._size[0] - 0.02;
-                                    const zoomY = canvas.canvas.height / group._size[1] - 0.02;
-                                    canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
-                                        canvas.canvas.width / 2,
-                                        canvas.canvas.height / 2,
-                                    ]);
-                                    canvas.setDirty(true, true);
-                                }
-                            }
-                            else {
-                                this.value = !this.value;
-                                setTimeout(() => {
-                                    var _a;
-                                    (_a = this.callback) === null || _a === void 0 ? void 0 : _a.call(this, this.value, app.canvas, node, pos, event);
-                                }, 20);
-                            }
-                        }
-                        return true;
-                    },
-                });
+                widget = this.addCustomWidget(new RgthreeToggleNavWidget(group, () => this.showNav));
                 widget.doModeChange = (force, skipOtherNodeCheck) => {
                     var _a, _b, _c;
                     group.recomputeInsideNodes();
-                    const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                    const hasAnyActiveNodes = groupHasActiveNode(group);
                     let newValue = force != null ? force : !hasAnyActiveNodes;
                     if (skipOtherNodeCheck !== true) {
                         if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(" one"))) {
@@ -237,7 +154,6 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                     for (const node of group._nodes) {
                         node.mode = (newValue ? this.modeOn : this.modeOff);
                     }
-                    group._rgthreeHasAnyActiveNode = newValue;
                     widget.value = newValue;
                     app.graph.setDirtyCanvas(true, false);
                 };
