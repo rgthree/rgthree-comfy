@@ -17,7 +17,7 @@ import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { wait } from "rgthree/common/shared_utils.js";
-import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
+import { navigateToGroupMaybe, replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
@@ -496,6 +496,42 @@ class Rgthree extends EventTarget {
     }
     const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
+    function getGroupsMenu(): ContextMenuItem[] {
+      const groupNavEnabled = CONFIG_SERVICE.getConfigValue(
+        "features.group_nav_menu.enabled",
+        false,
+      );
+      if (!groupNavEnabled) {
+        return [];
+      }
+
+      const filterRegex = CONFIG_SERVICE.getConfigValue("features.group_nav_menu.filter_regex", "");
+      const filterRegexPattern = new RegExp(filterRegex);
+
+      const groups = graph._groups;
+      const groupMenuItems = groups
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .filter((group) => !filterRegex || filterRegexPattern.test(group.title))
+        .map((group) => ({
+          content: `${group.title}`,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-github",
+          callback: (...args: any[]) => {
+            navigateToGroupMaybe(group, { checkQuality: false, forceZoom: true });
+          },
+        }));
+
+      return [
+        {
+          content: "Groups",
+          disabled: true,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+        },
+        ...groupMenuItems,
+      ];
+    }
+
+    const groupsMenuItems = getGroupsMenu();
+
     return [
       {
         content: "Actions",
@@ -535,6 +571,7 @@ class Rgthree extends EventTarget {
           })();
         },
       },
+      ...groupsMenuItems,
       {
         content: "More...",
         disabled: true,

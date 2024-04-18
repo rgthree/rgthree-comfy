@@ -614,3 +614,19 @@ LiteGraph.isValidConnection = function (typeA, typeB) {
     }
     return isValid;
 };
+export function navigateToGroupMaybe(group, { checkQuality, forceZoom } = { checkQuality: true, forceZoom: false }) {
+    var _a, _b;
+    const canvas = app.canvas;
+    const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) <= 0.5;
+    if (!lowQuality || !checkQuality) {
+        canvas.centerOnNode(group);
+        const zoomCurrent = forceZoom ? 2 : (((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1);
+        const zoomX = canvas.canvas.width / group._size[0] - 0.02;
+        const zoomY = canvas.canvas.height / group._size[1] - 0.02;
+        canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+            canvas.canvas.width / 2,
+            canvas.canvas.height / 2,
+        ]);
+        canvas.setDirty(true, true);
+    }
+}

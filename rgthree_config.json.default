@@ -20,6 +20,10 @@
       "height": 16,
       "position": "top"
     },
+    "group_nav_menu": {
+      "enabled": false,
+      "filter_regex": ""
+    },
     // Enables invokeExtensionsAsync for rgthree-nodes allowing other extensions to hook into the
     // nodes like the default ComfyNodes. This was not possible before Apr 2024, so it's a config
     // entry in case it causes issues. This is only for the nodeCreated event/function as of now.

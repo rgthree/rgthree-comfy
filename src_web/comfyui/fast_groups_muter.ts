@@ -15,6 +15,7 @@ import {
 import {SERVICE as FAST_GROUPS_SERVICE} from "./fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import { navigateToGroupMaybe } from "./utils.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
@@ -280,21 +281,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                 node.properties?.[PROPERTY_SHOW_NAV] !== false &&
                 pos[0] >= node.size[0] - 15 - 28 - 1
               ) {
-                const canvas = app.canvas as TLGraphCanvas;
-                const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
-                if (!lowQuality) {
-                  // Clicked on right half with nav arrow, go to the group, center on group and set
-                  // zoom to see it all.
-                  canvas.centerOnNode(group);
-                  const zoomCurrent = canvas.ds?.scale || 1;
-                  const zoomX = canvas.canvas.width / group._size[0] - 0.02;
-                  const zoomY = canvas.canvas.height / group._size[1] - 0.02;
-                  canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
-                    canvas.canvas.width / 2,
-                    canvas.canvas.height / 2,
-                  ]);
-                  canvas.setDirty(true, true);
-                }
+                navigateToGroupMaybe(group);
               } else {
                 this.value = !this.value;
                 setTimeout(() => {

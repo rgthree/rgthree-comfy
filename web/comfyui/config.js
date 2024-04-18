@@ -103,6 +103,19 @@ const CONFIGURABLE = {
                 "corrupt linking data.",
         },
         {
+            key: "features.group_nav_menu.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "Show Quick Nav for Groups",
+            description: "Will show a list in the rgthree-comfy context menu to jump to Groups",
+            subconfig: [
+                {
+                    key: "features.group_nav_menu.filter_regex",
+                    type: ConfigType.STRING,
+                    label: "Filter RegEx: Only shows matching Groups",
+                },
+            ],
+        },
+        {
             key: "log_level",
             type: ConfigType.STRING,
             label: "Log level for browser dev console.",
