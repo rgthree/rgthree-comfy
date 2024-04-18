@@ -200,17 +200,16 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         // When we add a widget, litegraph is going to mess up the size, so we
         // store it so we can retrieve it in computeSize. Hacky..
         this.tempSize = [...this.size];
-        widget = this.addCustomWidget<RgthreeToggleNavWidget>(
-          new RgthreeToggleNavWidget(group, () => this.showNav),
-        );
-        (widget as any).doModeChange = (force?: boolean, skipOtherNodeCheck?: boolean) => {
+        widget = this.addCustomWidget(new RgthreeToggleNavWidget(group, () => this.showNav));
+
+        widget.doModeChange = (force?: boolean, skipOtherNodeCheck?: boolean) => {
           group.recomputeInsideNodes();
           const hasAnyActiveNodes = groupHasActiveNode(group);
           let newValue = force != null ? force : !hasAnyActiveNodes;
           if (skipOtherNodeCheck !== true) {
             if (newValue && this.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
               for (const widget of this.widgets) {
-                (widget as any).doModeChange(false, true);
+                widget.doModeChange?.(false, true);
               }
             } else if (!newValue && this.properties?.[PROPERTY_RESTRICTION] === "always one") {
               newValue = this.widgets.every((w) => !w.value || w === widget);
@@ -223,7 +222,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
           app.graph.setDirtyCanvas(true, false);
         };
         widget.callback = () => {
-          (widget as any).doModeChange();
+          widget?.doModeChange?.();
         };
 
         this.setSize(this.computeSize());
@@ -232,8 +231,8 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         widget.name = widgetName;
         this.setDirtyCanvas(true, false);
       }
-      if (widget.value != (group as any)._rgthreeHasAnyActiveNode) {
-        widget.value = (group as any)._rgthreeHasAnyActiveNode;
+      if (widget.value != group._rgthreeHasAnyActiveNode) {
+        widget.value = group._rgthreeHasAnyActiveNode;
         this.setDirtyCanvas(true, false);
       }
       if (this.widgets[index] !== widget) {
@@ -271,12 +270,12 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     if (action === "Mute all" || action === "Bypass all") {
       const alwaysOne = this.properties?.[PROPERTY_RESTRICTION] === "always one";
       for (const [index, widget] of this.widgets.entries()) {
-        (widget as any)?.doModeChange(alwaysOne && !index ? true : false, true);
+        widget.doModeChange?.(alwaysOne && !index ? true : false, true);
       }
     } else if (action === "Enable all") {
       const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
       for (const [index, widget] of this.widgets.entries()) {
-        (widget as any)?.doModeChange(onlyOne && index > 0 ? false : true, true);
+        widget.doModeChange?.(onlyOne && index > 0 ? false : true, true);
       }
     } else if (action === "Toggle all") {
       const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
@@ -285,7 +284,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         // If you have only one, then we'll stop at the first.
         let newValue: boolean = onlyOne && foundOne ? false : !widget.value;
         foundOne = foundOne || newValue;
-        (widget as any)?.doModeChange(newValue, true);
+        widget.doModeChange?.(newValue, true);
       }
       // And if you have always one, then we'll flip the last
       if (!foundOne && this.properties?.[PROPERTY_RESTRICTION] === "always one") {

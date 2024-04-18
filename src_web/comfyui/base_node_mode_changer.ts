@@ -72,12 +72,12 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     widget.name = `Enable ${linkedNode.title}`;
     widget.options = {'on': 'yes', 'off': 'no'}
     widget.value = value;
-    (widget as any).doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
+    widget.doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
       let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
       if (skipOtherNodeCheck !== true) {
         if (newValue && this.properties?.['toggleRestriction']?.includes(' one')) {
           for (const widget of this.widgets) {
-            (widget as any).doModeChange(false, true);
+            widget.doModeChange?.(false, true);
           }
         } else if (!newValue && this.properties?.['toggleRestriction'] === 'always one') {
           newValue = this.widgets.every(w => !w.value || w === widget);
@@ -87,7 +87,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
       widget.value = newValue;
     }
     widget.callback = () => {
-      (widget as any).doModeChange();
+      widget.doModeChange?.();
     }
     if (forceValue != null) {
       linkedNode.mode = (forceValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
@@ -95,13 +95,13 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   }
 
   forceWidgetOff(widget: IWidget, skipOtherNodeCheck?: boolean) {
-    (widget as any).doModeChange(false, skipOtherNodeCheck);
+    widget.doModeChange?.(false, skipOtherNodeCheck);
   }
   forceWidgetOn(widget: IWidget, skipOtherNodeCheck?: boolean) {
-    (widget as any).doModeChange(true, skipOtherNodeCheck);
+    widget.doModeChange?.(true, skipOtherNodeCheck);
   }
   forceWidgetToggle(widget: IWidget, skipOtherNodeCheck?: boolean) {
-    (widget as any).doModeChange(!widget.value, skipOtherNodeCheck);
+    widget.doModeChange?.(!widget.value, skipOtherNodeCheck);
   }
 
 
