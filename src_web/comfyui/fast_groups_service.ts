@@ -9,9 +9,7 @@ import {
   LGraphGroup,
   Vector4,
 } from "typings/litegraph.js";
-import { 
-  groupHasActiveNode,
-   } from "./utils_fast.js";
+import { groupHasActiveNode, sortBy } from "./utils_fast.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -156,30 +154,16 @@ class FastGroupsService {
   }
 
   private getGroupsAlpha(now: number) {
-    const graph = app.graph as TLGraph;
     if (!this.groupsSortedAlpha.length || now - this.msLastAlpha > this.msThreshold) {
-      this.groupsSortedAlpha = [...this.getGroupsUnsorted(now)].sort((a, b) => {
-        return a.title.localeCompare(b.title);
-      });
+      this.groupsSortedAlpha = sortBy(this.getGroupsUnsorted(now), { sort: "alphanumeric" });
       this.msLastAlpha = now;
     }
     return this.groupsSortedAlpha;
   }
 
   private getGroupsPosition(now: number) {
-    const graph = app.graph as TLGraph;
     if (!this.groupsSortedPosition.length || now - this.msLastPosition > this.msThreshold) {
-      this.groupsSortedPosition = [...this.getGroupsUnsorted(now)].sort((a, b) => {
-        // Sort by y, then x, clamped to 30.
-        const aY = Math.floor(a._pos[1] / 30);
-        const bY = Math.floor(b._pos[1] / 30);
-        if (aY == bY) {
-          const aX = Math.floor(a._pos[0] / 30);
-          const bX = Math.floor(b._pos[0] / 30);
-          return aX - bX;
-        }
-        return aY - bY;
-      });
+      this.groupsSortedPosition = sortBy(this.getGroupsUnsorted(now), { sort: "position" });
       this.msLastPosition = now;
     }
     return this.groupsSortedPosition;
@@ -187,13 +171,14 @@ class FastGroupsService {
 
   getGroups(sort?: string) {
     const now = +new Date();
-    if (sort === "alphanumeric") {
-      return this.getGroupsAlpha(now);
+    switch (sort) {
+      case "alphanumeric":
+        return this.getGroupsAlpha(now);
+      case "position":
+        return this.getGroupsPosition(now);
+      default:
+        return this.getGroupsUnsorted(now);
     }
-    if (sort === "position") {
-      return this.getGroupsPosition(now);
-    }
-    return this.getGroupsUnsorted(now);
   }
 }
 

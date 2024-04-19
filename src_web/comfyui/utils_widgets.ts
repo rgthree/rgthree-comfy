@@ -8,8 +8,8 @@ import type {
   Vector2,
   AdjustedMouseEvent,
   Vector4,
-  WidgetCallback,
   SerializedLGraphNode,
+  LGraphCanvas,
 } from "../typings/litegraph.js";
 import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 
@@ -412,13 +412,23 @@ export class RgthreeToggleNavWidget implements IWidget<boolean> {
   label = "";
   value = false;
   disabled = false;
-  options = { on: "yes", off: "no" };
-  callback?: WidgetCallback<IWidget<boolean>>;
+  readonly options = { on: "yes", off: "no" };
 
   constructor(
     private readonly node: { pos: Vector2; size: Vector2 },
     private readonly showNav: () => boolean,
+    readonly doModeChange: (force?: boolean, skipOtherNodeCheck?: boolean) => void,
   ) {}
+
+  callback(
+    value: boolean,
+    graphCanvas: LGraphCanvas,
+    node: LGraphNode,
+    pos: Vector2,
+    event?: MouseEvent,
+  ) {
+    this.doModeChange();
+  }
 
   draw(
     ctx: CanvasRenderingContext2D,

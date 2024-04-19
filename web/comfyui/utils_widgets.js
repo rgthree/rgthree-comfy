@@ -248,14 +248,18 @@ export class RgthreeLabelWidget {
     }
 }
 export class RgthreeToggleNavWidget {
-    constructor(node, showNav) {
+    constructor(node, showNav, doModeChange) {
         this.node = node;
         this.showNav = showNav;
+        this.doModeChange = doModeChange;
         this.name = "RGTHREE_TOGGLE_AND_NAV";
         this.label = "";
         this.value = false;
         this.disabled = false;
         this.options = { on: "yes", off: "no" };
+    }
+    callback(value, graphCanvas, node, pos, event) {
+        this.doModeChange();
     }
     draw(ctx, node, width, posY, height) {
         const widgetData = drawNodeWidget(ctx, {

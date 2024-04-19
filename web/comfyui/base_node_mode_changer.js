@@ -45,15 +45,15 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         widget.options = { 'on': 'yes', 'off': 'no' };
         widget.value = value;
         widget.doModeChange = (forceValue, skipOtherNodeCheck) => {
-            var _a, _b, _c;
+            var _a, _b, _c, _d;
             let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
             if (skipOtherNodeCheck !== true) {
                 if (newValue && ((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a['toggleRestriction']) === null || _b === void 0 ? void 0 : _b.includes(' one'))) {
                     for (const widget of this.widgets) {
-                        widget.doModeChange(false, true);
+                        (_c = widget.doModeChange) === null || _c === void 0 ? void 0 : _c.call(widget, false, true);
                     }
                 }
-                else if (!newValue && ((_c = this.properties) === null || _c === void 0 ? void 0 : _c['toggleRestriction']) === 'always one') {
+                else if (!newValue && ((_d = this.properties) === null || _d === void 0 ? void 0 : _d['toggleRestriction']) === 'always one') {
                     newValue = this.widgets.every(w => !w.value || w === widget);
                 }
             }
@@ -61,20 +61,24 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
             widget.value = newValue;
         };
         widget.callback = () => {
-            widget.doModeChange();
+            var _a;
+            (_a = widget.doModeChange) === null || _a === void 0 ? void 0 : _a.call(widget);
         };
         if (forceValue != null) {
             linkedNode.mode = (forceValue ? this.modeOn : this.modeOff);
         }
     }
     forceWidgetOff(widget, skipOtherNodeCheck) {
-        widget.doModeChange(false, skipOtherNodeCheck);
+        var _a;
+        (_a = widget.doModeChange) === null || _a === void 0 ? void 0 : _a.call(widget, false, skipOtherNodeCheck);
     }
     forceWidgetOn(widget, skipOtherNodeCheck) {
-        widget.doModeChange(true, skipOtherNodeCheck);
+        var _a;
+        (_a = widget.doModeChange) === null || _a === void 0 ? void 0 : _a.call(widget, true, skipOtherNodeCheck);
     }
     forceWidgetToggle(widget, skipOtherNodeCheck) {
-        widget.doModeChange(!widget.value, skipOtherNodeCheck);
+        var _a;
+        (_a = widget.doModeChange) === null || _a === void 0 ? void 0 : _a.call(widget, !widget.value, skipOtherNodeCheck);
     }
     static setUp(clazz) {
         BaseAnyInputConnectedNode.setUp(clazz);
