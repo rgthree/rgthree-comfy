@@ -55,7 +55,7 @@ export class FastNodeMuter extends FastGroupsMuter {
     // values.
     const colorFiltered = filterByColor(alphaSorted, {
       matchColors: this.properties?.[PROPERTY_MATCH_COLORS],
-      nodeColorOption: "groupcolor",
+      nodeColorOption: "color",
     });
 
     const titleFiltered = filterByTitle(colorFiltered, {

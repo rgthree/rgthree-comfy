@@ -29,7 +29,7 @@ export class FastNodeMuter extends FastGroupsMuter {
         });
         const colorFiltered = filterByColor(alphaSorted, {
             matchColors: (_e = this.properties) === null || _e === void 0 ? void 0 : _e[PROPERTY_MATCH_COLORS],
-            nodeColorOption: "groupcolor",
+            nodeColorOption: "color",
         });
         const titleFiltered = filterByTitle(colorFiltered, {
             matchTitle: (_g = (_f = this.properties) === null || _f === void 0 ? void 0 : _f[PROPERTY_MATCH_TITLE]) === null || _g === void 0 ? void 0 : _g.trim(),

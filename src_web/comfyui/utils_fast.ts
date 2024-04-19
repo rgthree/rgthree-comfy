@@ -113,6 +113,9 @@ export function filterByColor<T extends HasColor>(
   }
 
   return items.filter((item) => {
+    if (!item.color) {
+      return false;
+    }
     let color = normalizeColor(item.color);
     return filterColors.includes(color);
   });

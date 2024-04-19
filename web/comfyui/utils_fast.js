@@ -72,6 +72,9 @@ export function filterByColor(items, options = { nodeColorOption: "groupcolor" }
         return items;
     }
     return items.filter((item) => {
+        if (!item.color) {
+            return false;
+        }
         let color = normalizeColor(item.color);
         return filterColors.includes(color);
     });
