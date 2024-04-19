@@ -104,5 +104,8 @@ app.registerExtension({
 function nodeWithIndex(nodes, node) {
     const { title } = node;
     const sameNameNodes = nodes.filter((n) => n.title === title);
-    return `${title} ${sameNameNodes.indexOf(node)}`;
+    if (sameNameNodes.length === 1) {
+        return title;
+    }
+    return `${title} ${sameNameNodes.indexOf(node) + 1}/${sameNameNodes.length}`;
 }
