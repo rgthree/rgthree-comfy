@@ -11,6 +11,7 @@ import {
 } from "typings/litegraph.js";
 import { RgthreeToggleNavWidget } from "./utils_widgets.js";
 import { filterByColor, filterByTitle, sortBy, type SortType } from "./utils_fast.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -19,6 +20,7 @@ const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
+const PROPERTY_MATCH_TITLE_GROUP = "matchGroupTitle";
 const PROPERTY_RESTRICTION = "toggleRestriction";
 
 /**
@@ -31,8 +33,11 @@ export class FastNodeMuter extends FastGroupsMuter {
   override readonly modeOn = LiteGraph.ALWAYS;
   override readonly modeOff = LiteGraph.NEVER;
 
+  static "@matchTitleGroup" = { type: "string" };
+
   constructor(title = FastNodeMuter.title) {
     super(title);
+    this.properties[PROPERTY_MATCH_TITLE_GROUP] = "";
   }
 
   static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
@@ -40,10 +45,22 @@ export class FastNodeMuter extends FastGroupsMuter {
     (clazz as any).category = (clazz as any)._category;
   }
 
+  private getNodes(sort: SortType): LGraphNode[] {
+    const matchGroup = this.properties?.[PROPERTY_MATCH_TITLE_GROUP];
+    if (!matchGroup) {
+      const graph: LGraph = app.graph;
+      return [...(graph._nodes ?? [])].filter((n) => !n.isVirtualNode);
+    }
+    const pattern = new RegExp(matchGroup, "i");
+    const allGroups = FAST_GROUPS_SERVICE.getGroups(sort);
+    const filteredGroups = allGroups.filter((group) => pattern.exec(group.title));
+    return Array.from(new Set(filteredGroups.map((group) => group._nodes).flat()));
+  }
+
   override refreshWidgets() {
-    const graph: LGraph = app.graph;
     let sort: SortType = this.properties?.[PROPERTY_SORT] || "position";
-    const nodes: LGraphNode[] = [...(graph._nodes ?? [])].filter((n) => !n.isVirtualNode);
+    const nodes = this.getNodes(sort);
+
     // The service will return pre-sorted groups for alphanumeric and position. If this node has a
     // custom sort, then we need to sort it manually.
     const alphaSorted = sortBy(nodes, {
