@@ -165,14 +165,8 @@ function getExistingShortcuts() {
   return usedShortcuts;
 }
 
-const SHORTCUT_DEFAULTS = `1234567890abcdefghijklmnopqrstuvwxyz`;
-
+const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
 function getNextShortcut() {
   const existingShortcuts = getExistingShortcuts();
-  for (const char of SHORTCUT_DEFAULTS.split('')) {
-    if (!existingShortcuts.has(char)) {
-      return char;
-    }
-  }
-  return '1';
+  return SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char)) ?? "1";
 }

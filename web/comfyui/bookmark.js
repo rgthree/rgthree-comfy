@@ -105,13 +105,9 @@ function getExistingShortcuts() {
     const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
     return usedShortcuts;
 }
-const SHORTCUT_DEFAULTS = `1234567890abcdefghijklmnopqrstuvwxyz`;
+const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
 function getNextShortcut() {
+    var _a;
     const existingShortcuts = getExistingShortcuts();
-    for (const char of SHORTCUT_DEFAULTS.split('')) {
-        if (!existingShortcuts.has(char)) {
-            return char;
-        }
-    }
-    return '1';
+    return (_a = SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char))) !== null && _a !== void 0 ? _a : "1";
 }
