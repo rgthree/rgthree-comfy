@@ -14,8 +14,6 @@ import type {
 
 declare const LiteGraph: typeof TLiteGraph;
 
-const PROPERTY_LABEL = "label";
-
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
  * navigate to that node, with it in the top-left corner.
@@ -38,8 +36,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   override isVirtualNode = true;
   override serialize_widgets = true;
 
-  static "@label" = { type: "string" };
-
   //@ts-ignore - TS Doesn't like us overriding a property with accessors but, too bad.
   override get _collapsed_width() {
     return this.___collapsed_width;
@@ -58,7 +54,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   constructor(title = Bookmark.title) {
     super(title);
-    this.properties[PROPERTY_LABEL] = "";
     this.addWidget('text', 'shortcut_key', '1', (value: string, ...args) => {
       value = value.trim()[0] || '1';
     },{

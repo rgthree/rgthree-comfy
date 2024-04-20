@@ -79,9 +79,9 @@ const CONFIGURABLE = {
                     type: ConfigType.ARRAY,
                     label: "Which toggles to show.",
                     options: [
-                        { value: ['mute'], label: 'mute only' },
-                        { value: ['bypass'], label: 'bypass only' },
-                        { value: ['mute', 'bypass'], label: 'mute and bypass' },
+                        { value: ["mute"], label: "mute only" },
+                        { value: ["bypass"], label: "bypass only" },
+                        { value: ["mute", "bypass"], label: "mute and bypass" },
                     ],
                 },
                 {
@@ -89,8 +89,8 @@ const CONFIGURABLE = {
                     type: ConfigType.STRING,
                     label: "When to show them.",
                     options: [
-                        { value: 'hover', label: 'on hover' },
-                        { value: 'always', label: 'always' },
+                        { value: "hover", label: "on hover" },
+                        { value: "always", label: "always" },
                     ],
                 },
             ],
@@ -103,17 +103,10 @@ const CONFIGURABLE = {
                 "corrupt linking data.",
         },
         {
-            key: "features.bookmark_menu.enabled",
+            key: "features.menu_bookmarks.enabled",
             type: ConfigType.BOOLEAN,
             label: "Show bookmark shortcuts in context menu",
             description: "Will list the bookmarks in the rgthree-comfy context menu",
-            subconfig: [
-                {
-                    key: "features.bookmark_menu.labeled_only",
-                    type: ConfigType.BOOLEAN,
-                    label: "Only show explicitly labeled bookmarks (set in Properties)",
-                },
-            ],
         },
         {
             key: "log_level",
@@ -127,7 +120,7 @@ const CONFIGURABLE = {
             isDevOnly: true,
             onSave: function (value) {
                 rgthree.setLogLevel(value);
-            }
+            },
         },
         {
             key: "features.invoke_extensions_async.node_created",

@@ -497,37 +497,8 @@ class Rgthree extends EventTarget {
     }
     const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
-    function getBookmarks(): ContextMenuItem[] {
-      const showBookmarks = CONFIG_SERVICE.getFeatureValue("bookmark_menu.enabled");
-
-      if (!showBookmarks) { return []; }
-     
-      const bookmarkNodes = graph._nodes.filter((n): n is Bookmark => n.type == NodeTypesString.BOOKMARK);
-      const labeledOnly = CONFIG_SERVICE.getFeatureValue("bookmark_menu.labeled_only");
-
-      const bookmarksToList = bookmarkNodes
-          .filter((n) => !labeledOnly || n.properties['label'])
-          // Sort by shortcut key.
-          // I could see an option to sort by either Shortcut, Label, or Position.
-          .sort((a, b) => a.shortcutKey.localeCompare(b.shortcutKey));
-      const bookmarkMenuItems = bookmarksToList.map((n) => ({
-          content: `[${n.shortcutKey}] ${n.properties['label']}`,
-          className: "rgthree-contextmenu-item",
-          callback: () => {
-            n.canvasToBookmark(); 
-          },
-        }));
-      return [
-        {
-          content: "🔖 Bookmarks",
-          disabled: true,
-          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-        },
-        ...bookmarkMenuItems,
-      ]
-    }
-
-    const bookmarkMenuItems = getBookmarks();
+    const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
+    const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
 
     return [
       {
@@ -928,8 +899,8 @@ class Rgthree extends EventTarget {
     document.head.appendChild(link);
   }
 
-  setLogLevel(level?: LogLevel|string) {
-    if (typeof level === 'string') {
+  setLogLevel(level?: LogLevel | string) {
+    if (typeof level === "string") {
       level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
     }
     if (level != null) {
@@ -946,7 +917,7 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
   }
 
   monitorBadLinks() {
@@ -966,6 +937,40 @@ class Rgthree extends EventTarget {
       this.monitorBadLinks();
     }, 5000);
   }
+}
+
+function getBookmarks(): ContextMenuItem[] {
+  const graph: TLGraph = app.graph;
+
+  const bookmarkNodes = graph._nodes.filter(
+    (n): n is Bookmark => n.type == NodeTypesString.BOOKMARK,
+  );
+
+  if (!bookmarkNodes.length) {
+    return [];
+  }
+
+  const bookmarksToList = bookmarkNodes
+    // Sort by Title.
+    // I could see an option to sort by either Shortcut, Title, or Position.
+    .sort((a, b) => a.title.localeCompare(b.title));
+
+  const bookmarkMenuItems = bookmarksToList.map((n) => ({
+    content: `[${n.shortcutKey}] ${n.title}`,
+    className: "rgthree-contextmenu-item",
+    callback: () => {
+      n.canvasToBookmark();
+    },
+  }));
+
+  return [
+    {
+      content: "🔖 Bookmarks",
+      disabled: true,
+      className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+    },
+    ...bookmarkMenuItems,
+  ];
 }
 
 export const rgthree = new Rgthree();

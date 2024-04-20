@@ -10,6 +10,9 @@
       "subdirs": null,
       "threshold": 20
     },
+    "menu_bookmarks": {
+      "enabled": true
+    },
     "group_header_fast_toggle": {
       "enabled": null,
       "toggles": ["mute", "bypass"],
@@ -19,10 +22,6 @@
       "enabled": true,
       "height": 16,
       "position": "top"
-    },
-    "bookmark_menu": {
-      "enabled": true,
-      "labeled_only": false
     },
     // Enables invokeExtensionsAsync for rgthree-nodes allowing other extensions to hook into the
     // nodes like the default ComfyNodes. This was not possible before Apr 2024, so it's a config

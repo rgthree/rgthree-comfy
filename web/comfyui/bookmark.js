@@ -19,7 +19,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
-        this.properties[PROPERTY_LABEL] = "";
         this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
             value = value.trim()[0] || '1';
         }, {
@@ -34,6 +33,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         });
         this.keypressBound = this.onKeypress.bind(this);
         this.onConstructed();
+    }
+    get shortcutKey() {
+        var _a, _b, _c;
+        return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : '';
     }
     onAdded(graph) {
         window.addEventListener("keydown", this.keypressBound);
@@ -73,7 +76,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 Bookmark.type = NodeTypesString.BOOKMARK;
 Bookmark.title = NodeTypesString.BOOKMARK;
 Bookmark.slot_start_y = -20;
-Bookmark["@label"] = { type: "string" };
 app.registerExtension({
     name: "rgthree.Bookmark",
     registerCustomNodes() {
