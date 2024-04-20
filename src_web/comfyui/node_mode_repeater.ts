@@ -11,6 +11,7 @@ import type {
   LGraphGroup,
   LGraphNode,
   LLink,
+  SerializedLGraphNode,
   LiteGraph as TLiteGraph,
 } from "typings/litegraph.js";
 import {
@@ -35,12 +36,26 @@ class NodeModeRepeater extends BaseCollectorNode {
 
   constructor(title?: string) {
     super(title);
-    this.removeOutput(0);
+    this.onConstructed();
+  }
+
+  override onConstructed(): boolean {
     this.addOutput("OPT_CONNECTION", "*", {
       color_on: "#Fc0",
       color_off: "#a80",
     });
-    this.onConstructed();
+
+    return super.onConstructed();
+  }
+
+  override configure(info: SerializedLGraphNode<LGraphNode>): void {
+    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
+    // https://github.com/rgthree/rgthree-comfy/issues/206
+    // TODO: This can probably be removed within a few weeks.
+    if (info.outputs?.length) {
+      info.outputs.length = 1;
+    }
+    super.configure(info);
   }
 
   override onConnectOutput(

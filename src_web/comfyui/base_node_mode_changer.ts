@@ -1,5 +1,5 @@
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from 'typings/litegraph.js';
+import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
 
 // @ts-ignore
 import {app} from "../../scripts/app.js";
@@ -39,6 +39,16 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     });
     this.addOutput("OPT_CONNECTION", "*");
     return super.onConstructed();
+  }
+
+  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
+    // https://github.com/rgthree/rgthree-comfy/issues/206
+    // TODO: This can probably be removed within a few weeks.
+    if (info.outputs?.length) {
+      info.outputs.length = 1;
+    }
+    super.configure(info);
   }
 
   override handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {

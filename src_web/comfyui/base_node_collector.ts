@@ -21,11 +21,6 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
     super(title);
   }
 
-  override onConstructed(): boolean {
-    this.addOutput("Output", "*");
-    return super.onConstructed();
-  }
-
   override clone() {
     const cloned = super.clone();
     return cloned;

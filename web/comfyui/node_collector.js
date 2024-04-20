@@ -10,6 +10,17 @@ class CollectorNode extends BaseCollectorNode {
         this.comfyClass = NodeTypesString.NODE_COLLECTOR;
         this.onConstructed();
     }
+    onConstructed() {
+        this.addOutput("Output", "*");
+        return super.onConstructed();
+    }
+    configure(info) {
+        var _a;
+        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
+            info.outputs.length = 1;
+        }
+        super.configure(info);
+    }
 }
 CollectorNode.type = NodeTypesString.NODE_COLLECTOR;
 CollectorNode.title = NodeTypesString.NODE_COLLECTOR;

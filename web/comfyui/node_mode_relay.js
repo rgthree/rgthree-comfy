@@ -37,7 +37,6 @@ class NodeModeRelay extends BaseCollectorNode {
         this.onConstructed();
     }
     onConstructed() {
-        this.removeOutput(0);
         this.addOutput("REPEATER", "_NODE_REPEATER_", {
             color_on: "#Fc0",
             color_off: "#a80",
@@ -47,6 +46,13 @@ class NodeModeRelay extends BaseCollectorNode {
             this.stabilize();
         }, 500);
         return super.onConstructed();
+    }
+    configure(info) {
+        var _a;
+        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
+            info.outputs.length = 1;
+        }
+        super.configure(info);
     }
     onDrawForeground(ctx, canvas) {
         var _a;

@@ -9,12 +9,21 @@ class NodeModeRepeater extends BaseCollectorNode {
         this.comfyClass = NodeTypesString.NODE_MODE_REPEATER;
         this.hasRelayInput = false;
         this.hasTogglerOutput = false;
-        this.removeOutput(0);
+        this.onConstructed();
+    }
+    onConstructed() {
         this.addOutput("OPT_CONNECTION", "*", {
             color_on: "#Fc0",
             color_off: "#a80",
         });
-        this.onConstructed();
+        return super.onConstructed();
+    }
+    configure(info) {
+        var _a;
+        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
+            info.outputs.length = 1;
+        }
+        super.configure(info);
     }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
         let canConnect = !this.hasRelayInput;
