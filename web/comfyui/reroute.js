@@ -5,7 +5,7 @@ import { rgthreeConfig } from "../../rgthree/config.js";
 import { rgthree } from "./rgthree.js";
 import { IoDirection, LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, setConnectionsLayout, waitForCanvas, } from "./utils.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 const CONFIG_REROUTE = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig["nodes"]) === null || _a === void 0 ? void 0 : _a["reroute"]) || {};
 const CONFIG_FAST_REROUTE = CONFIG_REROUTE["fast_reroute"];
@@ -195,10 +195,10 @@ class RerouteService {
     }
 }
 const SERVICE = new RerouteService();
-class RerouteNode extends RgthreeBaseNode {
+class RerouteNode extends RgthreeBaseVirtualNode {
     constructor(title = RerouteNode.title) {
-        var _a;
         super(title);
+        this.comfyClass = NodeTypesString.REROUTE;
         this.isVirtualNode = true;
         this.hideSlotLabels = true;
         this.schedulePromise = null;
@@ -222,11 +222,16 @@ class RerouteNode extends RgthreeBaseNode {
                 initialNodePos: [-1, -1],
             },
         };
+        this.onConstructed();
+    }
+    onConstructed() {
+        var _a;
         this.setResizable((_a = this.properties["resizable"]) !== null && _a !== void 0 ? _a : configResizable);
         this.size = RerouteNode.size;
         this.addInput("", "*");
         this.addOutput("", "*");
         setTimeout(() => this.applyNodeSize(), 20);
+        return super.onConstructed();
     }
     configure(info) {
         var _a;
@@ -484,7 +489,6 @@ class RerouteNode extends RgthreeBaseNode {
     }
     stabilizeLayout(oldSize, newSize) {
         if (newSize[0] === 10 || newSize[1] === 10) {
-            this.properties = this.properties || {};
             const props = this.properties;
             props["connections_layout"] = props["connections_layout"] || ["Left", "Right"];
             const layout = props["connections_layout"];
@@ -599,7 +603,6 @@ class RerouteNode extends RgthreeBaseNode {
     }
     cycleConnection(ioDir) {
         var _a, _b;
-        this.properties = this.properties || {};
         const props = this.properties;
         props["connections_layout"] = props["connections_layout"] || ["Left", "Right"];
         const propIdx = ioDir == IoDirection.INPUT ? 0 : 1;

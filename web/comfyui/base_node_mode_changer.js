@@ -8,14 +8,16 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         this.isVirtualNode = true;
         this.modeOn = -1;
         this.modeOff = -1;
-        this.properties = this.properties || {};
         this.properties['toggleRestriction'] = 'default';
+    }
+    onConstructed() {
         wait(10).then(() => {
             if (this.modeOn < 0 || this.modeOff < 0) {
                 throw new Error('modeOn and modeOff must be overridden.');
             }
         });
         this.addOutput("OPT_CONNECTION", "*");
+        return super.onConstructed();
     }
     handleLinkedNodesStabilization(linkedNodes) {
         for (const [index, node] of linkedNodes.entries()) {

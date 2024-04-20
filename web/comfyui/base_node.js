@@ -4,33 +4,31 @@ import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 export class RgthreeBaseNode extends LGraphNode {
-    constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = false) {
+    constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
+        this.comfyClass = '__NEED_COMFY_CLASS__';
         this.nickname = "rgthree";
-        this._tempWidth = 0;
         this.isVirtualNode = false;
         this.removed = false;
         this.configuring = false;
-        this.helpDialog = null;
-        this.comfyClass = "rgthree-base-virtual-node";
+        this._tempWidth = 0;
         this.__constructed__ = false;
-        if (title == "__NEED_NAME__") {
+        this.helpDialog = null;
+        if (title == "__NEED_CLASS_TITLE__") {
             throw new Error("RgthreeBaseNode needs overrides.");
         }
         this.widgets = this.widgets || [];
         this.properties = this.properties || {};
-        if (!skipOnConstructedCall) {
-            this.onConstructed();
-        }
-        else {
-            setTimeout(() => {
-                var _a;
-                if (this.onConstructed()) {
-                    const [n, v] = rgthree.logger.logParts(LogLevel.DEV, `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`);
-                    (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
-                }
-            });
-        }
+        setTimeout(() => {
+            var _a;
+            if (this.comfyClass == "__NEED_COMFY_CLASS__") {
+                throw new Error("RgthreeBaseNode needs a comfy class override.");
+            }
+            if (this.onConstructed()) {
+                const [n, v] = rgthree.logger.logParts(LogLevel.DEV, `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`);
+                (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+            }
+        });
     }
     onConstructed() {
         var _a;
@@ -144,10 +142,15 @@ export class RgthreeBaseNode extends LGraphNode {
     }
 }
 RgthreeBaseNode.exposedActions = [];
-RgthreeBaseNode.title = "__NEED_NAME__";
+RgthreeBaseNode.title = '__NEED_CLASS_TITLE__';
 RgthreeBaseNode.category = "rgthree";
 RgthreeBaseNode._category = "rgthree";
-const overriddenServerNodes = new Map();
+export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
+    constructor(title = RgthreeBaseNode.title) {
+        super(title, false);
+        this.isVirtualNode = true;
+    }
+}
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {
         super(title, true);
@@ -225,10 +228,10 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         this.serialize_widgets = true;
     }
     static registerForOverride(comfyClass, nodeData, rgthreeClass) {
-        if (overriddenServerNodes.has(comfyClass)) {
+        if (OVERRIDDEN_SERVER_NODES.has(comfyClass)) {
             throw Error(`Already have a class to override ${comfyClass.type || comfyClass.name || comfyClass.title}`);
         }
-        overriddenServerNodes.set(comfyClass, rgthreeClass);
+        OVERRIDDEN_SERVER_NODES.set(comfyClass, rgthreeClass);
         if (!rgthreeClass.__registeredForOverride__) {
             rgthreeClass.__registeredForOverride__ = true;
             rgthreeClass.nodeType = comfyClass;
@@ -242,10 +245,11 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 RgthreeBaseServerNode.nodeData = null;
 RgthreeBaseServerNode.nodeType = null;
 RgthreeBaseServerNode.__registeredForOverride__ = false;
+const OVERRIDDEN_SERVER_NODES = new Map();
 const oldregisterNodeType = LiteGraph.registerNodeType;
 LiteGraph.registerNodeType = async function (nodeId, baseClass) {
     var _a;
-    const clazz = overriddenServerNodes.get(baseClass) || baseClass;
+    const clazz = OVERRIDDEN_SERVER_NODES.get(baseClass) || baseClass;
     if (clazz !== baseClass) {
         const classLabel = clazz.type || clazz.name || clazz.title;
         const [n, v] = rgthree.logger.logParts(LogLevel.DEBUG, `${nodeId}: replacing default ComfyNode implementation with custom ${classLabel} class.`);

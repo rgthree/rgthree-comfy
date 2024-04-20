@@ -1,10 +1,12 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
+import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
+
 // @ts-ignore
 import {app} from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import {rgthree} from "./rgthree.js"
-import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
-import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, filterOutPassthroughNodes, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
+
+import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -12,7 +14,7 @@ declare const LGraphNode: typeof TLGraphNode;
 /**
  * A Virtual Node that allows any node's output to connect to it.
  */
-export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
+export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
 
   override isVirtualNode = true;
 
@@ -27,8 +29,11 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
 
   constructor(title = BaseAnyInputConnectedNode.title) {
     super(title);
+  }
 
+  override onConstructed() {
     this.addInput("", "*");
+    return super.onConstructed();
   }
 
   /** Schedules a promise to run a stabilization. */
@@ -226,52 +231,9 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
       return sourceNode.connect(sourceSlot, this, slot);
     }
     return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
-
-    // return null;
-    // if (!super.connectByType) {
-    //   canConnect = LGraphNode.prototype.connectByType.call(
-    //     this,
-    //     slot,
-    //     sourceNode,
-    //     sourceSlotType,
-    //     optsIn,
-    //   );
-    // }
-    // if (!canConnect && slot === 0) {
-    //   const ctrlKey = rgthree.ctrlKey;
-    //   // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
-    //   // Unfortunately, we don't know which are null now, so we'll just connect any that are
-    //   // not already connected.
-    //   for (const [index, input] of (sourceNode.inputs || []).entries()) {
-    //     if (input.link && !ctrlKey) {
-    //       continue;
-    //     }
-    //     const inputType = input.type as string;
-    //     const inputName = input.name.toUpperCase();
-    //     let thisOutputSlot = -1;
-    //     if (["CONDITIONING", "INT"].includes(inputType)) {
-    //       thisOutputSlot = this.outputs.findIndex(
-    //         (o) =>
-    //           o.type === inputType &&
-    //           (o.name.toUpperCase() === inputName ||
-    //             (o.name.toUpperCase() === "SEED" &&
-    //               inputName.includes("SEED")) ||
-    //             (o.name.toUpperCase() === "STEP_REFINER" &&
-    //               inputName.includes("AT_STEP"))),
-    //       );
-    //     } else {
-    //       thisOutputSlot = this.outputs.map((s) => s.type).indexOf(input.type);
-    //     }
-    //     if (thisOutputSlot > -1) {
-    //       thisOutputSlot;
-    //       this.connect(thisOutputSlot, sourceNode, index);
-    //     }
-    //   }
-    // }
-    // return null;
   }
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     // @ts-ignore: Fix incorrect litegraph typings.
     addConnectionLayoutSupport(clazz, app, [['Left', 'Right'],['Right', 'Left']]);
 
@@ -283,12 +245,10 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
       callback: (_node) => {app.graph.setDirtyCanvas(true, true)}
     });
 
-
-    LiteGraph.registerNodeType((clazz as any).type, clazz);
-    (clazz as any).category = (clazz as any)._category;
+    LiteGraph.registerNodeType(clazz.type, clazz);
+    clazz.category = clazz._category;
   }
 }
-
 
 
 // Ok, hack time! LGraphNode's connectByType is powerful, but for our nodes, that have multiple "*"

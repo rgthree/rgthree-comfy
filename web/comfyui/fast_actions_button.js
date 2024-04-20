@@ -9,6 +9,7 @@ const MODE_BYPASS = 4;
 class FastActionsButton extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);
+        this.comfyClass = NodeTypesString.FAST_ACTIONS_BUTTON;
         this.logger = rgthree.newLogSession("[FastActionsButton]");
         this.isVirtualNode = true;
         this.serialize_widgets = true;
@@ -23,6 +24,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }, { serialize: false });
         this.keypressBound = this.onKeypress.bind(this);
         this.keyupBound = this.onKeyup.bind(this);
+        this.onConstructed();
     }
     configure(info) {
         super.configure(info);

@@ -13,11 +13,14 @@ class BypasserNode extends BaseNodeModeChanger {
 
   static override type = NodeTypesString.FAST_BYPASSER;
   static override title = NodeTypesString.FAST_BYPASSER;
+  override comfyClass = NodeTypesString.FAST_BYPASSER;
+
   override readonly modeOn = MODE_ALWAYS;
   override readonly modeOff = MODE_BYPASS;
 
   constructor(title = BypasserNode.title) {
     super(title);
+    this.onConstructed();
   }
 
   override async handleAction(action: string) {

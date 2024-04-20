@@ -360,7 +360,6 @@ export function fixBadLinks(
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {
-    !silent && logger.log(`No bad links detected.`);
     return {
       hasBadLinks: false,
       fixed: false,

@@ -1,11 +1,11 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
+import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import {
-  type LGraph as TLGraph,
-  type LiteGraph as TLiteGraph,
+import type {
+  LGraph as TLGraph,
+  LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   ISliderWidget,
   INumberWidget,
@@ -19,10 +19,11 @@ declare const LiteGraph: typeof TLiteGraph;
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
  * navigate to that node, with it in the top-left corner.
  */
-export class Bookmark extends RgthreeBaseNode {
+export class Bookmark extends RgthreeBaseVirtualNode {
 
   static override type = NodeTypesString.BOOKMARK;
-  static override title = "🔖";
+  static override title = NodeTypesString.BOOKMARK;
+  override comfyClass = NodeTypesString.BOOKMARK;
 
   // Really silly, but Litegraph assumes we have at least one input/output... so we need to
   // counteract it's computeSize calculation by offsetting the start.
@@ -31,6 +32,7 @@ export class Bookmark extends RgthreeBaseNode {
   // LiteGraph adds mroe spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
   // override it with a setter and re-set it measured exactly as we want.
   ___collapsed_width: number = 0;
+
 
   override isVirtualNode = true;
   override serialize_widgets = true;
@@ -67,6 +69,7 @@ export class Bookmark extends RgthreeBaseNode {
       precision: 2,
     });
     this.keypressBound = this.onKeypress.bind(this);
+    this.onConstructed();
   }
 
   // override computeSize(out?: Vector2 | undefined): Vector2 {
@@ -75,11 +78,6 @@ export class Bookmark extends RgthreeBaseNode {
   //   this.size[1] = Math.max(minHeight, this.size[1]);
   // }
 
-
-  static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
-    LiteGraph.registerNodeType((clazz as any).type, clazz);
-    (clazz as any).category = (clazz as any)._category;
-  }
 
   override onAdded(graph: TLGraph): void {
     window.addEventListener("keydown", this.keypressBound);
@@ -111,6 +109,11 @@ export class Bookmark extends RgthreeBaseNode {
       canvas.ds.scale = Number(this.widgets[1]!.value || 1);
     }
     canvas.setDirty(true, true);
+  }
+
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
+    LiteGraph.registerNodeType(clazz.type, clazz);
+    clazz.category = clazz._category;
   }
 }
 

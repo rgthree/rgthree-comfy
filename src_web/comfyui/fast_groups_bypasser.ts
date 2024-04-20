@@ -1,10 +1,9 @@
+import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { FastGroupsMuter } from "./fast_groups_muter.js";
+import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
 import {
-  type LGraphNode,
   type LiteGraph as TLiteGraph,
 } from "typings/litegraph.js";
 
@@ -14,9 +13,10 @@ declare const LiteGraph: typeof TLiteGraph;
 /**
  * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.
  */
-export class FastGroupsBypasser extends FastGroupsMuter {
+export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
   static override type = NodeTypesString.FAST_GROUPS_BYPASSER;
   static override title = NodeTypesString.FAST_GROUPS_BYPASSER;
+  override comfyClass = NodeTypesString.FAST_GROUPS_BYPASSER;
 
   static override exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 
@@ -27,11 +27,12 @@ export class FastGroupsBypasser extends FastGroupsMuter {
 
   constructor(title = FastGroupsBypasser.title) {
     super(title);
+    this.onConstructed();
   }
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
-    LiteGraph.registerNodeType((clazz as any).type, clazz);
-    (clazz as any).category = (clazz as any)._category;
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
+    LiteGraph.registerNodeType(clazz.type, clazz);
+    clazz.category = clazz._category;
   }
 }
 
@@ -40,9 +41,10 @@ app.registerExtension({
   registerCustomNodes() {
     FastGroupsBypasser.setUp(FastGroupsBypasser);
   },
-  loadedGraphNode(node: LGraphNode) {
-    if (node.type == FastGroupsMuter.title) {
-      (node as FastGroupsBypasser).tempSize = [...node.size];
+  loadedGraphNode(node: FastGroupsBypasser) {
+    if (node.type == FastGroupsBypasser.title) {
+      node.tempSize = [...node.size];
     }
   },
 });
+

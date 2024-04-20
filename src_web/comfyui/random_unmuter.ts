@@ -1,11 +1,11 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
+import type {LGraphNode} from 'typings/litegraph.js';
+import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { RgthreeBaseNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";
-import type {LGraphNode} from 'typings/litegraph.js';
 import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
 
 const MODE_MUTE = 2;
@@ -16,6 +16,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
   static override exposedActions = ['Mute all', 'Enable all'];
 
   static override type = NodeTypesString.RANDOM_UNMUTER;
+  override comfyClass = NodeTypesString.RANDOM_UNMUTER;
   static override title = RandomUnmuterNode.type;
   readonly modeOn = MODE_ALWAYS;
   readonly modeOff = MODE_MUTE;
@@ -36,6 +37,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     rgthree.addEventListener('queue-end', this.onQueueEndBound);
     rgthree.addEventListener('graph-to-prompt', this.onGraphtoPromptBound);
     rgthree.addEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+    this.onConstructed();
   }
 
   override onRemoved() {
@@ -105,7 +107,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     `;
   }
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     BaseAnyInputConnectedNode.setUp(clazz);
   }
 

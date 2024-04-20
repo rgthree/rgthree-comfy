@@ -28,6 +28,7 @@ class NodeModeRepeater extends BaseCollectorNode {
 
   static override type = NodeTypesString.NODE_MODE_REPEATER;
   static override title = NodeTypesString.NODE_MODE_REPEATER;
+  override comfyClass = NodeTypesString.NODE_MODE_REPEATER;
 
   private hasRelayInput = false;
   private hasTogglerOutput = false;
@@ -39,6 +40,7 @@ class NodeModeRepeater extends BaseCollectorNode {
       color_on: "#Fc0",
       color_off: "#a80",
     });
+    this.onConstructed();
   }
 
   override onConnectOutput(

@@ -1,7 +1,7 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import {
   type LGraphNode,
@@ -11,11 +11,10 @@ import {
   Vector2,
   SerializedLGraphNode,
   IWidget,
-  LGraphGroup,
-  Vector4,
 } from "typings/litegraph.js";
 import {SERVICE as FAST_GROUPS_SERVICE} from "./fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
+import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
 declare const LGraphCanvas: typeof TLGraphCanvas;
 declare const LiteGraph: typeof TLiteGraph;
@@ -30,11 +29,10 @@ const PROPERTY_RESTRICTION = "toggleRestriction";
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
  */
-export class FastGroupsMuter extends RgthreeBaseNode {
+export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   static override type = NodeTypesString.FAST_GROUPS_MUTER;
   static override title = NodeTypesString.FAST_GROUPS_MUTER;
 
-  override isVirtualNode = true;
 
   static override exposedActions = ["Mute all", "Enable all", "Toggle all"];
 
@@ -47,7 +45,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
   // We don't need to serizalize since we'll just be checking group data on startup anyway
   override serialize_widgets = false;
 
-  protected helpActions = "must and unmute";
+  protected helpActions = "mute and unmute";
 
   static "@matchColors" = { type: "string" };
   static "@matchTitle" = { type: "string" };
@@ -71,7 +69,11 @@ export class FastGroupsMuter extends RgthreeBaseNode {
     this.properties[PROPERTY_SORT] = "position";
     this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
     this.properties[PROPERTY_RESTRICTION] = "default";
+  }
+
+  override onConstructed(): boolean {
     this.addOutput("OPT_CONNECTION", "*");
+    return super.onConstructed();
   }
 
   override onAdded(graph: TLGraph): void {
@@ -174,7 +176,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
           continue;
         }
       }
-      this.widgets = this.widgets || [];
       const widgetName = `Enable ${group.title}`;
       let widget = this.widgets.find((w) => w.name === widgetName);
       if (!widget) {
@@ -392,9 +393,7 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         "(rgthree)",
         "",
       )} is an input-less node that automatically collects all groups in your current
-      workflow and allows you to quickly ${
-        (this as FastGroupsMuter).helpActions
-      } all nodes within the group.</p>
+      workflow and allows you to quickly ${this.helpActions} all nodes within the group.</p>
       <ul>
         <li>
           <p>
@@ -458,11 +457,39 @@ export class FastGroupsMuter extends RgthreeBaseNode {
       </ul>`;
   }
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: new (title?: string) => T) {
-    LiteGraph.registerNodeType((clazz as any).type, clazz);
-    (clazz as any).category = (clazz as any)._category;
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
+    LiteGraph.registerNodeType(clazz.type, clazz);
+    clazz.category = clazz._category;
   }
 }
+
+
+/**
+ * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.
+ */
+export class FastGroupsMuter extends BaseFastGroupsModeChanger {
+  static override type = NodeTypesString.FAST_GROUPS_MUTER;
+  static override title = NodeTypesString.FAST_GROUPS_MUTER;
+  override comfyClass = NodeTypesString.FAST_GROUPS_MUTER;
+
+  static override exposedActions = ["Bypass all", "Enable all", "Toggle all"];
+
+  protected override helpActions = "mute and unmute";
+
+  override readonly modeOn: number = LiteGraph.ALWAYS;
+  override readonly modeOff: number = LiteGraph.NEVER;
+
+  constructor(title = FastGroupsMuter.title) {
+    super(title);
+    this.onConstructed();
+  }
+
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
+    LiteGraph.registerNodeType(clazz.type, clazz);
+    clazz.category = clazz._category;
+  }
+}
+
 
 app.registerExtension({
   name: "rgthree.FastGroupsMuter",

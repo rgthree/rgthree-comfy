@@ -5,6 +5,7 @@ export function stripRgthree(str) {
     return str.replace(/\s*\(rgthree\)$/, '');
 }
 export const NodeTypesString = {
+    ANY_SWITCH: addRgthree('Any Switch'),
     NODE_MODE_RELAY: addRgthree('Mute / Bypass Relay'),
     NODE_MODE_REPEATER: addRgthree('Mute / Bypass Repeater'),
     FAST_MUTER: addRgthree('Fast Muter'),

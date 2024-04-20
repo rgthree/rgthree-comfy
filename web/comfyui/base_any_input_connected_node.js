@@ -1,15 +1,18 @@
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs } from "./utils.js";
-export class BaseAnyInputConnectedNode extends RgthreeBaseNode {
+export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     constructor(title = BaseAnyInputConnectedNode.title) {
         super(title);
         this.isVirtualNode = true;
         this.inputsPassThroughFollowing = PassThroughFollowing.NONE;
         this.debouncerTempWidth = 0;
         this.schedulePromise = null;
+    }
+    onConstructed() {
         this.addInput("", "*");
+        return super.onConstructed();
     }
     scheduleStabilizeWidgets(ms = 100) {
         if (!this.schedulePromise) {

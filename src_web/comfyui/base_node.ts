@@ -26,32 +26,16 @@ declare const LiteGraph: typeof TLiteGraph;
  * A base node with standard methods, directly extending the LGraphNode.
  * This can be used for ui-nodes and a further base for server nodes.
  */
-export class RgthreeBaseNode extends LGraphNode {
+export abstract class RgthreeBaseNode extends LGraphNode {
+
   /**
    * Action strings that can be exposed and triggered from other nodes, like Fast Actions Button.
    */
   static exposedActions: string[] = [];
 
-  static override title = "__NEED_NAME__";
-  // `category` seems to get reset at register, so we'll
-  // re-reset it after the register call. ¯\_(ツ)_/¯
+  static override title: string = '__NEED_CLASS_TITLE__'
   static category = "rgthree";
-  static _category = "rgthree";
-
-  /** Nickname is used by ComfyUI-Manager badge. */
-  readonly nickname = "rgthree";
-
-  /** A temporary width value that can be used to ensure compute size operates correctly. */
-  _tempWidth = 0;
-
-  /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
-  private mode_: NodeMode;
-
-  isVirtualNode = false;
-  removed = false;
-  configuring = false;
-
-  helpDialog: RgthreeHelpDialog | null = null;
+  static _category = "rgthree"; // `category` seems to get reset by comfy, so reset to this after.
 
   /**
    * The comfyClass is property ComfyUI and extensions may care about, even through it is only for
@@ -59,35 +43,52 @@ export class RgthreeBaseNode extends LGraphNode {
    * set it here so extensions that are none the wiser don't break on some unchecked string method
    * call on an undefined calue.
    */
-  comfyClass = "rgthree-base-virtual-node";
+  comfyClass: string = '__NEED_COMFY_CLASS__';
 
+  /** Used by the ComfyUI-Manager badge. */
+  readonly nickname = "rgthree";
+  /** Are we a virtual node? */
+  readonly isVirtualNode: boolean = false;
+  /** A state member determining if we're currently removed. */
+  removed = false;
+  /** A state member determining if we're currently "configuring."" */
+  configuring = false;
+  /** A temporary width value that can be used to ensure compute size operates correctly. */
+  _tempWidth = 0;
+
+  /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
+  private mode_: NodeMode;
   /** An internal bool set when `onConstructed` is run. */
   private __constructed__ = false;
+  /** The help dialog. */
+  private helpDialog: RgthreeHelpDialog | null = null;
 
-  constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = false) {
+
+  constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
     super(title);
-    if (title == "__NEED_NAME__") {
+    if (title == "__NEED_CLASS_TITLE__") {
       throw new Error("RgthreeBaseNode needs overrides.");
     }
     // Ensure these exist since some other extensions will break in their onNodeCreated.
     this.widgets = this.widgets || [];
     this.properties = this.properties || {};
 
-    // Call on constructed unless we were told not to. If we were told not to, then check that we
-    // did in the child constructor. If not, fire off a dev warning.
-    if (!skipOnConstructedCall) {
-      this.onConstructed();
-    } else {
-      setTimeout(() => {
-        if (this.onConstructed()) {
-          const [n, v] = rgthree.logger.logParts(
-            LogLevel.DEV,
-            `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`,
-          );
-          console[n]?.(...v);
-        }
-      });
-    }
+    // Some checks we want to do after we're constructed, looking that data is set correctly and
+    // that our base's `onConstructed` was called (if not, set a DEV warning).
+    setTimeout(() => {
+      // Check we have a comfyClass defined.
+      if (this.comfyClass == "__NEED_COMFY_CLASS__") {
+        throw new Error("RgthreeBaseNode needs a comfy class override.");
+      }
+      // Ensure we've called onConstructed before we got here.
+      if (this.onConstructed()) {
+        const [n, v] = rgthree.logger.logParts(
+          LogLevel.DEV,
+          `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`,
+        );
+        console[n]?.(...v);
+      }
+    });
   }
 
   /**
@@ -250,7 +251,22 @@ export class RgthreeBaseNode extends LGraphNode {
   }
 }
 
-const overriddenServerNodes = new Map<any, any>();
+
+/**
+ * A virtual node. Right now, this is just a wrapper for RgthreeBaseNode (which was the initial
+ * base virtual node).
+ *
+ * TODO: Make RgthreeBaseNode private and move all virtual nodes to this class; cleanup
+ * RgthreeBaseNode assumptions that its virtual.
+ */
+export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
+
+  override isVirtualNode = true;
+
+  constructor(title = RgthreeBaseNode.title) {
+    super(title, false);
+  }
+}
 
 /**
  * A base node with standard methods, extending the LGraphNode.
@@ -363,14 +379,14 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     nodeData: ComfyObjectInfo,
     rgthreeClass: RgthreeBaseServerNodeConstructor,
   ) {
-    if (overriddenServerNodes.has(comfyClass)) {
+    if (OVERRIDDEN_SERVER_NODES.has(comfyClass)) {
       throw Error(
         `Already have a class to override ${
           comfyClass.type || comfyClass.name || comfyClass.title
         }`,
       );
     }
-    overriddenServerNodes.set(comfyClass, rgthreeClass);
+    OVERRIDDEN_SERVER_NODES.set(comfyClass, rgthreeClass);
     // Mark the rgthreeClass as `__registeredForOverride__` because ComfyUI will repeatedly call
     // this and certain setups will only want to setup once (like adding context menus, etc).
     if (!rgthreeClass.__registeredForOverride__) {
@@ -386,13 +402,19 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
   }
 }
 
+/**
+ * Keeps track of the rgthree-comfy nodes that come from the server (and want to be ComfyNodes) that
+ * we override into a own, more flexible and cleaner nodes.
+ */
+const OVERRIDDEN_SERVER_NODES = new Map<any, any>();
+
 const oldregisterNodeType = LiteGraph.registerNodeType;
 /**
  * ComfyUI calls registerNodeType with its ComfyNode, but we don't trust that will remain stable, so
  * we need to identify it, intercept it, and supply our own class for the node.
  */
 LiteGraph.registerNodeType = async function (nodeId: string, baseClass: any) {
-  const clazz = overriddenServerNodes.get(baseClass) || baseClass;
+  const clazz = OVERRIDDEN_SERVER_NODES.get(baseClass) || baseClass;
   if (clazz !== baseClass) {
     const classLabel = clazz.type || clazz.name || clazz.title;
     const [n, v] = rgthree.logger.logParts(

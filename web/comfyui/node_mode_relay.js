@@ -30,18 +30,23 @@ class NodeModeRelay extends BaseCollectorNode {
     constructor(title) {
         super(title);
         this.inputsPassThroughFollowing = PassThroughFollowing.ALL;
-        setTimeout(() => {
-            this.stabilize();
-        }, 500);
+        this.comfyClass = NodeTypesString.NODE_MODE_RELAY;
+        this.properties['on_muted_inputs'] = 'MUTE';
+        this.properties['on_bypassed_inputs'] = 'BYPASS';
+        this.properties['on_any_active_inputs'] = 'ACTIVE';
+        this.onConstructed();
+    }
+    onConstructed() {
         this.removeOutput(0);
         this.addOutput("REPEATER", "_NODE_REPEATER_", {
             color_on: "#Fc0",
             color_off: "#a80",
             shape: LiteGraph.ARROW_SHAPE,
         });
-        this.properties['on_muted_inputs'] = 'MUTE';
-        this.properties['on_bypassed_inputs'] = 'BYPASS';
-        this.properties['on_any_active_inputs'] = 'ACTIVE';
+        setTimeout(() => {
+            this.stabilize();
+        }, 500);
+        return super.onConstructed();
     }
     onDrawForeground(ctx, canvas) {
         var _a;

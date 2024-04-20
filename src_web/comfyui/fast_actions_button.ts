@@ -1,17 +1,17 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { RgthreeBaseNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { ComfyApp, ComfyWidget } from "typings/comfy.js";
+import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import type { ComfyApp, ComfyWidget } from "typings/comfy.js";
 import type {
   IWidget,
   LGraph,
   LGraphNode,
   SerializedLGraphNode,
 } from "typings/litegraph.js";
-import type { Constructor } from "typings/index.js";
+import type { RgthreeBaseNode } from "./base_node.js";
+
+// @ts-ignore
+import { app } from "../../scripts/app.js";
+import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
+import { NodeTypesString } from "./constants.js";
 import { addMenuItem } from "./utils.js";
 import { rgthree } from "./rgthree.js";
 
@@ -29,6 +29,7 @@ const MODE_BYPASS = 4;
 class FastActionsButton extends BaseAnyInputConnectedNode {
   static override type = NodeTypesString.FAST_ACTIONS_BUTTON;
   static override title = NodeTypesString.FAST_ACTIONS_BUTTON;
+  override comfyClass = NodeTypesString.FAST_ACTIONS_BUTTON;
 
   readonly logger = rgthree.newLogSession("[FastActionsButton]");
 
@@ -75,6 +76,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
     this.keypressBound = this.onKeypress.bind(this);
     this.keyupBound = this.onKeyup.bind(this);
+    this.onConstructed();
   }
 
   /** When we're given data to configure, like from a PNG or JSON. */
@@ -345,7 +347,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
   }
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: Constructor<T>) {
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     BaseAnyInputConnectedNode.setUp(clazz);
 
     addMenuItem(clazz, app, {

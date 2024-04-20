@@ -6,8 +6,10 @@ const MODE_ALWAYS = 0;
 class BypasserNode extends BaseNodeModeChanger {
     constructor(title = BypasserNode.title) {
         super(title);
+        this.comfyClass = NodeTypesString.FAST_BYPASSER;
         this.modeOn = MODE_ALWAYS;
         this.modeOff = MODE_BYPASS;
+        this.onConstructed();
     }
     async handleAction(action) {
         if (action === "Bypass all") {

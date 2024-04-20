@@ -6,7 +6,10 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
         super(title);
         this.inputsPassThroughFollowing = PassThroughFollowing.REROUTE_ONLY;
         this.logger = rgthree.newLogSession("[BaseCollectorNode]");
+    }
+    onConstructed() {
         this.addOutput("Output", "*");
+        return super.onConstructed();
     }
     clone() {
         const cloned = super.clone();

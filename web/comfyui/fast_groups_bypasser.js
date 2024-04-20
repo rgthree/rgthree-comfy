@@ -1,12 +1,14 @@
 import { app } from "../../scripts/app.js";
 import { NodeTypesString } from "./constants.js";
-import { FastGroupsMuter } from "./fast_groups_muter.js";
-export class FastGroupsBypasser extends FastGroupsMuter {
+import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
+export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
     constructor(title = FastGroupsBypasser.title) {
         super(title);
+        this.comfyClass = NodeTypesString.FAST_GROUPS_BYPASSER;
         this.helpActions = 'bypass and enable';
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = 4;
+        this.onConstructed();
     }
     static setUp(clazz) {
         LiteGraph.registerNodeType(clazz.type, clazz);
@@ -22,7 +24,7 @@ app.registerExtension({
         FastGroupsBypasser.setUp(FastGroupsBypasser);
     },
     loadedGraphNode(node) {
-        if (node.type == FastGroupsMuter.title) {
+        if (node.type == FastGroupsBypasser.title) {
             node.tempSize = [...node.size];
         }
     },

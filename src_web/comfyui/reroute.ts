@@ -34,7 +34,7 @@ import {
   waitForCanvas,
 } from "./utils.js";
 import { wait } from "rgthree/common/shared_utils.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 
 declare const LiteGraph: typeof TLiteGraph;
@@ -330,8 +330,9 @@ const SERVICE = new RerouteService();
 /**
  * The famous ReroutNode, that has true multidirectional, expansive sizes, etc.
  */
-class RerouteNode extends RgthreeBaseNode {
+class RerouteNode extends RgthreeBaseVirtualNode {
   static override title = NodeTypesString.REROUTE;
+  override comfyClass = NodeTypesString.REROUTE;
 
   static readonly title_mode = LiteGraph.NO_TITLE;
 
@@ -369,11 +370,17 @@ class RerouteNode extends RgthreeBaseNode {
 
   constructor(title = RerouteNode.title) {
     super(title);
+    this.onConstructed();
+  }
+
+  override onConstructed(): boolean {
     this.setResizable(this.properties["resizable"] ?? configResizable);
     this.size = RerouteNode.size; // Starting size.
     this.addInput("", "*");
     this.addOutput("", "*");
     setTimeout(() => this.applyNodeSize(), 20);
+    return super.onConstructed();
+
   }
 
   override configure(info: SerializedLGraphNode) {
@@ -715,7 +722,6 @@ class RerouteNode extends RgthreeBaseNode {
    */
   private stabilizeLayout(oldSize: Vector2, newSize: Vector2) {
     if (newSize[0] === 10 || newSize[1] === 10) {
-      this.properties = this.properties || {};
       const props = this.properties;
       props["connections_layout"] = props["connections_layout"] || ["Left", "Right"];
       const layout = props["connections_layout"];
@@ -844,7 +850,6 @@ class RerouteNode extends RgthreeBaseNode {
    * `manuallyHandleResize` handles the reset of `connections_dir` when a node is resized.
    */
   private cycleConnection(ioDir: IoDirection) {
-    this.properties = this.properties || {};
     const props = this.properties;
     props["connections_layout"] = props["connections_layout"] || ["Left", "Right"];
     const propIdx = ioDir == IoDirection.INPUT ? 0 : 1;

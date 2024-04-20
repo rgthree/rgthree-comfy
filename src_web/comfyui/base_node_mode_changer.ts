@@ -1,9 +1,9 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
+import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget} from 'typings/litegraph.js';
+
 // @ts-ignore
 import {app} from "../../scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { RgthreeBaseNode } from "./base_node.js";
-import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, INodeInputSlot, INodeOutputSlot, LLink} from 'typings/litegraph.js';
 import { PassThroughFollowing } from "./utils.js";
 import { wait } from "rgthree/common/shared_utils.js";
 
@@ -28,16 +28,17 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
 
   constructor(title?: string) {
     super(title);
-
-    this.properties = this.properties || {};
     this.properties['toggleRestriction'] = 'default';
+  }
 
+  override onConstructed(): boolean {
     wait(10).then(() => {
       if (this.modeOn < 0 || this.modeOff < 0) {
         throw new Error('modeOn and modeOff must be overridden.');
       }
     });
     this.addOutput("OPT_CONNECTION", "*");
+    return super.onConstructed();
   }
 
   override handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
@@ -94,7 +95,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   }
 
 
-  static override setUp<T extends RgthreeBaseNode>(clazz: new(title?: string) => T) {
+  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     BaseAnyInputConnectedNode.setUp(clazz);
   }
 }

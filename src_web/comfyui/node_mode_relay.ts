@@ -60,6 +60,7 @@ class NodeModeRelay extends BaseCollectorNode {
 
   static override type = NodeTypesString.NODE_MODE_RELAY;
   static override title = NodeTypesString.NODE_MODE_RELAY;
+  override comfyClass = NodeTypesString.NODE_MODE_RELAY;
 
   static "@on_muted_inputs" = {
     type: "combo",
@@ -78,10 +79,14 @@ class NodeModeRelay extends BaseCollectorNode {
 
   constructor(title?: string) {
     super(title);
+    this.properties['on_muted_inputs'] = 'MUTE';
+    this.properties['on_bypassed_inputs'] = 'BYPASS';
+    this.properties['on_any_active_inputs'] = 'ACTIVE';
 
-    setTimeout(() => {
-      this.stabilize();
-    }, 500);
+    this.onConstructed();
+  }
+
+  override onConstructed() {
     // We want to customize the output, so remove the one BaseCollectorNode adds, and add out own.
     this.removeOutput(0);
     this.addOutput("REPEATER", "_NODE_REPEATER_", {
@@ -90,9 +95,10 @@ class NodeModeRelay extends BaseCollectorNode {
       shape: LiteGraph.ARROW_SHAPE,
     });
 
-    this.properties['on_muted_inputs'] = 'MUTE';
-    this.properties['on_bypassed_inputs'] = 'BYPASS';
-    this.properties['on_any_active_inputs'] = 'ACTIVE';
+    setTimeout(() => {
+      this.stabilize();
+    }, 500);
+    return super.onConstructed();
   }
 
   override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: LGraphCanvas): void {

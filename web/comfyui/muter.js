@@ -6,8 +6,10 @@ const MODE_ALWAYS = 0;
 class MuterNode extends BaseNodeModeChanger {
     constructor(title = MuterNode.title) {
         super(title);
+        this.comfyClass = NodeTypesString.FAST_MUTER;
         this.modeOn = MODE_ALWAYS;
         this.modeOff = MODE_MUTE;
+        this.onConstructed();
     }
     async handleAction(action) {
         if (action === "Mute all") {

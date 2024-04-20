@@ -68,7 +68,6 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
   constructor(title = NODE_CLASS.title) {
     super(title);
 
-    this.properties = this.properties || {};
     this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
 
     // Prefetch loras list.
@@ -131,7 +130,6 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
   /** Adds the non-lora widgets around any lora ones that may be there from configuration. */
   private addNonLoraWidgets() {
-    this.widgets = this.widgets || [];
     moveArrayItem(
       this.widgets,
       this.addCustomWidget(

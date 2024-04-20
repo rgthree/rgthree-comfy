@@ -1,7 +1,7 @@
 // / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 // @ts-ignore
 import { app } from "../../scripts/app.js";
-import type {FastGroupsMuter} from './fast_groups_muter.js';
+import type {BaseFastGroupsModeChanger} from './fast_groups_muter.js';
 import {
   type LiteGraph as TLiteGraph,
   type LGraph as TLGraph,
@@ -26,7 +26,7 @@ class FastGroupsService {
   private groupsSortedAlpha: LGraphGroup[] = [];
   private groupsSortedPosition: LGraphGroup[] = [];
 
-  private readonly fastGroupNodes: FastGroupsMuter[] = [];
+  private readonly fastGroupNodes: BaseFastGroupsModeChanger[] = [];
 
   private runScheduledForMs: number | null = null;
   private runScheduleTimeout: number | null = null;
@@ -38,14 +38,14 @@ class FastGroupsService {
     // Don't need to do anything, wait until a signal.
   }
 
-  addFastGroupNode(node: FastGroupsMuter) {
+  addFastGroupNode(node: BaseFastGroupsModeChanger) {
     this.fastGroupNodes.push(node);
     // Schedule it because the node may not be ready to refreshWidgets (like, when added it may
     // not have cloned properties to filter against, etc.).
     this.scheduleRun(8);
   }
 
-  removeFastGroupNode(node: FastGroupsMuter) {
+  removeFastGroupNode(node: BaseFastGroupsModeChanger) {
     const index = this.fastGroupNodes.indexOf(node);
     if (index > -1) {
       this.fastGroupNodes.splice(index, 1);

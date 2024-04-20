@@ -6,6 +6,7 @@ class NodeModeRepeater extends BaseCollectorNode {
     constructor(title) {
         super(title);
         this.inputsPassThroughFollowing = PassThroughFollowing.ALL;
+        this.comfyClass = NodeTypesString.NODE_MODE_REPEATER;
         this.hasRelayInput = false;
         this.hasTogglerOutput = false;
         this.removeOutput(0);
@@ -13,6 +14,7 @@ class NodeModeRepeater extends BaseCollectorNode {
             color_on: "#Fc0",
             color_off: "#a80",
         });
+        this.onConstructed();
     }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
         let canConnect = !this.hasRelayInput;

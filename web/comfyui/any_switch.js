@@ -1,10 +1,10 @@
 import { app } from "../../scripts/app.js";
-import { IoDirection, addConnectionLayoutSupport, applyMixins, followConnectionUntilType, } from "./utils.js";
-import { RgthreeBaseNode } from "./base_node.js";
-let hasShownAlertForUpdatingInt = false;
-class AnySwitchforMixin extends RgthreeBaseNode {
-    constructor() {
-        super(...arguments);
+import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
+import { RgthreeBaseServerNode } from "./base_node.js";
+import { NodeTypesString } from "./constants.js";
+class RgthreeAnySwitch extends RgthreeBaseServerNode {
+    constructor(title = RgthreeAnySwitch.title) {
+        super(title);
         this.scheduleStabilizePromise = null;
         this.nodeType = null;
     }
@@ -40,29 +40,29 @@ class AnySwitchforMixin extends RgthreeBaseNode {
         for (const output of this.outputs) {
             output.type = this.nodeType;
             output.label =
-                output.type === 'RGTHREE_CONTEXT' ? 'CONTEXT' :
-                    Array.isArray(this.nodeType) || this.nodeType.includes(",")
+                output.type === "RGTHREE_CONTEXT"
+                    ? "CONTEXT"
+                    : Array.isArray(this.nodeType) || this.nodeType.includes(",")
                         ? (connectedType === null || connectedType === void 0 ? void 0 : connectedType.label) || String(this.nodeType)
                         : String(this.nodeType);
         }
     }
-    static setUp(nodeType) {
-        AnySwitchforMixin.title = nodeType.title;
-        AnySwitchforMixin.type = nodeType.type || nodeType.title;
-        AnySwitchforMixin.comfyClass = nodeType.comfyClass;
-        setTimeout(() => {
-            AnySwitchforMixin.category = nodeType.category;
-        });
-        applyMixins(nodeType, [RgthreeBaseNode, AnySwitchforMixin]);
-        addConnectionLayoutSupport(nodeType, app, [["Left", "Right"], ["Right", "Left"]]);
+    static setUp(comfyClass, nodeData) {
+        RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeAnySwitch);
+        addConnectionLayoutSupport(RgthreeAnySwitch, app, [
+            ["Left", "Right"],
+            ["Right", "Left"],
+        ]);
     }
 }
-AnySwitchforMixin.comfyClass = "";
+RgthreeAnySwitch.title = NodeTypesString.ANY_SWITCH;
+RgthreeAnySwitch.type = NodeTypesString.ANY_SWITCH;
+RgthreeAnySwitch.comfyClass = NodeTypesString.ANY_SWITCH;
 app.registerExtension({
     name: "rgthree.AnySwitch",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "Any Switch (rgthree)") {
-            AnySwitchforMixin.setUp(nodeType);
+            RgthreeAnySwitch.setUp(nodeType, nodeData);
         }
     },
 });

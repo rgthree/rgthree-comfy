@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-export class Bookmark extends RgthreeBaseNode {
+export class Bookmark extends RgthreeBaseVirtualNode {
     get _collapsed_width() {
         return this.___collapsed_width;
     }
@@ -15,6 +15,7 @@ export class Bookmark extends RgthreeBaseNode {
     }
     constructor(title = Bookmark.title) {
         super(title);
+        this.comfyClass = NodeTypesString.BOOKMARK;
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
@@ -31,10 +32,7 @@ export class Bookmark extends RgthreeBaseNode {
             precision: 2,
         });
         this.keypressBound = this.onKeypress.bind(this);
-    }
-    static setUp(clazz) {
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
+        this.onConstructed();
     }
     onAdded(graph) {
         window.addEventListener("keydown", this.keypressBound);
@@ -63,9 +61,13 @@ export class Bookmark extends RgthreeBaseNode {
         }
         canvas.setDirty(true, true);
     }
+    static setUp(clazz) {
+        LiteGraph.registerNodeType(clazz.type, clazz);
+        clazz.category = clazz._category;
+    }
 }
 Bookmark.type = NodeTypesString.BOOKMARK;
-Bookmark.title = "🔖";
+Bookmark.title = NodeTypesString.BOOKMARK;
 Bookmark.slot_start_y = -20;
 app.registerExtension({
     name: "rgthree.Bookmark",

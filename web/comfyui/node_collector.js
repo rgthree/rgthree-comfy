@@ -7,6 +7,8 @@ import { NodeTypesString } from "./constants.js";
 class CollectorNode extends BaseCollectorNode {
     constructor(title = CollectorNode.title) {
         super(title);
+        this.comfyClass = NodeTypesString.NODE_COLLECTOR;
+        this.onConstructed();
     }
 }
 CollectorNode.type = NodeTypesString.NODE_COLLECTOR;

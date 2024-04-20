@@ -8,6 +8,7 @@ const MODE_ALWAYS = 0;
 class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     constructor(title = RandomUnmuterNode.title) {
         super(title);
+        this.comfyClass = NodeTypesString.RANDOM_UNMUTER;
         this.modeOn = MODE_ALWAYS;
         this.modeOff = MODE_MUTE;
         this.tempEnabledNode = null;
@@ -20,6 +21,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
         rgthree.addEventListener('queue-end', this.onQueueEndBound);
         rgthree.addEventListener('graph-to-prompt', this.onGraphtoPromptBound);
         rgthree.addEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+        this.onConstructed();
     }
     onRemoved() {
         rgthree.removeEventListener('queue', this.onQueueBound);

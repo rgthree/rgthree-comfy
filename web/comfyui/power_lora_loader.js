@@ -20,7 +20,6 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.logger = rgthree.newLogSession(`[Power Lora Stack]`);
         this.loraWidgetsCounter = 0;
         this.widgetButtonSpacer = null;
-        this.properties = this.properties || {};
         this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
         rgthreeApi.getLoras();
     }
@@ -65,7 +64,6 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         return widget;
     }
     addNonLoraWidgets() {
-        this.widgets = this.widgets || [];
         moveArrayItem(this.widgets, this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 })), 0);
         moveArrayItem(this.widgets, this.addCustomWidget(new PowerLoraLoaderHeaderWidget()), 1);
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));

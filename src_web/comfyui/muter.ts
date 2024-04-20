@@ -13,11 +13,13 @@ class MuterNode extends BaseNodeModeChanger {
 
   static override type = NodeTypesString.FAST_MUTER;
   static override title = NodeTypesString.FAST_MUTER;
+  override comfyClass = NodeTypesString.FAST_MUTER;
   override readonly modeOn = MODE_ALWAYS;
   override readonly modeOff = MODE_MUTE;
 
   constructor(title = MuterNode.title) {
     super(title);
+    this.onConstructed();
   }
 
   override async handleAction(action: string) {

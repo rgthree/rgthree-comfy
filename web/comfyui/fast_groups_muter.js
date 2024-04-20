@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { RgthreeBaseNode } from "./base_node.js";
+import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
@@ -9,23 +9,25 @@ const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
 const PROPERTY_RESTRICTION = "toggleRestriction";
-export class FastGroupsMuter extends RgthreeBaseNode {
+export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     constructor(title = FastGroupsMuter.title) {
         super(title);
-        this.isVirtualNode = true;
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = LiteGraph.NEVER;
         this.debouncerTempWidth = 0;
         this.tempSize = null;
         this.serialize_widgets = false;
-        this.helpActions = "must and unmute";
+        this.helpActions = "mute and unmute";
         this.properties[PROPERTY_MATCH_COLORS] = "";
         this.properties[PROPERTY_MATCH_TITLE] = "";
         this.properties[PROPERTY_SHOW_NAV] = true;
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
         this.properties[PROPERTY_RESTRICTION] = "default";
+    }
+    onConstructed() {
         this.addOutput("OPT_CONNECTION", "*");
+        return super.onConstructed();
     }
     onAdded(graph) {
         FAST_GROUPS_SERVICE.addFastGroupNode(this);
@@ -117,7 +119,6 @@ export class FastGroupsMuter extends RgthreeBaseNode {
                     continue;
                 }
             }
-            this.widgets = this.widgets || [];
             const widgetName = `Enable ${group.title}`;
             let widget = this.widgets.find((w) => w.name === widgetName);
             if (!widget) {
@@ -370,21 +371,38 @@ export class FastGroupsMuter extends RgthreeBaseNode {
         clazz.category = clazz._category;
     }
 }
-FastGroupsMuter.type = NodeTypesString.FAST_GROUPS_MUTER;
-FastGroupsMuter.title = NodeTypesString.FAST_GROUPS_MUTER;
-FastGroupsMuter.exposedActions = ["Mute all", "Enable all", "Toggle all"];
-FastGroupsMuter["@matchColors"] = { type: "string" };
-FastGroupsMuter["@matchTitle"] = { type: "string" };
-FastGroupsMuter["@showNav"] = { type: "boolean" };
-FastGroupsMuter["@sort"] = {
+BaseFastGroupsModeChanger.type = NodeTypesString.FAST_GROUPS_MUTER;
+BaseFastGroupsModeChanger.title = NodeTypesString.FAST_GROUPS_MUTER;
+BaseFastGroupsModeChanger.exposedActions = ["Mute all", "Enable all", "Toggle all"];
+BaseFastGroupsModeChanger["@matchColors"] = { type: "string" };
+BaseFastGroupsModeChanger["@matchTitle"] = { type: "string" };
+BaseFastGroupsModeChanger["@showNav"] = { type: "boolean" };
+BaseFastGroupsModeChanger["@sort"] = {
     type: "combo",
     values: ["position", "alphanumeric", "custom alphabet"],
 };
-FastGroupsMuter["@customSortAlphabet"] = { type: "string" };
-FastGroupsMuter["@toggleRestriction"] = {
+BaseFastGroupsModeChanger["@customSortAlphabet"] = { type: "string" };
+BaseFastGroupsModeChanger["@toggleRestriction"] = {
     type: "combo",
     values: ["default", "max one", "always one"],
 };
+export class FastGroupsMuter extends BaseFastGroupsModeChanger {
+    constructor(title = FastGroupsMuter.title) {
+        super(title);
+        this.comfyClass = NodeTypesString.FAST_GROUPS_MUTER;
+        this.helpActions = "mute and unmute";
+        this.modeOn = LiteGraph.ALWAYS;
+        this.modeOff = LiteGraph.NEVER;
+        this.onConstructed();
+    }
+    static setUp(clazz) {
+        LiteGraph.registerNodeType(clazz.type, clazz);
+        clazz.category = clazz._category;
+    }
+}
+FastGroupsMuter.type = NodeTypesString.FAST_GROUPS_MUTER;
+FastGroupsMuter.title = NodeTypesString.FAST_GROUPS_MUTER;
+FastGroupsMuter.exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 app.registerExtension({
     name: "rgthree.FastGroupsMuter",
     registerCustomNodes() {
