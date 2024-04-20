@@ -29,6 +29,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         this.addOutput("OPT_CONNECTION", "*");
         return super.onConstructed();
     }
+    configure(info) {
+        info.outputs.length = 1;
+        super.configure(info);
+    }
     onAdded(graph) {
         FAST_GROUPS_SERVICE.addFastGroupNode(this);
     }
