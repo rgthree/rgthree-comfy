@@ -81,14 +81,20 @@ export abstract class RgthreeBaseNode extends LGraphNode {
         throw new Error("RgthreeBaseNode needs a comfy class override.");
       }
       // Ensure we've called onConstructed before we got here.
-      if (this.onConstructed()) {
-        const [n, v] = rgthree.logger.logParts(
-          LogLevel.DEV,
-          `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`,
-        );
-        console[n]?.(...v);
-      }
+      this.checkAndRunOnConstructed();
     });
+  }
+
+  private checkAndRunOnConstructed() {
+    if (!this.__constructed__) {
+      this.onConstructed();
+      const [n, v] = rgthree.logger.logParts(
+        LogLevel.DEV,
+        `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`,
+      );
+      console[n]?.(...v);
+    }
+    return this.__constructed__;
   }
 
   /**
@@ -102,7 +108,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     this.type = this.type ?? undefined;
     this.__constructed__ = true;
     rgthree.invokeExtensionsAsync("nodeCreated", this);
-    return true;
+    return this.__constructed__;
   }
 
   override configure(info: SerializedLGraphNode<TLGraphNode>): void {

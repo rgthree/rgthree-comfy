@@ -20,15 +20,20 @@ export class RgthreeBaseNode extends LGraphNode {
         this.widgets = this.widgets || [];
         this.properties = this.properties || {};
         setTimeout(() => {
-            var _a;
             if (this.comfyClass == "__NEED_COMFY_CLASS__") {
                 throw new Error("RgthreeBaseNode needs a comfy class override.");
             }
-            if (this.onConstructed()) {
-                const [n, v] = rgthree.logger.logParts(LogLevel.DEV, `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`);
-                (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
-            }
+            this.checkAndRunOnConstructed();
         });
+    }
+    checkAndRunOnConstructed() {
+        var _a;
+        if (!this.__constructed__) {
+            this.onConstructed();
+            const [n, v] = rgthree.logger.logParts(LogLevel.DEV, `[RgthreeBaseNode] Child class did not call onConstructed for "${this.type}.`);
+            (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+        }
+        return this.__constructed__;
     }
     onConstructed() {
         var _a;
@@ -37,7 +42,7 @@ export class RgthreeBaseNode extends LGraphNode {
         this.type = (_a = this.type) !== null && _a !== void 0 ? _a : undefined;
         this.__constructed__ = true;
         rgthree.invokeExtensionsAsync("nodeCreated", this);
-        return true;
+        return this.__constructed__;
     }
     configure(info) {
         this.configuring = true;
