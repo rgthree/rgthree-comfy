@@ -52,7 +52,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         if (event.ctrlKey || event.metaKey || event.altKey) {
             return;
         }
-        if (event.key.toLocaleLowerCase() === this.widgets[0].value.toLocaleLowerCase()) {
+        if (event.key.toLocaleLowerCase() === this.shortcutKey) {
             this.canvasToBookmark();
         }
     }
