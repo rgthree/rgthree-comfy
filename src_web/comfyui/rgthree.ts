@@ -942,35 +942,29 @@ class Rgthree extends EventTarget {
 function getBookmarks(): ContextMenuItem[] {
   const graph: TLGraph = app.graph;
 
-  const bookmarkNodes = graph._nodes.filter(
-    (n): n is Bookmark => n.type == NodeTypesString.BOOKMARK,
-  );
+  // Sorts by Title.
+  // I could see an option to sort by either Shortcut, Title, or Position.
+  const bookmarks = graph._nodes
+    .filter((n): n is Bookmark => n.type === NodeTypesString.BOOKMARK)
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .map((n) => ({
+      content: `[${n.shortcutKey}] ${n.title}`,
+      className: "rgthree-contextmenu-item",
+      callback: () => {
+        n.canvasToBookmark();
+      },
+    }));
 
-  if (!bookmarkNodes.length) {
-    return [];
-  }
-
-  const bookmarksToList = bookmarkNodes
-    // Sort by Title.
-    // I could see an option to sort by either Shortcut, Title, or Position.
-    .sort((a, b) => a.title.localeCompare(b.title));
-
-  const bookmarkMenuItems = bookmarksToList.map((n) => ({
-    content: `[${n.shortcutKey}] ${n.title}`,
-    className: "rgthree-contextmenu-item",
-    callback: () => {
-      n.canvasToBookmark();
-    },
-  }));
-
-  return [
-    {
-      content: "🔖 Bookmarks",
-      disabled: true,
-      className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-    },
-    ...bookmarkMenuItems,
-  ];
+  return !bookmarks.length
+    ? []
+    : [
+        {
+          content: "🔖 Bookmarks",
+          disabled: true,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+        },
+        ...bookmarks,
+      ];
 }
 
 export const rgthree = new Rgthree();

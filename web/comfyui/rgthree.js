@@ -650,27 +650,26 @@ class Rgthree extends EventTarget {
 }
 function getBookmarks() {
     const graph = app.graph;
-    const bookmarkNodes = graph._nodes.filter((n) => n.type == NodeTypesString.BOOKMARK);
-    if (!bookmarkNodes.length) {
-        return [];
-    }
-    const bookmarksToList = bookmarkNodes
-        .sort((a, b) => a.title.localeCompare(b.title));
-    const bookmarkMenuItems = bookmarksToList.map((n) => ({
+    const bookmarks = graph._nodes
+        .filter((n) => n.type === NodeTypesString.BOOKMARK)
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .map((n) => ({
         content: `[${n.shortcutKey}] ${n.title}`,
         className: "rgthree-contextmenu-item",
         callback: () => {
             n.canvasToBookmark();
         },
     }));
-    return [
-        {
-            content: "🔖 Bookmarks",
-            disabled: true,
-            className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-        },
-        ...bookmarkMenuItems,
-    ];
+    return !bookmarks.length
+        ? []
+        : [
+            {
+                content: "🔖 Bookmarks",
+                disabled: true,
+                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+            },
+            ...bookmarks,
+        ];
 }
 export const rgthree = new Rgthree();
 window.rgthree = rgthree;
