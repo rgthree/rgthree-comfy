@@ -20,7 +20,7 @@
       "height": 16,
       "position": "top"
     },
-    "group_nav_menu": {
+    "menu_groups": {
       "enabled": false,
       "filter_regex": ""
     },

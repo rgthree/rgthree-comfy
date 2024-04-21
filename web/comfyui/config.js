@@ -69,6 +69,19 @@ const CONFIGURABLE = {
             ],
         },
         {
+            key: "features.menu_groups.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "Show Quick Nav for Groups",
+            description: "Will show a list in the rgthree-comfy context menu to jump to Groups",
+            subconfig: [
+                {
+                    key: "features.menu_groups.filter_regex",
+                    type: ConfigType.STRING,
+                    label: "Filter RegEx: Only shows matching Groups",
+                },
+            ],
+        },
+        {
             key: "features.group_header_fast_toggle.enabled",
             type: ConfigType.BOOLEAN,
             label: "(Groups) Show fast toggles in Group Headers",
@@ -79,9 +92,9 @@ const CONFIGURABLE = {
                     type: ConfigType.ARRAY,
                     label: "Which toggles to show.",
                     options: [
-                        { value: ['mute'], label: 'mute only' },
-                        { value: ['bypass'], label: 'bypass only' },
-                        { value: ['mute', 'bypass'], label: 'mute and bypass' },
+                        { value: ["mute"], label: "mute only" },
+                        { value: ["bypass"], label: "bypass only" },
+                        { value: ["mute", "bypass"], label: "mute and bypass" },
                     ],
                 },
                 {
@@ -89,8 +102,8 @@ const CONFIGURABLE = {
                     type: ConfigType.STRING,
                     label: "When to show them.",
                     options: [
-                        { value: 'hover', label: 'on hover' },
-                        { value: 'always', label: 'always' },
+                        { value: "hover", label: "on hover" },
+                        { value: "always", label: "always" },
                     ],
                 },
             ],
@@ -101,19 +114,6 @@ const CONFIGURABLE = {
             label: "Detect Corrupt Workflows",
             description: "Will show a message at the top of the screen when loading a workflow that has " +
                 "corrupt linking data.",
-        },
-        {
-            key: "features.group_nav_menu.enabled",
-            type: ConfigType.BOOLEAN,
-            label: "Show Quick Nav for Groups",
-            description: "Will show a list in the rgthree-comfy context menu to jump to Groups",
-            subconfig: [
-                {
-                    key: "features.group_nav_menu.filter_regex",
-                    type: ConfigType.STRING,
-                    label: "Filter RegEx: Only shows matching Groups",
-                },
-            ],
         },
         {
             key: "log_level",
@@ -127,7 +127,7 @@ const CONFIGURABLE = {
             isDevOnly: true,
             onSave: function (value) {
                 rgthree.setLogLevel(value);
-            }
+            },
         },
         {
             key: "features.invoke_extensions_async.node_created",

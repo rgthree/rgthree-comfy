@@ -8,6 +8,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -309,31 +310,31 @@ class Rgthree extends EventTarget {
         }
         const rerouteLabel = selectedNodes.length ? "selected" : "all";
         function getGroupsMenu() {
-            const groupNavEnabled = CONFIG_SERVICE.getConfigValue("features.group_nav_menu.enabled", false);
+            const groupNavEnabled = CONFIG_SERVICE.getConfigValue("features.menu_groups.enabled", false);
             if (!groupNavEnabled) {
                 return [];
             }
-            const filterRegex = CONFIG_SERVICE.getConfigValue("features.group_nav_menu.filter_regex", "");
-            const filterRegexPattern = new RegExp(filterRegex);
-            const groups = graph._groups;
-            const groupMenuItems = groups
-                .sort((a, b) => a.title.localeCompare(b.title))
+            const filterRegex = CONFIG_SERVICE.getConfigValue("features.menu_groups.filter_regex", "");
+            const filterRegexPattern = new RegExp(filterRegex, "i");
+            const groupMenuItems = FAST_GROUPS_SERVICE.getGroups("alphanumeric")
                 .filter((group) => !filterRegex || filterRegexPattern.test(group.title))
                 .map((group) => ({
                 content: `${group.title}`,
                 className: "rgthree-contextmenu-item rgthree-contextmenu-github",
-                callback: (...args) => {
+                callback: () => {
                     navigateToGroupMaybe(group, { checkQuality: false, forceZoom: true });
                 },
             }));
-            return [
-                {
-                    content: "Groups",
-                    disabled: true,
-                    className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-                },
-                ...groupMenuItems,
-            ];
+            return !groupMenuItems.length
+                ? []
+                : [
+                    {
+                        content: "Groups",
+                        disabled: true,
+                        className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+                    },
+                    ...groupMenuItems,
+                ];
         }
         const groupsMenuItems = getGroupsMenu();
         return [
@@ -642,7 +643,7 @@ class Rgthree extends EventTarget {
         document.head.appendChild(link);
     }
     setLogLevel(level) {
-        if (typeof level === 'string') {
+        if (typeof level === "string") {
             level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
         }
         if (level != null) {
@@ -656,7 +657,7 @@ class Rgthree extends EventTarget {
         return this.logger.newSession(name);
     }
     isDevMode() {
-        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
     }
     monitorBadLinks() {
         const badLinksFound = fixBadLinks(app.graph);

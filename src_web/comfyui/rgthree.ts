@@ -22,6 +22,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -120,14 +121,12 @@ class Logger {
   }
 }
 
-
 /**
  * A log session, with the name as the prefix. A new session will stack prefixes.
  */
 class LogSession {
-
   readonly logger = new Logger();
-  readonly logsCache: {[key: string]: {lastShownTime: number}} = {};
+  readonly logsCache: { [key: string]: { lastShownTime: number } } = {};
 
   constructor(readonly name?: string) {}
 
@@ -138,16 +137,17 @@ class LogSession {
    *     const [logMethod, logArgs] = logger.logParts(LogLevel.DEBUG, message, ...args);
    *     console[logMethod]?.(...logArgs);
    */
-  logParts(level: LogLevel, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+  logParts(level: LogLevel, message?: string, ...args: any[]): [ConsoleLogFns, any[]] {
     message = `${this.name || ""}${message ? " " + message : ""}`;
-    return this.logger.logParts(
-      level,
-      message,
-      ...args,
-    );
+    return this.logger.logParts(level, message, ...args);
   }
 
-  logPartsOnceForTime(level: LogLevel, time: number, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+  logPartsOnceForTime(
+    level: LogLevel,
+    time: number,
+    message?: string,
+    ...args: any[]
+  ): [ConsoleLogFns, any[]] {
     message = `${this.name || ""}${message ? " " + message : ""}`;
     const cacheKey = `${level}:${message}`;
     const cacheEntry = this.logsCache[cacheKey];
@@ -155,17 +155,12 @@ class LogSession {
     if (cacheEntry && cacheEntry.lastShownTime + time > now) {
       return ["none" as "info", []];
     }
-    const parts = this.logger.logParts(
-      level,
-      message,
-      ...args,
-    );
+    const parts = this.logger.logParts(level, message, ...args);
     if (console[parts[0]]) {
-      this.logsCache[cacheKey] = this.logsCache[cacheKey] || {} as {lastShownTime: number};
+      this.logsCache[cacheKey] = this.logsCache[cacheKey] || ({} as { lastShownTime: number });
       this.logsCache[cacheKey]!.lastShownTime = now;
     }
     return parts;
-
   }
 
   debugParts(message?: string, ...args: any[]) {
@@ -497,37 +492,34 @@ class Rgthree extends EventTarget {
     const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
     function getGroupsMenu(): ContextMenuItem[] {
-      const groupNavEnabled = CONFIG_SERVICE.getConfigValue(
-        "features.group_nav_menu.enabled",
-        false,
-      );
+      const groupNavEnabled = CONFIG_SERVICE.getConfigValue("features.menu_groups.enabled", false);
       if (!groupNavEnabled) {
         return [];
       }
 
-      const filterRegex = CONFIG_SERVICE.getConfigValue("features.group_nav_menu.filter_regex", "");
-      const filterRegexPattern = new RegExp(filterRegex);
+      const filterRegex = CONFIG_SERVICE.getConfigValue("features.menu_groups.filter_regex", "");
+      const filterRegexPattern = new RegExp(filterRegex, "i");
 
-      const groups = graph._groups;
-      const groupMenuItems = groups
-        .sort((a, b) => a.title.localeCompare(b.title))
+      const groupMenuItems = FAST_GROUPS_SERVICE.getGroups("alphanumeric")
         .filter((group) => !filterRegex || filterRegexPattern.test(group.title))
         .map((group) => ({
           content: `${group.title}`,
           className: "rgthree-contextmenu-item rgthree-contextmenu-github",
-          callback: (...args: any[]) => {
+          callback: () => {
             navigateToGroupMaybe(group, { checkQuality: false, forceZoom: true });
           },
         }));
 
-      return [
-        {
-          content: "Groups",
-          disabled: true,
-          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
-        },
-        ...groupMenuItems,
-      ];
+      return !groupMenuItems.length
+        ? []
+        : [
+            {
+              content: "Groups",
+              disabled: true,
+              className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+            },
+            ...groupMenuItems,
+          ];
     }
 
     const groupsMenuItems = getGroupsMenu();
@@ -931,8 +923,8 @@ class Rgthree extends EventTarget {
     document.head.appendChild(link);
   }
 
-  setLogLevel(level?: LogLevel|string) {
-    if (typeof level === 'string') {
+  setLogLevel(level?: LogLevel | string) {
+    if (typeof level === "string") {
       level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
     }
     if (level != null) {
@@ -949,7 +941,7 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
   }
 
   monitorBadLinks() {
