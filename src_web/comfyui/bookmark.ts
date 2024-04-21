@@ -92,6 +92,9 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     if (['input','textarea'].includes(target.localName)) {
       return;
     }
+    if (event.ctrlKey || event.metaKey || event.altKey) {
+      return;
+    }
     if (event.key.toLocaleLowerCase() === this.widgets[0]!.value.toLocaleLowerCase()) {
       this.canvasToBookmark();
     }
