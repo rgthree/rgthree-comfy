@@ -74,7 +74,7 @@ export function drawNumberWidgetPart(ctx, options) {
     const xBoundsArrowMore = [0, 0];
     ctx.save();
     let posX = options.posX;
-    const { posY, height, value } = options;
+    const { posY, height, value, textColor } = options;
     const midY = posY + height / 2;
     if (options.direction === -1) {
         posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
@@ -85,7 +85,12 @@ export function drawNumberWidgetPart(ctx, options) {
     posX += arrowWidth + innerMargin;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    const oldTextcolor = ctx.fillStyle;
+    if (textColor) {
+        ctx.fillStyle = textColor;
+    }
     ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+    ctx.fillStyle = oldTextcolor;
     xBoundsNumber[0] = posX;
     xBoundsNumber[1] = numberWidth;
     posX += numberWidth + innerMargin;

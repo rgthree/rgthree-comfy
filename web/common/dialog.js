@@ -1,4 +1,4 @@
-import { createElement as $el, getClosestOrSelf } from "./utils_dom.js";
+import { createElement as $el, getClosestOrSelf, setAttributes } from "./utils_dom.js";
 export class RgthreeDialog extends EventTarget {
     constructor(options) {
         super();
@@ -19,12 +19,17 @@ export class RgthreeDialog extends EventTarget {
                 },
             },
         });
-        if (options.title) {
-            $el("div.rgthree-dialog-container-title", {
-                parent: container,
-                child: options.title.includes("<h2") ? options.title : $el("h2", { html: options.title }),
-            });
-        }
+        this.element.addEventListener("close", (event) => {
+            this.onDialogElementClose();
+        });
+        this.titleElement = $el("div.rgthree-dialog-container-title", {
+            parent: container,
+            child: !options.title
+                ? null
+                : options.title.includes("<h2")
+                    ? options.title
+                    : $el("h2", { html: options.title }),
+        });
         this.contentElement = $el("div.rgthree-dialog-container-content", {
             parent: container,
             child: options.content,
@@ -57,6 +62,15 @@ export class RgthreeDialog extends EventTarget {
             });
         }
     }
+    setTitle(content) {
+        const title = typeof content !== "string" || content.includes("<h2")
+            ? content
+            : $el("h2", { html: content });
+        setAttributes(this.titleElement, { children: title });
+    }
+    setContent(content) {
+        setAttributes(this.contentElement, { children: content });
+    }
     show() {
         document.body.classList.add("rgthree-dialog-open");
         this.element.showModal();
@@ -67,10 +81,15 @@ export class RgthreeDialog extends EventTarget {
         if (this.options.onBeforeClose && !(await this.options.onBeforeClose())) {
             return;
         }
-        document.body.classList.remove("rgthree-dialog-open");
         this.element.close();
+    }
+    onDialogElementClose() {
+        document.body.classList.remove("rgthree-dialog-open");
         this.element.remove();
-        this.dispatchEvent(new CustomEvent("close"));
+        this.dispatchEvent(new CustomEvent("close", this.getCloseEventDetail()));
+    }
+    getCloseEventDetail() {
+        return { detail: null };
     }
 }
 export class RgthreeHelpDialog extends RgthreeDialog {

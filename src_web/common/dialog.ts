@@ -1,5 +1,5 @@
 import type { LGraphNode, LGraphNodeConstructor } from "typings/litegraph.js";
-import { createElement as $el, getClosestOrSelf } from "./utils_dom.js";
+import { createElement as $el, getClosestOrSelf, setAttributes } from "./utils_dom.js";
 
 type RgthreeDialogButton = {
   label: string;
@@ -27,6 +27,7 @@ export type RgthreeDialogOptions = {
 export class RgthreeDialog extends EventTarget {
   element: HTMLDialogElement;
   contentElement: HTMLDivElement;
+  titleElement: HTMLDivElement;
   options: RgthreeDialogOptions;
 
   constructor(options: RgthreeDialogOptions) {
@@ -53,13 +54,18 @@ export class RgthreeDialog extends EventTarget {
         },
       },
     });
+    this.element.addEventListener("close", (event) => {
+      this.onDialogElementClose();
+    });
 
-    if (options.title) {
-      $el("div.rgthree-dialog-container-title", {
-        parent: container,
-        child: options.title.includes("<h2") ? options.title : $el("h2", { html: options.title }),
-      });
-    }
+    this.titleElement = $el("div.rgthree-dialog-container-title", {
+      parent: container,
+      child: !options.title
+        ? null
+        : options.title.includes("<h2")
+        ? options.title
+        : $el("h2", { html: options.title }),
+    });
 
     this.contentElement = $el("div.rgthree-dialog-container-content", {
       parent: container,
@@ -95,6 +101,18 @@ export class RgthreeDialog extends EventTarget {
     }
   }
 
+  setTitle(content: string | HTMLElement | HTMLElement[]) {
+    const title =
+      typeof content !== "string" || content.includes("<h2")
+        ? content
+        : $el("h2", { html: content });
+    setAttributes(this.titleElement, { children: title });
+  }
+
+  setContent(content: string | HTMLElement | HTMLElement[]) {
+    setAttributes(this.contentElement, { children: content });
+  }
+
   show() {
     document.body.classList.add("rgthree-dialog-open");
     this.element.showModal();
@@ -106,10 +124,17 @@ export class RgthreeDialog extends EventTarget {
     if (this.options.onBeforeClose && !(await this.options.onBeforeClose())) {
       return;
     }
-    document.body.classList.remove("rgthree-dialog-open");
     this.element.close();
+  }
+
+  onDialogElementClose() {
+    document.body.classList.remove("rgthree-dialog-open");
     this.element.remove();
-    this.dispatchEvent(new CustomEvent("close"));
+    this.dispatchEvent(new CustomEvent("close", this.getCloseEventDetail()));
+  }
+
+  protected getCloseEventDetail(): { detail: any } {
+    return { detail: null };
   }
 }
 

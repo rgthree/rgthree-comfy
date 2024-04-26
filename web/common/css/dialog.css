@@ -14,8 +14,18 @@
   max-height: calc(100% - 32px);
 }
 
-.rgthree-dialog-container {
-  padding: 16px;
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+.rgthree-dialog-container > * {
+  padding: 8px 16px;
+}
+.rgthree-dialog-container > *:first-child {
+  padding-top: 16px;
+}
+.rgthree-dialog-container > *:last-child {
+  padding-bottom: 16px;
 }
 
 .rgthree-dialog.-iconed::after {
@@ -48,7 +58,6 @@
   }
 }
 .rgthree-dialog-container-title {
-  margin-bottom: 16px;
   display: flex;
   flex-direction: row;
   align-items: center;

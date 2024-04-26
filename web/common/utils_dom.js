@@ -172,6 +172,9 @@ export function setAttribute(element, attribute, value) {
                 console.error(e);
             }
         }
+        if (attribute === 'children') {
+            empty(element);
+        }
         let children = value instanceof Array ? value : [value];
         for (let child of children) {
             child = getChild(child);
@@ -258,9 +261,23 @@ function setStyle(element, name, value) {
     return element;
 }
 ;
-function empty(element) {
+export function empty(element) {
     while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
     return element;
+}
+export function appendChildren(el, children) {
+    children = !Array.isArray(children) ? [children] : children;
+    for (let child of children) {
+        child = getChild(child);
+        if (child instanceof Node) {
+            if (el instanceof HTMLTemplateElement) {
+                el.content.appendChild(child);
+            }
+            else {
+                el.appendChild(child);
+            }
+        }
+    }
 }

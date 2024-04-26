@@ -17,6 +17,11 @@ class RgthreeApi {
         const r = await this.fetchApi(route, options);
         return await r.json();
     }
+    async postJson(route, json) {
+        const body = new FormData();
+        body.append("json", JSON.stringify(json));
+        return await rgthreeApi.fetchJson(route, { method: "POST", body });
+    }
     getLoras(force = false) {
         if (!this.getLorasPromise || force) {
             this.getLorasPromise = this.fetchJson("/loras", { cache: "no-store" });

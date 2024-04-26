@@ -195,6 +195,11 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
       }
     }
 
+    // "children" is a replace of the children, while "child" appends a new child if others exist.
+    if (attribute === 'children') {
+      empty(element);
+    }
+
     let children = value instanceof Array ? value : [value];
     for (let child of children) {
       child = getChild(child);
@@ -285,9 +290,24 @@ function setStyle(element: HTMLElement, name: string, value: string|number|null)
   return element;
 };
 
-function empty(element: HTMLElement) {
+export function empty(element: HTMLElement) {
   while (element.firstChild) {
     element.removeChild(element.firstChild);
   }
   return element;
+}
+
+type ChildType = HTMLElement|DocumentFragment|Text|string|null;
+export function appendChildren(el: HTMLElement, children: ChildType|ChildType[]) {
+  children = !Array.isArray(children) ? [children] : children;
+  for (let child of children) {
+    child = getChild(child);
+    if (child instanceof Node) {
+      if (el instanceof HTMLTemplateElement) {
+        el.content.appendChild(child);
+      } else {
+        el.appendChild(child);
+      }
+    }
+  }
 }

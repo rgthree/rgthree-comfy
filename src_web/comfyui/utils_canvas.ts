@@ -141,6 +141,7 @@ type DrawNumberWidgetPartOptions = {
   height: number;
   value: number;
   direction?: 1 | -1;
+  textColor?: string;
 };
 
 /**
@@ -165,7 +166,7 @@ export function drawNumberWidgetPart(
   ctx.save();
 
   let posX = options.posX;
-  const { posY, height, value } = options;
+  const { posY, height, value, textColor } = options;
   const midY = posY + height / 2;
 
   // If we're drawing parts from right to left (usually when something in the middle will be
@@ -190,7 +191,12 @@ export function drawNumberWidgetPart(
   // Draw the strength text.
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  const oldTextcolor = ctx.fillStyle;
+  if (textColor) {
+    ctx.fillStyle = textColor;
+  }
   ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+  ctx.fillStyle = oldTextcolor;
 
   xBoundsNumber[0] = posX;
   xBoundsNumber[1] = numberWidth;
