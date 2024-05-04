@@ -255,6 +255,26 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    </details>
 
 
+## Label
+> A purely visual node, this allows you to add a floating label to your workflow.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - The text shown is the "Title" of the node and you can adjust the the font size, font family,
+>      font color, text alignment as well as a background color, padding, and background border
+>      radius from the node's properties. You can double-click the node to open the properties
+>      panel.
+>    - **Pro Tip #1:** You can add multiline text from the properties panel _(because ComfyUI let's
+>      you shift + enter there, only)._
+>    - **Pro Tip #2:** You can use ComfyUI's native "pin" option in the right-click menu to make the
+>      label stick to the workflow and clicks to "go through". You can right-click at any time to
+>      unpin.
+>    - **Pro Tip #3:** Color values are hexidecimal strings, like "#FFFFFF" for white, or "#660000"
+>      for dark red. You can supply a 7th & 8th value (or 5th if using shorthand) to create a
+>      transluscent color. For instance, "#FFFFFF88" is semi-transparent white.
+>    </details>
+
+
 # Advanced Techniques
 
 ## First, a word on muting

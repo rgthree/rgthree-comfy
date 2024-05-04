@@ -94,9 +94,10 @@ export class RgthreeDialog extends EventTarget {
 }
 export class RgthreeHelpDialog extends RgthreeDialog {
     constructor(node, content, opts = {}) {
+        const title = (node.type || node.title || "").replace(/\s*\(rgthree\).*/, " <small>by rgthree</small>");
         const options = Object.assign({}, opts, {
             class: "-iconed -help",
-            title: `${node.title.replace("(rgthree)", "")} <small>by rgthree</small>`,
+            title,
             content,
         });
         super(options);

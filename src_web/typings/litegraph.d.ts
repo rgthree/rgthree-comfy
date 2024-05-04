@@ -240,6 +240,8 @@ export const LiteGraph: {
     NODE_DEFAULT_SHAPE: string;
     DEFAULT_SHADOW_COLOR: string;
     DEFAULT_GROUP_FONT: number;
+    // @rgthree - Seems to have been missing.
+    NODE_BOX_OUTLINE_COLOR: string;
 
     WIDGET_BGCOLOR: string;
     WIDGET_OUTLINE_COLOR: string;
@@ -687,6 +689,9 @@ export declare class LGraphNode {
     // @rgthree added
     findInputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
     findOutputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+    onShowCustomPanelInfo(panel: HTMLElement): void;
+    onDblClick?(event: AdjustedMouseEvent, pos: Vector2, canvas: LGraphCanvas): void;
+    inResizeCorner(x: number, y:number) : boolean;
 
     // end @rgthree added
 
@@ -725,6 +730,10 @@ export declare class LGraphNode {
 
     flags: Partial<{
         collapsed: boolean
+        // @rgthree
+        allow_interaction: boolean;
+        // @rgthree
+        pinned: boolean;
     }>;
 
     color: string;
@@ -1304,7 +1313,8 @@ export declare class LGraphCanvas {
         }
     );
 
-    static active_canvas: HTMLCanvasElement;
+    // @rgthree. This was "HTMLCanvasElement" but that is just wrong... it's LGraphCanvas
+    static active_canvas: LGraphCanvas;
 
     allow_dragcanvas: boolean;
     allow_dragnodes: boolean;
@@ -1655,6 +1665,9 @@ export declare class LGraphCanvas {
 
     // @rgthree - Adding this for ComfyUI, since they add this in their own overload in app.js
     selected_group_moving?: boolean;
+
+    // @rgthree
+    showShowNodePanel(node: LGraphNode): void;
 }
 
 // @rgthree - The adjusted pointer event after calling adjustMouseEvent
