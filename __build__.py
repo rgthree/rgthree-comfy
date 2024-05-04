@@ -44,7 +44,7 @@ copytree(DIR_SRC_WEB, DIR_WEB, ignore=ignore_patterns("typings*", "*.ts", "*.scs
 log_step(status="Done")
 
 log_step(msg='TypeScript')
-checked = subprocess.run(["./node_modules/typescript/bin/tsc"], check=True)
+checked = subprocess.run(["node", "./node_modules/typescript/bin/tsc"], check=True)
 log_step(status="Done")
 
 scsss = glob(os.path.join(DIR_SRC_WEB, "**", "*.scss"), recursive=True)
