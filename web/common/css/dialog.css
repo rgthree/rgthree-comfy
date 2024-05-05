@@ -13,8 +13,7 @@
   padding: 0;
   max-height: calc(100% - 32px);
 }
-
-*, *::before, *::after {
+.rgthree-dialog *, .rgthree-dialog *::before, .rgthree-dialog *::after {
   box-sizing: inherit;
 }
 

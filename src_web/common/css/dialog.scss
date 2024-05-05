@@ -15,10 +15,10 @@
   font-size: 1rem;
   padding: 0;
   max-height: calc(100% - 32px);
-}
 
-*, *::before, *::after {
-  box-sizing: inherit;
+  *, *::before, *::after {
+    box-sizing: inherit;
+  }
 }
 
 .rgthree-dialog-container {
