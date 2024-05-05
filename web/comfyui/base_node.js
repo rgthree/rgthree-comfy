@@ -61,14 +61,15 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     set mode(mode) {
         if (this.mode_ != mode) {
+            const oldMode = this.mode_;
             this.mode_ = mode;
-            this.onModeChange();
+            this.onModeChange(oldMode, mode);
         }
     }
     get mode() {
         return this.mode_;
     }
-    onModeChange() {
+    onModeChange(from, to) {
     }
     async handleAction(action) {
         action;

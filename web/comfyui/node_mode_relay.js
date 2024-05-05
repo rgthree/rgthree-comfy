@@ -4,36 +4,38 @@ import { wait } from "../../rgthree/common/shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";
+import { rgthree } from "./rgthree.js";
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
 const MODE_BYPASS = 4;
 const MODE_REPEATS = [MODE_MUTE, MODE_BYPASS];
 const MODE_NOTHING = -99;
 const MODE_TO_OPTION = new Map([
-    [MODE_ALWAYS, 'ACTIVE'],
-    [MODE_MUTE, 'MUTE'],
-    [MODE_BYPASS, 'BYPASS'],
-    [MODE_NOTHING, 'NOTHING'],
+    [MODE_ALWAYS, "ACTIVE"],
+    [MODE_MUTE, "MUTE"],
+    [MODE_BYPASS, "BYPASS"],
+    [MODE_NOTHING, "NOTHING"],
 ]);
 const OPTION_TO_MODE = new Map([
-    ['ACTIVE', MODE_ALWAYS],
-    ['MUTE', MODE_MUTE],
-    ['BYPASS', MODE_BYPASS],
-    ['NOTHING', MODE_NOTHING],
+    ["ACTIVE", MODE_ALWAYS],
+    ["MUTE", MODE_MUTE],
+    ["BYPASS", MODE_BYPASS],
+    ["NOTHING", MODE_NOTHING],
 ]);
 const MODE_TO_PROPERTY = new Map([
-    [MODE_MUTE, 'on_muted_inputs'],
-    [MODE_BYPASS, 'on_bypassed_inputs'],
-    [MODE_ALWAYS, 'on_any_active_inputs'],
+    [MODE_MUTE, "on_muted_inputs"],
+    [MODE_BYPASS, "on_bypassed_inputs"],
+    [MODE_ALWAYS, "on_any_active_inputs"],
 ]);
+const logger = rgthree.newLogSession("[NodeModeRelay]");
 class NodeModeRelay extends BaseCollectorNode {
     constructor(title) {
         super(title);
         this.inputsPassThroughFollowing = PassThroughFollowing.ALL;
         this.comfyClass = NodeTypesString.NODE_MODE_RELAY;
-        this.properties['on_muted_inputs'] = 'MUTE';
-        this.properties['on_bypassed_inputs'] = 'BYPASS';
-        this.properties['on_any_active_inputs'] = 'ACTIVE';
+        this.properties["on_muted_inputs"] = "MUTE";
+        this.properties["on_bypassed_inputs"] = "BYPASS";
+        this.properties["on_any_active_inputs"] = "ACTIVE";
         this.onConstructed();
     }
     onConstructed() {
@@ -47,6 +49,15 @@ class NodeModeRelay extends BaseCollectorNode {
         }, 500);
         return super.onConstructed();
     }
+    onModeChange(from, to) {
+        var _a;
+        super.onModeChange(from, to);
+        if (this.inputs.length <= 1 && !this.isInputConnected(0) && this.isAnyOutputConnected()) {
+            const [n, v] = logger.infoParts(`Mode change without any inputs; relaying our mode.`);
+            (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+            this.dispatchModeToRepeater(this.mode);
+        }
+    }
     configure(info) {
         var _a;
         if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
@@ -59,14 +70,14 @@ class NodeModeRelay extends BaseCollectorNode {
         if ((_a = this.flags) === null || _a === void 0 ? void 0 : _a.collapsed) {
             return;
         }
-        if (this.properties['on_muted_inputs'] !== 'MUTE' ||
-            this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
-            this.properties['on_any_active_inputs'] != 'ACTIVE') {
+        if (this.properties["on_muted_inputs"] !== "MUTE" ||
+            this.properties["on_bypassed_inputs"] !== "BYPASS" ||
+            this.properties["on_any_active_inputs"] != "ACTIVE") {
             let margin = 15;
             ctx.textAlign = "left";
-            let label = `*(MUTE > ${this.properties['on_muted_inputs']},  `;
-            label += `BYPASS > ${this.properties['on_bypassed_inputs']},  `;
-            label += `ACTIVE > ${this.properties['on_any_active_inputs']})`;
+            let label = `*(MUTE > ${this.properties["on_muted_inputs"]},  `;
+            label += `BYPASS > ${this.properties["on_bypassed_inputs"]},  `;
+            label += `ACTIVE > ${this.properties["on_any_active_inputs"]})`;
             ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
             const oldFont = ctx.font;
             ctx.font = "italic " + (LiteGraph.NODE_SUBTEXT_SIZE - 2) + "px Arial";
@@ -76,9 +87,9 @@ class NodeModeRelay extends BaseCollectorNode {
     }
     computeSize(out) {
         let size = super.computeSize(out);
-        if (this.properties['on_muted_inputs'] !== 'MUTE' ||
-            this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
-            this.properties['on_any_active_inputs'] != 'ACTIVE') {
+        if (this.properties["on_muted_inputs"] !== "MUTE" ||
+            this.properties["on_bypassed_inputs"] !== "BYPASS" ||
+            this.properties["on_any_active_inputs"] != "ACTIVE") {
             size[1] += 17;
         }
         return size;
@@ -96,7 +107,6 @@ class NodeModeRelay extends BaseCollectorNode {
         }, 500);
     }
     stabilize() {
-        var _a, _b;
         if (!this.graph || !this.isAnyOutputConnected() || !this.isInputConnected(0)) {
             return;
         }
@@ -116,8 +126,15 @@ class NodeModeRelay extends BaseCollectorNode {
                 mode = null;
             }
         }
+        this.dispatchModeToRepeater(mode);
+        setTimeout(() => {
+            this.stabilize();
+        }, 500);
+    }
+    dispatchModeToRepeater(mode) {
+        var _a, _b;
         if (mode != null) {
-            const propertyVal = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[MODE_TO_PROPERTY.get(mode) || ''];
+            const propertyVal = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[MODE_TO_PROPERTY.get(mode) || ""];
             const newMode = OPTION_TO_MODE.get(propertyVal);
             mode = (newMode !== null ? newMode : mode);
             if (mode !== null && mode !== MODE_NOTHING) {
@@ -132,9 +149,6 @@ class NodeModeRelay extends BaseCollectorNode {
                 }
             }
         }
-        setTimeout(() => {
-            this.stabilize();
-        }, 500);
     }
     getHelp() {
         return `
@@ -155,6 +169,11 @@ class NodeModeRelay extends BaseCollectorNode {
           <li><p>
             When any connected input nodes are active, the relay will set a connected repeater to
             active (by default).
+          </p></li>
+          <li><p>
+            If no inputs are connected, the relay will set a connected repeater to its mode <i>when
+            its own mode is changed</i>. <b>Note</b>, if any inputs are connected, then the above
+            will occur and the Relay's mode does not matter.
           </p></li>
       </ul>
       <p>

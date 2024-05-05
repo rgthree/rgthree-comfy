@@ -138,8 +138,9 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   // @ts-ignore - Changing the property to an accessor here seems to work, but ts compiler complains.
   override set mode(mode: NodeMode) {
     if (this.mode_ != mode) {
+      const oldMode = this.mode_;
       this.mode_ = mode;
-      this.onModeChange();
+      this.onModeChange(oldMode, mode);
     }
   }
   override get mode() {
@@ -147,7 +148,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   }
 
   /** When a mode change, we want all connected nodes to match. */
-  onModeChange() {
+  onModeChange(from: NodeMode, to: NodeMode) {
     // Override
   }
 

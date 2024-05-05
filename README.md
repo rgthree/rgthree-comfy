@@ -238,10 +238,25 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 
 
 ## Mute / Bypass Relay
-> An advanced node that, when working with a **Mute / Bypass Repeater** will relay a mute/bypass/activate signal to the repeater
+> An advanced node that, when working with a **Mute / Bypass Repeater**, will relay its input nodes'
+> modes (Mute, Bypass, or Active) to a connected repeater (which would then repeat that mode change
+> to all of its inputs).
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
->    - Useful when you want a specific node or set of nodes to be muted when a different set of nodes are also muted.
+>
+>    - When all connected input nodes are muted, the relay will set a connected repeater to mute (by
+>      default).
+>    - When all connected input nodes are bypassed, the relay will set a connected repeater to
+>      bypass (by default).
+>    - When _any_ connected input nodes are active, the relay will set a connected repeater to
+>      active (by default).
+>    - **Note:** If no inputs are connected, the relay will set a connected repeater to its mode
+>      _when its own mode is changed_. **Note**, if any inputs are connected, then the above bullets
+>      will occur and the Relay's mode does not matter.
+>    - **Pro Tip:** You can change which signals get sent on the above in the `Properties`.
+>       For instance, you could configure an inverse relay which will send a MUTE when any of its
+>       inputs are active (instead of sending an ACTIVE signal), and send an ACTIVE signal when all
+>       of its inputs are muted (instead of sending a MUTE signal), etc.
 >    </details>
 
 
