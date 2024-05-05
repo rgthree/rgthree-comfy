@@ -69,6 +69,12 @@ const CONFIGURABLE = {
             ],
         },
         {
+            key: "features.menu_bookmarks.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "(Menu) Show bookmark shortcuts in context menu",
+            description: "Will list bookmarks in the rgthree-comfy context menu.",
+        },
+        {
             key: "features.group_header_fast_toggle.enabled",
             type: ConfigType.BOOLEAN,
             label: "(Groups) Show fast toggles in Group Headers",
@@ -101,12 +107,6 @@ const CONFIGURABLE = {
             label: "Detect Corrupt Workflows",
             description: "Will show a message at the top of the screen when loading a workflow that has " +
                 "corrupt linking data.",
-        },
-        {
-            key: "features.menu_bookmarks.enabled",
-            type: ConfigType.BOOLEAN,
-            label: "Show bookmark shortcuts in context menu",
-            description: "Will list the bookmarks in the rgthree-comfy context menu",
         },
         {
             key: "log_level",
