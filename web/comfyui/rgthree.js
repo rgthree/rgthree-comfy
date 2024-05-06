@@ -308,6 +308,8 @@ class Rgthree extends EventTarget {
             rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
         }
         const rerouteLabel = selectedNodes.length ? "selected" : "all";
+        const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
+        const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
         return [
             {
                 content: "Actions",
@@ -346,6 +348,7 @@ class Rgthree extends EventTarget {
                     })();
                 },
             },
+            ...bookmarkMenuItems,
             {
                 content: "More...",
                 disabled: true,
@@ -613,7 +616,7 @@ class Rgthree extends EventTarget {
         document.head.appendChild(link);
     }
     setLogLevel(level) {
-        if (typeof level === 'string') {
+        if (typeof level === "string") {
             level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
         }
         if (level != null) {
@@ -627,7 +630,7 @@ class Rgthree extends EventTarget {
         return this.logger.newSession(name);
     }
     isDevMode() {
-        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
     }
     monitorBadLinks() {
         const badLinksFound = fixBadLinks(app.graph);
@@ -644,6 +647,29 @@ class Rgthree extends EventTarget {
             this.monitorBadLinks();
         }, 5000);
     }
+}
+function getBookmarks() {
+    const graph = app.graph;
+    const bookmarks = graph._nodes
+        .filter((n) => n.type === NodeTypesString.BOOKMARK)
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .map((n) => ({
+        content: `[${n.shortcutKey}] ${n.title}`,
+        className: "rgthree-contextmenu-item",
+        callback: () => {
+            n.canvasToBookmark();
+        },
+    }));
+    return !bookmarks.length
+        ? []
+        : [
+            {
+                content: "🔖 Bookmarks",
+                disabled: true,
+                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+            },
+            ...bookmarks,
+        ];
 }
 export const rgthree = new Rgthree();
 window.rgthree = rgthree;

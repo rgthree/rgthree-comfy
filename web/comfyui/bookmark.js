@@ -34,6 +34,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.keypressBound = this.onKeypress.bind(this);
         this.onConstructed();
     }
+    get shortcutKey() {
+        var _a, _b, _c;
+        return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : '';
+    }
     onAdded(graph) {
         window.addEventListener("keydown", this.keypressBound);
     }
@@ -42,13 +46,13 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     async onKeypress(event) {
         const target = event.target;
-        if (['input', 'textarea'].includes(target.localName)) {
+        if (['input', 'textarea', 'span'].includes(target.localName)) {
             return;
         }
         if (event.ctrlKey || event.metaKey || event.altKey) {
             return;
         }
-        if (event.key.toLocaleLowerCase() === this.widgets[0].value.toLocaleLowerCase()) {
+        if (event.key.toLocaleLowerCase() === this.shortcutKey) {
             this.canvasToBookmark();
         }
     }

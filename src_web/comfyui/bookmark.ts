@@ -14,7 +14,6 @@ import type {
 
 declare const LiteGraph: typeof TLiteGraph;
 
-
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
  * navigate to that node, with it in the top-left corner.
@@ -78,6 +77,9 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   //   this.size[1] = Math.max(minHeight, this.size[1]);
   // }
 
+  get shortcutKey(): string {
+    return this.widgets[0]?.value?.toLocaleLowerCase() ?? '';
+  }
 
   override onAdded(graph: TLGraph): void {
     window.addEventListener("keydown", this.keypressBound);
@@ -89,13 +91,14 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   async onKeypress(event: KeyboardEvent) {
     const target = (event.target as HTMLElement)!;
-    if (['input','textarea'].includes(target.localName)) {
+    // Span because the properties panel uses a contenteditable <span>
+    if (['input','textarea', 'span'].includes(target.localName)) {
       return;
     }
     if (event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
-    if (event.key.toLocaleLowerCase() === this.widgets[0]!.value.toLocaleLowerCase()) {
+    if (event.key.toLocaleLowerCase() === this.shortcutKey) {
       this.canvasToBookmark();
     }
   }

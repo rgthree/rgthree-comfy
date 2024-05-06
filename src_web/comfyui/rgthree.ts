@@ -22,6 +22,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
+import type { Bookmark } from './bookmark';
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -496,6 +497,9 @@ class Rgthree extends EventTarget {
     }
     const rerouteLabel = selectedNodes.length ? "selected" : "all";
 
+    const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
+    const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
+
     return [
       {
         content: "Actions",
@@ -535,6 +539,7 @@ class Rgthree extends EventTarget {
           })();
         },
       },
+      ...bookmarkMenuItems,
       {
         content: "More...",
         disabled: true,
@@ -894,8 +899,8 @@ class Rgthree extends EventTarget {
     document.head.appendChild(link);
   }
 
-  setLogLevel(level?: LogLevel|string) {
-    if (typeof level === 'string') {
+  setLogLevel(level?: LogLevel | string) {
+    if (typeof level === "string") {
       level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
     }
     if (level != null) {
@@ -912,7 +917,7 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
   }
 
   monitorBadLinks() {
@@ -932,6 +937,34 @@ class Rgthree extends EventTarget {
       this.monitorBadLinks();
     }, 5000);
   }
+}
+
+function getBookmarks(): ContextMenuItem[] {
+  const graph: TLGraph = app.graph;
+
+  // Sorts by Title.
+  // I could see an option to sort by either Shortcut, Title, or Position.
+  const bookmarks = graph._nodes
+    .filter((n): n is Bookmark => n.type === NodeTypesString.BOOKMARK)
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .map((n) => ({
+      content: `[${n.shortcutKey}] ${n.title}`,
+      className: "rgthree-contextmenu-item",
+      callback: () => {
+        n.canvasToBookmark();
+      },
+    }));
+
+  return !bookmarks.length
+    ? []
+    : [
+        {
+          content: "🔖 Bookmarks",
+          disabled: true,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+        },
+        ...bookmarks,
+      ];
 }
 
 export const rgthree = new Rgthree();
