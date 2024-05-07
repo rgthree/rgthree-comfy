@@ -113,7 +113,8 @@ export interface IWidget<TValue = any, TOptions = any> {
     label?: string | null;
     value: TValue;
     options?: TOptions;
-    type?: widgetTypes;
+    // @rgthree - extend to string for custom
+    type?: widgetTypes | string;
     y?: number;
     property?: string;
     last_y?: number;
@@ -238,6 +239,8 @@ export const LiteGraph: {
     NODE_DEFAULT_BGCOLOR: string;
     NODE_DEFAULT_BOXCOLOR: string;
     NODE_DEFAULT_SHAPE: string;
+    // @rgthree - didn't exist.
+    NODE_BOX_OUTLINE_COLOR: string;
     DEFAULT_SHADOW_COLOR: string;
     DEFAULT_GROUP_FONT: number;
     // @rgthree - Seems to have been missing.
@@ -692,6 +695,7 @@ export declare class LGraphNode {
     onShowCustomPanelInfo(panel: HTMLElement): void;
     onDblClick?(event: AdjustedMouseEvent, pos: Vector2, canvas: LGraphCanvas): void;
     inResizeCorner(x: number, y:number) : boolean;
+    onWidgetChanged?(widgetName: string, widgetValue: any, oldWidgetValue: any, widget: IWidget): void;
 
     // end @rgthree added
 
@@ -1178,6 +1182,9 @@ export declare class LGraphNode {
     getSlotMenuOptions(slot: {input?: INodeInputSlot, output?: INodeOutputSlot}): ContextMenuItem[] | null;
 
     getExtraMenuOptions?(canvas: LGraphCanvas, options: ContextMenuItem[]): void;
+
+    // @rgthree - Called in LiteGraph.core when the properties panel is constructed.
+    onShowCustomPanelInfo(panel: HTMLElement): void;
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {

@@ -42,6 +42,10 @@ export function query<T extends HTMLElement>(selector: string, parent: HTMLEleme
   return Array.from(parent.querySelectorAll<T>(selector)).filter(n => !!n);
 }
 
+export function queryOne<T extends HTMLElement>(selector: string, parent: HTMLElement|Document = document) : T|undefined {
+  return parent.querySelector<T>(selector) ?? undefined;
+}
+
 export function createText(text: string) {
   return document.createTextNode(text);
 }
