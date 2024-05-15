@@ -5,7 +5,7 @@ class RgthreeApi {
         this.getSchedulersPromise = null;
         this.getLorasPromise = null;
         this.getWorkflowsPromise = null;
-        this.baseUrl = baseUrl || './rgthree/api';
+        this.baseUrl = baseUrl || "./rgthree/api";
     }
     apiURL(route) {
         return `${this.baseUrl}${route}`;
@@ -27,6 +27,30 @@ class RgthreeApi {
             this.getLorasPromise = this.fetchJson("/loras", { cache: "no-store" });
         }
         return this.getLorasPromise;
+    }
+    async fetchApiJsonOrNull(route, options) {
+        const response = await this.fetchJson(route, options);
+        if (response.status === 200 && response.data) {
+            return response.data || null;
+        }
+        return null;
+    }
+    async getLoraInfo(lora) {
+        return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}`, { cache: "no-store" });
+    }
+    async refreshLoraInfo(lora) {
+        return await this.fetchApiJsonOrNull(`/loras/info/refresh?file=${encodeURIComponent(lora)}`);
+    }
+    async saveLoraInfo(lora, data) {
+        const body = new FormData();
+        body.append("json", JSON.stringify(data));
+        return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}`, { cache: "no-store", method: "POST", body });
+    }
+    async getLorasInfo() {
+        return await this.fetchApiJsonOrNull(`/loras/info`);
+    }
+    async refreshLorasInfo() {
+        return await this.fetchApiJsonOrNull(`/loras/info/refresh`);
     }
 }
 export const rgthreeApi = new RgthreeApi();

@@ -127,3 +127,25 @@ export function drawTogglePart(ctx, options) {
     ctx.restore();
     return [posX, toggleBgWidth];
 }
+export function drawInfoIcon(ctx, x, y, size = 12) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, [size * 0.1]);
+    ctx.fillStyle = "#2f82ec";
+    ctx.strokeStyle = "#0f2a5e";
+    ctx.fill();
+    ctx.strokeStyle = "#FFF";
+    ctx.lineWidth = 2;
+    const midX = x + size / 2;
+    const serifSize = size * 0.175;
+    ctx.stroke(new Path2D(`
+    M ${midX} ${y + size * 0.15}
+    v 2
+    M ${midX - serifSize} ${y + size * 0.45}
+    h ${serifSize}
+    v ${size * 0.325}
+    h ${serifSize}
+    h -${serifSize * 2}
+  `));
+    ctx.restore();
+}

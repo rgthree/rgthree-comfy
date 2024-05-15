@@ -17,6 +17,7 @@ import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import {
+  drawInfoIcon,
   drawNumberWidgetPart,
   drawRoundedRectangle,
   drawTogglePart,
@@ -32,6 +33,9 @@ import {
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 import { showLoraChooser } from "./utils_menu.js";
 import { moveArrayItem, removeArrayItem } from "rgthree/common/shared_utils.js";
+import { RgthreeInfoDialog } from "./dialog_info.js";
+import type { RgthreeModelInfo } from "typings/rgthree.js";
+import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -84,21 +88,17 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     this.widgetButtonSpacer = null;
     super.configure(info);
 
-    // Since we add the widgets dynamically, we need to wait to set their values
-    // with a short timeout.
-    setTimeout(() => {
-      (this as any)._tempWidth = this.size[0];
-      (this as any)._tempHeight = this.size[1];
-      for (const widgetValue of info.widgets_values || []) {
-        if (widgetValue?.lora !== undefined) {
-          const widget = this.addNewLoraWidget();
-          widget.value = { ...widgetValue };
-        }
+    (this as any)._tempWidth = this.size[0];
+    (this as any)._tempHeight = this.size[1];
+    for (const widgetValue of info.widgets_values || []) {
+      if (widgetValue?.lora !== undefined) {
+        const widget = this.addNewLoraWidget();
+        widget.value = { ...widgetValue };
       }
-      this.addNonLoraWidgets();
-      this.size[0] = (this as any)._tempWidth;
-      this.size[1] = Math.max((this as any)._tempHeight, this.computeSize()[1]);
-    }, 100);
+    }
+    this.addNonLoraWidgets();
+    this.size[0] = (this as any)._tempWidth;
+    this.size[1] = Math.max((this as any)._tempHeight, this.computeSize()[1]);
   }
 
   /**
@@ -222,6 +222,13 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       const canMoveDown = !!this.widgets[index + 1]?.name?.startsWith("lora_");
       const menuItems: ContextMenuItem[] = [
         {
+          content: `ℹ️ Show Info`,
+          callback: () => {
+            widget.showLoraInfoDialog();
+          },
+        },
+        null, // Divider
+        {
           content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
           callback: () => {
             widget.value.on = !widget.value.on;
@@ -241,7 +248,6 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             moveArrayItem(this.widgets, widget, index + 1);
           },
         },
-        null, // Divider
         {
           content: `🗑️ Remove`,
           callback: () => {
@@ -446,12 +452,15 @@ const DEFAULT_LORA_WIDGET_DATA = {
 class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
   /** Whether the strength has changed with mouse move (to cancel mouse up). */
   private haveMouseMovedStrength = false;
+  private loraInfoPromise: Promise<RgthreeModelInfo | null> | null = null;
+  private loraInfo: RgthreeModelInfo | null = null;
 
   private showModelAndClip: boolean | null = null;
 
   protected override hitAreas: RgthreeBaseHitAreas<
     | "toggle"
     | "lora"
+    // | "info"
     | "strengthDec"
     | "strengthVal"
     | "strengthInc"
@@ -463,6 +472,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
   > = {
     toggle: { bounds: [0, 0] as Vector2, onDown: this.onToggleDown },
     lora: { bounds: [0, 0] as Vector2, onDown: this.onLoraDown },
+    // info: { bounds: [0, 0] as Vector2, onDown: this.onInfoDown },
 
     strengthDec: { bounds: [0, 0] as Vector2, onDown: this.onStrengthDecDown },
     strengthVal: { bounds: [0, 0] as Vector2, onUp: this.onStrengthValUp },
@@ -495,6 +505,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
         this._value.strengthTwo = this._value.strength;
       }
     }
+    this.getLoraInfo();
   }
 
   get value() {
@@ -503,6 +514,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
 
   setLora(lora: string) {
     this._value.lora = lora;
+    this.getLoraInfo();
   }
 
   /** Draws our widget with a toggle, lora selector, and number selector all in a single row. */
@@ -565,12 +577,20 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
       ? this.value.strengthTwo ?? 1
       : this.value.strength ?? 1;
 
+    let textColor: string | undefined = undefined;
+    if (this.loraInfo?.strengthMax != null && strengthValue > this.loraInfo?.strengthMax) {
+      textColor = "#c66";
+    } else if (this.loraInfo?.strengthMin != null && strengthValue < this.loraInfo?.strengthMin) {
+      textColor = "#c66";
+    }
+
     const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
       posX: node.size[0] - margin - innerMargin - innerMargin,
       posY,
       height,
       value: strengthValue,
       direction: -1,
+      textColor,
     });
 
     this.hitAreas.strengthDec.bounds = leftArrow;
@@ -589,12 +609,22 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
       this.hitAreas.strengthTwoInc.bounds = this.hitAreas.strengthInc.bounds;
       this.hitAreas.strengthTwoAny.bounds = this.hitAreas.strengthAny.bounds;
 
+      let textColor: string | undefined = undefined;
+      if (this.loraInfo?.strengthMax != null && this.value.strength > this.loraInfo?.strengthMax) {
+        textColor = "#c66";
+      } else if (
+        this.loraInfo?.strengthMin != null &&
+        this.value.strength < this.loraInfo?.strengthMin
+      ) {
+        textColor = "#c66";
+      }
       const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
         posX: rposX,
         posY,
         height,
         value: this.value.strength ?? 1,
         direction: -1,
+        textColor,
       });
       this.hitAreas.strengthDec.bounds = leftArrow;
       this.hitAreas.strengthVal.bounds = text;
@@ -606,11 +636,22 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
       rposX = leftArrow[0] - innerMargin;
     }
 
+    const infoIconSize = height * 0.66;
+    const infoWidth = infoIconSize + innerMargin + innerMargin;
+    // Draw an info emoji; if checks if it's enabled (to quickly turn it on or off)
+    if ((this.hitAreas as any)["info"]) {
+      rposX -= innerMargin;
+      drawInfoIcon(ctx, rposX - infoIconSize, posY + (height - infoIconSize) / 2, infoIconSize);
+      // ctx.fillText('ℹ', posX, midY);
+      (this.hitAreas as any).info.bounds = [rposX - infoIconSize, infoWidth];
+      rposX = rposX - infoIconSize - innerMargin;
+    }
+
     // Draw lora label
     const loraWidth = rposX - posX;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const loraLabel = String(this.value.lora || "None");
+    const loraLabel = String(this.value?.lora || "None");
     ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
 
     this.hitAreas.lora.bounds = [posX, loraWidth];
@@ -639,10 +680,16 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     return true;
   }
 
+  onInfoDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.showLoraInfoDialog();
+  }
+
   onLoraDown(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
     showLoraChooser(event, (value: ContextMenuItem) => {
       if (typeof value === "string") {
         this.value.lora = value;
+        this.loraInfo = null;
+        this.getLoraInfo();
       }
       node.setDirtyCanvas(true, true);
     });
@@ -666,7 +713,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     if (event.deltaX) {
       let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
       this.haveMouseMovedStrength = true;
-      this.value[prop] = ( this.value[prop] ?? 1) + event.deltaX * 0.05;
+      this.value[prop] = (this.value[prop] ?? 1) + event.deltaX * 0.05;
     }
   }
 
@@ -685,11 +732,37 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     this.onStrengthValUp(event, pos, node, true);
   }
 
+  showLoraInfoDialog() {
+    if (!this.value.lora || this.value.lora === "None") {
+      return;
+    }
+    const infoDialog = new RgthreeInfoDialog(this.value.lora).show();
+    infoDialog.addEventListener("close", ((e: CustomEvent<{ dirty: boolean }>) => {
+      console.log(e);
+      if (e.detail.dirty) {
+        this.getLoraInfo(true);
+      }
+    }) as EventListener);
+  }
+
   private stepStrength(direction: -1 | 1, isTwo = false) {
     let step = 0.05;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     let strength = (this.value[prop] ?? 1) + step * direction;
     this.value[prop] = Math.round(strength * 100) / 100;
+  }
+
+  private getLoraInfo(force = false) {
+    if (!this.loraInfoPromise || force == true) {
+      let promise;
+      if (this.value.lora && this.value.lora != "None") {
+        promise = MODEL_INFO_SERVICE.getLora(this.value.lora, force);
+      } else {
+        promise = Promise.resolve(null);
+      }
+      this.loraInfoPromise = promise.then((v) => (this.loraInfo = v));
+    }
+    return this.loraInfoPromise;
   }
 }
 

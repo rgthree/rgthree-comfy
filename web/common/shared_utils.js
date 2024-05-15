@@ -24,6 +24,11 @@ export function getResolver(timeout = 5000) {
     return resolver;
 }
 export function wait(ms = 16, value) {
+    if (ms === 16) {
+        return new Promise((resolve) => {
+            requestAnimationFrame(resolve);
+        });
+    }
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve(value);
@@ -72,10 +77,10 @@ export function setObjectValue(obj, objKey, value, createMissingObjects = true) 
     return obj;
 }
 export function moveArrayItem(arr, itemOrFrom, to) {
-    const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
+    const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
     arr.splice(to, 0, arr.splice(from, 1)[0]);
 }
 export function removeArrayItem(arr, itemOrIndex) {
-    const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+    const index = typeof itemOrIndex === "number" ? itemOrIndex : arr.indexOf(itemOrIndex);
     arr.splice(index, 1);
 }

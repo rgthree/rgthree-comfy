@@ -49,6 +49,12 @@ export function getResolver<T>(timeout: number = 5000): Resolver<T> {
 
 /** Waits a certain number of ms, as a `Promise.` */
 export function wait(ms = 16, value?: any) {
+  // Special logic, if we're waiting 16ms, then trigger on next frame.
+  if (ms === 16) {
+    return new Promise((resolve) => {
+      requestAnimationFrame(resolve);
+    });
+  }
   return new Promise((resolve) => {
     setTimeout(() => {
       resolve(value);
@@ -118,15 +124,15 @@ export function setObjectValue(obj: any, objKey: string, value: any, createMissi
 /**
  * Moves an item in an array (by item or its index) to another index.
  */
-export function moveArrayItem<T>(arr: T[], itemOrFrom:T|number, to: number) {
-  const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
+export function moveArrayItem<T>(arr: T[], itemOrFrom: T | number, to: number) {
+  const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
   arr.splice(to, 0, arr.splice(from, 1)[0]!);
 }
 
 /**
  * Moves an item in an array (by item or its index) to another index.
  */
-export function removeArrayItem<T>(arr: T[], itemOrIndex:T|number) {
-  const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+export function removeArrayItem<T>(arr: T[], itemOrIndex: T | number) {
+  const index = typeof itemOrIndex === "number" ? itemOrIndex : arr.indexOf(itemOrIndex);
   arr.splice(index, 1);
 }

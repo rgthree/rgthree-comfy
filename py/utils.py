@@ -70,3 +70,10 @@ def load_json_file(file: str, default=None):
       config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
     return json.loads(config)
   return default
+
+
+def save_json_file(file_path: str, data: dict):
+  """Saves a json file."""
+  os.makedirs(os.path.dirname(file_path), exist_ok=True)
+  with open(file_path, 'w+', encoding='UTF-8') as file:
+    json.dump(data, file, sort_keys=False, indent=2, separators=(",", ": "))

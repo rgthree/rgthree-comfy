@@ -1,3 +1,5 @@
+import { RgthreeModelInfo } from "typings/rgthree";
+
 class RgthreeApi {
   private baseUrl: string;
   getCheckpointsPromise: Promise<string[]> | null = null;
@@ -7,7 +9,7 @@ class RgthreeApi {
   getWorkflowsPromise: Promise<string[]> | null = null;
 
   constructor(baseUrl?: string) {
-    this.baseUrl = baseUrl || './rgthree/api';
+    this.baseUrl = baseUrl || "./rgthree/api";
   }
 
   apiURL(route: string) {
@@ -34,6 +36,47 @@ class RgthreeApi {
       this.getLorasPromise = this.fetchJson("/loras", { cache: "no-store" });
     }
     return this.getLorasPromise;
+  }
+
+  async fetchApiJsonOrNull<T>(route: string, options?: RequestInit) {
+    const response = await this.fetchJson(route, options);
+    if (response.status === 200 && response.data) {
+      return (response.data as T) || null;
+    }
+    return null;
+  }
+
+  async getLoraInfo(lora: string): Promise<RgthreeModelInfo | null> {
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
+      `/loras/info?file=${encodeURIComponent(lora)}`,
+      { cache: "no-store" },
+    );
+  }
+
+  async refreshLoraInfo(lora: string): Promise<RgthreeModelInfo | null> {
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
+      `/loras/info/refresh?file=${encodeURIComponent(lora)}`,
+    );
+  }
+
+  async saveLoraInfo(
+    lora: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null> {
+    const body = new FormData();
+    body.append("json", JSON.stringify(data));
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
+      `/loras/info?file=${encodeURIComponent(lora)}`,
+      { cache: "no-store", method: "POST", body },
+    );
+  }
+
+  async getLorasInfo(): Promise<RgthreeModelInfo[] | null> {
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(`/loras/info`);
+  }
+
+  async refreshLorasInfo(): Promise<RgthreeModelInfo[] | null> {
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(`/loras/info/refresh`);
   }
 }
 

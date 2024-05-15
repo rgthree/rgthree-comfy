@@ -1,4 +1,14 @@
+:not(#fakeid) .rgthree-button-reset {
+  position: relative;
+  appearance: none;
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  margin: 0;
 
+}
 :not(#fakeid) .rgthree-button {
   --padding-top: 7px;
   --padding-bottom: 9px;

@@ -24,11 +24,15 @@ export class RgthreeDialog extends EventTarget {
         });
         this.titleElement = $el("div.rgthree-dialog-container-title", {
             parent: container,
-            child: !options.title
+            children: !options.title
                 ? null
-                : options.title.includes("<h2")
+                : options.title instanceof Element || Array.isArray(options.title)
                     ? options.title
-                    : $el("h2", { html: options.title }),
+                    : typeof options.title === "string"
+                        ? !options.title.includes("<h2")
+                            ? $el("h2", { html: options.title })
+                            : options.title
+                        : options.title,
         });
         this.contentElement = $el("div.rgthree-dialog-container-content", {
             parent: container,
