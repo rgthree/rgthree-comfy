@@ -3,25 +3,32 @@ class ModelInfoService {
     constructor() {
         this.loraToInfo = new Map();
     }
-    async getLora(file, refresh = false) {
+    async getLora(file, refresh = false, light = false) {
         if (this.loraToInfo.has(file) && !refresh) {
             return this.loraToInfo.get(file);
         }
-        return this.fetchLora(file, refresh);
+        return this.fetchLora(file, refresh, light);
     }
-    async fetchLora(file, refresh = false) {
+    async fetchLora(file, refresh = false, light = false) {
         let info = null;
         if (!refresh) {
-            info = await rgthreeApi.getLoraInfo(file);
+            info = await rgthreeApi.getLoraInfo(file, light);
         }
         else {
             info = await rgthreeApi.refreshLoraInfo(file);
         }
-        this.loraToInfo.set(file, info);
+        if (!light) {
+            this.loraToInfo.set(file, info);
+        }
         return info;
     }
     async refreshLora(file) {
         return this.fetchLora(file, true);
+    }
+    async saveLoraPartial(file, data) {
+        let info = await rgthreeApi.saveLoraInfo(file, data);
+        this.loraToInfo.set(file, info);
+        return info;
     }
 }
 export const SERVICE = new ModelInfoService();

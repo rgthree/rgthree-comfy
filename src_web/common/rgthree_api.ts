@@ -46,9 +46,15 @@ class RgthreeApi {
     return null;
   }
 
-  async getLoraInfo(lora: string): Promise<RgthreeModelInfo | null> {
+  /**
+   * Fetches the lora information.
+   *
+   * @param light Whether or not to generate a json file if there isn't one. This isn't necessary if
+   * we're just checking for values, but is more necessary when opening an info dialog.
+   */
+  async getLoraInfo(lora: string, light = true): Promise<RgthreeModelInfo | null> {
     return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
-      `/loras/info?file=${encodeURIComponent(lora)}`,
+      `/loras/info?file=${encodeURIComponent(lora)}&light=${light ? 1 : 0}`,
       { cache: "no-store" },
     );
   }

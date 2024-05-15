@@ -7,26 +7,34 @@ import { rgthreeApi } from "./rgthree_api.js";
 class ModelInfoService {
   private readonly loraToInfo = new Map<string, RgthreeModelInfo | null>();
 
-  async getLora(file: string, refresh = false) {
+  async getLora(file: string, refresh = false, light = false) {
     if (this.loraToInfo.has(file) && !refresh) {
       return this.loraToInfo.get(file)!;
     }
-    return this.fetchLora(file, refresh);
+    return this.fetchLora(file, refresh, light);
   }
 
-  async fetchLora(file: string, refresh = false) {
+  async fetchLora(file: string, refresh = false, light = false) {
     let info = null;
     if (!refresh) {
-      info = await rgthreeApi.getLoraInfo(file);
+      info = await rgthreeApi.getLoraInfo(file, light);
     } else {
       info = await rgthreeApi.refreshLoraInfo(file);
     }
-    this.loraToInfo.set(file, info);
+    if (!light) {
+      this.loraToInfo.set(file, info);
+    }
     return info;
   }
 
   async refreshLora(file: string) {
     return this.fetchLora(file, true);
+  }
+
+  async saveLoraPartial(file: string, data: Partial<RgthreeModelInfo>) {
+    let info = await rgthreeApi.saveLoraInfo(file, data);
+    this.loraToInfo.set(file, info);
+    return info;
   }
 }
 

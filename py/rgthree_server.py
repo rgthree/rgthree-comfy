@@ -119,8 +119,12 @@ async def get_loras_info_response(request, maybe_fetch_civitai=False):
   """Gets lora info for all or a single lora"""
   api_response = {'status': 200}
   lora_file = get_param(request, 'file')
+  light = get_param(request, 'light')
+  light = False if light == "0" or light == 0 else True
   if lora_file is not None:
-    info_data = await get_model_info(lora_file, maybe_fetch_civitai=maybe_fetch_civitai)
+    info_data = await get_model_info(lora_file,
+                                     maybe_fetch_civitai=maybe_fetch_civitai,
+                                     abandon_if_no_file=light)
     if info_data is None:
       api_response['status'] = '404'
       api_response['error'] = 'No Lora found at path'
@@ -130,9 +134,12 @@ async def get_loras_info_response(request, maybe_fetch_civitai=False):
     api_response['data'] = []
     lora_files = folder_paths.get_filename_list("loras")
     for lora_file in lora_files:
-      info_data = await get_model_info(lora_file, maybe_fetch_civitai=maybe_fetch_civitai)
+      info_data = await get_model_info(lora_file,
+                                       maybe_fetch_civitai=maybe_fetch_civitai,
+                                       abandon_if_no_file=light)
       api_response['data'].append(info_data)
   return api_response
+
 
 @routes.post('/rgthree/api/loras/info')
 async def api_save_lora_data(request):
@@ -148,6 +155,7 @@ async def api_save_lora_data(request):
     info_data = await get_model_info(lora_file)
     api_response['data'] = info_data
   return web.json_response(api_response)
+
 
 @routes.get('/rgthree/api/loras/img')
 async def api_get_loras_info_img(request):

@@ -756,7 +756,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     if (!this.loraInfoPromise || force == true) {
       let promise;
       if (this.value.lora && this.value.lora != "None") {
-        promise = MODEL_INFO_SERVICE.getLora(this.value.lora, force);
+        promise = MODEL_INFO_SERVICE.getLora(this.value.lora, force, true);
       } else {
         promise = Promise.resolve(null);
       }

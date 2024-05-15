@@ -19,7 +19,8 @@ async def get_model_info(file: str,
                          model_type="loras",
                          default=None,
                          maybe_fetch_civitai=False,
-                         force_fetch_civitai=False):
+                         force_fetch_civitai=False,
+                         abandon_if_no_file=False):
 
   file_path = folder_paths.get_full_path(model_type, file)
   if not os.path.exists(file_path):
@@ -33,6 +34,8 @@ async def get_model_info(file: str,
   try_info_path = f'{file_path}.rgthree-info.json'
   if os.path.exists(try_info_path):
     info_data = load_json_file(try_info_path)
+  elif abandon_if_no_file and not maybe_fetch_civitai and not force_fetch_civitai:
+    return default
 
   if 'file' not in info_data:
     info_data['file'] = file

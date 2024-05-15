@@ -35,8 +35,8 @@ class RgthreeApi {
         }
         return null;
     }
-    async getLoraInfo(lora) {
-        return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}`, { cache: "no-store" });
+    async getLoraInfo(lora, light = true) {
+        return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}&light=${light ? 1 : 0}`, { cache: "no-store" });
     }
     async refreshLoraInfo(lora) {
         return await this.fetchApiJsonOrNull(`/loras/info/refresh?file=${encodeURIComponent(lora)}`);

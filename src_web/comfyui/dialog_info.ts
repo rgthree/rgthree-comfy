@@ -33,20 +33,13 @@ export class RgthreeInfoDialog extends RgthreeDialog {
       onBeforeClose: () => {
         return true;
       },
-      buttons: [
-        {
-          label: "Done",
-          className: "rgthree-button -blue",
-          callback: async (e) => {},
-        },
-      ],
     };
     super(dialogOptions);
     this.init(file);
   }
 
   private async init(file: string) {
-    this.modelInfo = await MODEL_INFO_SERVICE.getLora(file);
+    this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
     this.setContent(this.getInfoContent());
     this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
     this.attachEvents();
@@ -71,6 +64,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
       if (action === "fetch-civitai") {
         this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
         this.setContent(this.getInfoContent());
+        this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
       } else if (action === "edit-row") {
         const tr = target!.closest("tr")!;
         const td = queryOne("td:nth-child(2)", tr)!;
@@ -273,7 +267,7 @@ function saveEditableRow(info: RgthreeModelInfo, tr: HTMLElement, saving = true)
       }
       newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
     }
-    rgthreeApi.saveLoraInfo(info.name!, { [fieldName]: newValue });
+    MODEL_INFO_SERVICE.saveLoraPartial(info.file!, { [fieldName]: newValue });
     modified = true;
   }
   tr.classList.remove("-rgthree-editing");

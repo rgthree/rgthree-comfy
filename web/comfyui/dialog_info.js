@@ -1,7 +1,6 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, } from "../../rgthree/common/utils_dom.js";
 import { logoCivitai, link, pencilColored, diskColored, } from "../../rgthree/common/media/svgs.js";
-import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 export class RgthreeInfoDialog extends RgthreeDialog {
     constructor(file) {
@@ -12,13 +11,6 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             onBeforeClose: () => {
                 return true;
             },
-            buttons: [
-                {
-                    label: "Done",
-                    className: "rgthree-button -blue",
-                    callback: async (e) => { },
-                },
-            ],
         };
         super(dialogOptions);
         this.modifiedModelData = false;
@@ -27,7 +19,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     }
     async init(file) {
         var _a, _b;
-        this.modelInfo = await MODEL_INFO_SERVICE.getLora(file);
+        this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
         this.setContent(this.getInfoContent());
         this.setTitle(((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a["name"]) || ((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["file"]) || "Unknown");
         this.attachEvents();
@@ -40,6 +32,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     }
     attachEvents() {
         this.contentElement.addEventListener("click", async (e) => {
+            var _a, _b;
             const info = this.modelInfo;
             if (!(info === null || info === void 0 ? void 0 : info.file)) {
                 return;
@@ -49,6 +42,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             if (action === "fetch-civitai") {
                 this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
                 this.setContent(this.getInfoContent());
+                this.setTitle(((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a["name"]) || ((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["file"]) || "Unknown");
             }
             else if (action === "edit-row") {
                 const tr = target.closest("tr");
@@ -183,7 +177,7 @@ function saveEditableRow(info, tr, saving = true) {
             }
             newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
         }
-        rgthreeApi.saveLoraInfo(info.name, { [fieldName]: newValue });
+        MODEL_INFO_SERVICE.saveLoraPartial(info.file, { [fieldName]: newValue });
         modified = true;
     }
     tr.classList.remove("-rgthree-editing");
