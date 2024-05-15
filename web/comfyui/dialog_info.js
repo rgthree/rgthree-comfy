@@ -1,8 +1,7 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
-import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, setAttributes, } from "../../rgthree/common/utils_dom.js";
-import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
+import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, } from "../../rgthree/common/utils_dom.js";
+import { logoCivitai, link, pencilColored, diskColored, } from "../../rgthree/common/media/svgs.js";
 import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
-import { MenuButton } from "../../rgthree/common/menu.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 export class RgthreeInfoDialog extends RgthreeDialog {
     constructor(file) {
@@ -156,20 +155,6 @@ export class RgthreeInfoDialog extends RgthreeDialog {
         }).join("")) !== null && _q !== void 0 ? _q : ""}</ul>
     `;
         const div = $el("div", { html });
-        setAttributes(queryOne('[stub="menu"]', div), {
-            children: [
-                new MenuButton({
-                    icon: dotdotdot,
-                    options: [
-                        { label: "More Actions", type: "title" },
-                        {
-                            label: "Fetch info from civitai.com",
-                            callback: async (e) => { },
-                        },
-                    ],
-                }),
-            ],
-        });
         return div;
     }
 }

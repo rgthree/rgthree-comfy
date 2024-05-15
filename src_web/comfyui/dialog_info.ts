@@ -16,7 +16,6 @@ import {
 } from "rgthree/common/media/svgs.js";
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 import { RgthreeModelInfo } from "typings/rgthree.js";
-import { MenuButton } from "rgthree/common/menu.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 
 /**
@@ -229,21 +228,6 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     `;
 
     const div = $el("div", { html });
-
-    setAttributes(queryOne('[stub="menu"]', div)!, {
-      children: [
-        new MenuButton({
-          icon: dotdotdot,
-          options: [
-            { label: "More Actions", type: "title" },
-            {
-              label: "Fetch info from civitai.com",
-              callback: async (e: PointerEvent) => {},
-            },
-          ],
-        }),
-      ],
-    });
 
     return div;
   }
