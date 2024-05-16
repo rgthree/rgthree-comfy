@@ -945,7 +945,7 @@ class Rgthree extends EventTarget {
     if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
       // If we're holding down shift, have one extra key held down, and the original keys don't
       // include shift, then we're good to go.
-      return this.areAllKeysDown(["SHIFT"]);
+      return allKeysDown && this.areAllKeysDown(["SHIFT"]);
     }
     return false;
   }

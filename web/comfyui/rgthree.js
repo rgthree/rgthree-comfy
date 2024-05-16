@@ -640,7 +640,7 @@ class Rgthree extends EventTarget {
             return true;
         }
         if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
-            return this.areAllKeysDown(["SHIFT"]);
+            return allKeysDown && this.areAllKeysDown(["SHIFT"]);
         }
         return false;
     }
