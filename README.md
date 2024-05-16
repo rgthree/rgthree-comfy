@@ -70,8 +70,11 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 > <details>
 >    <summary>ℹ️ <i>See More Information</i></summary>
 >
->    - Define the `sahortvut_key` to press to go right to that bookmark node, anchored in the top left
+>    - Define the `shortcut_key` to press to go right to that bookmark node, anchored in the top left.
 >    - You can also define the zoom level as well!
+>    - Pro tip: `shortcut_key` can be multiple keys. For instance "alt + shift + !" would require
+>      pressing the alt key, the shift key, and the "!" (as in the "1" key, but with shift pressed)
+>      in order to trigger.
 >    </details>
 
 

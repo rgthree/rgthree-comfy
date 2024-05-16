@@ -1,13 +1,15 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
+import { rgthree } from "./rgthree.js";
 import { NodeTypesString } from "./constants.js";
+import { getClosestOrSelf } from "../../rgthree/common/utils_dom.js";
 export class Bookmark extends RgthreeBaseVirtualNode {
     get _collapsed_width() {
         return this.___collapsed_width;
     }
     set _collapsed_width(width) {
         const canvas = app.canvas;
-        const ctx = canvas.canvas.getContext('2d');
+        const ctx = canvas.canvas.getContext("2d");
         const oldFont = ctx.font;
         ctx.font = canvas.title_text_font;
         this.___collapsed_width = 40 + ctx.measureText(this.title).width;
@@ -19,13 +21,12 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
-        this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
-            value = value.trim()[0] || '1';
+        this.addWidget("text", "shortcut_key", "1", (value, ...args) => {
+            value = value.trim()[0] || "1";
         }, {
             y: 8,
         });
-        this.addWidget('number', 'zoom', 1, (value) => {
-        }, {
+        this.addWidget("number", "zoom", 1, (value) => { }, {
             y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
             max: 2,
             min: 0.5,
@@ -36,24 +37,24 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     get shortcutKey() {
         var _a, _b, _c;
-        return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : '';
+        return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : "";
     }
     onAdded(graph) {
-        window.addEventListener("keydown", this.keypressBound);
+        rgthree.addEventListener("keydown", this.keypressBound);
     }
     onRemoved() {
-        window.removeEventListener("keydown", this.keypressBound);
+        rgthree.removeEventListener("keydown", this.keypressBound);
     }
-    async onKeypress(event) {
-        const target = event.target;
-        if (['input', 'textarea', 'span'].includes(target.localName)) {
+    onKeypress(event) {
+        const originalEvent = event.detail.originalEvent;
+        const target = originalEvent.target;
+        if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
             return;
         }
-        if (event.ctrlKey || event.metaKey || event.altKey) {
-            return;
-        }
-        if (event.key.toLocaleLowerCase() === this.shortcutKey) {
+        if (rgthree.areOnlyKeysDown(this.widgets[0].value, true)) {
             this.canvasToBookmark();
+            originalEvent.preventDefault();
+            originalEvent.stopPropagation();
         }
     }
     canvasToBookmark() {

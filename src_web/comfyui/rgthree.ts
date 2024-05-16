@@ -22,7 +22,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
-import type { Bookmark } from './bookmark';
+import type { Bookmark } from "./bookmark";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -121,14 +121,12 @@ class Logger {
   }
 }
 
-
 /**
  * A log session, with the name as the prefix. A new session will stack prefixes.
  */
 class LogSession {
-
   readonly logger = new Logger();
-  readonly logsCache: {[key: string]: {lastShownTime: number}} = {};
+  readonly logsCache: { [key: string]: { lastShownTime: number } } = {};
 
   constructor(readonly name?: string) {}
 
@@ -139,16 +137,17 @@ class LogSession {
    *     const [logMethod, logArgs] = logger.logParts(LogLevel.DEBUG, message, ...args);
    *     console[logMethod]?.(...logArgs);
    */
-  logParts(level: LogLevel, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+  logParts(level: LogLevel, message?: string, ...args: any[]): [ConsoleLogFns, any[]] {
     message = `${this.name || ""}${message ? " " + message : ""}`;
-    return this.logger.logParts(
-      level,
-      message,
-      ...args,
-    );
+    return this.logger.logParts(level, message, ...args);
   }
 
-  logPartsOnceForTime(level: LogLevel, time: number, message?: string, ...args: any[]) : [ConsoleLogFns, any[]] {
+  logPartsOnceForTime(
+    level: LogLevel,
+    time: number,
+    message?: string,
+    ...args: any[]
+  ): [ConsoleLogFns, any[]] {
     message = `${this.name || ""}${message ? " " + message : ""}`;
     const cacheKey = `${level}:${message}`;
     const cacheEntry = this.logsCache[cacheKey];
@@ -156,17 +155,12 @@ class LogSession {
     if (cacheEntry && cacheEntry.lastShownTime + time > now) {
       return ["none" as "info", []];
     }
-    const parts = this.logger.logParts(
-      level,
-      message,
-      ...args,
-    );
+    const parts = this.logger.logParts(level, message, ...args);
     if (console[parts[0]]) {
-      this.logsCache[cacheKey] = this.logsCache[cacheKey] || {} as {lastShownTime: number};
+      this.logsCache[cacheKey] = this.logsCache[cacheKey] || ({} as { lastShownTime: number });
       this.logsCache[cacheKey]!.lastShownTime = now;
     }
     return parts;
-
   }
 
   debugParts(message?: string, ...args: any[]) {
@@ -249,6 +243,18 @@ class Rgthree extends EventTarget {
 
     window.addEventListener("keyup", (e) => {
       this.handleKeyup(e);
+    });
+
+    // If we get a visibilitychange, then clear the keys since we can't listen for keys up/down when
+    // not visible.
+    document.addEventListener("visibilitychange", (e) => {
+      this.clearKeydowns();
+    });
+
+    // If we get a blur, then also clear the keys since we can't listen for keys up/down when
+    // blurred. This can happen w/o a visibilitychange, like a browser alert.
+    window.addEventListener("blur", (e) => {
+      this.clearKeydowns();
     });
 
     this.initializeGraphAndCanvasHooks();
@@ -852,8 +858,19 @@ class Rgthree extends EventTarget {
     container && (container.innerHTML = "");
   }
 
+  private clearKeydowns() {
+    this.ctrlKey = false;
+    this.altKey = false;
+    this.metaKey = false;
+    this.shiftKey = false;
+    for (const key in this.downKeys) delete this.downKeys[key];
+  }
+
   /**
-   * Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree.
+   * Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree and call
+   * into this..
+   *
+   * Note: ComfyUI blocks Space, Esc, Delete, and Backspace.
    */
   handleKeydown(e: KeyboardEvent) {
     this.ctrlKey = !!e.ctrlKey;
@@ -861,31 +878,76 @@ class Rgthree extends EventTarget {
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
     this.downKeys[e.key.toLocaleUpperCase()] = true;
-    this.downKeys["^" + e.key.toLocaleUpperCase()] = true;
+    this.dispatchCustomEvent("keydown", { originalEvent: e });
   }
 
   /**
-   * Handle keyup. Pulled out because sometimes a node will get a keyup before rgthree.
+   * Handle keyup. Pulled out because sometimes a node will get a keyup before rgthree and call
+   * into this.
    */
   handleKeyup(e: KeyboardEvent) {
     this.ctrlKey = !!e.ctrlKey;
     this.altKey = !!e.altKey;
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
-    this.downKeys[e.key.toLocaleUpperCase()] = false;
-    this.downKeys["^" + e.key.toLocaleUpperCase()] = false;
+    delete this.downKeys[e.key.toLocaleUpperCase()];
+    this.dispatchCustomEvent("keyup", { originalEvent: e });
+  }
+
+  /**
+   * Parses a shortcut string.
+   *
+   *   - 's' => ['S']
+   *   - 'shift + c' => ['SHIFT', 'C']
+   *   - 'shift + meta + @' => ['SHIFT', 'META', '@']
+   *   - 'shift + + + @' => ['SHIFT', '__PLUS__', '=']
+   *   - '+ + p' => ['__PLUS__', 'P']
+   */
+  private getKeysFromShortcut(shortcut: string | string[]) {
+    let keys;
+    if (typeof shortcut === "string") {
+      // Rip all spaces out. Note, Comfy swallows space, so we don't have to handle it. Otherwise,
+      // we would require space to be fed as "Space" or "Spacebar" instead of " ".
+      shortcut = shortcut.replace(/\s/g, "");
+      // Change a real "+" to something we can encode.
+      shortcut = shortcut.replace(/^\+/, "__PLUS__").replace(/\+\+/, "+__PLUS__");
+      keys = shortcut.split("+").map((i) => i.replace("__PLUS__", "+"));
+    } else {
+      keys = [...shortcut];
+    }
+    return keys.map((k) => k.toLocaleUpperCase());
   }
 
   /**
    * Checks if all keys passed in are down.
    */
-  areAllKeysDown(keys: string[], caseSensitive = false) {
+  areAllKeysDown(keys: string | string[]) {
+    keys = this.getKeysFromShortcut(keys);
     return keys.every((k) => {
-      if (caseSensitive) {
-        return rgthree.downKeys["^" + k.trim()];
-      }
-      return rgthree.downKeys[k.trim().toUpperCase()];
+      return rgthree.downKeys[k];
     });
+  }
+
+  /**
+   * Checks if only the keys passed in are down; optionally and additionally allowing "shift" key.
+   */
+  areOnlyKeysDown(keys: string | string[], alsoAllowShift = false) {
+    keys = this.getKeysFromShortcut(keys);
+    const allKeysDown = this.areAllKeysDown(keys);
+    const downKeysLength = Object.values(rgthree.downKeys).length;
+    // All keys are down and they're the only ones.
+    if (allKeysDown && keys.length === downKeysLength) {
+      return true;
+    }
+    // Special case allowing the shift key in addition to the shortcut keys. This helps when a user
+    // may had originally defined "$" as a shortcut, but needs to press "shift + $" since it's an
+    // upper key character, etc.
+    if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
+      // If we're holding down shift, have one extra key held down, and the original keys don't
+      // include shift, then we're good to go.
+      return this.areAllKeysDown(["SHIFT"]);
+    }
+    return false;
   }
 
   /**

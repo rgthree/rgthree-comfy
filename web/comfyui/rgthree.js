@@ -138,6 +138,12 @@ class Rgthree extends EventTarget {
         window.addEventListener("keyup", (e) => {
             this.handleKeyup(e);
         });
+        document.addEventListener("visibilitychange", (e) => {
+            this.clearKeydowns();
+        });
+        window.addEventListener("blur", (e) => {
+            this.clearKeydowns();
+        });
         this.initializeGraphAndCanvasHooks();
         this.initializeComfyUIHooks();
         this.initializeContextMenu();
@@ -584,29 +590,59 @@ class Rgthree extends EventTarget {
         let container = document.querySelector(".rgthree-top-messages-container");
         container && (container.innerHTML = "");
     }
+    clearKeydowns() {
+        this.ctrlKey = false;
+        this.altKey = false;
+        this.metaKey = false;
+        this.shiftKey = false;
+        for (const key in this.downKeys)
+            delete this.downKeys[key];
+    }
     handleKeydown(e) {
         this.ctrlKey = !!e.ctrlKey;
         this.altKey = !!e.altKey;
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = true;
-        this.downKeys["^" + e.key.toLocaleUpperCase()] = true;
+        this.dispatchCustomEvent("keydown", { originalEvent: e });
     }
     handleKeyup(e) {
         this.ctrlKey = !!e.ctrlKey;
         this.altKey = !!e.altKey;
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
-        this.downKeys[e.key.toLocaleUpperCase()] = false;
-        this.downKeys["^" + e.key.toLocaleUpperCase()] = false;
+        delete this.downKeys[e.key.toLocaleUpperCase()];
+        this.dispatchCustomEvent("keyup", { originalEvent: e });
     }
-    areAllKeysDown(keys, caseSensitive = false) {
+    getKeysFromShortcut(shortcut) {
+        let keys;
+        if (typeof shortcut === "string") {
+            shortcut = shortcut.replace(/\s/g, "");
+            shortcut = shortcut.replace(/^\+/, "__PLUS__").replace(/\+\+/, "+__PLUS__");
+            keys = shortcut.split("+").map((i) => i.replace("__PLUS__", "+"));
+        }
+        else {
+            keys = [...shortcut];
+        }
+        return keys.map((k) => k.toLocaleUpperCase());
+    }
+    areAllKeysDown(keys) {
+        keys = this.getKeysFromShortcut(keys);
         return keys.every((k) => {
-            if (caseSensitive) {
-                return rgthree.downKeys["^" + k.trim()];
-            }
-            return rgthree.downKeys[k.trim().toUpperCase()];
+            return rgthree.downKeys[k];
         });
+    }
+    areOnlyKeysDown(keys, alsoAllowShift = false) {
+        keys = this.getKeysFromShortcut(keys);
+        const allKeysDown = this.areAllKeysDown(keys);
+        const downKeysLength = Object.values(rgthree.downKeys).length;
+        if (allKeysDown && keys.length === downKeysLength) {
+            return true;
+        }
+        if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
+            return this.areAllKeysDown(["SHIFT"]);
+        }
+        return false;
     }
     injectRgthreeCss() {
         let link = document.createElement("link");
