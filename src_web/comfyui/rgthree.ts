@@ -870,7 +870,7 @@ class Rgthree extends EventTarget {
    * Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree and call
    * into this..
    *
-   * Note: ComfyUI blocks Space, Esc, Delete, and Backspace.
+   * Note: ComfyUI blocks Space, Esc, Delete, and Backspace as well as within inputs.
    */
   handleKeydown(e: KeyboardEvent) {
     this.ctrlKey = !!e.ctrlKey;

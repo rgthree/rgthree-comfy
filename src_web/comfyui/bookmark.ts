@@ -9,8 +9,9 @@ import type {
   LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   INumberWidget,
+  Vector2,
 } from "typings/litegraph.js";
-import { getClosestOrSelf } from "rgthree/common/utils_dom.js";
+import { getClosestOrSelf, queryOne } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -103,6 +104,24 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       this.canvasToBookmark();
       originalEvent.preventDefault();
       originalEvent.stopPropagation();
+    }
+  }
+
+  /**
+   * Called from LiteGraph's `processMouseDown` after it would invoke the input box for the
+   * shortcut_key, so we check if it exists and then add our own event listener so we can track the
+   * keys down for the user.
+   */
+  override onMouseDown(event: MouseEvent, pos: Vector2, graphCanvas: TLGraphCanvas): void {
+    const input = queryOne<HTMLInputElement>('.graphdialog > input.value');
+    if (input && input.value === this.widgets[0]?.value) {
+      input.addEventListener('keydown', (e) => {
+        // ComfyUI swallows keydown on inputs, so we need to call out to rgthree to use downkeys.
+        rgthree.handleKeydown(e);
+        e.preventDefault();
+        e.stopPropagation();
+        input.value = Object.keys(rgthree.downKeys).join(" + ");
+      });
     }
   }
 
