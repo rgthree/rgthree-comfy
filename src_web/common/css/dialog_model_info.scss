@@ -304,7 +304,68 @@
       justify-content: center;
       flex-direction: column;
       overflow: hidden;
-      padding: 8px;
+      padding: 0;
+      margin: 6px;
+      font-size: 0;
+      position: relative;
+
+      figure {
+        margin: 0;
+        position: static;
+
+        figcaption {
+          position: absolute;
+          left: 0;
+          width: 100%;
+          bottom: 0;
+          padding: 12px;
+          font-size: 12px;
+          background: rgba(0,0,0,0.85);
+          opacity: 0;
+          transform: translateY(50px);
+          transition: all 0.25s ease-in-out;
+
+          > span {
+            display: inline-block;
+            padding: 2px 4px;
+            margin: 2px;
+            border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.2);
+            word-break: break-word;
+
+            label {
+              display: inline;
+              padding: 0;
+              margin: 0;
+              opacity: 0.5;
+              pointer-events: none;
+              user-select: none;
+            }
+            a {
+              color: inherit;
+              text-decoration: underline;
+              &:hover {
+                text-decoration: none;
+              }
+
+              svg {
+                height: 10px;
+                margin-left: 4px;
+                fill: currentColor;
+              }
+            }
+          }
+          &:empty {
+            &::before {content: 'No data.'}
+            text-align: center;
+          }
+        }
+      }
+
+      &:hover figure figcaption {
+        opacity: 1;
+        transform: translateY(0px);
+      }
 
       .rgthree-info-table {
         width: calc(100% - 16px);

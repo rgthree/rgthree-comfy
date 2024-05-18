@@ -256,7 +256,64 @@
   justify-content: center;
   flex-direction: column;
   overflow: hidden;
-  padding: 8px;
+  padding: 0;
+  margin: 6px;
+  font-size: 0;
+  position: relative;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure {
+  margin: 0;
+  position: static;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  bottom: 0;
+  padding: 12px;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.85);
+  opacity: 0;
+  transform: translateY(50px);
+  transition: all 0.25s ease-in-out;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption > span {
+  display: inline-block;
+  padding: 2px 4px;
+  margin: 2px;
+  border-radius: 2px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  word-break: break-word;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption > span label {
+  display: inline;
+  padding: 0;
+  margin: 0;
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption > span a {
+  color: inherit;
+  text-decoration: underline;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption > span a:hover {
+  text-decoration: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption > span a svg {
+  height: 10px;
+  margin-left: 4px;
+  fill: currentColor;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption:empty {
+  text-align: center;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure figcaption:empty::before {
+  content: "No data.";
+}
+.rgthree-info-dialog .rgthree-info-images > li:hover figure figcaption {
+  opacity: 1;
+  transform: translateY(0px);
 }
 .rgthree-info-dialog .rgthree-info-images > li .rgthree-info-table {
   width: calc(100% - 16px);

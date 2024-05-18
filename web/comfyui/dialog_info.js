@@ -1,6 +1,6 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, query, setAttributes, } from "../../rgthree/common/utils_dom.js";
-import { logoCivitai, pencilColored, diskColored, dotdotdot } from "../../rgthree/common/media/svgs.js";
+import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "../../rgthree/common/menu.js";
@@ -143,7 +143,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
         <li title="Type" class="rgthree-info-tag -type -type-${(info.type || "").toLowerCase()}"><span>${info.type || ""}</span></li>
         <li title="Base Model" class="rgthree-info-tag -basemodel -basemodel-${(info.baseModel || "").toLowerCase()}"><span>${info.baseModel || ""}</span></li>
         <li class="rgthree-info-menu" stub="menu"></li>
-        ${''}
+        ${""}
       </ul>
 
       <table class="rgthree-info-table">
@@ -161,12 +161,18 @@ export class RgthreeInfoDialog extends RgthreeDialog {
 
         ${infoTableRow("Name", info.name || ((_k = (_j = info.raw) === null || _j === void 0 ? void 0 : _j.metadata) === null || _k === void 0 ? void 0 : _k.ss_output_name) || "", "The name for display.", "name")}
 
-        ${!info.baseModelFile && !info.baseModelFile ? '' : infoTableRow("Base Model", (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""))}
+        ${!info.baseModelFile && !info.baseModelFile
+            ? ""
+            : infoTableRow("Base Model", (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""))}
 
 
-        ${!((_l = info.trainedWords) === null || _l === void 0 ? void 0 : _l.length) ? '' : infoTableRow("Trained Words", (_m = getTrainedWordsMarkup(info.trainedWords)) !== null && _m !== void 0 ? _m : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
+        ${!((_l = info.trainedWords) === null || _l === void 0 ? void 0 : _l.length)
+            ? ""
+            : infoTableRow("Trained Words", (_m = getTrainedWordsMarkup(info.trainedWords)) !== null && _m !== void 0 ? _m : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
 
-        ${!((_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata.ss_clip_skip) || ((_p = info.raw) === null || _p === void 0 ? void 0 : _p.metadata.ss_clip_skip) == 'None' ? '' : infoTableRow("Clip Skip", (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata.ss_clip_skip)}
+        ${!((_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata.ss_clip_skip) || ((_p = info.raw) === null || _p === void 0 ? void 0 : _p.metadata.ss_clip_skip) == "None"
+            ? ""
+            : infoTableRow("Clip Skip", (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata.ss_clip_skip)}
         ${infoTableRow("Strength Min", (_r = info.strengthMin) !== null && _r !== void 0 ? _r : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
         ${infoTableRow("Strength Max", (_s = info.strengthMax) !== null && _s !== void 0 ? _s : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
         ${""}
@@ -174,33 +180,24 @@ export class RgthreeInfoDialog extends RgthreeDialog {
 
       </table>
 
-      <ul class="rgthree-info-images">${(_v = (_u = info.images) === null || _u === void 0 ? void 0 : _u.map((img) => {
-            var _a;
-            return `
+      <ul class="rgthree-info-images">${(_v = (_u = info.images) === null || _u === void 0 ? void 0 : _u.map((img) => `
         <li>
-          <img src="${img.url}" />
-          <!--table class="rgthree-info-table">
-            <tr><td>Seed</td><td>${img.seed || ""}</td></tr>
-            <tr><td>Steps</td><td>${img.steps || ""}</td></tr>
-            <tr><td>Cfg</td><td>${img.cfg || ""}</td></tr>
-            <tr><td>Sampler</td><td>${img.sampler || ""}</td></tr>
-            <tr><td>Model</td><td>${img.model || ""}</td></tr>
-            <tr><td>Positive</td><td>${img.positive || ""}</td></tr>
-            <tr><td>Negative</td><td>${img.negative || ""}</td></tr>
-            ${((_a = img.resources) === null || _a === void 0 ? void 0 : _a.length)
-                ? `
-              <tr><td>Resources</td><td><ul>
-              ${(img.resources || [])
-                    .map((r) => `
-                <li>[${r.type || ""}] ${r.name || ""} ${r.weight != null ? `@ ${r.weight}` : ""}</li>
-              `)
-                    .join("")}
-              </ul></td></tr>
-            `
-                : ""}
-          </table-->
-        </li>`;
-        }).join("")) !== null && _v !== void 0 ? _v : ""}</ul>
+          <figure>
+            <img src="${img.url}" />
+            <figcaption><!--
+              -->${imgInfoField("", img.civitaiUrl
+            ? `<a href="${img.civitaiUrl}" target="_blank">civitai${link}</a>`
+            : undefined)}<!--
+              -->${imgInfoField("seed", img.seed)}<!--
+              -->${imgInfoField("steps", img.steps)}<!--
+              -->${imgInfoField("cfg", img.cfg)}<!--
+              -->${imgInfoField("sampler", img.sampler)}<!--
+              -->${imgInfoField("model", img.model)}<!--
+              -->${imgInfoField("positive", img.positive)}<!--
+              -->${imgInfoField("negative", img.negative)}<!--
+            --><!--${''}--></figcaption>
+          </figure>
+        </li>`).join("")) !== null && _v !== void 0 ? _v : ""}</ul>
     `;
         const div = $el("div", { html });
         if (rgthree.isDevMode()) {
@@ -283,4 +280,7 @@ function saveEditableRow(info, tr, saving = true) {
     const td = queryOne("td:nth-child(2)", tr);
     appendChildren(empty(td), [$el("span", { text: newValue })]);
     return modified;
+}
+function imgInfoField(label, value) {
+    return value != null ? `<span>${label ? `<label>${label} </label>` : ""}${value}</span>` : "";
 }

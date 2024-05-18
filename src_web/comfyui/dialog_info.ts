@@ -8,7 +8,13 @@ import {
   query,
   setAttributes,
 } from "rgthree/common/utils_dom.js";
-import { logoCivitai, link, pencilColored, diskColored, dotdotdot } from "rgthree/common/media/svgs.js";
+import {
+  logoCivitai,
+  link,
+  pencilColored,
+  diskColored,
+  dotdotdot,
+} from "rgthree/common/media/svgs.js";
 import { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
@@ -156,19 +162,20 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     const civitaiLink = info.links?.find((i) => i.includes("civitai.com/models"));
     const html = `
       <ul class="rgthree-info-area">
-        <li title="Type" class="rgthree-info-tag -type -type-${(info.type || "").toLowerCase()}"><span>${
+        <li title="Type" class="rgthree-info-tag -type -type-${(
           info.type || ""
-        }</span></li>
+        ).toLowerCase()}"><span>${info.type || ""}</span></li>
         <li title="Base Model" class="rgthree-info-tag -basemodel -basemodel-${(
           info.baseModel || ""
         ).toLowerCase()}"><span>${info.baseModel || ""}</span></li>
         <li class="rgthree-info-menu" stub="menu"></li>
-        ${''
-        //   !civitaiLink
-        //     ? ""
-        //     : `
-        //   <li title="Visit on Civitai" class="-link -civitai"><a href="${civitaiLink}" target="_blank">Civitai ${link}</a></li>
-        // `
+        ${
+          ""
+          //   !civitaiLink
+          //     ? ""
+          //     : `
+          //   <li title="Visit on Civitai" class="-link -civitai"><a href="${civitaiLink}" target="_blank">Civitai ${link}</a></li>
+          // `
         }
       </ul>
 
@@ -203,22 +210,31 @@ export class RgthreeInfoDialog extends RgthreeDialog {
           "name",
         )}
 
-        ${!info.baseModelFile && !info.baseModelFile ? '' : infoTableRow(
-          "Base Model",
-          (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""),
-        )}
+        ${
+          !info.baseModelFile && !info.baseModelFile
+            ? ""
+            : infoTableRow(
+                "Base Model",
+                (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""),
+              )
+        }
 
 
-        ${!info.trainedWords?.length ? '' : infoTableRow(
-          "Trained Words",
-          getTrainedWordsMarkup(info.trainedWords) ?? "",
-          "Trained words from the metadata and/or civitai. Click to select for copy.",
-        )}
+        ${
+          !info.trainedWords?.length
+            ? ""
+            : infoTableRow(
+                "Trained Words",
+                getTrainedWordsMarkup(info.trainedWords) ?? "",
+                "Trained words from the metadata and/or civitai. Click to select for copy.",
+              )
+        }
 
-        ${!info.raw?.metadata.ss_clip_skip || info.raw?.metadata.ss_clip_skip == 'None' ? '' : infoTableRow(
-          "Clip Skip",
-          info.raw?.metadata.ss_clip_skip
-        )}
+        ${
+          !info.raw?.metadata.ss_clip_skip || info.raw?.metadata.ss_clip_skip == "None"
+            ? ""
+            : infoTableRow("Clip Skip", info.raw?.metadata.ss_clip_skip)
+        }
         ${infoTableRow(
           "Strength Min",
           info.strengthMin ?? "",
@@ -253,33 +269,40 @@ export class RgthreeInfoDialog extends RgthreeDialog {
           ?.map(
             (img) => `
         <li>
-          <img src="${img.url}" />
-          <!--table class="rgthree-info-table">
-            <tr><td>Seed</td><td>${img.seed || ""}</td></tr>
-            <tr><td>Steps</td><td>${img.steps || ""}</td></tr>
-            <tr><td>Cfg</td><td>${img.cfg || ""}</td></tr>
-            <tr><td>Sampler</td><td>${img.sampler || ""}</td></tr>
-            <tr><td>Model</td><td>${img.model || ""}</td></tr>
-            <tr><td>Positive</td><td>${img.positive || ""}</td></tr>
-            <tr><td>Negative</td><td>${img.negative || ""}</td></tr>
-            ${
-              img.resources?.length
-                ? `
-              <tr><td>Resources</td><td><ul>
-              ${(img.resources || [])
-                .map(
-                  (r) => `
-                <li>[${r.type || ""}] ${r.name || ""} ${
-                  r.weight != null ? `@ ${r.weight}` : ""
-                }</li>
-              `,
-                )
-                .join("")}
-              </ul></td></tr>
-            `
-                : ""
-            }
-          </table-->
+          <figure>
+            <img src="${img.url}" />
+            <figcaption><!--
+              -->${imgInfoField(
+                "",
+                img.civitaiUrl
+                  ? `<a href="${img.civitaiUrl}" target="_blank">civitai${link}</a>`
+                  : undefined,
+              )}<!--
+              -->${imgInfoField("seed", img.seed)}<!--
+              -->${imgInfoField("steps", img.steps)}<!--
+              -->${imgInfoField("cfg", img.cfg)}<!--
+              -->${imgInfoField("sampler", img.sampler)}<!--
+              -->${imgInfoField("model", img.model)}<!--
+              -->${imgInfoField("positive", img.positive)}<!--
+              -->${imgInfoField("negative", img.negative)}<!--
+            --><!--${''
+              //   img.resources?.length
+              //     ? `
+              //   <tr><td>Resources</td><td><ul>
+              //   ${(img.resources || [])
+              //     .map(
+              //       (r) => `
+              //     <li>[${r.type || ""}] ${r.name || ""} ${
+              //       r.weight != null ? `@ ${r.weight}` : ""
+              //     }</li>
+              //   `,
+              //     )
+              //     .join("")}
+              //   </ul></td></tr>
+              // `
+              //     : ""
+              }--></figcaption>
+          </figure>
         </li>`,
           )
           .join("") ?? ""
@@ -299,7 +322,9 @@ export class RgthreeInfoDialog extends RgthreeDialog {
                 label: "Open API JSON",
                 callback: async (e: PointerEvent) => {
                   if (this.modelInfo?.file) {
-                    window.open(`rgthree/api/loras/info?file=${encodeURIComponent(this.modelInfo.file)}`);
+                    window.open(
+                      `rgthree/api/loras/info?file=${encodeURIComponent(this.modelInfo.file)}`,
+                    );
                   }
                 },
               },
@@ -307,9 +332,13 @@ export class RgthreeInfoDialog extends RgthreeDialog {
                 label: "Clear all local info",
                 callback: async (e: PointerEvent) => {
                   if (this.modelInfo?.file) {
-                    this.modelInfo = await MODEL_INFO_SERVICE.clearLoraFetchedData(this.modelInfo.file);
+                    this.modelInfo = await MODEL_INFO_SERVICE.clearLoraFetchedData(
+                      this.modelInfo.file,
+                    );
                     this.setContent(this.getInfoContent());
-                    this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
+                    this.setTitle(
+                      this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown",
+                    );
                   }
                 },
               },
@@ -388,4 +417,8 @@ function saveEditableRow(info: RgthreeModelInfo, tr: HTMLElement, saving = true)
   const td = queryOne("td:nth-child(2)", tr)!;
   appendChildren(empty(td), [$el("span", { text: newValue })]);
   return modified;
+}
+
+function imgInfoField(label: string, value?: string | number) {
+  return value != null ? `<span>${label ? `<label>${label} </label>` : ""}${value}</span>` : "";
 }
