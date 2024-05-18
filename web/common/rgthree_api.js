@@ -38,9 +38,6 @@ class RgthreeApi {
     async getLoraInfo(lora, light = true) {
         return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}&light=${light ? 1 : 0}`, { cache: "no-store" });
     }
-    async refreshLoraInfo(lora) {
-        return await this.fetchApiJsonOrNull(`/loras/info/refresh?file=${encodeURIComponent(lora)}`);
-    }
     async saveLoraInfo(lora, data) {
         const body = new FormData();
         body.append("json", JSON.stringify(data));
@@ -49,8 +46,15 @@ class RgthreeApi {
     async getLorasInfo() {
         return await this.fetchApiJsonOrNull(`/loras/info`);
     }
-    async refreshLorasInfo() {
-        return await this.fetchApiJsonOrNull(`/loras/info/refresh`);
+    async refreshLorasInfo(file) {
+        const path = `/loras/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : '');
+        const infos = await this.fetchApiJsonOrNull(path);
+        return infos;
+    }
+    async clearLorasInfo(file) {
+        const path = `/loras/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : '');
+        await this.fetchApiJsonOrNull(path);
+        return;
     }
 }
 export const rgthreeApi = new RgthreeApi();

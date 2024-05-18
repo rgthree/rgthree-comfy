@@ -15,7 +15,7 @@ class ModelInfoService {
             info = await rgthreeApi.getLoraInfo(file, light);
         }
         else {
-            info = await rgthreeApi.refreshLoraInfo(file);
+            info = await rgthreeApi.refreshLorasInfo(file);
         }
         if (!light) {
             this.loraToInfo.set(file, info);
@@ -24,6 +24,11 @@ class ModelInfoService {
     }
     async refreshLora(file) {
         return this.fetchLora(file, true);
+    }
+    async clearLoraFetchedData(file) {
+        await rgthreeApi.clearLorasInfo(file);
+        this.loraToInfo.delete(file);
+        return null;
     }
     async saveLoraPartial(file, data) {
         let info = await rgthreeApi.saveLoraInfo(file, data);

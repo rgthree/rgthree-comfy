@@ -59,12 +59,6 @@ class RgthreeApi {
     );
   }
 
-  async refreshLoraInfo(lora: string): Promise<RgthreeModelInfo | null> {
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
-      `/loras/info/refresh?file=${encodeURIComponent(lora)}`,
-    );
-  }
-
   async saveLoraInfo(
     lora: string,
     data: Partial<RgthreeModelInfo>,
@@ -81,9 +75,20 @@ class RgthreeApi {
     return await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(`/loras/info`);
   }
 
-  async refreshLorasInfo(): Promise<RgthreeModelInfo[] | null> {
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(`/loras/info/refresh`);
+  async refreshLorasInfo(file: string): Promise<RgthreeModelInfo | null>;
+  async refreshLorasInfo(): Promise<RgthreeModelInfo[] | null>;
+  async refreshLorasInfo(file?: string) {
+    const path = `/loras/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : '');
+    const infos = await this.fetchApiJsonOrNull<RgthreeModelInfo[]|RgthreeModelInfo>(path);
+    return infos;
   }
+
+  async clearLorasInfo(file?: string): Promise<void> {
+    const path = `/loras/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : '');
+    await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
+    return;
+  }
+
 }
 
 export const rgthreeApi = new RgthreeApi();

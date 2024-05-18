@@ -990,6 +990,9 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
+    if (window.location.href.includes("#rgthree-dev=false")) {
+      return false;
+    }
     return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
   }
 

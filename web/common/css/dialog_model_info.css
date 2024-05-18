@@ -2,24 +2,25 @@
   width: 90vw;
   max-width: 960px;
 }
-.rgthree-info-dialog .rgthree-info-tags {
+.rgthree-info-dialog .rgthree-info-area {
   list-style: none;
   padding: 0;
   margin: 0;
   display: flex;
 }
-.rgthree-info-dialog .rgthree-info-tags > li {
+.rgthree-info-dialog .rgthree-info-area > li {
   display: inline-flex;
   margin: 0;
   vertical-align: top;
 }
-.rgthree-info-dialog .rgthree-info-tags > li + li {
+.rgthree-info-dialog .rgthree-info-area > li + li {
   margin-left: 6px;
 }
-.rgthree-info-dialog .rgthree-info-tags > li:not(.-link) + li.-link {
+.rgthree-info-dialog .rgthree-info-area > li:not(.-link) + li.-link {
   margin-left: auto;
 }
-.rgthree-info-dialog .rgthree-info-tags > li > * {
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-tag > * {
+  min-height: 24px;
   border-radius: 4px;
   line-height: 1;
   color: rgba(255, 255, 255, 0.85);
@@ -37,37 +38,34 @@
   align-items: center;
   box-shadow: inset 0px 0px 0 1px rgba(0, 0, 0, 0.5);
 }
-.rgthree-info-dialog .rgthree-info-tags > li > * > svg {
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-tag > * > svg {
   width: 16px;
   height: 16px;
 }
-.rgthree-info-dialog .rgthree-info-tags > li > * > svg:first-child {
-  margin-right: 0.3em;
-  display: none;
-}
-.rgthree-info-dialog .rgthree-info-tags > li > * > svg:last-child {
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-tag > * > svg:last-child {
   margin-left: 0.5em;
-  fill: currentColor;
 }
-.rgthree-info-dialog .rgthree-info-tags > li > *[href] {
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-tag > *[href] {
   box-shadow: inset 0px 1px 0px rgba(255, 255, 255, 0.25), inset 0px -1px 0px rgba(0, 0, 0, 0.66);
 }
-.rgthree-info-dialog .rgthree-info-tags > li > *:empty {
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-tag > *:empty {
   display: none;
 }
-.rgthree-info-dialog .rgthree-info-tags > li.-civitai > * {
-  color: #ddd;
-  background: #1b65aa;
-  transition: all 0.15s ease-in-out;
-}
-.rgthree-info-dialog .rgthree-info-tags > li.-civitai > *:hover {
-  color: #fff;
-  border-color: #1971c2;
-  background: #1971c2;
-}
-.rgthree-info-dialog .rgthree-info-tags > li.-type > * {
+.rgthree-info-dialog .rgthree-info-area > li.-type > * {
   background: rgb(73, 54, 94);
   color: rgb(228, 209, 248);
+}
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-menu {
+  margin-left: auto;
+}
+:not(#fakeid) .rgthree-info-dialog .rgthree-info-area > li.rgthree-info-menu .rgthree-button {
+  margin: 0;
+  min-height: 24px;
+  padding: 0 12px;
+}
+.rgthree-info-dialog .rgthree-info-area > li.rgthree-info-menu svg {
+  width: 16px;
+  height: 16px;
 }
 .rgthree-info-dialog .rgthree-info-table {
   border-collapse: collapse;
@@ -144,6 +142,11 @@
 }
 .rgthree-info-dialog .rgthree-info-table td > input:only-child, .rgthree-info-dialog .rgthree-info-table td > textarea:only-child {
   width: 100%;
+}
+:not(#fakeid) .rgthree-info-dialog .rgthree-info-table td .rgthree-button[data-action=fetch-civitai] {
+  font-size: inherit;
+  padding: 6px 16px;
+  margin: 2px;
 }
 .rgthree-info-dialog .rgthree-info-table tr[data-field-name=userNote] td > span:first-child {
   white-space: pre;

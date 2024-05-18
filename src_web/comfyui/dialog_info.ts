@@ -6,12 +6,15 @@ import {
   getClosestOrSelf,
   queryOne,
   query,
+  setAttributes,
 } from "rgthree/common/utils_dom.js";
-import { logoCivitai, link, pencilColored, diskColored } from "rgthree/common/media/svgs.js";
+import { logoCivitai, link, pencilColored, diskColored, dotdotdot } from "rgthree/common/media/svgs.js";
 import { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
+import { MenuButton } from "rgthree/common/menu.js";
 import { generateId } from "rgthree/common/shared_utils.js";
+import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 
 function injectCss(): Promise<void> {
   const href = "rgthree/common/css/dialog_model_info.css";
@@ -152,20 +155,20 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     const info = this.modelInfo || {};
     const civitaiLink = info.links?.find((i) => i.includes("civitai.com/models"));
     const html = `
-      <ul class="rgthree-info-tags">
-        <li title="Type" class="-type -type-${(info.type || "").toLowerCase()}"><span>${
+      <ul class="rgthree-info-area">
+        <li title="Type" class="rgthree-info-tag -type -type-${(info.type || "").toLowerCase()}"><span>${
           info.type || ""
         }</span></li>
-        <li title="Base Model" class="-basemodel -basemodel-${(
+        <li title="Base Model" class="rgthree-info-tag -basemodel -basemodel-${(
           info.baseModel || ""
         ).toLowerCase()}"><span>${info.baseModel || ""}</span></li>
-        <li stub="menu"></li>
-        ${
-          !civitaiLink
-            ? ""
-            : `
-          <li title="Visit on Civitai" class="-link -civitai"><a href="${civitaiLink}" target="_blank">${logoCivitai} Civitai ${link}</a></li>
-        `
+        <li class="rgthree-info-menu" stub="menu"></li>
+        ${''
+        //   !civitaiLink
+        //     ? ""
+        //     : `
+        //   <li title="Visit on Civitai" class="-link -civitai"><a href="${civitaiLink}" target="_blank">Civitai ${link}</a></li>
+        // `
         }
       </ul>
 
@@ -188,14 +191,11 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             : !info.raw?.civitai
             ? infoTableRow(
                 "Civitai",
-                `<button data-action="fetch-civitai">Fetch info from civitai</button>`,
+                `<button class="rgthree-button" data-action="fetch-civitai">Fetch info from civitai</button>`,
               )
             : ""
         }
-        ${infoTableRow(
-          "Base Model",
-          (info.baseModel || " ") + (info.baseModelFile ? `(${info.baseModelFile})` : ""),
-        )}
+
         ${infoTableRow(
           "Name",
           info.name || info.raw?.metadata?.ss_output_name || "",
@@ -203,10 +203,21 @@ export class RgthreeInfoDialog extends RgthreeDialog {
           "name",
         )}
 
-        ${infoTableRow(
+        ${!info.baseModelFile && !info.baseModelFile ? '' : infoTableRow(
+          "Base Model",
+          (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""),
+        )}
+
+
+        ${!info.trainedWords?.length ? '' : infoTableRow(
           "Trained Words",
           getTrainedWordsMarkup(info.trainedWords) ?? "",
           "Trained words from the metadata and/or civitai. Click to select for copy.",
+        )}
+
+        ${!info.raw?.metadata.ss_clip_skip || info.raw?.metadata.ss_clip_skip == 'None' ? '' : infoTableRow(
+          "Clip Skip",
+          info.raw?.metadata.ss_clip_skip
         )}
         ${infoTableRow(
           "Strength Min",
@@ -276,6 +287,37 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     `;
 
     const div = $el("div", { html });
+
+    if (rgthree.isDevMode()) {
+      setAttributes(queryOne('[stub="menu"]', div)!, {
+        children: [
+          new MenuButton({
+            icon: dotdotdot,
+            options: [
+              { label: "More Actions", type: "title" },
+              {
+                label: "Open API JSON",
+                callback: async (e: PointerEvent) => {
+                  if (this.modelInfo?.file) {
+                    window.open(`rgthree/api/loras/info?file=${encodeURIComponent(this.modelInfo.file)}`);
+                  }
+                },
+              },
+              {
+                label: "Clear all local info",
+                callback: async (e: PointerEvent) => {
+                  if (this.modelInfo?.file) {
+                    this.modelInfo = await MODEL_INFO_SERVICE.clearLoraFetchedData(this.modelInfo.file);
+                    this.setContent(this.getInfoContent());
+                    this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
+                  }
+                },
+              },
+            ],
+          }),
+        ],
+      });
+    }
 
     return div;
   }
