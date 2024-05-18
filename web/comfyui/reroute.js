@@ -222,7 +222,6 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                 initialNodePos: [-1, -1],
             },
         };
-        console.log(this.shortcuts);
         this.onConstructed();
     }
     onConstructed() {

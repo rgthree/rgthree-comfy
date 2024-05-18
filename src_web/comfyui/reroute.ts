@@ -370,7 +370,6 @@ class RerouteNode extends RgthreeBaseVirtualNode {
 
   constructor(title = RerouteNode.title) {
     super(title);
-    console.log(this.shortcuts);
     this.onConstructed();
   }
 
