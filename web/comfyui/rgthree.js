@@ -8,6 +8,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -538,6 +539,14 @@ class Rgthree extends EventTarget {
             container = document.createElement("div");
             container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
+        }
+        const dialogs = query('dialog[open]');
+        if (dialogs.length) {
+            let dialog = dialogs[dialogs.length - 1];
+            dialog.appendChild(container);
+            dialog.addEventListener('close', (e) => {
+                document.body.appendChild(container);
+            });
         }
         await this.hideMessage(data.id);
         const messageContainer = document.createElement("div");

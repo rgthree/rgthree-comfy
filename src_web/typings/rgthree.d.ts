@@ -25,10 +25,17 @@ export type RgthreeModelInfo = {
   name?: string;
   type?: string;
   baseModel?: string;
+  baseModelFile?: string;
   links?: string[];
   strengthMin?: number;
   strengthMax?: number;
   triggerWords?: string[];
+  trainedWords?: {
+    word: string;
+    count?: number;
+    civitai?: boolean
+    user?: boolean
+  }[];
   description?: string;
   sha256?: string;
   path?: string;

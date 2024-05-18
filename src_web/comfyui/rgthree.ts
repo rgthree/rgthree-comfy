@@ -23,6 +23,7 @@ import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 import type { Bookmark } from "./bookmark";
+import { query } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -788,6 +789,16 @@ class Rgthree extends EventTarget {
       container = document.createElement("div");
       container.classList.add("rgthree-top-messages-container");
       document.body.appendChild(container);
+    }
+    // If we have a dialog open then we want to append the message to the dialog so they show over
+    // the modal.
+    const dialogs = query<HTMLDialogElement>('dialog[open]');
+    if (dialogs.length) {
+      let dialog = dialogs[dialogs.length - 1]!;
+      dialog.appendChild(container);
+      dialog.addEventListener('close', (e) => {
+        document.body.appendChild(container!);
+      });
     }
     // Hide if we exist.
     await this.hideMessage(data.id);

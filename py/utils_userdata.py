@@ -22,6 +22,13 @@ def save_userdata_file(rel_path: str, content: str):
     file.write(content)
 
 
+def delete_userdata_file(rel_path: str):
+  """Deletes a file from the userdata directory."""
+  file_path = clean_path(rel_path)
+  if os.path.isfile(file_path):
+    os.remove(file_path)
+
+
 def read_userdata_json(rel_path: str):
   """Reads a json file from the userdata directory."""
   file_path = clean_path(rel_path)

@@ -8,8 +8,7 @@ import asyncio
 from datetime import datetime
 
 from .utils_server import get_param
-from .utils import get_dict_value, load_json_file, is_dict_value_falsy, save_json_file
-from .utils_info import get_model_info, get_sha256_hash, set_model_info_partial
+from .utils_info import delete_all_model_info, get_model_info, set_model_info_partial
 
 from server import PromptServer
 from aiohttp import web
@@ -104,18 +103,33 @@ async def api_get_loras(request):
 @routes.get('/rgthree/api/loras/info')
 async def api_get_loras_info(request):
   """ Returns a list loras info; either all or a single if provided a 'file' param. """
-  api_response = await get_loras_info_response(request)
+  api_response = await get_loras_info_response(request, maybe_fetch_metadata=True)
+  return web.json_response(api_response)
+
+
+@routes.get('/rgthree/api/loras/info/clear')
+async def delete_lora_info(request):
+  """Clears lora info from the filesystem for the provided file."""
+  api_response = {'status': 200}
+  lora_file = get_param(request, 'file')
+  if lora_file is None:
+    api_response['status'] = '404'
+    api_response['error'] = 'No Lora found at path'
+  else:
+    await delete_all_model_info(lora_file)
   return web.json_response(api_response)
 
 
 @routes.get('/rgthree/api/loras/info/refresh')
 async def refresh_get_loras_info(request):
   """ Refreshes lora info; either all or a single if provided a 'file' param. """
-  api_response = await get_loras_info_response(request, maybe_fetch_civitai=True)
+  api_response = await get_loras_info_response(request,
+                                               maybe_fetch_civitai=True,
+                                               maybe_fetch_metadata=True)
   return web.json_response(api_response)
 
 
-async def get_loras_info_response(request, maybe_fetch_civitai=False):
+async def get_loras_info_response(request, maybe_fetch_civitai=False, maybe_fetch_metadata=False):
   """Gets lora info for all or a single lora"""
   api_response = {'status': 200}
   lora_file = get_param(request, 'file')
@@ -124,6 +138,7 @@ async def get_loras_info_response(request, maybe_fetch_civitai=False):
   if lora_file is not None:
     info_data = await get_model_info(lora_file,
                                      maybe_fetch_civitai=maybe_fetch_civitai,
+                                     maybe_fetch_metadata=maybe_fetch_metadata,
                                      abandon_if_no_file=light)
     if info_data is None:
       api_response['status'] = '404'

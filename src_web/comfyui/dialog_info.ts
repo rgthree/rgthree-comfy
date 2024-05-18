@@ -5,18 +5,30 @@ import {
   appendChildren,
   getClosestOrSelf,
   queryOne,
-  setAttributes,
+  query,
 } from "rgthree/common/utils_dom.js";
-import {
-  logoCivitai,
-  link,
-  pencilColored,
-  diskColored,
-  dotdotdot,
-} from "rgthree/common/media/svgs.js";
-import { rgthreeApi } from "rgthree/common/rgthree_api.js";
+import { logoCivitai, link, pencilColored, diskColored } from "rgthree/common/media/svgs.js";
 import { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
+import { rgthree } from "./rgthree.js";
+import { generateId } from "rgthree/common/shared_utils.js";
+
+function injectCss(): Promise<void> {
+  const href = "rgthree/common/css/dialog_model_info.css";
+  if (queryOne(`link[href^="${href}"]`)) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const link = $el<HTMLLinkElement>('link[rel="stylesheet"][type="text/css"]');
+    const timeout = setTimeout(resolve, 1000);
+    link.addEventListener("load", (e) => {
+      clearInterval(timeout);
+      resolve();
+    });
+    link.href = href;
+    document.head.appendChild(link);
+  });
+}
 
 /**
  * A dialog that displays information about a model/lora/etc.
@@ -39,7 +51,9 @@ export class RgthreeInfoDialog extends RgthreeDialog {
   }
 
   private async init(file: string) {
+    const cssPromise = injectCss();
     this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
+    await cssPromise;
     this.setContent(this.getInfoContent());
     this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
     this.attachEvents();
@@ -54,51 +68,84 @@ export class RgthreeInfoDialog extends RgthreeDialog {
 
   private attachEvents() {
     this.contentElement.addEventListener("click", async (e: MouseEvent) => {
-      const info = this.modelInfo;
-      if (!info?.file) {
-        return;
-      }
-
       const target = getClosestOrSelf(e.target as HTMLElement, "[data-action]");
       const action = target?.getAttribute("data-action");
-      if (action === "fetch-civitai") {
-        this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
-        this.setContent(this.getInfoContent());
-        this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
-      } else if (action === "edit-row") {
-        const tr = target!.closest("tr")!;
-        const td = queryOne("td:nth-child(2)", tr)!;
-        const input = td.querySelector("input,textarea");
-        if (!input) {
-          const fieldName = tr.dataset["fieldName"] as string;
-          tr.classList.add("-rgthree-editing");
-          const isTextarea = fieldName === "userNote";
-          const input = $el(`${isTextarea ? "textarea" : 'input[type="text"]'}`, {
-            value: td.textContent,
-          });
-          input.addEventListener("keydown", (e) => {
-            if (!isTextarea && e.key === "Enter") {
-              const modified = saveEditableRow(info!, tr, true);
-              this.modifiedModelData = this.modifiedModelData || modified;
-              e.stopPropagation();
-              e.preventDefault();
-            } else if (e.key === "Escape") {
-              const modified = saveEditableRow(info!, tr, false);
-              this.modifiedModelData = this.modifiedModelData || modified;
-              e.stopPropagation();
-              e.preventDefault();
-            }
-          });
-          appendChildren(empty(td), [input]);
-          input.focus();
-        } else if (target!.nodeName.toLowerCase() === "button") {
-          const modified = saveEditableRow(info!, tr, true);
-          this.modifiedModelData = this.modifiedModelData || modified;
-        }
-        e.preventDefault();
-        e.stopPropagation();
+      if (!target || !action) {
+        return;
       }
+      await this.handleEventAction(action, target, e);
     });
+  }
+
+  private async handleEventAction(action: string, target: HTMLElement, e?: Event) {
+    const info = this.modelInfo!;
+    if (!info?.file) {
+      return;
+    }
+    if (action === "fetch-civitai") {
+      this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
+      this.setContent(this.getInfoContent());
+      this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
+    } else if (action === "copy-trained-words") {
+      const selected = query(".-rgthree-is-selected", target.closest("tr")!);
+      const text = selected.map((el) => el.getAttribute("data-word")).join(", ");
+      await navigator.clipboard.writeText(text);
+      rgthree.showMessage({
+        id: "copy-trained-words-" + generateId(4),
+        type: "success",
+        message: `Successfully copied ${selected.length} key word${
+          selected.length === 1 ? "" : "s"
+        }.`,
+        timeout: 4000,
+      });
+    } else if (action === "toggle-trained-word") {
+      target?.classList.toggle("-rgthree-is-selected");
+      const tr = target.closest("tr");
+      if (tr) {
+        const span = queryOne("td:first-child > *", tr)!;
+        let small = queryOne("small", span);
+        if (!small) {
+          small = $el("small", { parent: span });
+        }
+        const num = query(".-rgthree-is-selected", tr).length;
+        small.innerHTML = num
+          ? `${num} selected | <span role="button" data-action="copy-trained-words">Copy</span>`
+          : "";
+        // this.handleEventAction('copy-trained-words', target, e);
+      }
+    } else if (action === "edit-row") {
+      const tr = target!.closest("tr")!;
+      const td = queryOne("td:nth-child(2)", tr)!;
+      const input = td.querySelector("input,textarea");
+      if (!input) {
+        const fieldName = tr.dataset["fieldName"] as string;
+        tr.classList.add("-rgthree-editing");
+        const isTextarea = fieldName === "userNote";
+        const input = $el(`${isTextarea ? "textarea" : 'input[type="text"]'}`, {
+          value: td.textContent,
+        });
+        input.addEventListener("keydown", (e) => {
+          if (!isTextarea && e.key === "Enter") {
+            const modified = saveEditableRow(info!, tr, true);
+            this.modifiedModelData = this.modifiedModelData || modified;
+            e.stopPropagation();
+            e.preventDefault();
+          } else if (e.key === "Escape") {
+            const modified = saveEditableRow(info!, tr, false);
+            this.modifiedModelData = this.modifiedModelData || modified;
+            e.stopPropagation();
+            e.preventDefault();
+          }
+        });
+        appendChildren(empty(td), [input]);
+        input.focus();
+      } else if (target!.nodeName.toLowerCase() === "button") {
+        const modified = saveEditableRow(info!, tr, true);
+        this.modifiedModelData = this.modifiedModelData || modified;
+      }
+      e?.preventDefault();
+      e?.stopPropagation();
+    }
   }
 
   private getInfoContent() {
@@ -145,14 +192,21 @@ export class RgthreeInfoDialog extends RgthreeDialog {
               )
             : ""
         }
-        ${infoTableRow("Base Model", info.baseModel || "")}
-
-        ${infoTableRow("Name", info.name || "", "The name for display.", "name")}
         ${infoTableRow(
-          "Trigger Words",
-          info.triggerWords?.join(", ") ?? "",
-          "Easily keep track of the trigger words to reference here.",
-          "triggerWords",
+          "Base Model",
+          (info.baseModel || " ") + (info.baseModelFile ? `(${info.baseModelFile})` : ""),
+        )}
+        ${infoTableRow(
+          "Name",
+          info.name || info.raw?.metadata?.ss_output_name || "",
+          "The name for display.",
+          "name",
+        )}
+
+        ${infoTableRow(
+          "Trained Words",
+          getTrainedWordsMarkup(info.trainedWords) ?? "",
+          "Trained words from the metadata and/or civitai. Click to select for copy.",
         )}
         ${infoTableRow(
           "Strength Min",
@@ -241,13 +295,31 @@ function infoTableRow(
       editableFieldName ? `data-field-name="${editableFieldName}"` : ""
     }>
       <td><span>${name} ${help ? `<span class="-help" title="${help}"></span>` : ""}<span></td>
-      <td ${editableFieldName ? "" : 'colspan="2"'}><span>${value}</span></td>
+      <td ${editableFieldName ? "" : 'colspan="2"'}>${
+        String(value).startsWith("<") ? value : `<span>${value}<span>`
+      }</td>
       ${
         editableFieldName
           ? `<td style="width: 24px;"><button class="rgthree-button-reset rgthree-button-edit" data-action="edit-row">${pencilColored}${diskColored}</button></td>`
           : ""
       }
     </tr>`;
+}
+
+function getTrainedWordsMarkup(words: RgthreeModelInfo["trainedWords"]) {
+  let markup = `<ul class="rgthree-info-trained-words-list">`;
+  for (const wordData of words || []) {
+    markup += `<li title="${wordData.word}" data-word="${
+      wordData.word
+    }" class="rgthree-info-trained-words-list-item" data-action="toggle-trained-word">
+      <span>${wordData.word}</span>
+      ${wordData.civitai ? logoCivitai : ""}
+      ${wordData.count != null ? `<small>${wordData.count}</small>` : ""}
+    </li>`;
+  }
+  markup += `</ul>`;
+  console.log(markup);
+  return markup;
 }
 
 /**
