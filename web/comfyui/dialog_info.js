@@ -255,7 +255,6 @@ function getTrainedWordsMarkup(words) {
     </li>`;
     }
     markup += `</ul>`;
-    console.log(markup);
     return markup;
 }
 function saveEditableRow(info, tr, saving = true) {

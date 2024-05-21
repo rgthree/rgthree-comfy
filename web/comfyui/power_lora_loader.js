@@ -511,7 +511,6 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         }
         const infoDialog = new RgthreeInfoDialog(this.value.lora).show();
         infoDialog.addEventListener("close", ((e) => {
-            console.log(e);
             if (e.detail.dirty) {
                 this.getLoraInfo(true);
             }

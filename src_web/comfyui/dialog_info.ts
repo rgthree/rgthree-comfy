@@ -389,7 +389,6 @@ function getTrainedWordsMarkup(words: RgthreeModelInfo["trainedWords"]) {
     </li>`;
   }
   markup += `</ul>`;
-  console.log(markup);
   return markup;
 }
 
