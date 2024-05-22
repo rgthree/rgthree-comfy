@@ -19,25 +19,8 @@ import { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "rgthree/common/menu.js";
-import { generateId } from "rgthree/common/shared_utils.js";
+import { generateId, injectCss } from "rgthree/common/shared_utils.js";
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
-
-function injectCss(): Promise<void> {
-  const href = "rgthree/common/css/dialog_model_info.css";
-  if (queryOne(`link[href^="${href}"]`)) {
-    return Promise.resolve();
-  }
-  return new Promise((resolve) => {
-    const link = $el<HTMLLinkElement>('link[rel="stylesheet"][type="text/css"]');
-    const timeout = setTimeout(resolve, 1000);
-    link.addEventListener("load", (e) => {
-      clearInterval(timeout);
-      resolve();
-    });
-    link.href = href;
-    document.head.appendChild(link);
-  });
-}
 
 /**
  * A dialog that displays information about a model/lora/etc.
@@ -60,7 +43,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
   }
 
   private async init(file: string) {
-    const cssPromise = injectCss();
+    const cssPromise = injectCss("rgthree/common/css/dialog_model_info.css");
     this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
     await cssPromise;
     this.setContent(this.getInfoContent());
@@ -231,9 +214,9 @@ export class RgthreeInfoDialog extends RgthreeDialog {
         }
 
         ${
-          !info.raw?.metadata.ss_clip_skip || info.raw?.metadata.ss_clip_skip == "None"
+          !info.raw?.metadata?.ss_clip_skip || info.raw?.metadata?.ss_clip_skip == "None"
             ? ""
-            : infoTableRow("Clip Skip", info.raw?.metadata.ss_clip_skip)
+            : infoTableRow("Clip Skip", info.raw?.metadata?.ss_clip_skip)
         }
         ${infoTableRow(
           "Strength Min",

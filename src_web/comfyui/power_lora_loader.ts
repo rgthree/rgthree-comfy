@@ -36,6 +36,7 @@ import { moveArrayItem, removeArrayItem } from "rgthree/common/shared_utils.js";
 import { RgthreeInfoDialog } from "./dialog_info.js";
 import type { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
+// import { RgthreePowerLoraChooserDialog } from "./dialog_power_lora_chooser.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -147,16 +148,21 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       new RgthreeBetterButtonWidget(
         "➕ Add Lora",
         (event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) => {
-          showLoraChooser(event as PointerEvent, (value: ContextMenuItem) => {
-            if (typeof value === "string") {
-              if (value !== "NONE") {
-                this.addNewLoraWidget(value);
-                const computed = this.computeSize();
-                const tempHeight = (this as any)._tempHeight ?? 15;
-                this.size[1] = Math.max(tempHeight, computed[1]);
-                this.setDirtyCanvas(true, true);
+          rgthreeApi.getLoras().then(loras => {
+            showLoraChooser(event as PointerEvent, (value: ContextMenuItem|string) => {
+              if (typeof value === "string") {
+                if (value.includes('Power Lora Chooser')) {
+                  // new RgthreePowerLoraChooserDialog().show();
+                } else if (value !== "NONE") {
+                  this.addNewLoraWidget(value);
+                  const computed = this.computeSize();
+                  const tempHeight = (this as any)._tempHeight ?? 15;
+                  this.size[1] = Math.max(tempHeight, computed[1]);
+                  this.setDirtyCanvas(true, true);
+                }
               }
-            }
+            // }, null, ["⚡️ Power Lora Chooser", ...loras]);
+            }, null, [...loras]);
           });
           return true;
         },

@@ -68,17 +68,21 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         moveArrayItem(this.widgets, this.addCustomWidget(new PowerLoraLoaderHeaderWidget()), 1);
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("➕ Add Lora", (event, pos, node) => {
-            showLoraChooser(event, (value) => {
-                var _b;
-                if (typeof value === "string") {
-                    if (value !== "NONE") {
-                        this.addNewLoraWidget(value);
-                        const computed = this.computeSize();
-                        const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
-                        this.size[1] = Math.max(tempHeight, computed[1]);
-                        this.setDirtyCanvas(true, true);
+            rgthreeApi.getLoras().then(loras => {
+                showLoraChooser(event, (value) => {
+                    var _b;
+                    if (typeof value === "string") {
+                        if (value.includes('Power Lora Chooser')) {
+                        }
+                        else if (value !== "NONE") {
+                            this.addNewLoraWidget(value);
+                            const computed = this.computeSize();
+                            const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
+                            this.size[1] = Math.max(tempHeight, computed[1]);
+                            this.setDirtyCanvas(true, true);
+                        }
                     }
-                }
+                }, null, [...loras]);
             });
             return true;
         }));

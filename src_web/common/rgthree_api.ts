@@ -1,4 +1,4 @@
-import { RgthreeModelInfo } from "typings/rgthree";
+import type { RgthreeModelInfo } from "typings/rgthree";
 
 class RgthreeApi {
   private baseUrl: string;
@@ -52,27 +52,17 @@ class RgthreeApi {
    * @param light Whether or not to generate a json file if there isn't one. This isn't necessary if
    * we're just checking for values, but is more necessary when opening an info dialog.
    */
-  async getLoraInfo(lora: string, light = true): Promise<RgthreeModelInfo | null> {
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
-      `/loras/info?file=${encodeURIComponent(lora)}&light=${light ? 1 : 0}`,
-      { cache: "no-store" },
-    );
-  }
-
-  async saveLoraInfo(
-    lora: string,
-    data: Partial<RgthreeModelInfo>,
-  ): Promise<RgthreeModelInfo | null> {
-    const body = new FormData();
-    body.append("json", JSON.stringify(data));
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
-      `/loras/info?file=${encodeURIComponent(lora)}`,
-      { cache: "no-store", method: "POST", body },
-    );
-  }
-
-  async getLorasInfo(): Promise<RgthreeModelInfo[] | null> {
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(`/loras/info`);
+  async getLorasInfo(lora: string, light?: boolean): Promise<RgthreeModelInfo | null>;
+  async getLorasInfo(light?: boolean): Promise<RgthreeModelInfo[] | null>;
+  async getLorasInfo(...args: any) {
+    const params = new URLSearchParams();
+    const isSingleLora = typeof args[0] == 'string';
+    if (isSingleLora) {
+      params.set("file", args[0]);
+    }
+    params.set("light", (isSingleLora ? args[1] : args[0]) === false ? '0' : '1');
+    const path = `/loras/info?` + params.toString();
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]|RgthreeModelInfo>(path);
   }
 
   async refreshLorasInfo(file: string): Promise<RgthreeModelInfo | null>;
@@ -87,6 +77,21 @@ class RgthreeApi {
     const path = `/loras/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : '');
     await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
     return;
+  }
+
+  /**
+   * Saves partial data sending it to the backend..
+   */
+  async saveLoraInfo(
+    lora: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null> {
+    const body = new FormData();
+    body.append("json", JSON.stringify(data));
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
+      `/loras/info?file=${encodeURIComponent(lora)}`,
+      { cache: "no-store", method: "POST", body },
+    );
   }
 
 }

@@ -1,6 +1,6 @@
 import os
 
-from .utils import load_json_file, save_json_file
+from .utils import load_json_file, path_exists, save_json_file
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 USERDATA = os.path.join(THIS_DIR, '..', 'userdata')
@@ -9,7 +9,7 @@ USERDATA = os.path.join(THIS_DIR, '..', 'userdata')
 def read_userdata_file(rel_path: str):
   """Reads a file from the userdata directory."""
   file_path = clean_path(rel_path)
-  if os.path.exists(file_path):
+  if path_exists(file_path):
     with open(file_path, 'r', encoding='UTF-8') as file:
       return file.read()
   return None

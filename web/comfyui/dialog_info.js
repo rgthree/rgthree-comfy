@@ -4,23 +4,7 @@ import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../..
 import { SERVICE as MODEL_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "../../rgthree/common/menu.js";
-import { generateId } from "../../rgthree/common/shared_utils.js";
-function injectCss() {
-    const href = "rgthree/common/css/dialog_model_info.css";
-    if (queryOne(`link[href^="${href}"]`)) {
-        return Promise.resolve();
-    }
-    return new Promise((resolve) => {
-        const link = $el('link[rel="stylesheet"][type="text/css"]');
-        const timeout = setTimeout(resolve, 1000);
-        link.addEventListener("load", (e) => {
-            clearInterval(timeout);
-            resolve();
-        });
-        link.href = href;
-        document.head.appendChild(link);
-    });
-}
+import { generateId, injectCss } from "../../rgthree/common/shared_utils.js";
 export class RgthreeInfoDialog extends RgthreeDialog {
     constructor(file) {
         const dialogOptions = {
@@ -38,7 +22,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     }
     async init(file) {
         var _a, _b;
-        const cssPromise = injectCss();
+        const cssPromise = injectCss("rgthree/common/css/dialog_model_info.css");
         this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
         await cssPromise;
         this.setContent(this.getInfoContent());
@@ -135,7 +119,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
         }
     }
     getInfoContent() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
         const info = this.modelInfo || {};
         const civitaiLink = (_a = info.links) === null || _a === void 0 ? void 0 : _a.find((i) => i.includes("civitai.com/models"));
         const html = `
@@ -170,17 +154,17 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             ? ""
             : infoTableRow("Trained Words", (_m = getTrainedWordsMarkup(info.trainedWords)) !== null && _m !== void 0 ? _m : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
 
-        ${!((_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata.ss_clip_skip) || ((_p = info.raw) === null || _p === void 0 ? void 0 : _p.metadata.ss_clip_skip) == "None"
+        ${!((_p = (_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata) === null || _p === void 0 ? void 0 : _p.ss_clip_skip) || ((_r = (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata) === null || _r === void 0 ? void 0 : _r.ss_clip_skip) == "None"
             ? ""
-            : infoTableRow("Clip Skip", (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata.ss_clip_skip)}
-        ${infoTableRow("Strength Min", (_r = info.strengthMin) !== null && _r !== void 0 ? _r : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
-        ${infoTableRow("Strength Max", (_s = info.strengthMax) !== null && _s !== void 0 ? _s : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
+            : infoTableRow("Clip Skip", (_t = (_s = info.raw) === null || _s === void 0 ? void 0 : _s.metadata) === null || _t === void 0 ? void 0 : _t.ss_clip_skip)}
+        ${infoTableRow("Strength Min", (_u = info.strengthMin) !== null && _u !== void 0 ? _u : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
+        ${infoTableRow("Strength Max", (_v = info.strengthMax) !== null && _v !== void 0 ? _v : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
         ${""}
-        ${infoTableRow("Additional Notes", (_t = info.userNote) !== null && _t !== void 0 ? _t : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
+        ${infoTableRow("Additional Notes", (_w = info.userNote) !== null && _w !== void 0 ? _w : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
 
       </table>
 
-      <ul class="rgthree-info-images">${(_v = (_u = info.images) === null || _u === void 0 ? void 0 : _u.map((img) => `
+      <ul class="rgthree-info-images">${(_y = (_x = info.images) === null || _x === void 0 ? void 0 : _x.map((img) => `
         <li>
           <figure>
             <img src="${img.url}" />
@@ -197,7 +181,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
               -->${imgInfoField("negative", img.negative)}<!--
             --><!--${''}--></figcaption>
           </figure>
-        </li>`).join("")) !== null && _v !== void 0 ? _v : ""}</ul>
+        </li>`).join("")) !== null && _y !== void 0 ? _y : ""}</ul>
     `;
         const div = $el("div", { html });
         if (rgthree.isDevMode()) {

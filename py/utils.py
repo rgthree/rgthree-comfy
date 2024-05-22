@@ -65,7 +65,7 @@ def dict_has_key(data: dict, dict_key):
 
 def load_json_file(file: str, default=None):
   """Reads a json file and returns the json dict, stripping out "//" comments first."""
-  if os.path.exists(file):
+  if path_exists(file):
     with open(file, 'r', encoding='UTF-8') as file:
       config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
     return json.loads(config)
@@ -77,3 +77,9 @@ def save_json_file(file_path: str, data: dict):
   os.makedirs(os.path.dirname(file_path), exist_ok=True)
   with open(file_path, 'w+', encoding='UTF-8') as file:
     json.dump(data, file, sort_keys=False, indent=2, separators=(",", ": "))
+
+def path_exists(path):
+  """Checks if a path exists, accepting None type."""
+  if path is not None:
+    return os.path.exists(path)
+  return False

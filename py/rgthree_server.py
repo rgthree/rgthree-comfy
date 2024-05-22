@@ -7,8 +7,9 @@ import asyncio
 
 from datetime import datetime
 
-from .utils_server import get_param
-from .utils_info import delete_all_model_info, get_model_info, set_model_info_partial
+from .utils import path_exists
+from .utils_server import get_param, is_param_falsy
+from .utils_info import delete_model_info, get_model_info, set_model_info_partial
 
 from server import PromptServer
 from aiohttp import web
@@ -103,7 +104,11 @@ async def api_get_loras(request):
 @routes.get('/rgthree/api/loras/info')
 async def api_get_loras_info(request):
   """ Returns a list loras info; either all or a single if provided a 'file' param. """
-  api_response = await get_loras_info_response(request, maybe_fetch_metadata=True)
+  lora_file = get_param(request, 'file')
+  maybe_fetch_metadata = lora_file is not None
+  if not is_param_falsy(request, 'light'):
+    maybe_fetch_metadata = False
+  api_response = await get_loras_info_response(request, maybe_fetch_metadata=maybe_fetch_metadata)
   return web.json_response(api_response)
 
 
@@ -112,11 +117,18 @@ async def delete_lora_info(request):
   """Clears lora info from the filesystem for the provided file."""
   api_response = {'status': 200}
   lora_file = get_param(request, 'file')
+  del_info = not is_param_falsy(request, 'del_info')
+  del_metadata = not is_param_falsy(request, 'del_metadata')
+  del_civitai = not is_param_falsy(request, 'del_civitai')
   if lora_file is None:
     api_response['status'] = '404'
-    api_response['error'] = 'No Lora found at path'
+    api_response['error'] = 'No Lora file provided'
+  elif lora_file == "ALL":  # Force the user to supply file=ALL to trigger all clearing.
+    lora_files = folder_paths.get_filename_list("loras")
+    for lora_file in lora_files:
+      await delete_model_info(lora_file, del_info=del_info, del_metadata=del_metadata, del_civitai=del_civitai)
   else:
-    await delete_all_model_info(lora_file)
+    await delete_model_info(lora_file, del_info=del_info, del_metadata=del_metadata, del_civitai=del_civitai)
   return web.json_response(api_response)
 
 
@@ -133,13 +145,12 @@ async def get_loras_info_response(request, maybe_fetch_civitai=False, maybe_fetc
   """Gets lora info for all or a single lora"""
   api_response = {'status': 200}
   lora_file = get_param(request, 'file')
-  light = get_param(request, 'light')
-  light = False if light == "0" or light == 0 else True
+  light = not is_param_falsy(request, 'light')
   if lora_file is not None:
     info_data = await get_model_info(lora_file,
                                      maybe_fetch_civitai=maybe_fetch_civitai,
                                      maybe_fetch_metadata=maybe_fetch_metadata,
-                                     abandon_if_no_file=light)
+                                     light=light)
     if info_data is None:
       api_response['status'] = '404'
       api_response['error'] = 'No Lora found at path'
@@ -151,7 +162,8 @@ async def get_loras_info_response(request, maybe_fetch_civitai=False, maybe_fetc
     for lora_file in lora_files:
       info_data = await get_model_info(lora_file,
                                        maybe_fetch_civitai=maybe_fetch_civitai,
-                                       abandon_if_no_file=light)
+                                       maybe_fetch_metadata=maybe_fetch_metadata,
+                                       light=light)
       api_response['data'].append(info_data)
   return api_response
 
@@ -177,17 +189,17 @@ async def api_get_loras_info_img(request):
   """ Returns an image response if one exists for the lora. """
   lora_file = get_param(request, 'file')
   lora_path = folder_paths.get_full_path("loras", lora_file)
-  if not os.path.exists(lora_path):
+  if not path_exists(lora_path):
     lora_path = os.path.abspath(lora_path)
 
   img_path = None
   for ext in ['jpg', 'png', 'jpeg']:
     try_path = f'{os.path.splitext(lora_path)[0]}.{ext}'
-    if os.path.exists(try_path):
+    if path_exists(try_path):
       img_path = try_path
       break
 
-  if img_path is None or not os.path.exists(img_path):
+  if not path_exists(img_path):
     api_response = {}
     api_response['status'] = '404'
     api_response['error'] = 'No Lora found at path'
