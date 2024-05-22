@@ -1,0 +1,15 @@
+[project]
+name = "rgthree-comfy"
+description = ""
+version = "1.0.0"
+license = "LICENSE"
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/rgthree/rgthree-comfy"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = ""
+DisplayName = "rgthree-comfy"
+Icon = ""
