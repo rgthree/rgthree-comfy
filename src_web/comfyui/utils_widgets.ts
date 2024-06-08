@@ -47,19 +47,30 @@ export function drawLabelAndValue(
 export type RgthreeBaseWidgetBounds = {
   /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
   bounds: Vector2 | Vector4;
-  onDown?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
-  onUp?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
-  onMove?: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  onDown?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
+  onDown?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
+  onUp?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
+  onUp?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
+  onMove?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
+  onMove?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
+  data?: any;
 };
 
 export type RgthreeBaseHitAreas<Keys extends string> = {
   [K in Keys]: RgthreeBaseWidgetBounds;
 };
 
+
 /**
  * A base widget that handles mouse events more properly.
  */
-export abstract class RgthreeBaseWidget {
+export abstract class RgthreeBaseWidget<T> implements IWidget<T, any> {
+
+  // We don't want our value to be an array as a widget will be serialized as an "input" for the API
+  // which uses an array value to represent a link. To keep things simpler, we'll avoid using an
+  // array at all.
+  abstract value: T extends Array<any> ? never : T;
+
   name: string;
   last_y: number = 0;
 
@@ -81,7 +92,7 @@ export abstract class RgthreeBaseWidget {
     if (bounds.length === 2) {
       return clickedX;
     }
-    return clickedX && pos[1] <= bounds[1] && pos[1] >= bounds[1] + bounds[3];
+    return clickedX && pos[1] >= bounds[1] && pos[1] <= bounds[1] + bounds[3];
   }
 
   mouse(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) {
@@ -99,7 +110,7 @@ export abstract class RgthreeBaseWidget {
             this.downedHitAreasForMove.push(part);
           }
           if (part.onDown) {
-            const thisHandled = part.onDown.apply(this, [event, pos, node]);
+            const thisHandled = part.onDown.apply(this, [event, pos, node, part]);
             anyHandled = anyHandled || thisHandled == true;
           }
         }
@@ -116,7 +127,7 @@ export abstract class RgthreeBaseWidget {
       let anyHandled = false;
       for (const part of Object.values(this.hitAreas)) {
         if (part.onUp && this.clickWasWithinBounds(pos, part.bounds)) {
-          const thisHandled = part.onUp.apply(this, [event, pos, node]);
+          const thisHandled = part.onUp.apply(this, [event, pos, node, part]);
           anyHandled = anyHandled || thisHandled == true;
         }
       }
@@ -137,7 +148,7 @@ export abstract class RgthreeBaseWidget {
         this.isMouseDownedAndOver = false;
       }
       for (const part of this.downedHitAreasForMove) {
-        part.onMove!.apply(this, [event, pos, node]);
+        part.onMove!.apply(this, [event, pos, node, part]);
       }
       return this.onMouseMove(event, pos, node) ?? true;
     }
@@ -153,7 +164,7 @@ export abstract class RgthreeBaseWidget {
 
   /** An event that fires when the pointer is pressed down (once). */
   onMouseDown(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
-    return false;
+    return;
   }
 
   /**
@@ -161,7 +172,7 @@ export abstract class RgthreeBaseWidget {
    * originally pressed down.
    */
   onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
-    return false;
+    return;
   }
 
   /**
@@ -170,14 +181,14 @@ export abstract class RgthreeBaseWidget {
    * widget or not.
    */
   onMouseMove(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
-    return false;
+    return;
   }
 }
 
 /**
  * A better implementation of the LiteGraph button widget.
  */
-export class RgthreeBetterButtonWidget extends RgthreeBaseWidget implements IWidget<string> {
+export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
   value: string = "";
   mouseUpCallback: (event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
 

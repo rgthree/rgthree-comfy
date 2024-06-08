@@ -372,7 +372,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
  * The PowerLoraLoaderHeaderWidget that renders a toggle all switch, as well as some title info
  * (more necessary for the double model & clip strengths to label them).
  */
-class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget implements IWidget {
+class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
   private showModelAndClip: boolean | null = null;
 
   value = { type: "PowerLoraLoaderHeaderWidget" };
@@ -445,17 +445,24 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget implements IWidget {
   }
 }
 
-const DEFAULT_LORA_WIDGET_DATA = {
+const DEFAULT_LORA_WIDGET_DATA: PowerLoraLoaderWidgetValue = {
   on: true,
   lora: null as string | null,
   strength: 1,
   strengthTwo: null as number | null,
 };
 
+type PowerLoraLoaderWidgetValue = {
+  on: boolean;
+  lora: string|null;
+  strength: number;
+  strengthTwo: number|null;
+}
+
 /**
  * The PowerLoaderWidget that combines several custom drawing and functionality in a single row.
  */
-class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
+class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue> {
   /** Whether the strength has changed with mouse move (to cancel mouse up). */
   private haveMouseMovedStrength = false;
   private loraInfoPromise: Promise<RgthreeModelInfo | null> | null = null;
@@ -715,7 +722,15 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     this.stepStrength(1, true);
   }
 
-  onStrengthAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, isTwo = false) {
+  onStrengthAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.doOnStrengthAnyMove(event, true);
+  }
+
+  onStrengthTwoAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.doOnStrengthAnyMove(event, true);
+  }
+
+  private doOnStrengthAnyMove(event: AdjustedMouseEvent, isTwo = false) {
     if (event.deltaX) {
       let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
       this.haveMouseMovedStrength = true;
@@ -723,19 +738,19 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     }
   }
 
-  onStrengthTwoAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.onStrengthAnyMove(event, pos, node, true);
+  onStrengthValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.doOnStrengthValUp(event, false);
   }
 
-  onStrengthValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, isTwo = false) {
+  onStrengthTwoValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
+    this.doOnStrengthValUp(event, true);
+  }
+
+  private doOnStrengthValUp(event: AdjustedMouseEvent, isTwo = false) {
     if (this.haveMouseMovedStrength) return;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     const canvas = app.canvas as LGraphCanvas;
     canvas.prompt("Value", this.value[prop], (v: string) => (this.value[prop] = Number(v)), event);
-  }
-
-  onStrengthTwoValUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode, two = false) {
-    this.onStrengthValUp(event, pos, node, true);
   }
 
   override onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode): boolean | void {

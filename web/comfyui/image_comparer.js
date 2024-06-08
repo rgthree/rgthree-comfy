@@ -3,6 +3,11 @@ import { api } from "../../scripts/api.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addConnectionLayoutSupport } from "./utils.js";
+import { RgthreeBaseWidget, } from "./utils_widgets.js";
+import { measureText } from "./utils_canvas.js";
+function imageDataToUrl(data) {
+    return api.apiURL(`/view?filename=${encodeURIComponent(data.filename)}&type=${data.type}&subfolder=${data.subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`);
+}
 export class RgthreeImageComparer extends RgthreeBaseServerNode {
     constructor(title = RgthreeImageComparer.title) {
         super(title);
@@ -13,94 +18,59 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         this.isPointerOver = false;
         this.pointerOverPos = [0, 0];
         this.canvasWidget = null;
-        this.properties['comparer_mode'] = 'Slide';
+        this.properties["comparer_mode"] = "Slide";
     }
     onExecuted(output) {
         var _a;
         (_a = super.onExecuted) === null || _a === void 0 ? void 0 : _a.call(this, output);
-        this.canvasWidget.value = (output.images || []).map((d) => api.apiURL(`/view?filename=${encodeURIComponent(d.filename)}&type=${d.type}&subfolder=${d.subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`));
-    }
-    drawWidgetImage(ctx, image, y, cropX) {
-        if (!(image === null || image === void 0 ? void 0 : image.naturalWidth) || !(image === null || image === void 0 ? void 0 : image.naturalHeight)) {
-            return;
-        }
-        let [nodeWidth, nodeHeight] = this.size;
-        const imageAspect = image.naturalWidth / image.naturalHeight;
-        let height = nodeHeight - y;
-        const widgetAspect = nodeWidth / height;
-        let targetWidth, targetHeight;
-        let offsetX = 0;
-        if (imageAspect > widgetAspect) {
-            targetWidth = nodeWidth;
-            targetHeight = nodeWidth / imageAspect;
+        if ("images" in output) {
+            this.canvasWidget.value = {
+                images: (output.images || []).map((d, i) => {
+                    return {
+                        name: i === 0 ? "A" : "B",
+                        selected: true,
+                        url: imageDataToUrl(d),
+                    };
+                }),
+            };
         }
         else {
-            targetHeight = height;
-            targetWidth = height * imageAspect;
-            offsetX = (nodeWidth - targetWidth) / 2;
+            output.a_images = output.a_images || [];
+            output.b_images = output.b_images || [];
+            const imagesToChoose = [];
+            const multiple = output.a_images.length + output.b_images.length > 2;
+            for (const [i, d] of output.a_images.entries()) {
+                imagesToChoose.push({
+                    name: output.a_images.length > 1 || multiple ? `A${i + 1}` : "A",
+                    selected: i === 0,
+                    url: imageDataToUrl(d),
+                });
+            }
+            for (const [i, d] of output.b_images.entries()) {
+                imagesToChoose.push({
+                    name: output.b_images.length > 1 || multiple ? `B${i + 1}` : "B",
+                    selected: i === 0,
+                    url: imageDataToUrl(d),
+                });
+            }
+            this.canvasWidget.value = { images: imagesToChoose };
         }
-        const widthMultiplier = image.naturalWidth / targetWidth;
-        const sourceX = 0;
-        const sourceY = 0;
-        const sourceWidth = cropX != null ? (cropX - offsetX) * widthMultiplier : image.naturalWidth;
-        const sourceHeight = image.naturalHeight;
-        const destX = (nodeWidth - targetWidth) / 2;
-        const destY = y + (height - targetHeight) / 2;
-        const destWidth = cropX != null ? (cropX - offsetX) : targetWidth;
-        const destHeight = targetHeight;
-        ctx.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
-        if (cropX != null
-            && cropX >= (nodeWidth - targetWidth) / 2
-            && cropX <= targetWidth + offsetX) {
-            let globalCompositeOperation = ctx.globalCompositeOperation;
-            ctx.globalCompositeOperation = "difference";
-            ctx.moveTo(cropX, destY);
-            ctx.lineTo(cropX, destY + destHeight);
-            ctx.strokeStyle = 'rgba(255,255,255, 1)';
-            ctx.stroke();
-            ctx.globalCompositeOperation = globalCompositeOperation;
+    }
+    onSerialize(o) {
+        var _a;
+        super.onSerialize && super.onSerialize(o);
+        for (let [index, widget_value] of (o.widgets_values || []).entries()) {
+            if (((_a = this.widgets[index]) === null || _a === void 0 ? void 0 : _a.name) === "rgthree_comparer") {
+                o.widgets_values[index] = this.widgets[index].value.images.map((d) => {
+                    d = { ...d };
+                    delete d.img;
+                    return d;
+                });
+            }
         }
     }
     onNodeCreated() {
-        const node = this;
-        const widget = {
-            type: "RGTHREE_CANVAS_COMPARER",
-            name: "CANVAS_COMPARER",
-            options: { serialize: false },
-            _value: [],
-            set value(v) {
-                this._value = v;
-                node.imgs = [];
-                if (v && v.length) {
-                    for (let i = 0; i < 2; i++) {
-                        let img = new Image();
-                        img.src = v[i];
-                        node.imgs.push(img);
-                    }
-                }
-            },
-            get value() {
-                return this._value;
-            },
-            draw(ctx, node, width, y) {
-                var _a;
-                let [nodeWidth, nodeHeight] = node.size;
-                if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a['comparer_mode']) === 'Click') {
-                    const image = node.isPointerDown ? node.imgs[1] : node.imgs[0];
-                    node.drawWidgetImage(ctx, image, y);
-                }
-                else {
-                    node.drawWidgetImage(ctx, node.imgs[0], y);
-                    if (node.isPointerOver) {
-                        node.drawWidgetImage(ctx, node.imgs[1], y, node.pointerOverPos[0]);
-                    }
-                }
-            },
-            computeSize(...args) {
-                return [64, 64];
-            },
-        };
-        this.canvasWidget = this.addCustomWidget(widget);
+        this.canvasWidget = this.addCustomWidget(new RgthreeImageComparerWidget("rgthree_comparer", this));
         this.setSize(this.computeSize());
         this.setDirtyCanvas(true, true);
     }
@@ -138,7 +108,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         var _a;
         (_a = super.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
         this.pointerOverPos = [...pos];
-        this.imageIndex = this.pointerOverPos[0] > (this.size[0] / 2) ? 1 : 0;
+        this.imageIndex = this.pointerOverPos[0] > this.size[0] / 2 ? 1 : 0;
     }
     getHelp() {
         return `
@@ -164,13 +134,19 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
           </p>
           <ul>
             <li><p>
-              <code>image_a</code> <i>Required.</i> The first image to use to compare. If image_b is
-              not supplied and image_a is a batch, the comparer will use the first two images of
+              <code>image_a</code> <i>Optional.</i> The first image to use to compare.
               image_a.
             </p></li>
             <li><p>
-              <code>image_b</code> <i>Optional.</i> The second image to use to compare. Optional
-              only if image_a is a batch with two images.
+              <code>image_b</code> <i>Optional.</i> The second image to use to compare.
+            </p></li>
+            <li><p>
+              <b>Note</b> <code>image_a</code> and <code>image_b</code> work best when a single
+              image is provided. However, if each/either are a batch, you can choose which item
+              from each batch are chosen to be compared. If either <code>image_a</code> or
+              <code>image_b</code> are not provided, the node will choose the first two from the
+              provided input if it's a batch, otherwise only show the single image (just as
+              Preview Image would).
             </p></li>
           </ul>
         </li>
@@ -207,6 +183,175 @@ RgthreeImageComparer["@comparer_mode"] = {
     type: "combo",
     values: ["Slide", "Click"],
 };
+class RgthreeImageComparerWidget extends RgthreeBaseWidget {
+    constructor(name, node) {
+        super(name);
+        this.hitAreas = {};
+        this.selected = [];
+        this._value = { images: [] };
+        this.node = node;
+    }
+    set value(v) {
+        let cleanedVal;
+        if (Array.isArray(v)) {
+            cleanedVal = v.map((d, i) => {
+                if (!d || typeof d === "string") {
+                    d = { url: d, name: i == 0 ? "A" : "B", selected: true };
+                }
+                return d;
+            });
+        }
+        else {
+            cleanedVal = v.images || [];
+        }
+        if (cleanedVal.length > 2) {
+            const hasAAndB = cleanedVal.some((i) => i.name.startsWith("A")) &&
+                cleanedVal.some((i) => i.name.startsWith("B"));
+            if (!hasAAndB) {
+                cleanedVal = [cleanedVal[0], cleanedVal[1]];
+            }
+        }
+        let selected = cleanedVal.filter((d) => d.selected);
+        if (!selected.length && cleanedVal.length) {
+            cleanedVal[0].selected = true;
+        }
+        selected = cleanedVal.filter((d) => d.selected);
+        if (selected.length === 1 && cleanedVal.length > 1) {
+            cleanedVal.find((d) => !d.selected).selected = true;
+        }
+        this._value.images = cleanedVal;
+        selected = cleanedVal.filter((d) => d.selected);
+        this.setSelected(selected);
+    }
+    get value() {
+        return this._value;
+    }
+    setSelected(selected) {
+        this._value.images.forEach((d) => (d.selected = false));
+        for (const sel of selected) {
+            if (!sel.img) {
+                sel.img = new Image();
+                sel.img.src = sel.url;
+                this.node.imgs.push(sel.img);
+            }
+            sel.selected = true;
+        }
+        this.selected = selected;
+    }
+    draw(ctx, node, width, y) {
+        var _a;
+        this.hitAreas = {};
+        if (this.value.images.length > 2) {
+            ctx.textAlign = "left";
+            ctx.textBaseline = "top";
+            ctx.font = `14px Arial`;
+            const drawData = [];
+            const spacing = 5;
+            let x = 0;
+            for (const img of this.value.images) {
+                const width = measureText(ctx, img.name);
+                drawData.push({
+                    img,
+                    text: img.name,
+                    x,
+                    width: measureText(ctx, img.name),
+                });
+                x += width + spacing;
+            }
+            x = (node.size[0] - (x - spacing)) / 2;
+            for (const d of drawData) {
+                ctx.fillStyle = d.img.selected ? "rgba(180, 180, 180, 1)" : "rgba(180, 180, 180, 0.5)";
+                ctx.fillText(d.text, x, y);
+                this.hitAreas[d.text] = {
+                    bounds: [x, y, d.width, 14],
+                    data: d.img,
+                    onDown: this.onSelectionDown,
+                };
+                x += d.width + spacing;
+            }
+            y += 20;
+        }
+        if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a["comparer_mode"]) === "Click") {
+            this.drawImage(ctx, this.selected[this.node.isPointerDown ? 1 : 0], y);
+        }
+        else {
+            this.drawImage(ctx, this.selected[0], y);
+            if (node.isPointerOver) {
+                this.drawImage(ctx, this.selected[1], y, this.node.pointerOverPos[0]);
+            }
+        }
+    }
+    onSelectionDown(event, pos, node, bounds) {
+        const selected = [...this.selected];
+        if (bounds === null || bounds === void 0 ? void 0 : bounds.data.name.startsWith("A")) {
+            selected[0] = bounds.data;
+        }
+        else if (bounds === null || bounds === void 0 ? void 0 : bounds.data.name.startsWith("B")) {
+            selected[1] = bounds.data;
+        }
+        this.setSelected(selected);
+    }
+    drawImage(ctx, image, y, cropX) {
+        var _a, _b;
+        if (!((_a = image === null || image === void 0 ? void 0 : image.img) === null || _a === void 0 ? void 0 : _a.naturalWidth) || !((_b = image === null || image === void 0 ? void 0 : image.img) === null || _b === void 0 ? void 0 : _b.naturalHeight)) {
+            return;
+        }
+        let [nodeWidth, nodeHeight] = this.node.size;
+        const imageAspect = (image === null || image === void 0 ? void 0 : image.img.naturalWidth) / (image === null || image === void 0 ? void 0 : image.img.naturalHeight);
+        let height = nodeHeight - y;
+        const widgetAspect = nodeWidth / height;
+        let targetWidth, targetHeight;
+        let offsetX = 0;
+        if (imageAspect > widgetAspect) {
+            targetWidth = nodeWidth;
+            targetHeight = nodeWidth / imageAspect;
+        }
+        else {
+            targetHeight = height;
+            targetWidth = height * imageAspect;
+            offsetX = (nodeWidth - targetWidth) / 2;
+        }
+        const widthMultiplier = (image === null || image === void 0 ? void 0 : image.img.naturalWidth) / targetWidth;
+        const sourceX = 0;
+        const sourceY = 0;
+        const sourceWidth = cropX != null ? (cropX - offsetX) * widthMultiplier : image === null || image === void 0 ? void 0 : image.img.naturalWidth;
+        const sourceHeight = image === null || image === void 0 ? void 0 : image.img.naturalHeight;
+        const destX = (nodeWidth - targetWidth) / 2;
+        const destY = y + (height - targetHeight) / 2;
+        const destWidth = cropX != null ? cropX - offsetX : targetWidth;
+        const destHeight = targetHeight;
+        ctx.save();
+        ctx.beginPath();
+        let globalCompositeOperation = ctx.globalCompositeOperation;
+        if (cropX) {
+            ctx.rect(destX, destY, destWidth, destHeight);
+            ctx.clip();
+        }
+        ctx.drawImage(image === null || image === void 0 ? void 0 : image.img, sourceX, sourceY, sourceWidth, sourceHeight, destX, destY, destWidth, destHeight);
+        if (cropX != null && cropX >= (nodeWidth - targetWidth) / 2 && cropX <= targetWidth + offsetX) {
+            ctx.beginPath();
+            ctx.moveTo(cropX, destY);
+            ctx.lineTo(cropX, destY + destHeight);
+            ctx.globalCompositeOperation = "difference";
+            ctx.strokeStyle = "rgba(255,255,255, 1)";
+            ctx.stroke();
+        }
+        ctx.globalCompositeOperation = globalCompositeOperation;
+        ctx.restore();
+    }
+    computeSize(width) {
+        return [width, 20];
+    }
+    serializeValue(serializedNode, widgetIndex) {
+        const v = [];
+        for (const data of this._value.images) {
+            const d = { ...data };
+            delete d.img;
+            v.push(d);
+        }
+        return { images: v };
+    }
+}
 app.registerExtension({
     name: "rgthree.ImageComparer",
     async beforeRegisterNodeDef(nodeType, nodeData) {

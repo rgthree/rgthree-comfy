@@ -488,7 +488,13 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     onStrengthTwoIncDown(event, pos, node) {
         this.stepStrength(1, true);
     }
-    onStrengthAnyMove(event, pos, node, isTwo = false) {
+    onStrengthAnyMove(event, pos, node) {
+        this.doOnStrengthAnyMove(event, true);
+    }
+    onStrengthTwoAnyMove(event, pos, node) {
+        this.doOnStrengthAnyMove(event, true);
+    }
+    doOnStrengthAnyMove(event, isTwo = false) {
         var _b;
         if (event.deltaX) {
             let prop = isTwo ? "strengthTwo" : "strength";
@@ -496,18 +502,18 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             this.value[prop] = ((_b = this.value[prop]) !== null && _b !== void 0 ? _b : 1) + event.deltaX * 0.05;
         }
     }
-    onStrengthTwoAnyMove(event, pos, node) {
-        this.onStrengthAnyMove(event, pos, node, true);
+    onStrengthValUp(event, pos, node) {
+        this.doOnStrengthValUp(event, false);
     }
-    onStrengthValUp(event, pos, node, isTwo = false) {
+    onStrengthTwoValUp(event, pos, node) {
+        this.doOnStrengthValUp(event, true);
+    }
+    doOnStrengthValUp(event, isTwo = false) {
         if (this.haveMouseMovedStrength)
             return;
         let prop = isTwo ? "strengthTwo" : "strength";
         const canvas = app.canvas;
         canvas.prompt("Value", this.value[prop], (v) => (this.value[prop] = Number(v)), event);
-    }
-    onStrengthTwoValUp(event, pos, node, two = false) {
-        this.onStrengthValUp(event, pos, node, true);
     }
     onMouseUp(event, pos, node) {
         super.onMouseUp(event, pos, node);

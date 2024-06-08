@@ -8,7 +8,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
-import { query } from "../../rgthree/common/utils_dom.js";
+import { createElement, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -152,12 +152,23 @@ class Rgthree extends EventTarget {
             this.injectRgthreeCss();
         });
         this.initializeProgressBar();
+        this.initializeDebugShit();
         CONFIG_SERVICE.addEventListener("config-change", ((e) => {
             var _a, _b;
             if ((_b = (_a = e.detail) === null || _a === void 0 ? void 0 : _a.key) === null || _b === void 0 ? void 0 : _b.includes("features.progress_bar")) {
                 this.initializeProgressBar();
             }
         }));
+    }
+    initializeDebugShit() {
+        if (!this.isDevMode()) {
+            return;
+        }
+        createElement('div', {
+            parent: document.body,
+        });
+    }
+    debugRenderKeys() {
     }
     initializeProgressBar() {
         var _a;
