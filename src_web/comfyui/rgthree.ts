@@ -23,7 +23,7 @@ import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 import type { Bookmark } from "./bookmark";
-import { query } from "rgthree/common/utils_dom.js";
+import { createElement, query } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -231,6 +231,8 @@ class Rgthree extends EventTarget {
   canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
   initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff: any = null;
 
+  private elDebugKeydowns: HTMLDivElement|null = null;
+
   constructor() {
     super();
 
@@ -267,12 +269,30 @@ class Rgthree extends EventTarget {
     });
 
     this.initializeProgressBar();
+    this.initializeDebugShit();
 
     CONFIG_SERVICE.addEventListener("config-change", ((e: CustomEvent) => {
       if (e.detail?.key?.includes("features.progress_bar")) {
         this.initializeProgressBar();
       }
     }) as EventListener);
+  }
+
+  initializeDebugShit() {
+    if (!this.isDebugMode()) {
+      return;
+    }
+    this.elDebugKeydowns = createElement<HTMLDivElement>('div.rgthree-debug-keydowns', {
+      parent: document.body,
+    });
+  }
+
+  /** Renders the current keydowns in the UI. */
+  private debugRenderKeys() {
+    if (!this.elDebugKeydowns) {
+      return;
+    }
+    this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(' ');
   }
 
   /**
@@ -875,6 +895,7 @@ class Rgthree extends EventTarget {
     this.metaKey = false;
     this.shiftKey = false;
     for (const key in this.downKeys) delete this.downKeys[key];
+    this.debugRenderKeys();
   }
 
   /**
@@ -890,6 +911,7 @@ class Rgthree extends EventTarget {
     this.shiftKey = !!e.shiftKey;
     this.downKeys[e.key.toLocaleUpperCase()] = true;
     this.dispatchCustomEvent("keydown", { originalEvent: e });
+    this.debugRenderKeys();
   }
 
   /**
@@ -903,6 +925,7 @@ class Rgthree extends EventTarget {
     this.shiftKey = !!e.shiftKey;
     delete this.downKeys[e.key.toLocaleUpperCase()];
     this.dispatchCustomEvent("keyup", { originalEvent: e });
+    this.debugRenderKeys();
   }
 
   /**
@@ -990,10 +1013,17 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
-    if (window.location.href.includes("#rgthree-dev=false")) {
+    if (window.location.href.includes("rgthree-dev=false")) {
       return false;
     }
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-dev");
+  }
+
+  isDebugMode() {
+    if (!this.isDevMode() || window.location.href.includes("rgthree-debug=false")) {
+      return false;
+    }
+    return window.location.href.includes("rgthree-debug");
   }
 
   monitorBadLinks() {

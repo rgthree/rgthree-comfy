@@ -131,6 +131,7 @@ class Rgthree extends EventTarget {
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
+        this.elDebugKeydowns = null;
         const logLevel = (_a = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _a !== void 0 ? _a : GLOBAL_LOG_LEVEL;
         this.setLogLevel(logLevel);
         window.addEventListener("keydown", (e) => {
@@ -161,14 +162,18 @@ class Rgthree extends EventTarget {
         }));
     }
     initializeDebugShit() {
-        if (!this.isDevMode()) {
+        if (!this.isDebugMode()) {
             return;
         }
-        createElement('div', {
+        this.elDebugKeydowns = createElement('div.rgthree-debug-keydowns', {
             parent: document.body,
         });
     }
     debugRenderKeys() {
+        if (!this.elDebugKeydowns) {
+            return;
+        }
+        this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(' ');
     }
     initializeProgressBar() {
         var _a;
@@ -617,6 +622,7 @@ class Rgthree extends EventTarget {
         this.shiftKey = false;
         for (const key in this.downKeys)
             delete this.downKeys[key];
+        this.debugRenderKeys();
     }
     handleKeydown(e) {
         this.ctrlKey = !!e.ctrlKey;
@@ -625,6 +631,7 @@ class Rgthree extends EventTarget {
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = true;
         this.dispatchCustomEvent("keydown", { originalEvent: e });
+        this.debugRenderKeys();
     }
     handleKeyup(e) {
         this.ctrlKey = !!e.ctrlKey;
@@ -633,6 +640,7 @@ class Rgthree extends EventTarget {
         this.shiftKey = !!e.shiftKey;
         delete this.downKeys[e.key.toLocaleUpperCase()];
         this.dispatchCustomEvent("keyup", { originalEvent: e });
+        this.debugRenderKeys();
     }
     getKeysFromShortcut(shortcut) {
         let keys;
@@ -686,10 +694,16 @@ class Rgthree extends EventTarget {
         return this.logger.newSession(name);
     }
     isDevMode() {
-        if (window.location.href.includes("#rgthree-dev=false")) {
+        if (window.location.href.includes("rgthree-dev=false")) {
             return false;
         }
-        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-dev");
+    }
+    isDebugMode() {
+        if (!this.isDevMode() || window.location.href.includes("rgthree-debug=false")) {
+            return false;
+        }
+        return window.location.href.includes("rgthree-debug");
     }
     monitorBadLinks() {
         const badLinksFound = fixBadLinks(app.graph);
