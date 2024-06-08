@@ -509,6 +509,10 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     onStrengthTwoValUp(event, pos, node, two = false) {
         this.onStrengthValUp(event, pos, node, true);
     }
+    onMouseUp(event, pos, node) {
+        super.onMouseUp(event, pos, node);
+        this.haveMouseMovedStrength = false;
+    }
     showLoraInfoDialog() {
         if (!this.value.lora || this.value.lora === "None") {
             return;

@@ -738,6 +738,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget implements IWidget {
     this.onStrengthValUp(event, pos, node, true);
   }
 
+  override onMouseUp(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode): boolean | void {
+    super.onMouseUp(event, pos, node);
+    this.haveMouseMovedStrength = false;
+  }
+
   showLoraInfoDialog() {
     if (!this.value.lora || this.value.lora === "None") {
       return;
