@@ -489,7 +489,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.stepStrength(1, true);
     }
     onStrengthAnyMove(event, pos, node) {
-        this.doOnStrengthAnyMove(event, true);
+        this.doOnStrengthAnyMove(event, false);
     }
     onStrengthTwoAnyMove(event, pos, node) {
         this.doOnStrengthAnyMove(event, true);

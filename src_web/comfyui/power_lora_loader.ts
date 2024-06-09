@@ -723,7 +723,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   }
 
   onStrengthAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.doOnStrengthAnyMove(event, true);
+    this.doOnStrengthAnyMove(event, false);
   }
 
   onStrengthTwoAnyMove(event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) {
