@@ -231,7 +231,12 @@ class Rgthree extends EventTarget {
   canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
   initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff: any = null;
 
-  private elDebugKeydowns: HTMLDivElement|null = null;
+  private elDebugKeydowns: HTMLDivElement | null = null;
+
+  private readonly isMac: boolean = !!(
+    navigator.platform?.toLocaleUpperCase().startsWith("MAC") ||
+    (navigator as any).userAgentData.platform?.toLocaleUpperCase().startsWith("MAC")
+  );
 
   constructor() {
     super();
@@ -239,14 +244,6 @@ class Rgthree extends EventTarget {
     const logLevel =
       LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")] ?? GLOBAL_LOG_LEVEL;
     this.setLogLevel(logLevel);
-
-    window.addEventListener("keydown", (e) => {
-      this.handleKeydown(e);
-    });
-
-    window.addEventListener("keyup", (e) => {
-      this.handleKeyup(e);
-    });
 
     // If we get a visibilitychange, then clear the keys since we can't listen for keys up/down when
     // not visible.
@@ -282,7 +279,7 @@ class Rgthree extends EventTarget {
     if (!this.isDebugMode()) {
       return;
     }
-    this.elDebugKeydowns = createElement<HTMLDivElement>('div.rgthree-debug-keydowns', {
+    this.elDebugKeydowns = createElement<HTMLDivElement>("div.rgthree-debug-keydowns", {
       parent: document.body,
     });
   }
@@ -292,7 +289,7 @@ class Rgthree extends EventTarget {
     if (!this.elDebugKeydowns) {
       return;
     }
-    this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(' ');
+    this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
   }
 
   /**
@@ -423,6 +420,19 @@ class Rgthree extends EventTarget {
         null,
         graph._groups[graph._groups.length - 1],
       );
+    };
+
+    // [🤮] Sometimes ComfyUI and/or LiteGraph stop propagation of key events which makes it hard
+    // to determine if keys are currently pressed. To attempt to get around this, we'll hijack
+    // LiteGraph's processKey to try to get better consistency.
+    const processKey = LGraphCanvas.prototype.processKey;
+    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
+      if (e.type === "keydown") {
+        rgthree.handleKeydown(e);
+      } else if (e.type === "keyup") {
+        rgthree.handleKeyup(e);
+      }
+      return processKey.apply(this, [...arguments] as any) as any;
     };
   }
 
@@ -812,11 +822,11 @@ class Rgthree extends EventTarget {
     }
     // If we have a dialog open then we want to append the message to the dialog so they show over
     // the modal.
-    const dialogs = query<HTMLDialogElement>('dialog[open]');
+    const dialogs = query<HTMLDialogElement>("dialog[open]");
     if (dialogs.length) {
       let dialog = dialogs[dialogs.length - 1]!;
       dialog.appendChild(container);
-      dialog.addEventListener('close', (e) => {
+      dialog.addEventListener("close", (e) => {
         document.body.appendChild(container!);
       });
     }
@@ -910,8 +920,8 @@ class Rgthree extends EventTarget {
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
     this.downKeys[e.key.toLocaleUpperCase()] = true;
-    this.dispatchCustomEvent("keydown", { originalEvent: e });
     this.debugRenderKeys();
+    this.dispatchCustomEvent("keydown", { originalEvent: e });
   }
 
   /**
@@ -923,9 +933,20 @@ class Rgthree extends EventTarget {
     this.altKey = !!e.altKey;
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
-    delete this.downKeys[e.key.toLocaleUpperCase()];
+    const key = e.key.toLocaleUpperCase();
+
+    // See https://github.com/rgthree/rgthree-comfy/issues/238
+    // A little bit of a hack, but Mac reportedly does something odd with copy/paste. ComfyUI
+    // gobbles the copy event propagation, but it happens for paste too and reportedly 'Enter' which
+    // I can't find a reason for in LiteGraph/comfy. So, for Mac only, whenever we lift a Command
+    // (META) key, we'll also clear any other keys.
+    if (key === "META" && this.isMac) {
+      this.clearKeydowns();
+    } else {
+      delete this.downKeys[e.key.toLocaleUpperCase()];
+      this.debugRenderKeys();
+    }
     this.dispatchCustomEvent("keyup", { originalEvent: e });
-    this.debugRenderKeys();
   }
 
   /**

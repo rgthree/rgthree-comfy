@@ -107,7 +107,7 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     constructor() {
-        var _a;
+        var _a, _b, _c;
         super();
         this.api = api;
         this.settingsDialog = null;
@@ -132,14 +132,10 @@ class Rgthree extends EventTarget {
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
         this.elDebugKeydowns = null;
-        const logLevel = (_a = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _a !== void 0 ? _a : GLOBAL_LOG_LEVEL;
+        this.isMac = !!(((_a = navigator.platform) === null || _a === void 0 ? void 0 : _a.toLocaleUpperCase().startsWith("MAC")) ||
+            ((_b = navigator.userAgentData.platform) === null || _b === void 0 ? void 0 : _b.toLocaleUpperCase().startsWith("MAC")));
+        const logLevel = (_c = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _c !== void 0 ? _c : GLOBAL_LOG_LEVEL;
         this.setLogLevel(logLevel);
-        window.addEventListener("keydown", (e) => {
-            this.handleKeydown(e);
-        });
-        window.addEventListener("keyup", (e) => {
-            this.handleKeyup(e);
-        });
         document.addEventListener("visibilitychange", (e) => {
             this.clearKeydowns();
         });
@@ -165,7 +161,7 @@ class Rgthree extends EventTarget {
         if (!this.isDebugMode()) {
             return;
         }
-        this.elDebugKeydowns = createElement('div.rgthree-debug-keydowns', {
+        this.elDebugKeydowns = createElement("div.rgthree-debug-keydowns", {
             parent: document.body,
         });
     }
@@ -173,7 +169,7 @@ class Rgthree extends EventTarget {
         if (!this.elDebugKeydowns) {
             return;
         }
-        this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(' ');
+        this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
     }
     initializeProgressBar() {
         var _a;
@@ -267,6 +263,16 @@ class Rgthree extends EventTarget {
             const graph = app.graph;
             onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
+        };
+        const processKey = LGraphCanvas.prototype.processKey;
+        LGraphCanvas.prototype.processKey = function (e) {
+            if (e.type === "keydown") {
+                rgthree.handleKeydown(e);
+            }
+            else if (e.type === "keyup") {
+                rgthree.handleKeyup(e);
+            }
+            return processKey.apply(this, [...arguments]);
         };
     }
     async invokeExtensionsAsync(method, ...args) {
@@ -556,11 +562,11 @@ class Rgthree extends EventTarget {
             container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
         }
-        const dialogs = query('dialog[open]');
+        const dialogs = query("dialog[open]");
         if (dialogs.length) {
             let dialog = dialogs[dialogs.length - 1];
             dialog.appendChild(container);
-            dialog.addEventListener('close', (e) => {
+            dialog.addEventListener("close", (e) => {
                 document.body.appendChild(container);
             });
         }
@@ -630,17 +636,23 @@ class Rgthree extends EventTarget {
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = true;
-        this.dispatchCustomEvent("keydown", { originalEvent: e });
         this.debugRenderKeys();
+        this.dispatchCustomEvent("keydown", { originalEvent: e });
     }
     handleKeyup(e) {
         this.ctrlKey = !!e.ctrlKey;
         this.altKey = !!e.altKey;
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
-        delete this.downKeys[e.key.toLocaleUpperCase()];
+        const key = e.key.toLocaleUpperCase();
+        if (key === "META" && this.isMac) {
+            this.clearKeydowns();
+        }
+        else {
+            delete this.downKeys[e.key.toLocaleUpperCase()];
+            this.debugRenderKeys();
+        }
         this.dispatchCustomEvent("keyup", { originalEvent: e });
-        this.debugRenderKeys();
     }
     getKeysFromShortcut(shortcut) {
         let keys;
