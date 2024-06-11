@@ -235,7 +235,7 @@ class Rgthree extends EventTarget {
 
   private readonly isMac: boolean = !!(
     navigator.platform?.toLocaleUpperCase().startsWith("MAC") ||
-    (navigator as any).userAgentData.platform?.toLocaleUpperCase().startsWith("MAC")
+    (navigator as any).userAgentData?.platform?.toLocaleUpperCase().startsWith("MAC")
   );
 
   constructor() {

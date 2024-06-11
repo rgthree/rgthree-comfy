@@ -107,7 +107,7 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     constructor() {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         super();
         this.api = api;
         this.settingsDialog = null;
@@ -133,8 +133,8 @@ class Rgthree extends EventTarget {
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
         this.elDebugKeydowns = null;
         this.isMac = !!(((_a = navigator.platform) === null || _a === void 0 ? void 0 : _a.toLocaleUpperCase().startsWith("MAC")) ||
-            ((_b = navigator.userAgentData.platform) === null || _b === void 0 ? void 0 : _b.toLocaleUpperCase().startsWith("MAC")));
-        const logLevel = (_c = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _c !== void 0 ? _c : GLOBAL_LOG_LEVEL;
+            ((_c = (_b = navigator.userAgentData) === null || _b === void 0 ? void 0 : _b.platform) === null || _c === void 0 ? void 0 : _c.toLocaleUpperCase().startsWith("MAC")));
+        const logLevel = (_d = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _d !== void 0 ? _d : GLOBAL_LOG_LEVEL;
         this.setLogLevel(logLevel);
         document.addEventListener("visibilitychange", (e) => {
             this.clearKeydowns();
