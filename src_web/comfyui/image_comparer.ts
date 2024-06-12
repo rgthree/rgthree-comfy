@@ -309,6 +309,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   setSelected(selected: [ComfyImageData, ComfyImageData]) {
     this._value.images.forEach((d) => (d.selected = false));
+    this.node.imgs.length = 0;
     for (const sel of selected) {
       if (!sel.img) {
         sel.img = new Image();
