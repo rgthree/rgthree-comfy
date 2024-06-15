@@ -74,9 +74,11 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     });
     this.addWidget<INumberWidget>("number", "X-Offset", 16, (value: number) => {}, {
       y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 2,
+      precision: 0,
     });
     this.addWidget<INumberWidget>("number", "Y-Offset", 40, (value: number) => {}, {
       y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 3,
+      precision: 0,
     });
       this.keypressBound = this.onKeypress.bind(this);
       this.onConstructed();
