@@ -88,6 +88,13 @@ const INVOKE_EXTENSIONS_BLOCKLIST = [
       "Major conflict with rgthree-comfy nodes' inputs causing instability and " +
       "repeated link disconnections.",
   },
+  {
+    name: "efficiency.widgethider",
+    reason:
+      "Overrides value getter before widget getter is prepared. Can be lifted if/when "+
+      "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled."
+
+  }
 ];
 
 /** A basic wrapper around logger. */
