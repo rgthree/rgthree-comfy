@@ -52,7 +52,7 @@ export function wait(ms = 16, value?: any) {
   // Special logic, if we're waiting 16ms, then trigger on next frame.
   if (ms === 16) {
     return new Promise((resolve) => {
-      requestAnimationFrame(resolve);
+      requestAnimationFrame(() => {resolve(value)});
     });
   }
   return new Promise((resolve) => {
@@ -65,6 +65,7 @@ export function wait(ms = 16, value?: any) {
 function dec2hex(dec: number) {
   return dec.toString(16).padStart(2, "0");
 }
+
 
 /** Generates an unique id of a specific length. */
 export function generateId(length: number) {

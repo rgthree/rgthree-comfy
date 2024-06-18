@@ -26,7 +26,7 @@ export function getResolver(timeout = 5000) {
 export function wait(ms = 16, value) {
     if (ms === 16) {
         return new Promise((resolve) => {
-            requestAnimationFrame(resolve);
+            requestAnimationFrame(() => { resolve(value); });
         });
     }
     return new Promise((resolve) => {

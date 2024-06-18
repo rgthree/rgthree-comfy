@@ -78,15 +78,16 @@ def new_context(base_ctx, **kwargs):
   return new_ctx
 
 
-def merge_new_context(ctx_01, ctx_02, ctx_03, ctx_04, ctx_05):
+def merge_new_context(*args):
   """Creates a new context by merging provided contexts with the latter overriding same fields."""
   new_ctx = {}
   for key in _all_context_input_output_data:
     if key == "base_ctx":
       continue
     v = None
-    for ctx in [ctx_05, ctx_04, ctx_03, ctx_02, ctx_01]:
-      v = ctx[key] if ctx is not None and key in ctx else None
+    # Move backwards through the passed contexts until we find a value and use it.
+    for ctx in reversed(args):
+      v = ctx[key] if not is_context_empty(ctx) and key in ctx else None
       if v is not None:
         break
     new_ctx[key] = v

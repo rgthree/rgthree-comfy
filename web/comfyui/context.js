@@ -2,6 +2,7 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
+import { wait } from "../../rgthree/common/shared_utils.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     const otherNodeType = (otherNode.type || "").toUpperCase();
     const otherNodeName = (otherNode.title || "").toUpperCase();
@@ -158,7 +159,48 @@ class ContextBigNode extends BaseContextNode {
 ContextBigNode.title = "Context Big (rgthree)";
 ContextBigNode.type = "Context Big (rgthree)";
 ContextBigNode.comfyClass = "Context Big (rgthree)";
-class ContextSwitchNode extends BaseContextNode {
+class BaseContextMultiCtxInputNode extends BaseContextNode {
+    constructor(title) {
+        super(title);
+        this.scheduleStabilizePromise = null;
+        this.addContextInput();
+        this.addContextInput();
+        this.addContextInput();
+        this.addContextInput();
+        this.addContextInput();
+    }
+    addContextInput() {
+        this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, '0')}`, 'RGTHREE_CONTEXT');
+    }
+    onConnectionsChange(type, slotIndex, isConnected, link, ioSlot) {
+        var _a;
+        (_a = super.onConnectionsChange) === null || _a === void 0 ? void 0 : _a.apply(this, [...arguments]);
+        if (type === LiteGraph.INPUT) {
+            this.scheduleStabilize();
+        }
+    }
+    scheduleStabilize(ms = 64) {
+        if (!this.scheduleStabilizePromise) {
+            this.scheduleStabilizePromise = wait(ms).then(() => {
+                this.scheduleStabilizePromise = null;
+                this.stabilize();
+            });
+        }
+        return this.scheduleStabilizePromise;
+    }
+    stabilize() {
+        var _a;
+        for (let i = this.inputs.length - 1; i > 4; i--) {
+            if (!((_a = this.inputs[i]) === null || _a === void 0 ? void 0 : _a.link)) {
+                this.removeInput(i);
+                continue;
+            }
+            break;
+        }
+        this.addContextInput();
+    }
+}
+class ContextSwitchNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextSwitchNode.title) {
         super(title);
     }
@@ -178,7 +220,7 @@ class ContextSwitchNode extends BaseContextNode {
 ContextSwitchNode.title = "Context Switch (rgthree)";
 ContextSwitchNode.type = "Context Switch (rgthree)";
 ContextSwitchNode.comfyClass = "Context Switch (rgthree)";
-class ContextSwitchBigNode extends BaseContextNode {
+class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextSwitchBigNode.title) {
         super(title);
     }
@@ -198,7 +240,7 @@ class ContextSwitchBigNode extends BaseContextNode {
 ContextSwitchBigNode.title = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
-class ContextMergeNode extends BaseContextNode {
+class ContextMergeNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeNode.title) {
         super(title);
     }
@@ -218,7 +260,7 @@ class ContextMergeNode extends BaseContextNode {
 ContextMergeNode.title = "Context Merge (rgthree)";
 ContextMergeNode.type = "Context Merge (rgthree)";
 ContextMergeNode.comfyClass = "Context Merge (rgthree)";
-class ContextMergeBigNode extends BaseContextNode {
+class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeBigNode.title) {
         super(title);
     }
