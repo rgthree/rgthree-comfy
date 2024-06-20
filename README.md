@@ -382,6 +382,14 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > Adds a mute and/or bypass toggle icons in the top-right of Group Headers for one-click toggling of groups you may be currently looking at.
 
 
+## Import Individual Node Widgets (Drag & Drop)
+> _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
+>
+> Allows dragging and dropping an image/JSON workflow from a previous generation and overriding the same node's widgets
+> (that match with the same id & type). This is useful if you have several generations using the same general workflow
+> and would like to import just some data, like a previous generation's seed, or prompt, etc.
+
+
 
 ## "Copy Image" in right-click menu
 > Right clicking on a node that has an image should have a context-menu item of "Copy Image" will allow you to copy the image right to your clipboard

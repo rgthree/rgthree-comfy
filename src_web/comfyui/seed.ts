@@ -23,6 +23,7 @@ import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
+import { SerializedNode } from "typings/index.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -214,7 +215,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     const workflow = e.detail.workflow;
     const output = e.detail.output;
 
-    let workflowNode = workflow?.nodes?.find((n: SerializedLGraphNode) => n.id === this.id) ?? null;
+    let workflowNode = workflow?.nodes?.find((n: SerializedNode) => n.id === this.id) ?? null;
     let outputInputs = output?.[this.id]?.inputs;
 
     if (

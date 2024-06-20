@@ -102,6 +102,15 @@ const CONFIGURABLE = {
             ],
         },
         {
+            key: "features.import_individual_nodes.enabled",
+            type: ConfigType.BOOLEAN,
+            label: "Import Individual Nodes Widgets",
+            description: "Dragging & Dropping a similar image/JSON workflow onto (most) current " +
+                "workflow nodes will allow you to import that workflow's node's widgets when it has the " +
+                "id and type. This is useful when you have several images and you'd like to import just " +
+                "one part of a previous iteration, like a seed, or prompt.",
+        },
+        {
             key: "features.show_alerts_for_corrupt_workflows",
             type: ConfigType.BOOLEAN,
             label: "Detect Corrupt Workflows",

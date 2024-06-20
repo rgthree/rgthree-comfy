@@ -18,6 +18,10 @@ import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
+import {
+  importIndividualNodesInnerOnDragDrop,
+  importIndividualNodesInnerOnDragOver,
+} from "./feature_import_individual_nodes.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -27,13 +31,12 @@ declare const LiteGraph: typeof TLiteGraph;
  * This can be used for ui-nodes and a further base for server nodes.
  */
 export abstract class RgthreeBaseNode extends LGraphNode {
-
   /**
    * Action strings that can be exposed and triggered from other nodes, like Fast Actions Button.
    */
   static exposedActions: string[] = [];
 
-  static override title: string = '__NEED_CLASS_TITLE__'
+  static override title: string = "__NEED_CLASS_TITLE__";
   static category = "rgthree";
   static _category = "rgthree"; // `category` seems to get reset by comfy, so reset to this after.
 
@@ -43,12 +46,14 @@ export abstract class RgthreeBaseNode extends LGraphNode {
    * set it here so extensions that are none the wiser don't break on some unchecked string method
    * call on an undefined calue.
    */
-  comfyClass: string = '__NEED_COMFY_CLASS__';
+  comfyClass: string = "__NEED_COMFY_CLASS__";
 
   /** Used by the ComfyUI-Manager badge. */
   readonly nickname = "rgthree";
   /** Are we a virtual node? */
   readonly isVirtualNode: boolean = false;
+  /** Are we able to be dropped on (if config is enabled too). */
+  isDropEnabled = false;
   /** A state member determining if we're currently removed. */
   removed = false;
   /** A state member determining if we're currently "configuring."" */
@@ -62,7 +67,6 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   private __constructed__ = false;
   /** The help dialog. */
   private helpDialog: RgthreeHelpDialog | null = null;
-
 
   constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
     super(title);
@@ -95,6 +99,16 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       console[n]?.(...v);
     }
     return this.__constructed__;
+  }
+
+  onDragOver(e: DragEvent): boolean {
+    if (!this.isDropEnabled) return false;
+    return importIndividualNodesInnerOnDragOver(this, e);
+  }
+
+  async onDragDrop(e: DragEvent): Promise<boolean> {
+    if (!this.isDropEnabled) return false;
+    return importIndividualNodesInnerOnDragDrop(this, e);
   }
 
   /**
@@ -258,7 +272,6 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   }
 }
 
-
 /**
  * A virtual node. Right now, this is just a wrapper for RgthreeBaseNode (which was the initial
  * base virtual node).
@@ -267,7 +280,6 @@ export abstract class RgthreeBaseNode extends LGraphNode {
  * RgthreeBaseNode assumptions that its virtual.
  */
 export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
-
   override isVirtualNode = true;
 
   constructor(title = RgthreeBaseNode.title) {
@@ -283,6 +295,9 @@ export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
   static nodeData: ComfyObjectInfo | null = null;
   static nodeType: ComfyNodeConstructor | null = null;
+
+  // Drop is enabled by default for server nodes.
+  override isDropEnabled = true;
 
   constructor(title: string) {
     super(title, true);

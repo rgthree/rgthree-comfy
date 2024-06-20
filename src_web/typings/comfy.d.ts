@@ -1,5 +1,5 @@
 import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph } from "./litegraph";
-import type {Constructor} from './index';
+import type {Constructor, SerializedGraph} from './index';
 
 // @rgthree: Types on ComfyApp as needed.
 export interface ComfyApp {
@@ -141,7 +141,7 @@ export type ComfyApiFormat = {
 
 // @rgthree
 export type ComfyApiPrompt = {
-  workflow: {nodes: SerializedLGraphNode[]},
+  workflow: SerializedGraph,
   output: ComfyApiFormat,
 }
 
