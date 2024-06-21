@@ -1,4 +1,4 @@
-import { tryToGetWorkflowData } from "rgthree/common/utils_workflow.js";
+import { tryToGetWorkflowDataFromEvent, tryToGetWorkflowDataFromFile } from "rgthree/common/utils_workflow.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import type { ComfyNode, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
@@ -11,8 +11,6 @@ import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 app.registerExtension({
   name: "rgthree.ImportIndividualNodes",
   async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
-    console.log(nodeType, nodeData);
-
     const onDragOver = nodeType.prototype.onDragOver;
     nodeType.prototype.onDragOver = function (e: DragEvent) {
       let handled = onDragOver?.apply?.(this, [...arguments] as any);
@@ -46,16 +44,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: ComfyNode, e: D
   }
 
   let handled = false;
-  let workflow;
-  let prompt;
-  for (const file of e.dataTransfer?.files || []) {
-    const data = await tryToGetWorkflowData(file);
-    if (data.workflow || data.prompt) {
-      workflow = data.workflow;
-      prompt = data.prompt;
-      break;
-    }
-  }
+  const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
   if (!handled && workflow) {
     const exact = (workflow.nodes || []).find((n) => n.id === node.id && n.type === node.type);
     if (

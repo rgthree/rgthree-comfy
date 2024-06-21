@@ -4,8 +4,29 @@ import { getPngMetadata, getWebpMetadata } from "../../scripts/pnginfo.js";
 import type { SerializedGraph } from "typings/index.js";
 import type { ComfyApiFormat } from "typings/comfy.js";
 
-export async function tryToGetWorkflowData(
-  file: File,
+export async function tryToGetWorkflowDataFromEvent(
+  e: DragEvent,
+): Promise<{ workflow: SerializedGraph | null; prompt: ComfyApiFormat | null }> {
+  let work;
+  for (const file of e.dataTransfer?.files || []) {
+    const data = await tryToGetWorkflowDataFromFile(file);
+    if (data.workflow || data.prompt) {
+      return data;
+    }
+  }
+  const validTypes = ["text/uri-list", "text/x-moz-url"];
+  const match = (e.dataTransfer?.types || []).find((t) => validTypes.find((v) => t === v));
+  if (match) {
+    const uri = e.dataTransfer!.getData(match)?.split("\n")?.[0];
+    if (uri) {
+      return tryToGetWorkflowDataFromFile(await (await fetch(uri)).blob());
+    }
+  }
+  return { workflow: null, prompt: null };
+}
+
+export async function tryToGetWorkflowDataFromFile(
+  file: File | Blob,
 ): Promise<{ workflow: SerializedGraph | null; prompt: ComfyApiFormat | null }> {
   if (file.type === "image/png") {
     const pngInfo = await getPngMetadata(file);
@@ -23,7 +44,7 @@ export async function tryToGetWorkflowData(
     return { workflow, prompt };
   }
 
-  if (file.type === "application/json" || file.name?.endsWith(".json")) {
+  if (file.type === "application/json" || (file as File).name?.endsWith(".json")) {
     const resolver = getResolver<{ workflow: any; prompt: any }>();
     const reader = new FileReader();
     reader.onload = async () => {
