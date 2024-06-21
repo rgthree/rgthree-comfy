@@ -21,7 +21,8 @@ import {
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
-import { wait } from "rgthree/common/shared_utils.js";
+import { debounce } from "rgthree/common/shared_utils.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -265,25 +266,27 @@ class ContextBigNode extends BaseContextNode {
  * ctx input, no less than five.
  */
 class BaseContextMultiCtxInputNode extends BaseContextNode {
-
-  private scheduleStabilizePromise: Promise<void> | null = null;
+  private stabilizeBound = this.stabilize.bind(this);
 
   constructor(title: string) {
     super(title);
-
     // Adding five. Note, configure will add as many as was in the stored workflow automatically.
-    this.addContextInput();
-    this.addContextInput();
-    this.addContextInput();
-    this.addContextInput();
-    this.addContextInput();
+    this.addContextInput(5);
   }
 
-  private addContextInput() {
-    this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, '0')}`, 'RGTHREE_CONTEXT');
+  private addContextInput(num = 1) {
+    for (let i = 0; i < num; i++) {
+      this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, "0")}`, "RGTHREE_CONTEXT");
+    }
   }
 
-  override onConnectionsChange(type: number, slotIndex: number, isConnected: boolean, link: LLink, ioSlot: INodeInputSlot | INodeOutputSlot): void {
+  override onConnectionsChange(
+    type: number,
+    slotIndex: number,
+    isConnected: boolean,
+    link: LLink,
+    ioSlot: INodeInputSlot | INodeOutputSlot,
+  ): void {
     super.onConnectionsChange?.apply(this, [...arguments] as any);
     if (type === LiteGraph.INPUT) {
       this.scheduleStabilize();
@@ -291,13 +294,7 @@ class BaseContextMultiCtxInputNode extends BaseContextNode {
   }
 
   private scheduleStabilize(ms = 64) {
-    if (!this.scheduleStabilizePromise) {
-      this.scheduleStabilizePromise = wait(ms).then(() => {
-        this.scheduleStabilizePromise = null;
-        this.stabilize();
-      });
-    }
-    return this.scheduleStabilizePromise;
+    return debounce(this.stabilizeBound, 64);
   }
 
   /**
@@ -305,17 +302,10 @@ class BaseContextMultiCtxInputNode extends BaseContextNode {
    * one to the end so we always have one empty one to expand.
    */
   private stabilize() {
-    for (let i = this.inputs.length - 1; i > 4; i--) {
-      if (!this.inputs[i]?.link) {
-        this.removeInput(i);
-        continue;
-      }
-      break;
-    }
+    removeUnusedInputsFromEnd(this, 4);
     this.addContextInput();
   }
 }
-
 
 /**
  * The Context Switch (original) node.

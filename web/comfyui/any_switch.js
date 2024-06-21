@@ -2,11 +2,14 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
+import { debounce } from "../../rgthree/common/shared_utils.js";
 class RgthreeAnySwitch extends RgthreeBaseServerNode {
     constructor(title = RgthreeAnySwitch.title) {
         super(title);
-        this.scheduleStabilizePromise = null;
+        this.stabilizeBound = this.stabilize.bind(this);
         this.nodeType = null;
+        this.addAnyInput(5);
     }
     onConnectionsChange(type, slotIndex, isConnected, linkInfo, ioSlot) {
         var _a;
@@ -17,18 +20,16 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
         this.scheduleStabilize();
     }
     scheduleStabilize(ms = 64) {
-        if (!this.scheduleStabilizePromise) {
-            this.scheduleStabilizePromise = new Promise((resolve) => {
-                setTimeout(() => {
-                    this.scheduleStabilizePromise = null;
-                    this.stabilize();
-                    resolve();
-                }, ms);
-            });
+        return debounce(this.stabilizeBound, ms);
+    }
+    addAnyInput(num = 1) {
+        for (let i = 0; i < num; i++) {
+            this.addInput(`any_${String(this.inputs.length + 1).padStart(2, '0')}`, (this.nodeType || '*'));
         }
-        return this.scheduleStabilizePromise;
     }
     stabilize() {
+        removeUnusedInputsFromEnd(this, 4);
+        this.addAnyInput();
         let connectedType = followConnectionUntilType(this, IoDirection.INPUT, undefined, true);
         if (!connectedType) {
             connectedType = followConnectionUntilType(this, IoDirection.OUTPUT, undefined, true);

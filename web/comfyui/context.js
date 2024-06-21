@@ -2,7 +2,8 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
-import { wait } from "../../rgthree/common/shared_utils.js";
+import { debounce } from "../../rgthree/common/shared_utils.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     const otherNodeType = (otherNode.type || "").toUpperCase();
     const otherNodeName = (otherNode.title || "").toUpperCase();
@@ -162,15 +163,13 @@ ContextBigNode.comfyClass = "Context Big (rgthree)";
 class BaseContextMultiCtxInputNode extends BaseContextNode {
     constructor(title) {
         super(title);
-        this.scheduleStabilizePromise = null;
-        this.addContextInput();
-        this.addContextInput();
-        this.addContextInput();
-        this.addContextInput();
-        this.addContextInput();
+        this.stabilizeBound = this.stabilize.bind(this);
+        this.addContextInput(5);
     }
-    addContextInput() {
-        this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, '0')}`, 'RGTHREE_CONTEXT');
+    addContextInput(num = 1) {
+        for (let i = 0; i < num; i++) {
+            this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, "0")}`, "RGTHREE_CONTEXT");
+        }
     }
     onConnectionsChange(type, slotIndex, isConnected, link, ioSlot) {
         var _a;
@@ -180,23 +179,10 @@ class BaseContextMultiCtxInputNode extends BaseContextNode {
         }
     }
     scheduleStabilize(ms = 64) {
-        if (!this.scheduleStabilizePromise) {
-            this.scheduleStabilizePromise = wait(ms).then(() => {
-                this.scheduleStabilizePromise = null;
-                this.stabilize();
-            });
-        }
-        return this.scheduleStabilizePromise;
+        return debounce(this.stabilizeBound, 64);
     }
     stabilize() {
-        var _a;
-        for (let i = this.inputs.length - 1; i > 4; i--) {
-            if (!((_a = this.inputs[i]) === null || _a === void 0 ? void 0 : _a.link)) {
-                this.removeInput(i);
-                continue;
-            }
-            break;
-        }
+        removeUnusedInputsFromEnd(this, 4);
         this.addContextInput();
     }
 }

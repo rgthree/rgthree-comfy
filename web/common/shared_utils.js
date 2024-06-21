@@ -23,15 +23,27 @@ export function getResolver(timeout = 5000) {
     }, timeout);
     return resolver;
 }
-export function wait(ms = 16, value) {
+const DEBOUNCE_FN_TO_PROMISE = new WeakMap();
+export function debounce(fn, ms = 64) {
+    if (!DEBOUNCE_FN_TO_PROMISE.get(fn)) {
+        DEBOUNCE_FN_TO_PROMISE.set(fn, wait(ms).then(() => {
+            DEBOUNCE_FN_TO_PROMISE.delete(fn);
+            fn();
+        }));
+    }
+    return DEBOUNCE_FN_TO_PROMISE.get(fn);
+}
+export function wait(ms = 16) {
     if (ms === 16) {
         return new Promise((resolve) => {
-            requestAnimationFrame(() => { resolve(value); });
+            requestAnimationFrame(() => {
+                resolve();
+            });
         });
     }
     return new Promise((resolve) => {
         setTimeout(() => {
-            resolve(value);
+            resolve();
         }, ms);
     });
 }
@@ -89,9 +101,9 @@ export function injectCss(href) {
         return Promise.resolve();
     }
     return new Promise((resolve) => {
-        const link = document.createElement('link');
-        link.setAttribute('rel', "stylesheet");
-        link.setAttribute('type', "text/css");
+        const link = document.createElement("link");
+        link.setAttribute("rel", "stylesheet");
+        link.setAttribute("type", "text/css");
         const timeout = setTimeout(resolve, 1000);
         link.addEventListener("load", (e) => {
             clearInterval(timeout);

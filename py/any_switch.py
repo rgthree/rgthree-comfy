@@ -1,8 +1,7 @@
-import json
-
 from .context_utils import is_context_empty
 from .constants import get_category, get_name
 from .utils import any_type
+from .utils import ContainsAnyDict
 
 
 def is_none(value):
@@ -14,7 +13,7 @@ def is_none(value):
 
 
 class RgthreeAnySwitch:
-  """The any switch. """
+  """The dynamic Any Switch. """
 
   NAME = get_name("Any Switch")
   CATEGORY = get_category()
@@ -23,30 +22,18 @@ class RgthreeAnySwitch:
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
       "required": {},
-      "optional": {
-        "any_01": (any_type,),
-        "any_02": (any_type,),
-        "any_03": (any_type,),
-        "any_04": (any_type,),
-        "any_05": (any_type,),
-      },
+      "optional": ContainsAnyDict(),
     }
 
   RETURN_TYPES = (any_type,)
   RETURN_NAMES = ('*',)
   FUNCTION = "switch"
 
-  def switch(self, any_01=None, any_02=None, any_03=None, any_04=None, any_05=None):
+  def switch(self, **kwargs):
     """Chooses the first non-empty item to output."""
     any_value = None
-    if not is_none(any_01):
-      any_value = any_01
-    elif not is_none(any_02):
-      any_value = any_02
-    elif not is_none(any_03):
-      any_value = any_03
-    elif not is_none(any_04):
-      any_value = any_04
-    elif not is_none(any_05):
-      any_value = any_05
+    for key, value in kwargs.items():
+      if key.startswith('any_') and not is_none(value):
+        any_value = value
+        break
     return (any_value,)

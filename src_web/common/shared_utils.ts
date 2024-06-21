@@ -47,17 +47,39 @@ export function getResolver<T>(timeout: number = 5000): Resolver<T> {
   return resolver as Resolver<T>;
 }
 
+/** The WeakMap for debounced functions. */
+const DEBOUNCE_FN_TO_PROMISE: WeakMap<Function, Promise<void>> = new WeakMap();
+
+/**
+ * Debounces a function call so it is only called once in the initially provided ms even if asked
+ * to be called multiple times within that period.
+ */
+export function debounce(fn: Function, ms = 64) {
+  if (!DEBOUNCE_FN_TO_PROMISE.get(fn)) {
+    DEBOUNCE_FN_TO_PROMISE.set(
+      fn,
+      wait(ms).then(() => {
+        DEBOUNCE_FN_TO_PROMISE.delete(fn);
+        fn();
+      }),
+    );
+  }
+  return DEBOUNCE_FN_TO_PROMISE.get(fn);
+}
+
 /** Waits a certain number of ms, as a `Promise.` */
-export function wait(ms = 16, value?: any) {
+export function wait(ms = 16): Promise<void> {
   // Special logic, if we're waiting 16ms, then trigger on next frame.
   if (ms === 16) {
     return new Promise((resolve) => {
-      requestAnimationFrame(() => {resolve(value)});
+      requestAnimationFrame(() => {
+        resolve();
+      });
     });
   }
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(value);
+      resolve();
     }, ms);
   });
 }
@@ -65,7 +87,6 @@ export function wait(ms = 16, value?: any) {
 function dec2hex(dec: number) {
   return dec.toString(16).padStart(2, "0");
 }
-
 
 /** Generates an unique id of a specific length. */
 export function generateId(length: number) {
@@ -146,9 +167,9 @@ export function injectCss(href: string): Promise<void> {
     return Promise.resolve();
   }
   return new Promise((resolve) => {
-    const link = document.createElement('link');
-    link.setAttribute('rel', "stylesheet");
-    link.setAttribute('type', "text/css");
+    const link = document.createElement("link");
+    link.setAttribute("rel", "stylesheet");
+    link.setAttribute("type", "text/css");
     const timeout = setTimeout(resolve, 1000);
     link.addEventListener("load", (e) => {
       clearInterval(timeout);
