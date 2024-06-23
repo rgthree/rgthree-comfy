@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
-import { debounce } from "../../rgthree/common/shared_utils.js";
+import { debounce, wait } from "../../rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     const otherNodeType = (otherNode.type || "").toUpperCase();
@@ -109,6 +109,10 @@ class BaseContextNode extends RgthreeBaseServerNode {
     }
     static setUp(comfyClass, nodeData, ctxClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
+        wait(500).then(() => {
+            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] = LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] || [];
+            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'].push(comfyClass.comfyClass);
+        });
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         addConnectionLayoutSupport(ctxClass, app, [

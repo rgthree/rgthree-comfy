@@ -21,7 +21,7 @@ import {
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
-import { debounce } from "rgthree/common/shared_utils.js";
+import { debounce, wait } from "rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 
 declare const LGraphNode: typeof TLGraphNode;
@@ -194,6 +194,16 @@ class BaseContextNode extends RgthreeBaseServerNode {
     ctxClass: RgthreeBaseServerNodeConstructor,
   ) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
+    // [🤮] ComfyUI only adds "required" inputs to the outputs list when dragging an output to
+    // empty space, but since RGTHREE_CONTEXT is optional, it doesn't get added to the menu because
+    // ...of course. So, we'll manually add it. Of course, we also have to do this in a timeout
+    // because ComfyUI clears out `LiteGraph.slot_types_default_out` in its own 'Comfy.SlotDefaults'
+    // extension and we need to wait for that to happen.
+    wait(500).then(() => {
+      LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] =
+        LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] || [];
+      LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"].push(comfyClass.comfyClass);
+    });
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {

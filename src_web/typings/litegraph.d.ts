@@ -296,6 +296,11 @@ export const LiteGraph: {
 
     node_images_path: string;
 
+    // @rgthree. These just weren't there. Note, LiteGraph initializes these as an array, but
+    // ComfyUI overrides these to a string-keye'd object... ???
+    slot_types_default_out: {[key: string]: string[]};
+    slot_types_default_in: {[key: string]: string[]};
+
     debug: boolean;
     catch_exceptions: boolean;
     throw_errors: boolean;
