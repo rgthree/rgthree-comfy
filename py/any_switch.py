@@ -1,7 +1,6 @@
 from .context_utils import is_context_empty
 from .constants import get_category, get_name
-from .utils import any_type
-from .utils import ContainsAnyDict
+from .utils import FlexibleOptionalInputType, any_type
 
 
 def is_none(value):
@@ -22,7 +21,7 @@ class RgthreeAnySwitch:
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
       "required": {},
-      "optional": ContainsAnyDict(),
+      "optional": FlexibleOptionalInputType(any_type),
     }
 
   RETURN_TYPES = (any_type,)

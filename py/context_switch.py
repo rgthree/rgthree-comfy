@@ -2,7 +2,7 @@
 from .constants import get_category, get_name
 from .context_utils import (ORIG_CTX_RETURN_TYPES, ORIG_CTX_RETURN_NAMES, is_context_empty,
                             get_orig_context_return_tuple)
-from .utils import ContainsAnyDict
+from .utils import FlexibleOptionalInputType
 
 
 class RgthreeContextSwitch:
@@ -15,7 +15,7 @@ class RgthreeContextSwitch:
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
       "required": {},
-      "optional": ContainsAnyDict(),
+      "optional": FlexibleOptionalInputType("RGTHREE_CONTEXT"),
     }
 
   RETURN_TYPES = ORIG_CTX_RETURN_TYPES
