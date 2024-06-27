@@ -69,7 +69,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("➕ Add Lora", (event, pos, node) => {
             rgthreeApi.getLoras().then(loras => {
-                showLoraChooser(event, (value) => {
+                showLoraChooser(event, (value, _options, leafEvent) => {
                     var _b;
                     if (typeof value === "string") {
                         if (value.includes('Power Lora Chooser')) {
@@ -82,6 +82,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                             this.setDirtyCanvas(true, true);
                         }
                     }
+                    return leafEvent.shiftKey;
                 }, null, [...loras]);
             });
             return true;

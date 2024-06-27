@@ -70,7 +70,7 @@ app.registerExtension({
                 const oldCallback = options.rgthree_originalCallback;
                 options.callback = undefined;
                 const newCallback = (item, options, event, parentMenu, node) => {
-                    oldCallback === null || oldCallback === void 0 ? void 0 : oldCallback(item === null || item === void 0 ? void 0 : item.rgthree_originalValue, options, event, undefined, node);
+                    return oldCallback === null || oldCallback === void 0 ? void 0 : oldCallback(item === null || item === void 0 ? void 0 : item.rgthree_originalValue, options, event, undefined, node);
                 };
                 const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
                 (_d = console[n]) === null || _d === void 0 ? void 0 : _d.call(console, ...v);
