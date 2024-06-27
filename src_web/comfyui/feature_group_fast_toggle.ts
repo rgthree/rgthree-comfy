@@ -12,6 +12,7 @@ import type { AdjustedMouseCustomEvent } from "typings/rgthree.js";
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { groupHasActiveNode } from "./utils_fast.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -73,7 +74,7 @@ app.registerExtension({
         const toggleMode = TOGGLE_TO_MODE.get(clickedOnToggle?.toLocaleUpperCase());
         if (toggleMode) {
           group.recomputeInsideNodes();
-          const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+          const hasAnyActiveNodes = groupHasActiveNode(group);
           const isAllMuted =
             !hasAnyActiveNodes && group._nodes.every((n) => n.mode === LiteGraph.NEVER);
           const isAllBypassed =

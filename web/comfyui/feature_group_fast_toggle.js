@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { groupHasActiveNode } from "./utils_fast.js";
 const BTN_SIZE = 20;
 const BTN_MARGIN = [6, 4];
 const BTN_SPACING = 8;
@@ -35,7 +36,7 @@ app.registerExtension({
                 const toggleMode = TOGGLE_TO_MODE.get(clickedOnToggle === null || clickedOnToggle === void 0 ? void 0 : clickedOnToggle.toLocaleUpperCase());
                 if (toggleMode) {
                     group.recomputeInsideNodes();
-                    const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                    const hasAnyActiveNodes = groupHasActiveNode(group);
                     const isAllMuted = !hasAnyActiveNodes && group._nodes.every((n) => n.mode === LiteGraph.NEVER);
                     const isAllBypassed = !hasAnyActiveNodes && !isAllMuted && group._nodes.every((n) => n.mode === 4);
                     let newMode = LiteGraph.ALWAYS;
