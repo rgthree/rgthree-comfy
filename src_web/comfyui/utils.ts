@@ -12,6 +12,7 @@ import type {
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
+  LGraphGroup,
 } from "typings/litegraph.js";
 import type { Constructor } from "typings/index.js";
 // @ts-ignore
@@ -868,4 +869,23 @@ LiteGraph.isValidConnection = function(typeA: string|string[], typeB: string|str
     isValid = areCombos;
   }
   return isValid;
+}
+
+export function navigateToGroupMaybe(
+  group: LGraphGroup,
+  {checkQuality, forceZoom} = {checkQuality: true, forceZoom: false}) {
+  const canvas: TLGraphCanvas = app.canvas;
+  const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
+  if (!lowQuality || !checkQuality) {
+    canvas.centerOnNode(group);
+    const zoomCurrent = forceZoom ? 2 : (canvas.ds?.scale || 1);
+
+    const zoomX = canvas.canvas.width / group._size[0] - 0.02;
+    const zoomY = canvas.canvas.height / group._size[1] - 0.02;
+    canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+      canvas.canvas.width / 2,
+      canvas.canvas.height / 2,
+    ]);
+    canvas.setDirty(true, true);
+  }
 }

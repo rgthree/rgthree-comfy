@@ -92,6 +92,19 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       ],
     },
     {
+      key: "features.menu_groups.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Show Quick Nav for Groups",
+      description: "Will show a list in the rgthree-comfy context menu to jump to Groups",
+      subconfig: [
+        {
+          key: "features.menu_groups.filter_regex",
+          type: ConfigType.STRING,
+          label: "Filter RegEx: Only shows matching Groups",
+        },
+      ],
+    },
+    {
       key: "features.menu_bookmarks.enabled",
       type: ConfigType.BOOLEAN,
       label: "(Menu) Show bookmark shortcuts in context menu",

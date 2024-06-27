@@ -3,11 +3,12 @@ import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
-import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
+import { navigateToGroupMaybe, replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 import { createElement, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
@@ -342,6 +343,34 @@ class Rgthree extends EventTarget {
             rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
         }
         const rerouteLabel = selectedNodes.length ? "selected" : "all";
+        function getGroupsMenu() {
+            const groupNavEnabled = CONFIG_SERVICE.getConfigValue("features.menu_groups.enabled", false);
+            if (!groupNavEnabled) {
+                return [];
+            }
+            const filterRegex = CONFIG_SERVICE.getConfigValue("features.menu_groups.filter_regex", "");
+            const filterRegexPattern = new RegExp(filterRegex, "i");
+            const groupMenuItems = FAST_GROUPS_SERVICE.getGroups("alphanumeric")
+                .filter((group) => !filterRegex || filterRegexPattern.test(group.title))
+                .map((group) => ({
+                content: `${group.title}`,
+                className: "rgthree-contextmenu-item rgthree-contextmenu-github",
+                callback: () => {
+                    navigateToGroupMaybe(group, { checkQuality: false, forceZoom: true });
+                },
+            }));
+            return !groupMenuItems.length
+                ? []
+                : [
+                    {
+                        content: "Groups",
+                        disabled: true,
+                        className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+                    },
+                    ...groupMenuItems,
+                ];
+        }
+        const groupsMenuItems = getGroupsMenu();
         const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
         const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
         return [
@@ -382,6 +411,7 @@ class Rgthree extends EventTarget {
                     })();
                 },
             },
+            ...groupsMenuItems,
             ...bookmarkMenuItems,
             {
                 content: "More...",
@@ -711,6 +741,7 @@ class Rgthree extends EventTarget {
         return this.logger.newSession(name);
     }
     isDevMode() {
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
         if (window.location.href.includes("rgthree-dev=false")) {
             return false;
         }
