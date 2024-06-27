@@ -70,8 +70,11 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 > <details>
 >    <summary>ℹ️ <i>See More Information</i></summary>
 >
->    - Define the `sahortvut_key` to press to go right to that bookmark node, anchored in the top left
+>    - Define the `shortcut_key` to press to go right to that bookmark node, anchored in the top left.
 >    - You can also define the zoom level as well!
+>    - Pro tip: `shortcut_key` can be multiple keys. For instance "alt + shift + !" would require
+>      pressing the alt key, the shift key, and the "!" (as in the "1" key, but with shift pressed)
+>      in order to trigger.
 >    </details>
 
 
@@ -238,10 +241,25 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 
 
 ## Mute / Bypass Relay
-> An advanced node that, when working with a **Mute / Bypass Repeater** will relay a mute/bypass/activate signal to the repeater
+> An advanced node that, when working with a **Mute / Bypass Repeater**, will relay its input nodes'
+> modes (Mute, Bypass, or Active) to a connected repeater (which would then repeat that mode change
+> to all of its inputs).
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
->    - Useful when you want a specific node or set of nodes to be muted when a different set of nodes are also muted.
+>
+>    - When all connected input nodes are muted, the relay will set a connected repeater to mute (by
+>      default).
+>    - When all connected input nodes are bypassed, the relay will set a connected repeater to
+>      bypass (by default).
+>    - When _any_ connected input nodes are active, the relay will set a connected repeater to
+>      active (by default).
+>    - **Note:** If no inputs are connected, the relay will set a connected repeater to its mode
+>      _when its own mode is changed_. **Note**, if any inputs are connected, then the above bullets
+>      will occur and the Relay's mode does not matter.
+>    - **Pro Tip:** You can change which signals get sent on the above in the `Properties`.
+>       For instance, you could configure an inverse relay which will send a MUTE when any of its
+>       inputs are active (instead of sending an ACTIVE signal), and send an ACTIVE signal when all
+>       of its inputs are muted (instead of sending a MUTE signal), etc.
 >    </details>
 
 
@@ -252,6 +270,26 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >
 >    - **Note:** All input nodes MUST be muted to start; if not this node will not randomly unmute another. (This is powerful, as the generated image can be dragged in and the chosen input will already by unmuted and work w/o any further action.)
 >    - **Tip:** Connect a Repeater's output to this nodes input and place that Repeater on a group without any other inputs, and it will mute/unmute the entire group.
+>    </details>
+
+
+## Label
+> A purely visual node, this allows you to add a floating label to your workflow.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - The text shown is the "Title" of the node and you can adjust the the font size, font family,
+>      font color, text alignment as well as a background color, padding, and background border
+>      radius from the node's properties. You can double-click the node to open the properties
+>      panel.
+>    - **Pro Tip #1:** You can add multiline text from the properties panel _(because ComfyUI let's
+>      you shift + enter there, only)._
+>    - **Pro Tip #2:** You can use ComfyUI's native "pin" option in the right-click menu to make the
+>      label stick to the workflow and clicks to "go through". You can right-click at any time to
+>      unpin.
+>    - **Pro Tip #3:** Color values are hexidecimal strings, like "#FFFFFF" for white, or "#660000"
+>      for dark red. You can supply a 7th & 8th value (or 5th if using shorthand) to create a
+>      transluscent color. For instance, "#FFFFFF88" is semi-transparent white.
 >    </details>
 
 
@@ -342,6 +380,14 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
 >
 > Adds a mute and/or bypass toggle icons in the top-right of Group Headers for one-click toggling of groups you may be currently looking at.
+
+
+## Import Individual Node Widgets (Drag & Drop)
+> _(Off by default while experimenting, turn on in rgthree-comfy settings)_.
+>
+> Allows dragging and dropping an image/JSON workflow from a previous generation and overriding the same node's widgets
+> (that match with the same id & type). This is useful if you have several generations using the same general workflow
+> and would like to import just some data, like a previous generation's seed, or prompt, etc.
 
 
 

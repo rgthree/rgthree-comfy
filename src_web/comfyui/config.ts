@@ -92,20 +92,25 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       ],
     },
     {
+      key: "features.menu_bookmarks.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "(Menu) Show bookmark shortcuts in context menu",
+      description: "Will list bookmarks in the rgthree-comfy context menu.",
+    },
+    {
       key: "features.group_header_fast_toggle.enabled",
       type: ConfigType.BOOLEAN,
       label: "(Groups) Show fast toggles in Group Headers",
-      description:
-        "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
+      description: "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
       subconfig: [
         {
           key: "features.group_header_fast_toggle.toggles",
           type: ConfigType.ARRAY,
           label: "Which toggles to show.",
           options: [
-            {value: ['mute'], label: 'mute only'},
-            {value: ['bypass'], label: 'bypass only'},
-            {value: ['mute', 'bypass'], label: 'mute and bypass'},
+            { value: ["mute"], label: "mute only" },
+            { value: ["bypass"], label: "bypass only" },
+            { value: ["mute", "bypass"], label: "mute and bypass" },
           ],
         },
         {
@@ -113,11 +118,20 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
           type: ConfigType.STRING,
           label: "When to show them.",
           options: [
-            {value: 'hover', label: 'on hover'},
-            {value: 'always', label: 'always'},
+            { value: "hover", label: "on hover" },
+            { value: "always", label: "always" },
           ],
         },
       ],
+    },
+    {
+      key: "features.import_individual_nodes.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Import Individual Nodes Widgets",
+      description: "Dragging & Dropping a similar image/JSON workflow onto (most) current " +
+        "workflow nodes will allow you to import that workflow's node's widgets when it has the " +
+        "id and type. This is useful when you have several images and you'd like to import just " +
+        "one part of a previous iteration, like a seed, or prompt.",
     },
     {
       key: "features.show_alerts_for_corrupt_workflows",
@@ -138,9 +152,9 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
         "'ERROR' and 'IMPORTANT' etc.",
       options: ["IMPORTANT", "ERROR", "WARN", "INFO", "DEBUG", "DEV"],
       isDevOnly: true,
-      onSave: function(value: LogLevel) {
+      onSave: function (value: LogLevel) {
         rgthree.setLogLevel(value);
-      }
+      },
     },
     {
       key: "features.invoke_extensions_async.node_created",

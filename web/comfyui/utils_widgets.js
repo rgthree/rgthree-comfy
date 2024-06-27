@@ -34,7 +34,7 @@ export class RgthreeBaseWidget {
         if (bounds.length === 2) {
             return clickedX;
         }
-        return clickedX && pos[1] <= bounds[1] && pos[1] >= bounds[1] + bounds[3];
+        return clickedX && pos[1] >= bounds[1] && pos[1] <= bounds[1] + bounds[3];
     }
     mouse(event, pos, node) {
         var _a, _b, _c;
@@ -50,7 +50,7 @@ export class RgthreeBaseWidget {
                         this.downedHitAreasForMove.push(part);
                     }
                     if (part.onDown) {
-                        const thisHandled = part.onDown.apply(this, [event, pos, node]);
+                        const thisHandled = part.onDown.apply(this, [event, pos, node, part]);
                         anyHandled = anyHandled || thisHandled == true;
                     }
                 }
@@ -65,7 +65,7 @@ export class RgthreeBaseWidget {
             let anyHandled = false;
             for (const part of Object.values(this.hitAreas)) {
                 if (part.onUp && this.clickWasWithinBounds(pos, part.bounds)) {
-                    const thisHandled = part.onUp.apply(this, [event, pos, node]);
+                    const thisHandled = part.onUp.apply(this, [event, pos, node, part]);
                     anyHandled = anyHandled || thisHandled == true;
                 }
             }
@@ -81,7 +81,7 @@ export class RgthreeBaseWidget {
                 this.isMouseDownedAndOver = false;
             }
             for (const part of this.downedHitAreasForMove) {
-                part.onMove.apply(this, [event, pos, node]);
+                part.onMove.apply(this, [event, pos, node, part]);
             }
             return (_c = this.onMouseMove(event, pos, node)) !== null && _c !== void 0 ? _c : true;
         }
@@ -93,13 +93,13 @@ export class RgthreeBaseWidget {
         this.downedHitAreasForMove.length = 0;
     }
     onMouseDown(event, pos, node) {
-        return false;
+        return;
     }
     onMouseUp(event, pos, node) {
-        return false;
+        return;
     }
     onMouseMove(event, pos, node) {
-        return false;
+        return;
     }
 }
 export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {

@@ -1,4 +1,5 @@
 import { SERVICE as PROMPT_SERVICE } from "../common/prompt_service.js";
+import { createElement } from "./utils_dom.js";
 export class RgthreeProgressBar extends HTMLElement {
     static create() {
         return document.createElement(RgthreeProgressBar.NAME);
@@ -90,17 +91,24 @@ export class RgthreeProgressBar extends HTMLElement {
         this.shadow = this.attachShadow({ mode: "open" });
         const sheet = new CSSStyleSheet();
         sheet.replaceSync(`
+
       :host {
         position: relative;
         overflow: hidden;
         box-sizing: border-box;
+        background: var(--rgthree-progress-bg-color);
+        --rgthree-progress-bg-color: rgba(23, 23, 23, 0.9);
+        --rgthree-progress-nodes-bg-color: rgb(0, 128, 0);
+        --rgthree-progress-steps-bg-color: rgb(0, 128, 0);
+        --rgthree-progress-error-bg-color: rgb(128, 0, 0);
+        --rgthree-progress-text-color: #fff;
       }
       :host * {
         box-sizing: inherit;
       }
 
       :host > div.bar {
-        background: rgba(0, 128, 0);
+        background: var(--rgthree-progress-nodes-bg-color);
         position: absolute;
         left: 0;
         top: 0;
@@ -110,12 +118,13 @@ export class RgthreeProgressBar extends HTMLElement {
         transition: width 50ms ease-in-out;
       }
       :host > div.bar + div.bar {
+        background: var(--rgthree-progress-steps-bg-color);
         top: 50%;
         height: 50%;
         z-index: 2;
       }
       :host > div.bar.-error {
-        background: rgba(128, 0, 0);
+        background: var(--rgthree-progress-error-bg-color);
       }
 
       :host > .overlay {
@@ -142,7 +151,7 @@ export class RgthreeProgressBar extends HTMLElement {
         padding: 0 6px;
         align-items: center;
         justify-content: start;
-        color: #fff;
+        color: var(--rgthree-progress-text-color);
         text-shadow: black 0px 0px 2px;
       }
 
@@ -156,18 +165,10 @@ export class RgthreeProgressBar extends HTMLElement {
       }
     `);
         this.shadow.adoptedStyleSheets = [sheet];
-        const overlayEl = document.createElement("div");
-        overlayEl.classList.add("overlay");
-        this.shadow.appendChild(overlayEl);
-        this.progressNodesEl = document.createElement("div");
-        this.progressNodesEl.classList.add("bar");
-        this.shadow.appendChild(this.progressNodesEl);
-        this.progressStepsEl = document.createElement("div");
-        this.progressStepsEl.classList.add("bar");
-        this.shadow.appendChild(this.progressStepsEl);
-        this.progressTextEl = document.createElement("span");
-        this.progressTextEl.innerText = "Idle";
-        this.shadow.appendChild(this.progressTextEl);
+        const overlayEl = createElement(`div.overlay[part="overlay"]`, { parent: this.shadow });
+        this.progressNodesEl = createElement(`div.bar[part="progress-nodes"]`, { parent: this.shadow });
+        this.progressStepsEl = createElement(`div.bar[part="progress-steps"]`, { parent: this.shadow });
+        this.progressTextEl = createElement(`span[part="text"]`, { text: 'Idle', parent: this.shadow });
     }
     disconnectedCallback() {
         this.connected = false;

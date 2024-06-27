@@ -47,7 +47,7 @@ def get_lora_by_filename(file_path, lora_paths=None, log_node=None):
     return found
 
   # Same check, but ensure file_path is without extension.
-  file_path_force_no_ext = os.path.splitext(file_path)
+  file_path_force_no_ext = os.path.splitext(file_path)[0]
   if file_path_force_no_ext in lora_paths_no_ext:
     found = lora_paths[lora_paths_no_ext.index(file_path_force_no_ext)]
     return found

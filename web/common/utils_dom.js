@@ -29,43 +29,49 @@ const RGX_ATTR_CLASS = new RegExp(`(^|\\S)\\.([a-z0-9_\\-\\.]+)`, 'gi');
 const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
-export function query(selector, parent = document) {
-    return Array.from(parent.querySelectorAll(selector)).filter(n => !!n);
+export function query(selectors, parent = document) {
+    return Array.from(parent.querySelectorAll(selectors)).filter(n => !!n);
+}
+export function queryOne(selectors, parent = document) {
+    var _a;
+    return (_a = parent.querySelector(selectors)) !== null && _a !== void 0 ? _a : null;
 }
 export function createText(text) {
     return document.createTextNode(text);
 }
 export function getClosestOrSelf(element, query) {
     const el = element;
-    return (el === null || el === void 0 ? void 0 : el.closest) && (el.matches(query) || el.closest(query)) || null;
+    return ((el === null || el === void 0 ? void 0 : el.closest) && (el.matches(query) && el || el.closest(query))) || null;
 }
-export function createElement(selectorOrText, attributes = null) {
-    let selector = selectorOrText.replace(/[\r\n]\s*/g, '');
-    let tag = getSelectorTag(selector);
-    if (!tag) {
-        tag = 'div';
+export function createElement(selectorOrMarkup, attrs) {
+    const frag = getHtmlFragment(selectorOrMarkup);
+    let element = frag === null || frag === void 0 ? void 0 : frag.firstElementChild;
+    let selector = "";
+    if (!element) {
+        selector = selectorOrMarkup.replace(/[\r\n]\s*/g, "");
+        const tag = getSelectorTag(selector) || "div";
+        element = document.createElement(tag);
+        selector = selector.replace(RGX_TAG, "$2");
+        selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
+        selector = selector.replace(RGX_ATTR_CLASS, (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, " ")}"]`);
     }
-    const element = document.createElement(tag);
-    selector = selector.replace(RGX_TAG, '$2');
-    selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
-    selector = selector.replace(RGX_ATTR_CLASS, (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, ' ')}"]`);
-    const attrs = getSelectorAttributes(selector);
-    if (attrs) {
-        attrs.forEach((attr) => {
-            let matches = attr.substring(1, attr.length - 1).split('=');
+    const selectorAttrs = getSelectorAttributes(selector);
+    if (selectorAttrs) {
+        for (const attr of selectorAttrs) {
+            let matches = attr.substring(1, attr.length - 1).split("=");
             let key = localAssertNotFalsy(matches.shift());
-            let value = matches.join('=');
+            let value = matches.join("=");
             if (value === undefined) {
                 setAttribute(element, key, true);
             }
             else {
-                value = value.replace(/^['"](.*)['"]$/, '$1');
+                value = value.replace(/^['"](.*)['"]$/, "$1");
                 setAttribute(element, key, value);
             }
-        });
+        }
     }
-    if (attributes) {
-        setAttributes(element, attributes);
+    if (attrs) {
+        setAttributes(element, attrs);
     }
     return element;
 }
@@ -121,13 +127,20 @@ export function setAttributes(element, data) {
         }
     }
 }
+function getHtmlFragment(value) {
+    if (value.match(/^\s*<.*?>[\s\S]*<\/[a-z0-9]+>\s*$/)) {
+        return document.createRange().createContextualFragment(value.trim());
+    }
+    return null;
+}
 function getChild(value) {
     if (value instanceof Node) {
         return value;
     }
     if (typeof value === 'string') {
-        if (value.match(/<.*?>.*?<\/[a-z0-9]+>/)) {
-            return document.createRange().createContextualFragment(value);
+        let child = getHtmlFragment(value);
+        if (child) {
+            return child;
         }
         if (getSelectorTag(value)) {
             return createElement(value);
@@ -151,7 +164,14 @@ export function setAttribute(element, attribute, value) {
         empty(element).innerHTML += value != null ? String(value) : '';
     }
     else if (attribute == 'style') {
-        element.style.cssText = isRemoving ? '' : (value != null ? String(value) : '');
+        if (typeof value === 'string') {
+            element.style.cssText = isRemoving ? '' : (value != null ? String(value) : '');
+        }
+        else {
+            for (const [styleKey, styleValue] of Object.entries(value)) {
+                element.style[styleKey] = styleValue;
+            }
+        }
     }
     else if (attribute == 'events') {
         for (const [key, fn] of Object.entries(value)) {
@@ -171,6 +191,9 @@ export function setAttribute(element, attribute, value) {
             catch (e) {
                 console.error(e);
             }
+        }
+        if (attribute === 'children') {
+            empty(element);
         }
         let children = value instanceof Array ? value : [value];
         for (let child of children) {
@@ -258,9 +281,23 @@ function setStyle(element, name, value) {
     return element;
 }
 ;
-function empty(element) {
+export function empty(element) {
     while (element.firstChild) {
         element.removeChild(element.firstChild);
     }
     return element;
+}
+export function appendChildren(el, children) {
+    children = !Array.isArray(children) ? [children] : children;
+    for (let child of children) {
+        child = getChild(child);
+        if (child instanceof Node) {
+            if (el instanceof HTMLTemplateElement) {
+                el.content.appendChild(child);
+            }
+            else {
+                el.appendChild(child);
+            }
+        }
+    }
 }

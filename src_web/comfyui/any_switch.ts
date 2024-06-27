@@ -6,17 +6,21 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
+import { debounce } from "rgthree/common/shared_utils.js";
 
 class RgthreeAnySwitch extends RgthreeBaseServerNode {
   static override title = NodeTypesString.ANY_SWITCH;
   static override type = NodeTypesString.ANY_SWITCH;
   static comfyClass = NodeTypesString.ANY_SWITCH;
 
-  private scheduleStabilizePromise: Promise<void> | null = null;
+  private stabilizeBound = this.stabilize.bind(this);
   private nodeType: string | string[] | null = null;
 
   constructor(title = RgthreeAnySwitch.title) {
     super(title);
+    // Adding five. Note, configure will add as many as was in the stored workflow automatically.
+    this.addAnyInput(5);
   }
 
   override onConnectionsChange(
@@ -35,19 +39,20 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
   }
 
   scheduleStabilize(ms = 64) {
-    if (!this.scheduleStabilizePromise) {
-      this.scheduleStabilizePromise = new Promise((resolve) => {
-        setTimeout(() => {
-          this.scheduleStabilizePromise = null;
-          this.stabilize();
-          resolve();
-        }, ms);
-      });
+    return debounce(this.stabilizeBound, ms);
+  }
+
+  private addAnyInput(num = 1) {
+    for (let i = 0; i < num; i++) {
+      this.addInput(`any_${String(this.inputs.length + 1).padStart(2, '0')}`, (this.nodeType || '*') as string);
     }
-    return this.scheduleStabilizePromise;
   }
 
   stabilize() {
+    // First, clean up the dynamic number of inputs.
+    removeUnusedInputsFromEnd(this, 4);
+    this.addAnyInput();
+
     // We prefer the inputs, then the output.
     let connectedType = followConnectionUntilType(this, IoDirection.INPUT, undefined, true);
     if (!connectedType) {

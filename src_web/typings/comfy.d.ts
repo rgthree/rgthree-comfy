@@ -1,11 +1,12 @@
 import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph } from "./litegraph";
-import type {Constructor} from './index';
+import type {Constructor, SerializedGraph} from './index';
 
 // @rgthree: Types on ComfyApp as needed.
 export interface ComfyApp {
 	extensions: ComfyExtension[];
 	queuePrompt(number: number, batchCount = 1): void;
 	graph: LGraph;
+ 	registerExtension(extension: ComfyExtension): void;
 }
 
 export interface ComfyWidget extends IWidget {
@@ -45,24 +46,24 @@ export interface ComfyExtension {
 	 * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
 	 * @param app The ComfyUI app instance
 	 */
-	init(app: ComfyApp): Promise<void>;
+	init?(app: ComfyApp): Promise<void>;
 	/**
 	 * Allows any additonal setup, called after the application is fully set up and running
 	 * @param app The ComfyUI app instance
 	 */
-	setup(app: ComfyApp): Promise<void>;
+	setup?(app: ComfyApp): Promise<void>;
 	/**
 	 * Called before nodes are registered with the graph
 	 * @param defs The collection of node definitions, add custom ones or edit existing ones
 	 * @param app The ComfyUI app instance
 	 */
-	addCustomNodeDefs(defs: Record<string, ComfyObjectInfo>, app: ComfyApp): Promise<void>;
+	addCustomNodeDefs?(defs: Record<string, ComfyObjectInfo>, app: ComfyApp): Promise<void>;
 	/**
 	 * Allows the extension to add custom widgets
 	 * @param app The ComfyUI app instance
 	 * @returns An array of {[widget name]: widget data}
 	 */
-	getCustomWidgets(
+	getCustomWidgets?(
 		app: ComfyApp
 	): Promise<
 		Record<string, (node, inputName, inputData, app) => { widget?: IWidget; minWidth?: number; minHeight?: number }>
@@ -73,12 +74,13 @@ export interface ComfyExtension {
 	 * @param nodeData The original node object info config object
 	 * @param app The ComfyUI app instance
 	 */
-	beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyObjectInfo, app: ComfyApp): Promise<void>;
+	beforeRegisterNodeDef?(nodeType: typeof LGraphNode, nodeData: ComfyObjectInfo, app: ComfyApp): Promise<void>;
 	/**
 	 * Allows the extension to register additional nodes with LGraph after standard nodes are added
 	 * @param app The ComfyUI app instance
 	 */
-	registerCustomNodes(app: ComfyApp): Promise<void>;
+	// @rgthree - add void for non async
+	registerCustomNodes?(app: ComfyApp): void|Promise<void>;
 	/**
 	 * Allows the extension to modify a node that has been reloaded onto the graph.
 	 * If you break something in the backend and want to patch workflows in the frontend
@@ -86,7 +88,7 @@ export interface ComfyExtension {
 	 * @param node The node that has been loaded
 	 * @param app The ComfyUI app instance
 	 */
-	loadedGraphNode(node: LGraphNode, app: ComfyApp);
+	loadedGraphNode?(node: LGraphNode, app: ComfyApp);
 	/**
 	 * Allows the extension to run code after the constructor of the node
 	 * @param node The node that has been created
@@ -139,7 +141,7 @@ export type ComfyApiFormat = {
 
 // @rgthree
 export type ComfyApiPrompt = {
-  workflow: {nodes: SerializedLGraphNode[]},
+  workflow: SerializedGraph,
   output: ComfyApiFormat,
 }
 

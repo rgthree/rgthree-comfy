@@ -3,12 +3,14 @@ import { app } from "../../scripts/app.js";
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
+import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
-        this.comfyClass = '__NEED_COMFY_CLASS__';
+        this.comfyClass = "__NEED_COMFY_CLASS__";
         this.nickname = "rgthree";
         this.isVirtualNode = false;
+        this.isDropEnabled = false;
         this.removed = false;
         this.configuring = false;
         this._tempWidth = 0;
@@ -34,6 +36,16 @@ export class RgthreeBaseNode extends LGraphNode {
             (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
         }
         return this.__constructed__;
+    }
+    onDragOver(e) {
+        if (!this.isDropEnabled)
+            return false;
+        return importIndividualNodesInnerOnDragOver(this, e);
+    }
+    async onDragDrop(e) {
+        if (!this.isDropEnabled)
+            return false;
+        return importIndividualNodesInnerOnDragDrop(this, e);
     }
     onConstructed() {
         var _a;
@@ -61,14 +73,15 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     set mode(mode) {
         if (this.mode_ != mode) {
+            const oldMode = this.mode_;
             this.mode_ = mode;
-            this.onModeChange();
+            this.onModeChange(oldMode, mode);
         }
     }
     get mode() {
         return this.mode_;
     }
-    onModeChange() {
+    onModeChange(from, to) {
     }
     async handleAction(action) {
         action;
@@ -147,7 +160,7 @@ export class RgthreeBaseNode extends LGraphNode {
     }
 }
 RgthreeBaseNode.exposedActions = [];
-RgthreeBaseNode.title = '__NEED_CLASS_TITLE__';
+RgthreeBaseNode.title = "__NEED_CLASS_TITLE__";
 RgthreeBaseNode.category = "rgthree";
 RgthreeBaseNode._category = "rgthree";
 export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
@@ -159,6 +172,7 @@ export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {
         super(title, true);
+        this.isDropEnabled = true;
         this.serialize_widgets = true;
         this.setupFromServerNodeData();
         this.onConstructed();

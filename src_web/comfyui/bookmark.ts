@@ -2,25 +2,25 @@ import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 // @ts-ignore
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
+import { rgthree } from "./rgthree.js";
 import { NodeTypesString } from "./constants.js";
 import type {
   LGraph as TLGraph,
   LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
-  ISliderWidget,
   INumberWidget,
+  LGraphNode,
   Vector2,
 } from "typings/litegraph.js";
+import { getClosestOrSelf, queryOne } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
-
 
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
  * navigate to that node, with it in the top-left corner.
  */
 export class Bookmark extends RgthreeBaseVirtualNode {
-
   static override type = NodeTypesString.BOOKMARK;
   static override title = NodeTypesString.BOOKMARK;
   override comfyClass = NodeTypesString.BOOKMARK;
@@ -33,7 +33,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   // override it with a setter and re-set it measured exactly as we want.
   ___collapsed_width: number = 0;
 
-
   override isVirtualNode = true;
   override serialize_widgets = true;
 
@@ -44,10 +43,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   override set _collapsed_width(width: number) {
     const canvas = app.canvas as TLGraphCanvas;
-    const ctx = canvas.canvas.getContext('2d')!;
+    const ctx = canvas.canvas.getContext("2d")!;
     const oldFont = ctx.font;
     ctx.font = canvas.title_text_font;
-    this.___collapsed_width = 40 +  ctx.measureText(this.title).width;
+    this.___collapsed_width = 40 + ctx.measureText(this.title).width;
     ctx.font = oldFont;
   }
 
@@ -55,14 +54,19 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   constructor(title = Bookmark.title) {
     super(title);
-    this.addWidget('text', 'shortcut_key', '1', (value: string, ...args) => {
-      value = value.trim()[0] || '1';
-    },{
-      y: 8,
-    });
-    this.addWidget<INumberWidget>('number', 'zoom', 1, (value: number) => {
-
-    }, {
+    const nextShortcutChar = getNextShortcut();
+    this.addWidget(
+      "text",
+      "shortcut_key",
+      nextShortcutChar,
+      (value: string, ...args) => {
+        value = value.trim()[0] || "1";
+      },
+      {
+        y: 8,
+      },
+    );
+    this.addWidget<INumberWidget>("number", "zoom", 1, (value: number) => {}, {
       y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
       max: 2,
       min: 0.5,
@@ -78,22 +82,48 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   //   this.size[1] = Math.max(minHeight, this.size[1]);
   // }
 
+  get shortcutKey(): string {
+    return this.widgets[0]?.value?.toLocaleLowerCase() ?? "";
+  }
 
   override onAdded(graph: TLGraph): void {
-    window.addEventListener("keydown", this.keypressBound);
+    rgthree.addEventListener("keydown", this.keypressBound as EventListener);
   }
 
   override onRemoved(): void {
-    window.removeEventListener("keydown", this.keypressBound);
+    rgthree.removeEventListener("keydown", this.keypressBound as EventListener);
   }
 
-  async onKeypress(event: KeyboardEvent) {
-    const target = (event.target as HTMLElement)!;
-    if (['input','textarea'].includes(target.localName)) {
+  onKeypress(event: CustomEvent<{ originalEvent: KeyboardEvent }>) {
+    const originalEvent = event.detail.originalEvent;
+    const target = (originalEvent.target as HTMLElement)!;
+    if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
       return;
     }
-    if (event.key.toLocaleLowerCase() === this.widgets[0]!.value.toLocaleLowerCase()) {
+
+    // Only the shortcut keys are held down, otionally including "shift".
+    if (rgthree.areOnlyKeysDown(this.widgets[0]!.value, true)) {
       this.canvasToBookmark();
+      originalEvent.preventDefault();
+      originalEvent.stopPropagation();
+    }
+  }
+
+  /**
+   * Called from LiteGraph's `processMouseDown` after it would invoke the input box for the
+   * shortcut_key, so we check if it exists and then add our own event listener so we can track the
+   * keys down for the user.
+   */
+  override onMouseDown(event: MouseEvent, pos: Vector2, graphCanvas: TLGraphCanvas): void {
+    const input = queryOne<HTMLInputElement>('.graphdialog > input.value');
+    if (input && input.value === this.widgets[0]?.value) {
+      input.addEventListener('keydown', (e) => {
+        // ComfyUI swallows keydown on inputs, so we need to call out to rgthree to use downkeys.
+        rgthree.handleKeydown(e);
+        e.preventDefault();
+        e.stopPropagation();
+        input.value = Object.keys(rgthree.downKeys).join(" + ");
+      });
     }
   }
 
@@ -102,8 +132,8 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
     // https://github.com/rgthree/rgthree-comfy/issues/71
     if (canvas?.ds?.offset) {
-      canvas.ds.offset[0] = -this.pos[0]  + 16;
-      canvas.ds.offset[1] = -this.pos[1]  + 40;
+      canvas.ds.offset[0] = -this.pos[0] + 16;
+      canvas.ds.offset[1] = -this.pos[1] + 40;
     }
     if (canvas?.ds?.scale != null) {
       canvas.ds.scale = Number(this.widgets[1]!.value || 1);
@@ -123,3 +153,20 @@ app.registerExtension({
     Bookmark.setUp(Bookmark);
   },
 });
+
+function isBookmark(node: LGraphNode): node is Bookmark {
+  return node.type === NodeTypesString.BOOKMARK;
+}
+
+function getExistingShortcuts() {
+  const graph: TLGraph = app.graph;
+  const bookmarkNodes = graph._nodes.filter(isBookmark);
+  const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
+  return usedShortcuts;
+}
+
+const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
+function getNextShortcut() {
+  const existingShortcuts = getExistingShortcuts();
+  return SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char)) ?? "1";
+}

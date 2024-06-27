@@ -74,7 +74,7 @@ export function drawNumberWidgetPart(ctx, options) {
     const xBoundsArrowMore = [0, 0];
     ctx.save();
     let posX = options.posX;
-    const { posY, height, value } = options;
+    const { posY, height, value, textColor } = options;
     const midY = posY + height / 2;
     if (options.direction === -1) {
         posX = posX - arrowWidth - innerMargin - numberWidth - innerMargin - arrowWidth;
@@ -85,7 +85,12 @@ export function drawNumberWidgetPart(ctx, options) {
     posX += arrowWidth + innerMargin;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
+    const oldTextcolor = ctx.fillStyle;
+    if (textColor) {
+        ctx.fillStyle = textColor;
+    }
     ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+    ctx.fillStyle = oldTextcolor;
     xBoundsNumber[0] = posX;
     xBoundsNumber[1] = numberWidth;
     posX += numberWidth + innerMargin;
@@ -121,4 +126,26 @@ export function drawTogglePart(ctx, options) {
     ctx.fill();
     ctx.restore();
     return [posX, toggleBgWidth];
+}
+export function drawInfoIcon(ctx, x, y, size = 12) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, size, size, [size * 0.1]);
+    ctx.fillStyle = "#2f82ec";
+    ctx.strokeStyle = "#0f2a5e";
+    ctx.fill();
+    ctx.strokeStyle = "#FFF";
+    ctx.lineWidth = 2;
+    const midX = x + size / 2;
+    const serifSize = size * 0.175;
+    ctx.stroke(new Path2D(`
+    M ${midX} ${y + size * 0.15}
+    v 2
+    M ${midX - serifSize} ${y + size * 0.45}
+    h ${serifSize}
+    v ${size * 0.325}
+    h ${serifSize}
+    h -${serifSize * 2}
+  `));
+    ctx.restore();
 }

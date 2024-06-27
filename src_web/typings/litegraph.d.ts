@@ -113,7 +113,8 @@ export interface IWidget<TValue = any, TOptions = any> {
     label?: string | null;
     value: TValue;
     options?: TOptions;
-    type?: widgetTypes;
+    // @rgthree - extend to string for custom
+    type?: widgetTypes | string;
     y?: number;
     property?: string;
     last_y?: number;
@@ -195,7 +196,7 @@ export interface IContextMenuOptions {
     callback?: ContextMenuEventListener;
     ignore_item_callbacks?: Boolean;
     event?: MouseEvent | CustomEvent | AdjustedMouseEvent;
-    parentMenu?: ContextMenu;
+    parentMenu?: ContextMenu|null;
     autoopen?: boolean;
     title?: string;
     extra?: any;
@@ -241,8 +242,12 @@ export const LiteGraph: {
     NODE_DEFAULT_BGCOLOR: string;
     NODE_DEFAULT_BOXCOLOR: string;
     NODE_DEFAULT_SHAPE: string;
+    // @rgthree - didn't exist.
+    NODE_BOX_OUTLINE_COLOR: string;
     DEFAULT_SHADOW_COLOR: string;
     DEFAULT_GROUP_FONT: number;
+    // @rgthree - Seems to have been missing.
+    NODE_BOX_OUTLINE_COLOR: string;
 
     WIDGET_BGCOLOR: string;
     WIDGET_OUTLINE_COLOR: string;
@@ -293,6 +298,11 @@ export const LiteGraph: {
     AUTOHIDE_TITLE: 3;
 
     node_images_path: string;
+
+    // @rgthree. These just weren't there. Note, LiteGraph initializes these as an array, but
+    // ComfyUI overrides these to a string-keye'd object... ???
+    slot_types_default_out: {[key: string]: string[]};
+    slot_types_default_in: {[key: string]: string[]};
 
     debug: boolean;
     catch_exceptions: boolean;
@@ -690,6 +700,10 @@ export declare class LGraphNode {
     // @rgthree added
     findInputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
     findOutputSlotByType(type: string, returnObj?: boolean, preferFreeSlot?: boolean, doNotUseOccupied?: boolean): number
+    onShowCustomPanelInfo(panel: HTMLElement): void;
+    onDblClick?(event: AdjustedMouseEvent, pos: Vector2, canvas: LGraphCanvas): void;
+    inResizeCorner(x: number, y:number) : boolean;
+    onWidgetChanged?(widgetName: string, widgetValue: any, oldWidgetValue: any, widget: IWidget): void;
 
     isVirtualNode?: boolean;
 
@@ -730,6 +744,10 @@ export declare class LGraphNode {
 
     flags: Partial<{
         collapsed: boolean
+        // @rgthree
+        allow_interaction: boolean;
+        // @rgthree
+        pinned: boolean;
     }>;
 
     color: string;
@@ -1174,6 +1192,9 @@ export declare class LGraphNode {
     getSlotMenuOptions(slot: {input?: INodeInputSlot, output?: INodeOutputSlot}): ContextMenuItem[] | null;
 
     getExtraMenuOptions?(canvas: LGraphCanvas, options: ContextMenuItem[]): void;
+
+    // @rgthree - Called in LiteGraph.core when the properties panel is constructed.
+    onShowCustomPanelInfo(panel: HTMLElement): void;
 }
 
 export type LGraphNodeConstructor<T extends LGraphNode = LGraphNode> = {
@@ -1310,7 +1331,8 @@ export declare class LGraphCanvas {
         }
     );
 
-    static active_canvas: HTMLCanvasElement;
+    // @rgthree. This was "HTMLCanvasElement" but that is just wrong... it's LGraphCanvas
+    static active_canvas: LGraphCanvas;
 
     allow_dragcanvas: boolean;
     allow_dragnodes: boolean;
@@ -1661,6 +1683,9 @@ export declare class LGraphCanvas {
 
     // @rgthree - Adding this for ComfyUI, since they add this in their own overload in app.js
     selected_group_moving?: boolean;
+
+    // @rgthree
+    showShowNodePanel(node: LGraphNode): void;
 }
 
 // @rgthree - The adjusted pointer event after calling adjustMouseEvent

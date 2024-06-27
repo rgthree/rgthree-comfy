@@ -12,7 +12,9 @@ import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
-const SPECIAL_ENTRIES = ["CHOOSE", "NONE", "DISABLE"];
+const SPECIAL_ENTRIES = [
+  /^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i,
+  /^\p{Extended_Pictographic}/ug];
 
 /**
  * Handles a large, flat list of string values given ContextMenu and breaks it up into subfolder, if
@@ -75,10 +77,7 @@ app.registerExtension({
           newValue.content = valueSplit.join(splitBy);
           folders[key] = folders[key] || [];
           folders[key]!.push(newValue);
-        } else if (
-          SPECIAL_ENTRIES.includes(valueContent.toLocaleUpperCase()) ||
-          valueContent.startsWith("DISABLE ")
-        ) {
+        } else if (SPECIAL_ENTRIES.some(r => r.test(valueContent))) {
           specialOps.push(newValue);
         } else {
           folderless.push(newValue);

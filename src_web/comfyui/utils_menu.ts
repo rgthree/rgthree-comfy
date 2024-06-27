@@ -24,10 +24,13 @@ const PASS_THROUGH = function <T extends any, I extends any>(item: T) {
 export async function showLoraChooser(
   event: PointerEvent,
   callback: ContextMenuEventListener,
-  parentMenu?: ContextMenu,
+  parentMenu?: ContextMenu|null,
+  loras?: string[],
 ) {
   const canvas = app.canvas as TLGraphCanvas;
-  const loras = ["None", ...(await rgthreeApi.getLoras())];
+  if (!loras) {
+    loras = ["None", ...(await rgthreeApi.getLoras())];
+  }
   new LiteGraph.ContextMenu(loras, {
     event: event,
     parentMenu,

@@ -5,6 +5,6 @@
     "sass": "^1.70.0"
   },
   "scripts": {
-    "build": "./__build__.py"
+    "build": "./__build__.py || python .\\__build__.py"
   }
 }

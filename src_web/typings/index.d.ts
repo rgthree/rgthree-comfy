@@ -8,7 +8,7 @@ export type SerializedLink = [
   number, // this.origin_slot,
   number, // this.target_id,
   number, // this.target_slot,
-  number, // this.type
+  string, // this.type
 ];
 
 export interface SerializedNodeInput {

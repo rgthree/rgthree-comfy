@@ -2,7 +2,7 @@ import os
 import json
 import re
 
-from .utils import get_dict_value, set_dict_value, dict_has_key
+from .utils import get_dict_value, set_dict_value, dict_has_key, load_json_file
 
 def get_config_value(key):
   return get_dict_value(RGTHREE_CONFIG, key)
@@ -32,18 +32,11 @@ def set_user_config(data: dict):
 
 def get_rgthree_default_config():
   """ Gets the default configuration."""
-  with open(DEFAULT_CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
-    config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
-  return json.loads(config)
+  return load_json_file(DEFAULT_CONFIG_FILE, default={})
 
 def get_rgthree_user_config():
   """ Gets the user configuration."""
-  if os.path.exists(USER_CONFIG_FILE):
-    with open(USER_CONFIG_FILE, 'r', encoding = 'UTF-8') as file:
-      config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
-    return json.loads(config)
-  else:
-    return {}
+  return load_json_file(USER_CONFIG_FILE, default={})
 
 def write_user_config():
   """ Writes the user configuration."""

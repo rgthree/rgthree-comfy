@@ -8,6 +8,7 @@ import { NodeTypesString } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { createElement, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -48,6 +49,11 @@ const INVOKE_EXTENSIONS_BLOCKLIST = [
         reason: "Major conflict with rgthree-comfy nodes' inputs causing instability and " +
             "repeated link disconnections.",
     },
+    {
+        name: "efficiency.widgethider",
+        reason: "Overrides value getter before widget getter is prepared. Can be lifted if/when " +
+            "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled."
+    }
 ];
 class Logger {
     log(level, message, ...args) {
@@ -106,7 +112,7 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     constructor() {
-        var _a;
+        var _a, _b, _c, _d;
         super();
         this.api = api;
         this.settingsDialog = null;
@@ -130,13 +136,16 @@ class Rgthree extends EventTarget {
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
-        const logLevel = (_a = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _a !== void 0 ? _a : GLOBAL_LOG_LEVEL;
+        this.elDebugKeydowns = null;
+        this.isMac = !!(((_a = navigator.platform) === null || _a === void 0 ? void 0 : _a.toLocaleUpperCase().startsWith("MAC")) ||
+            ((_c = (_b = navigator.userAgentData) === null || _b === void 0 ? void 0 : _b.platform) === null || _c === void 0 ? void 0 : _c.toLocaleUpperCase().startsWith("MAC")));
+        const logLevel = (_d = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _d !== void 0 ? _d : GLOBAL_LOG_LEVEL;
         this.setLogLevel(logLevel);
-        window.addEventListener("keydown", (e) => {
-            this.handleKeydown(e);
+        document.addEventListener("visibilitychange", (e) => {
+            this.clearKeydowns();
         });
-        window.addEventListener("keyup", (e) => {
-            this.handleKeyup(e);
+        window.addEventListener("blur", (e) => {
+            this.clearKeydowns();
         });
         this.initializeGraphAndCanvasHooks();
         this.initializeComfyUIHooks();
@@ -145,12 +154,27 @@ class Rgthree extends EventTarget {
             this.injectRgthreeCss();
         });
         this.initializeProgressBar();
+        this.initializeDebugShit();
         CONFIG_SERVICE.addEventListener("config-change", ((e) => {
             var _a, _b;
             if ((_b = (_a = e.detail) === null || _a === void 0 ? void 0 : _a.key) === null || _b === void 0 ? void 0 : _b.includes("features.progress_bar")) {
                 this.initializeProgressBar();
             }
         }));
+    }
+    initializeDebugShit() {
+        if (!this.isDebugMode()) {
+            return;
+        }
+        this.elDebugKeydowns = createElement("div.rgthree-debug-keydowns", {
+            parent: document.body,
+        });
+    }
+    debugRenderKeys() {
+        if (!this.elDebugKeydowns) {
+            return;
+        }
+        this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
     }
     initializeProgressBar() {
         var _a;
@@ -245,6 +269,16 @@ class Rgthree extends EventTarget {
             onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
         };
+        const processKey = LGraphCanvas.prototype.processKey;
+        LGraphCanvas.prototype.processKey = function (e) {
+            if (e.type === "keydown") {
+                rgthree.handleKeydown(e);
+            }
+            else if (e.type === "keyup") {
+                rgthree.handleKeyup(e);
+            }
+            return processKey.apply(this, [...arguments]);
+        };
     }
     async invokeExtensionsAsync(method, ...args) {
         var _a;
@@ -308,6 +342,8 @@ class Rgthree extends EventTarget {
             rerouteNodes = graph._nodes.filter((n) => n.type == "Reroute");
         }
         const rerouteLabel = selectedNodes.length ? "selected" : "all";
+        const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
+        const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
         return [
             {
                 content: "Actions",
@@ -346,6 +382,7 @@ class Rgthree extends EventTarget {
                     })();
                 },
             },
+            ...bookmarkMenuItems,
             {
                 content: "More...",
                 disabled: true,
@@ -530,6 +567,14 @@ class Rgthree extends EventTarget {
             container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
         }
+        const dialogs = query("dialog[open]");
+        if (dialogs.length) {
+            let dialog = dialogs[dialogs.length - 1];
+            dialog.appendChild(container);
+            dialog.addEventListener("close", (e) => {
+                document.body.appendChild(container);
+            });
+        }
         await this.hideMessage(data.id);
         const messageContainer = document.createElement("div");
         messageContainer.setAttribute("type", data.type || "info");
@@ -581,29 +626,68 @@ class Rgthree extends EventTarget {
         let container = document.querySelector(".rgthree-top-messages-container");
         container && (container.innerHTML = "");
     }
+    clearKeydowns() {
+        this.ctrlKey = false;
+        this.altKey = false;
+        this.metaKey = false;
+        this.shiftKey = false;
+        for (const key in this.downKeys)
+            delete this.downKeys[key];
+        this.debugRenderKeys();
+    }
     handleKeydown(e) {
         this.ctrlKey = !!e.ctrlKey;
         this.altKey = !!e.altKey;
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
         this.downKeys[e.key.toLocaleUpperCase()] = true;
-        this.downKeys["^" + e.key.toLocaleUpperCase()] = true;
+        this.debugRenderKeys();
+        this.dispatchCustomEvent("keydown", { originalEvent: e });
     }
     handleKeyup(e) {
         this.ctrlKey = !!e.ctrlKey;
         this.altKey = !!e.altKey;
         this.metaKey = !!e.metaKey;
         this.shiftKey = !!e.shiftKey;
-        this.downKeys[e.key.toLocaleUpperCase()] = false;
-        this.downKeys["^" + e.key.toLocaleUpperCase()] = false;
+        const key = e.key.toLocaleUpperCase();
+        if (key === "META" && this.isMac) {
+            this.clearKeydowns();
+        }
+        else {
+            delete this.downKeys[e.key.toLocaleUpperCase()];
+            this.debugRenderKeys();
+        }
+        this.dispatchCustomEvent("keyup", { originalEvent: e });
     }
-    areAllKeysDown(keys, caseSensitive = false) {
+    getKeysFromShortcut(shortcut) {
+        let keys;
+        if (typeof shortcut === "string") {
+            shortcut = shortcut.replace(/\s/g, "");
+            shortcut = shortcut.replace(/^\+/, "__PLUS__").replace(/\+\+/, "+__PLUS__");
+            keys = shortcut.split("+").map((i) => i.replace("__PLUS__", "+"));
+        }
+        else {
+            keys = [...shortcut];
+        }
+        return keys.map((k) => k.toLocaleUpperCase());
+    }
+    areAllKeysDown(keys) {
+        keys = this.getKeysFromShortcut(keys);
         return keys.every((k) => {
-            if (caseSensitive) {
-                return rgthree.downKeys["^" + k.trim()];
-            }
-            return rgthree.downKeys[k.trim().toUpperCase()];
+            return rgthree.downKeys[k];
         });
+    }
+    areOnlyKeysDown(keys, alsoAllowShift = false) {
+        keys = this.getKeysFromShortcut(keys);
+        const allKeysDown = this.areAllKeysDown(keys);
+        const downKeysLength = Object.values(rgthree.downKeys).length;
+        if (allKeysDown && keys.length === downKeysLength) {
+            return true;
+        }
+        if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
+            return allKeysDown && this.areAllKeysDown(["SHIFT"]);
+        }
+        return false;
     }
     injectRgthreeCss() {
         let link = document.createElement("link");
@@ -613,7 +697,7 @@ class Rgthree extends EventTarget {
         document.head.appendChild(link);
     }
     setLogLevel(level) {
-        if (typeof level === 'string') {
+        if (typeof level === "string") {
             level = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")];
         }
         if (level != null) {
@@ -627,7 +711,16 @@ class Rgthree extends EventTarget {
         return this.logger.newSession(name);
     }
     isDevMode() {
-        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes('#rgthree-dev');
+        if (window.location.href.includes("rgthree-dev=false")) {
+            return false;
+        }
+        return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-dev");
+    }
+    isDebugMode() {
+        if (!this.isDevMode() || window.location.href.includes("rgthree-debug=false")) {
+            return false;
+        }
+        return window.location.href.includes("rgthree-debug");
     }
     monitorBadLinks() {
         const badLinksFound = fixBadLinks(app.graph);
@@ -644,6 +737,29 @@ class Rgthree extends EventTarget {
             this.monitorBadLinks();
         }, 5000);
     }
+}
+function getBookmarks() {
+    const graph = app.graph;
+    const bookmarks = graph._nodes
+        .filter((n) => n.type === NodeTypesString.BOOKMARK)
+        .sort((a, b) => a.title.localeCompare(b.title))
+        .map((n) => ({
+        content: `[${n.shortcutKey}] ${n.title}`,
+        className: "rgthree-contextmenu-item",
+        callback: () => {
+            n.canvasToBookmark();
+        },
+    }));
+    return !bookmarks.length
+        ? []
+        : [
+            {
+                content: "🔖 Bookmarks",
+                disabled: true,
+                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+            },
+            ...bookmarks,
+        ];
 }
 export const rgthree = new Rgthree();
 window.rgthree = rgthree;
