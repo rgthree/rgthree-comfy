@@ -1,0 +1,43 @@
+
+
+.rgthree-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: fixed;
+  z-index: 999999;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.08s ease-in-out;
+
+  color: #dde;
+  background-color: #111;
+  font-size: 12px;
+  box-shadow: 0 0 10px black !important;
+
+  > li {
+    position: relative;
+    padding: 4px 6px;
+    z-index: 9999;
+    white-space: nowrap;
+
+    &[role="button"] {
+      background-color: var(--comfy-menu-bg) !important;
+      color: var(--input-text);
+      cursor: pointer;
+      &:hover {
+        filter: brightness(155%);
+      }
+    }
+  }
+
+  &[state^="measuring"] {
+    display: block;
+    opacity: 0;
+  }
+  &[state="open"] {
+    display: block;
+    opacity: 1;
+    pointer-events: all;
+  }
+}

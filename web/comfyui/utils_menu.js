@@ -3,10 +3,12 @@ import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
 const PASS_THROUGH = function (item) {
     return item;
 };
-export async function showLoraChooser(event, callback, parentMenu) {
+export async function showLoraChooser(event, callback, parentMenu, loras) {
     var _a, _b;
     const canvas = app.canvas;
-    const loras = ["None", ...(await rgthreeApi.getLoras())];
+    if (!loras) {
+        loras = ["None", ...(await rgthreeApi.getLoras())];
+    }
     new LiteGraph.ContextMenu(loras, {
         event: event,
         parentMenu,

@@ -13,6 +13,7 @@ export const NodeTypesString = {
     FAST_GROUPS_MUTER: addRgthree('Fast Groups Muter'),
     FAST_GROUPS_BYPASSER: addRgthree('Fast Groups Bypasser'),
     FAST_ACTIONS_BUTTON: addRgthree('Fast Actions Button'),
+    LABEL: addRgthree('Label'),
     POWER_LORA_LOADER: addRgthree('Power Lora Loader'),
     NODE_COLLECTOR: addRgthree('Node Collector'),
     REROUTE: addRgthree('Reroute'),

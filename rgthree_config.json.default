@@ -10,6 +10,9 @@
       "subdirs": null,
       "threshold": 20
     },
+    "menu_bookmarks": {
+      "enabled": true
+    },
     "group_header_fast_toggle": {
       "enabled": null,
       "toggles": ["mute", "bypass"],
@@ -23,6 +26,11 @@
     "menu_groups": {
       "enabled": false,
       "filter_regex": ""
+    },
+    // Allows for dragging and dropping a workflow (image, json) onto an individual node to import
+    // that specific node's widgets if it also exists in the dropped workflow (same id, type).
+    "import_individual_nodes": {
+      "enabled": null
     },
     // Enables invokeExtensionsAsync for rgthree-nodes allowing other extensions to hook into the
     // nodes like the default ComfyNodes. This was not possible before Apr 2024, so it's a config

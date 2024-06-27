@@ -23,6 +23,8 @@ import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
+import type { Bookmark } from "./bookmark";
+import { createElement, query } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -87,6 +89,13 @@ const INVOKE_EXTENSIONS_BLOCKLIST = [
       "Major conflict with rgthree-comfy nodes' inputs causing instability and " +
       "repeated link disconnections.",
   },
+  {
+    name: "efficiency.widgethider",
+    reason:
+      "Overrides value getter before widget getter is prepared. Can be lifted if/when "+
+      "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled."
+
+  }
 ];
 
 /** A basic wrapper around logger. */
@@ -230,6 +239,13 @@ class Rgthree extends EventTarget {
   canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
   initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff: any = null;
 
+  private elDebugKeydowns: HTMLDivElement | null = null;
+
+  private readonly isMac: boolean = !!(
+    navigator.platform?.toLocaleUpperCase().startsWith("MAC") ||
+    (navigator as any).userAgentData?.platform?.toLocaleUpperCase().startsWith("MAC")
+  );
+
   constructor() {
     super();
 
@@ -237,12 +253,16 @@ class Rgthree extends EventTarget {
       LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")] ?? GLOBAL_LOG_LEVEL;
     this.setLogLevel(logLevel);
 
-    window.addEventListener("keydown", (e) => {
-      this.handleKeydown(e);
+    // If we get a visibilitychange, then clear the keys since we can't listen for keys up/down when
+    // not visible.
+    document.addEventListener("visibilitychange", (e) => {
+      this.clearKeydowns();
     });
 
-    window.addEventListener("keyup", (e) => {
-      this.handleKeyup(e);
+    // If we get a blur, then also clear the keys since we can't listen for keys up/down when
+    // blurred. This can happen w/o a visibilitychange, like a browser alert.
+    window.addEventListener("blur", (e) => {
+      this.clearKeydowns();
     });
 
     this.initializeGraphAndCanvasHooks();
@@ -254,12 +274,30 @@ class Rgthree extends EventTarget {
     });
 
     this.initializeProgressBar();
+    this.initializeDebugShit();
 
     CONFIG_SERVICE.addEventListener("config-change", ((e: CustomEvent) => {
       if (e.detail?.key?.includes("features.progress_bar")) {
         this.initializeProgressBar();
       }
     }) as EventListener);
+  }
+
+  initializeDebugShit() {
+    if (!this.isDebugMode()) {
+      return;
+    }
+    this.elDebugKeydowns = createElement<HTMLDivElement>("div.rgthree-debug-keydowns", {
+      parent: document.body,
+    });
+  }
+
+  /** Renders the current keydowns in the UI. */
+  private debugRenderKeys() {
+    if (!this.elDebugKeydowns) {
+      return;
+    }
+    this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
   }
 
   /**
@@ -390,6 +428,19 @@ class Rgthree extends EventTarget {
         null,
         graph._groups[graph._groups.length - 1],
       );
+    };
+
+    // [🤮] Sometimes ComfyUI and/or LiteGraph stop propagation of key events which makes it hard
+    // to determine if keys are currently pressed. To attempt to get around this, we'll hijack
+    // LiteGraph's processKey to try to get better consistency.
+    const processKey = LGraphCanvas.prototype.processKey;
+    LGraphCanvas.prototype.processKey = function (e: KeyboardEvent) {
+      if (e.type === "keydown") {
+        rgthree.handleKeydown(e);
+      } else if (e.type === "keyup") {
+        rgthree.handleKeyup(e);
+      }
+      return processKey.apply(this, [...arguments] as any) as any;
     };
   }
 
@@ -523,6 +574,8 @@ class Rgthree extends EventTarget {
     }
 
     const groupsMenuItems = getGroupsMenu();
+    const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
+    const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
 
     return [
       {
@@ -564,6 +617,7 @@ class Rgthree extends EventTarget {
         },
       },
       ...groupsMenuItems,
+      ...bookmarkMenuItems,
       {
         content: "More...",
         disabled: true,
@@ -807,6 +861,16 @@ class Rgthree extends EventTarget {
       container.classList.add("rgthree-top-messages-container");
       document.body.appendChild(container);
     }
+    // If we have a dialog open then we want to append the message to the dialog so they show over
+    // the modal.
+    const dialogs = query<HTMLDialogElement>("dialog[open]");
+    if (dialogs.length) {
+      let dialog = dialogs[dialogs.length - 1]!;
+      dialog.appendChild(container);
+      dialog.addEventListener("close", (e) => {
+        document.body.appendChild(container!);
+      });
+    }
     // Hide if we exist.
     await this.hideMessage(data.id);
 
@@ -876,8 +940,20 @@ class Rgthree extends EventTarget {
     container && (container.innerHTML = "");
   }
 
+  private clearKeydowns() {
+    this.ctrlKey = false;
+    this.altKey = false;
+    this.metaKey = false;
+    this.shiftKey = false;
+    for (const key in this.downKeys) delete this.downKeys[key];
+    this.debugRenderKeys();
+  }
+
   /**
-   * Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree.
+   * Handle keydown. Pulled out because sometimes a node will get a keydown before rgthree and call
+   * into this..
+   *
+   * Note: ComfyUI blocks Space, Esc, Delete, and Backspace as well as within inputs.
    */
   handleKeydown(e: KeyboardEvent) {
     this.ctrlKey = !!e.ctrlKey;
@@ -885,31 +961,89 @@ class Rgthree extends EventTarget {
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
     this.downKeys[e.key.toLocaleUpperCase()] = true;
-    this.downKeys["^" + e.key.toLocaleUpperCase()] = true;
+    this.debugRenderKeys();
+    this.dispatchCustomEvent("keydown", { originalEvent: e });
   }
 
   /**
-   * Handle keyup. Pulled out because sometimes a node will get a keyup before rgthree.
+   * Handle keyup. Pulled out because sometimes a node will get a keyup before rgthree and call
+   * into this.
    */
   handleKeyup(e: KeyboardEvent) {
     this.ctrlKey = !!e.ctrlKey;
     this.altKey = !!e.altKey;
     this.metaKey = !!e.metaKey;
     this.shiftKey = !!e.shiftKey;
-    this.downKeys[e.key.toLocaleUpperCase()] = false;
-    this.downKeys["^" + e.key.toLocaleUpperCase()] = false;
+    const key = e.key.toLocaleUpperCase();
+
+    // See https://github.com/rgthree/rgthree-comfy/issues/238
+    // A little bit of a hack, but Mac reportedly does something odd with copy/paste. ComfyUI
+    // gobbles the copy event propagation, but it happens for paste too and reportedly 'Enter' which
+    // I can't find a reason for in LiteGraph/comfy. So, for Mac only, whenever we lift a Command
+    // (META) key, we'll also clear any other keys.
+    if (key === "META" && this.isMac) {
+      this.clearKeydowns();
+    } else {
+      delete this.downKeys[e.key.toLocaleUpperCase()];
+      this.debugRenderKeys();
+    }
+    this.dispatchCustomEvent("keyup", { originalEvent: e });
+  }
+
+  /**
+   * Parses a shortcut string.
+   *
+   *   - 's' => ['S']
+   *   - 'shift + c' => ['SHIFT', 'C']
+   *   - 'shift + meta + @' => ['SHIFT', 'META', '@']
+   *   - 'shift + + + @' => ['SHIFT', '__PLUS__', '=']
+   *   - '+ + p' => ['__PLUS__', 'P']
+   */
+  private getKeysFromShortcut(shortcut: string | string[]) {
+    let keys;
+    if (typeof shortcut === "string") {
+      // Rip all spaces out. Note, Comfy swallows space, so we don't have to handle it. Otherwise,
+      // we would require space to be fed as "Space" or "Spacebar" instead of " ".
+      shortcut = shortcut.replace(/\s/g, "");
+      // Change a real "+" to something we can encode.
+      shortcut = shortcut.replace(/^\+/, "__PLUS__").replace(/\+\+/, "+__PLUS__");
+      keys = shortcut.split("+").map((i) => i.replace("__PLUS__", "+"));
+    } else {
+      keys = [...shortcut];
+    }
+    return keys.map((k) => k.toLocaleUpperCase());
   }
 
   /**
    * Checks if all keys passed in are down.
    */
-  areAllKeysDown(keys: string[], caseSensitive = false) {
+  areAllKeysDown(keys: string | string[]) {
+    keys = this.getKeysFromShortcut(keys);
     return keys.every((k) => {
-      if (caseSensitive) {
-        return rgthree.downKeys["^" + k.trim()];
-      }
-      return rgthree.downKeys[k.trim().toUpperCase()];
+      return rgthree.downKeys[k];
     });
+  }
+
+  /**
+   * Checks if only the keys passed in are down; optionally and additionally allowing "shift" key.
+   */
+  areOnlyKeysDown(keys: string | string[], alsoAllowShift = false) {
+    keys = this.getKeysFromShortcut(keys);
+    const allKeysDown = this.areAllKeysDown(keys);
+    const downKeysLength = Object.values(rgthree.downKeys).length;
+    // All keys are down and they're the only ones.
+    if (allKeysDown && keys.length === downKeysLength) {
+      return true;
+    }
+    // Special case allowing the shift key in addition to the shortcut keys. This helps when a user
+    // may had originally defined "$" as a shortcut, but needs to press "shift + $" since it's an
+    // upper key character, etc.
+    if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
+      // If we're holding down shift, have one extra key held down, and the original keys don't
+      // include shift, then we're good to go.
+      return allKeysDown && this.areAllKeysDown(["SHIFT"]);
+    }
+    return false;
   }
 
   /**
@@ -941,7 +1075,17 @@ class Rgthree extends EventTarget {
   }
 
   isDevMode() {
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("#rgthree-dev");
+    if (window.location.href.includes("rgthree-dev=false")) {
+      return false;
+    }
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-dev");
+  }
+
+  isDebugMode() {
+    if (!this.isDevMode() || window.location.href.includes("rgthree-debug=false")) {
+      return false;
+    }
+    return window.location.href.includes("rgthree-debug");
   }
 
   monitorBadLinks() {
@@ -961,6 +1105,34 @@ class Rgthree extends EventTarget {
       this.monitorBadLinks();
     }, 5000);
   }
+}
+
+function getBookmarks(): ContextMenuItem[] {
+  const graph: TLGraph = app.graph;
+
+  // Sorts by Title.
+  // I could see an option to sort by either Shortcut, Title, or Position.
+  const bookmarks = graph._nodes
+    .filter((n): n is Bookmark => n.type === NodeTypesString.BOOKMARK)
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .map((n) => ({
+      content: `[${n.shortcutKey}] ${n.title}`,
+      className: "rgthree-contextmenu-item",
+      callback: () => {
+        n.canvasToBookmark();
+      },
+    }));
+
+  return !bookmarks.length
+    ? []
+    : [
+        {
+          content: "🔖 Bookmarks",
+          disabled: true,
+          className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+        },
+        ...bookmarks,
+      ];
 }
 
 export const rgthree = new Rgthree();

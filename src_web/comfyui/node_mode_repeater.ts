@@ -20,6 +20,7 @@ import {
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
+import { NodeMode } from "typings/comfy.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -172,8 +173,8 @@ class NodeModeRepeater extends BaseCollectorNode {
   }
 
   /** When a mode change, we want all connected nodes to match except for connected relays. */
-  override onModeChange() {
-    super.onModeChange();
+  override onModeChange(from: NodeMode, to: NodeMode) {
+    super.onModeChange(from, to);
     const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
     if (linkedNodes.length) {
       for (const node of linkedNodes) {

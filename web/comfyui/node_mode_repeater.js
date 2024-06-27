@@ -92,9 +92,9 @@ class NodeModeRepeater extends BaseCollectorNode {
             });
         }
     }
-    onModeChange() {
+    onModeChange(from, to) {
         var _a, _b;
-        super.onModeChange();
+        super.onModeChange(from, to);
         const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
         if (linkedNodes.length) {
             for (const node of linkedNodes) {

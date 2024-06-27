@@ -1,7 +1,7 @@
 from nodes import LoraLoader
 from .constants import get_category, get_name
 from .power_prompt_utils import get_lora_by_filename
-from .utils import ContainsAnyDict
+from .utils import FlexibleOptionalInputType, any_type
 
 
 class RgthreePowerLoraLoader:
@@ -18,7 +18,7 @@ class RgthreePowerLoraLoader:
         "clip": ("CLIP",),
       },
       # Since we will pass any number of loras in from the UI, this needs to always allow an
-      "optional": ContainsAnyDict(),
+      "optional": FlexibleOptionalInputType(any_type),
       "hidden": {},
     }
 

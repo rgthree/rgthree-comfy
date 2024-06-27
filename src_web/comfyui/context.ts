@@ -5,6 +5,8 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
+  SerializedLGraphNode,
+  LLink,
 } from "typings/litegraph.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 // @ts-ignore
@@ -19,6 +21,8 @@ import {
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
+import { debounce, wait } from "rgthree/common/shared_utils.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -190,6 +194,16 @@ class BaseContextNode extends RgthreeBaseServerNode {
     ctxClass: RgthreeBaseServerNodeConstructor,
   ) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
+    // [🤮] ComfyUI only adds "required" inputs to the outputs list when dragging an output to
+    // empty space, but since RGTHREE_CONTEXT is optional, it doesn't get added to the menu because
+    // ...of course. So, we'll manually add it. Of course, we also have to do this in a timeout
+    // because ComfyUI clears out `LiteGraph.slot_types_default_out` in its own 'Comfy.SlotDefaults'
+    // extension and we need to wait for that to happen.
+    wait(500).then(() => {
+      LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] =
+        LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] || [];
+      LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"].push(comfyClass.comfyClass);
+    });
   }
 
   static override onRegisteredForOverride(comfyClass: any, ctxClass: any) {
@@ -258,9 +272,55 @@ class ContextBigNode extends BaseContextNode {
 }
 
 /**
+ * A base node for Context Switche nodes and Context Merges nodes that will always add another empty
+ * ctx input, no less than five.
+ */
+class BaseContextMultiCtxInputNode extends BaseContextNode {
+  private stabilizeBound = this.stabilize.bind(this);
+
+  constructor(title: string) {
+    super(title);
+    // Adding five. Note, configure will add as many as was in the stored workflow automatically.
+    this.addContextInput(5);
+  }
+
+  private addContextInput(num = 1) {
+    for (let i = 0; i < num; i++) {
+      this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, "0")}`, "RGTHREE_CONTEXT");
+    }
+  }
+
+  override onConnectionsChange(
+    type: number,
+    slotIndex: number,
+    isConnected: boolean,
+    link: LLink,
+    ioSlot: INodeInputSlot | INodeOutputSlot,
+  ): void {
+    super.onConnectionsChange?.apply(this, [...arguments] as any);
+    if (type === LiteGraph.INPUT) {
+      this.scheduleStabilize();
+    }
+  }
+
+  private scheduleStabilize(ms = 64) {
+    return debounce(this.stabilizeBound, 64);
+  }
+
+  /**
+   * Stabilizes the inputs; removing any disconnected ones from the bottom, then adding an empty
+   * one to the end so we always have one empty one to expand.
+   */
+  private stabilize() {
+    removeUnusedInputsFromEnd(this, 4);
+    this.addContextInput();
+  }
+}
+
+/**
  * The Context Switch (original) node.
  */
-class ContextSwitchNode extends BaseContextNode {
+class ContextSwitchNode extends BaseContextMultiCtxInputNode {
   static override title = "Context Switch (rgthree)";
   static override type = "Context Switch (rgthree)";
   static comfyClass = "Context Switch (rgthree)";
@@ -287,7 +347,7 @@ class ContextSwitchNode extends BaseContextNode {
 /**
  * The Context Switch Big node.
  */
-class ContextSwitchBigNode extends BaseContextNode {
+class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
   static override title = "Context Switch Big (rgthree)";
   static override type = "Context Switch Big (rgthree)";
   static comfyClass = "Context Switch Big (rgthree)";
@@ -314,7 +374,7 @@ class ContextSwitchBigNode extends BaseContextNode {
 /**
  * The Context Merge (original) node.
  */
-class ContextMergeNode extends BaseContextNode {
+class ContextMergeNode extends BaseContextMultiCtxInputNode {
   static override title = "Context Merge (rgthree)";
   static override type = "Context Merge (rgthree)";
   static comfyClass = "Context Merge (rgthree)";
@@ -341,7 +401,7 @@ class ContextMergeNode extends BaseContextNode {
 /**
  * The Context Switch Big node.
  */
-class ContextMergeBigNode extends BaseContextNode {
+class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
   static override title = "Context Merge Big (rgthree)";
   static override type = "Context Merge Big (rgthree)";
   static comfyClass = "Context Merge Big (rgthree)";

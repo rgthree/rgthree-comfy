@@ -1,13 +1,15 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
+import { rgthree } from "./rgthree.js";
 import { NodeTypesString } from "./constants.js";
+import { getClosestOrSelf, queryOne } from "../../rgthree/common/utils_dom.js";
 export class Bookmark extends RgthreeBaseVirtualNode {
     get _collapsed_width() {
         return this.___collapsed_width;
     }
     set _collapsed_width(width) {
         const canvas = app.canvas;
-        const ctx = canvas.canvas.getContext('2d');
+        const ctx = canvas.canvas.getContext("2d");
         const oldFont = ctx.font;
         ctx.font = canvas.title_text_font;
         this.___collapsed_width = 40 + ctx.measureText(this.title).width;
@@ -19,13 +21,13 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
-        this.addWidget('text', 'shortcut_key', '1', (value, ...args) => {
-            value = value.trim()[0] || '1';
+        const nextShortcutChar = getNextShortcut();
+        this.addWidget("text", "shortcut_key", nextShortcutChar, (value, ...args) => {
+            value = value.trim()[0] || "1";
         }, {
             y: 8,
         });
-        this.addWidget('number', 'zoom', 1, (value) => {
-        }, {
+        this.addWidget("number", "zoom", 1, (value) => { }, {
             y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
             max: 2,
             min: 0.5,
@@ -34,22 +36,38 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.keypressBound = this.onKeypress.bind(this);
         this.onConstructed();
     }
+    get shortcutKey() {
+        var _a, _b, _c;
+        return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : "";
+    }
     onAdded(graph) {
-        window.addEventListener("keydown", this.keypressBound);
+        rgthree.addEventListener("keydown", this.keypressBound);
     }
     onRemoved() {
-        window.removeEventListener("keydown", this.keypressBound);
+        rgthree.removeEventListener("keydown", this.keypressBound);
     }
-    async onKeypress(event) {
-        const target = event.target;
-        if (['input', 'textarea'].includes(target.localName)) {
+    onKeypress(event) {
+        const originalEvent = event.detail.originalEvent;
+        const target = originalEvent.target;
+        if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
             return;
         }
-        if (event.ctrlKey || event.metaKey || event.altKey) {
-            return;
-        }
-        if (event.key.toLocaleLowerCase() === this.widgets[0].value.toLocaleLowerCase()) {
+        if (rgthree.areOnlyKeysDown(this.widgets[0].value, true)) {
             this.canvasToBookmark();
+            originalEvent.preventDefault();
+            originalEvent.stopPropagation();
+        }
+    }
+    onMouseDown(event, pos, graphCanvas) {
+        var _a;
+        const input = queryOne('.graphdialog > input.value');
+        if (input && input.value === ((_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value)) {
+            input.addEventListener('keydown', (e) => {
+                rgthree.handleKeydown(e);
+                e.preventDefault();
+                e.stopPropagation();
+                input.value = Object.keys(rgthree.downKeys).join(" + ");
+            });
         }
     }
     canvasToBookmark() {
@@ -78,3 +96,18 @@ app.registerExtension({
         Bookmark.setUp(Bookmark);
     },
 });
+function isBookmark(node) {
+    return node.type === NodeTypesString.BOOKMARK;
+}
+function getExistingShortcuts() {
+    const graph = app.graph;
+    const bookmarkNodes = graph._nodes.filter(isBookmark);
+    const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
+    return usedShortcuts;
+}
+const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
+function getNextShortcut() {
+    var _a;
+    const existingShortcuts = getExistingShortcuts();
+    return (_a = SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char))) !== null && _a !== void 0 ? _a : "1";
+}

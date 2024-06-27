@@ -2,6 +2,8 @@ import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
+import { debounce, wait } from "../../rgthree/common/shared_utils.js";
+import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     const otherNodeType = (otherNode.type || "").toUpperCase();
     const otherNodeName = (otherNode.title || "").toUpperCase();
@@ -107,6 +109,10 @@ class BaseContextNode extends RgthreeBaseServerNode {
     }
     static setUp(comfyClass, nodeData, ctxClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
+        wait(500).then(() => {
+            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] = LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] || [];
+            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'].push(comfyClass.comfyClass);
+        });
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
         addConnectionLayoutSupport(ctxClass, app, [
@@ -158,7 +164,33 @@ class ContextBigNode extends BaseContextNode {
 ContextBigNode.title = "Context Big (rgthree)";
 ContextBigNode.type = "Context Big (rgthree)";
 ContextBigNode.comfyClass = "Context Big (rgthree)";
-class ContextSwitchNode extends BaseContextNode {
+class BaseContextMultiCtxInputNode extends BaseContextNode {
+    constructor(title) {
+        super(title);
+        this.stabilizeBound = this.stabilize.bind(this);
+        this.addContextInput(5);
+    }
+    addContextInput(num = 1) {
+        for (let i = 0; i < num; i++) {
+            this.addInput(`ctx_${String(this.inputs.length + 1).padStart(2, "0")}`, "RGTHREE_CONTEXT");
+        }
+    }
+    onConnectionsChange(type, slotIndex, isConnected, link, ioSlot) {
+        var _a;
+        (_a = super.onConnectionsChange) === null || _a === void 0 ? void 0 : _a.apply(this, [...arguments]);
+        if (type === LiteGraph.INPUT) {
+            this.scheduleStabilize();
+        }
+    }
+    scheduleStabilize(ms = 64) {
+        return debounce(this.stabilizeBound, 64);
+    }
+    stabilize() {
+        removeUnusedInputsFromEnd(this, 4);
+        this.addContextInput();
+    }
+}
+class ContextSwitchNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextSwitchNode.title) {
         super(title);
     }
@@ -178,7 +210,7 @@ class ContextSwitchNode extends BaseContextNode {
 ContextSwitchNode.title = "Context Switch (rgthree)";
 ContextSwitchNode.type = "Context Switch (rgthree)";
 ContextSwitchNode.comfyClass = "Context Switch (rgthree)";
-class ContextSwitchBigNode extends BaseContextNode {
+class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextSwitchBigNode.title) {
         super(title);
     }
@@ -198,7 +230,7 @@ class ContextSwitchBigNode extends BaseContextNode {
 ContextSwitchBigNode.title = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
 ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
-class ContextMergeNode extends BaseContextNode {
+class ContextMergeNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeNode.title) {
         super(title);
     }
@@ -218,7 +250,7 @@ class ContextMergeNode extends BaseContextNode {
 ContextMergeNode.title = "Context Merge (rgthree)";
 ContextMergeNode.type = "Context Merge (rgthree)";
 ContextMergeNode.comfyClass = "Context Merge (rgthree)";
-class ContextMergeBigNode extends BaseContextNode {
+class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeBigNode.title) {
         super(title);
     }

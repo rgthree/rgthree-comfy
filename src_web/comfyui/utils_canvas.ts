@@ -141,6 +141,7 @@ type DrawNumberWidgetPartOptions = {
   height: number;
   value: number;
   direction?: 1 | -1;
+  textColor?: string;
 };
 
 /**
@@ -165,7 +166,7 @@ export function drawNumberWidgetPart(
   ctx.save();
 
   let posX = options.posX;
-  const { posY, height, value } = options;
+  const { posY, height, value, textColor } = options;
   const midY = posY + height / 2;
 
   // If we're drawing parts from right to left (usually when something in the middle will be
@@ -190,7 +191,12 @@ export function drawNumberWidgetPart(
   // Draw the strength text.
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
+  const oldTextcolor = ctx.fillStyle;
+  if (textColor) {
+    ctx.fillStyle = textColor;
+  }
   ctx.fillText(fitString(ctx, value.toFixed(2), numberWidth), posX + numberWidth / 2, midY);
+  ctx.fillStyle = oldTextcolor;
 
   xBoundsNumber[0] = posX;
   xBoundsNumber[1] = numberWidth;
@@ -262,4 +268,36 @@ export function drawTogglePart(
   ctx.restore();
 
   return [posX, toggleBgWidth];
+}
+
+export function drawInfoIcon(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  size: number = 12,
+) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(x, y, size, size, [size * 0.1]);
+  ctx.fillStyle = "#2f82ec";
+  ctx.strokeStyle = "#0f2a5e";
+  ctx.fill();
+  // ctx.stroke();
+  ctx.strokeStyle = "#FFF";
+  ctx.lineWidth = 2;
+  // ctx.lineCap = 'round';
+  const midX = x + size / 2;
+  const serifSize = size * 0.175;
+  ctx.stroke(
+    new Path2D(`
+    M ${midX} ${y + size * 0.15}
+    v 2
+    M ${midX - serifSize} ${y + size * 0.45}
+    h ${serifSize}
+    v ${size * 0.325}
+    h ${serifSize}
+    h -${serifSize * 2}
+  `),
+  );
+  ctx.restore();
 }

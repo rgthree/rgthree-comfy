@@ -23,10 +23,27 @@ export function getResolver(timeout = 5000) {
     }, timeout);
     return resolver;
 }
-export function wait(ms = 16, value) {
+const DEBOUNCE_FN_TO_PROMISE = new WeakMap();
+export function debounce(fn, ms = 64) {
+    if (!DEBOUNCE_FN_TO_PROMISE.get(fn)) {
+        DEBOUNCE_FN_TO_PROMISE.set(fn, wait(ms).then(() => {
+            DEBOUNCE_FN_TO_PROMISE.delete(fn);
+            fn();
+        }));
+    }
+    return DEBOUNCE_FN_TO_PROMISE.get(fn);
+}
+export function wait(ms = 16) {
+    if (ms === 16) {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                resolve();
+            });
+        });
+    }
     return new Promise((resolve) => {
         setTimeout(() => {
-            resolve(value);
+            resolve();
         }, ms);
     });
 }
@@ -72,10 +89,27 @@ export function setObjectValue(obj, objKey, value, createMissingObjects = true) 
     return obj;
 }
 export function moveArrayItem(arr, itemOrFrom, to) {
-    const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
+    const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
     arr.splice(to, 0, arr.splice(from, 1)[0]);
 }
 export function removeArrayItem(arr, itemOrIndex) {
-    const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+    const index = typeof itemOrIndex === "number" ? itemOrIndex : arr.indexOf(itemOrIndex);
     arr.splice(index, 1);
+}
+export function injectCss(href) {
+    if (document.querySelector(`link[href^="${href}"]`)) {
+        return Promise.resolve();
+    }
+    return new Promise((resolve) => {
+        const link = document.createElement("link");
+        link.setAttribute("rel", "stylesheet");
+        link.setAttribute("type", "text/css");
+        const timeout = setTimeout(resolve, 1000);
+        link.addEventListener("load", (e) => {
+            clearInterval(timeout);
+            resolve();
+        });
+        link.href = href;
+        document.head.appendChild(link);
+    });
 }

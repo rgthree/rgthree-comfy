@@ -23,6 +23,7 @@ import { wait } from "rgthree/common/shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";
+import { rgthree } from "./rgthree.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 
@@ -33,28 +34,30 @@ const MODE_REPEATS = [MODE_MUTE, MODE_BYPASS];
 const MODE_NOTHING = -99; // MADE THIS UP.
 
 const MODE_TO_OPTION = new Map([
-  [MODE_ALWAYS, 'ACTIVE'],
-  [MODE_MUTE, 'MUTE'],
-  [MODE_BYPASS, 'BYPASS'],
-  [MODE_NOTHING, 'NOTHING'],
+  [MODE_ALWAYS, "ACTIVE"],
+  [MODE_MUTE, "MUTE"],
+  [MODE_BYPASS, "BYPASS"],
+  [MODE_NOTHING, "NOTHING"],
 ]);
 
 const OPTION_TO_MODE = new Map([
-  ['ACTIVE', MODE_ALWAYS],
-  ['MUTE', MODE_MUTE],
-  ['BYPASS', MODE_BYPASS],
-  ['NOTHING', MODE_NOTHING],
+  ["ACTIVE", MODE_ALWAYS],
+  ["MUTE", MODE_MUTE],
+  ["BYPASS", MODE_BYPASS],
+  ["NOTHING", MODE_NOTHING],
 ]);
 
 const MODE_TO_PROPERTY = new Map([
-  [MODE_MUTE, 'on_muted_inputs'],
-  [MODE_BYPASS, 'on_bypassed_inputs'],
-  [MODE_ALWAYS, 'on_any_active_inputs'],
+  [MODE_MUTE, "on_muted_inputs"],
+  [MODE_BYPASS, "on_bypassed_inputs"],
+  [MODE_ALWAYS, "on_any_active_inputs"],
 ]);
 
+const logger = rgthree.newLogSession("[NodeModeRelay]");
+
 /**
- * Like a BaseCollectorNode, this relay node connects to a Repeater and changes it mode (so it can go
- * on to mute it's connections).
+ * Like a BaseCollectorNode, this relay node connects to a Repeater node and _relays_ mode changes
+ * changes to the repeater (so it can go on to modify its connections).
  */
 class NodeModeRelay extends BaseCollectorNode {
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
@@ -80,9 +83,9 @@ class NodeModeRelay extends BaseCollectorNode {
 
   constructor(title?: string) {
     super(title);
-    this.properties['on_muted_inputs'] = 'MUTE';
-    this.properties['on_bypassed_inputs'] = 'BYPASS';
-    this.properties['on_any_active_inputs'] = 'ACTIVE';
+    this.properties["on_muted_inputs"] = "MUTE";
+    this.properties["on_bypassed_inputs"] = "BYPASS";
+    this.properties["on_any_active_inputs"] = "ACTIVE";
 
     this.onConstructed();
   }
@@ -100,6 +103,16 @@ class NodeModeRelay extends BaseCollectorNode {
     return super.onConstructed();
   }
 
+  override onModeChange(from: NodeMode, to: NodeMode) {
+    super.onModeChange(from, to);
+    // If we aren't connected to anything, then we'll use our mode to relay when it changes.
+    if (this.inputs.length <= 1 && !this.isInputConnected(0) && this.isAnyOutputConnected()) {
+      const [n, v] = logger.infoParts(`Mode change without any inputs; relaying our mode.`);
+      console[n]?.(...v);
+      this.dispatchModeToRepeater(this.mode);
+    }
+  }
+
   override configure(info: SerializedLGraphNode<LGraphNode>): void {
     // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
     // https://github.com/rgthree/rgthree-comfy/issues/206
@@ -115,14 +128,15 @@ class NodeModeRelay extends BaseCollectorNode {
       return;
     }
     if (
-        this.properties['on_muted_inputs'] !== 'MUTE' ||
-        this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
-        this.properties['on_any_active_inputs'] != 'ACTIVE') {
+      this.properties["on_muted_inputs"] !== "MUTE" ||
+      this.properties["on_bypassed_inputs"] !== "BYPASS" ||
+      this.properties["on_any_active_inputs"] != "ACTIVE"
+    ) {
       let margin = 15;
       ctx.textAlign = "left";
-      let label = `*(MUTE > ${this.properties['on_muted_inputs']},  `;
-      label += `BYPASS > ${this.properties['on_bypassed_inputs']},  `;
-      label += `ACTIVE > ${this.properties['on_any_active_inputs']})`;
+      let label = `*(MUTE > ${this.properties["on_muted_inputs"]},  `;
+      label += `BYPASS > ${this.properties["on_bypassed_inputs"]},  `;
+      label += `ACTIVE > ${this.properties["on_any_active_inputs"]})`;
       ctx.fillStyle = LiteGraph.WIDGET_SECONDARY_TEXT_COLOR;
       const oldFont = ctx.font;
       ctx.font = "italic " + (LiteGraph.NODE_SUBTEXT_SIZE - 2) + "px Arial";
@@ -134,9 +148,10 @@ class NodeModeRelay extends BaseCollectorNode {
   override computeSize(out: Vector2) {
     let size = super.computeSize(out);
     if (
-        this.properties['on_muted_inputs'] !== 'MUTE' ||
-        this.properties['on_bypassed_inputs'] !== 'BYPASS' ||
-        this.properties['on_any_active_inputs'] != 'ACTIVE') {
+      this.properties["on_muted_inputs"] !== "MUTE" ||
+      this.properties["on_bypassed_inputs"] !== "BYPASS" ||
+      this.properties["on_any_active_inputs"] != "ACTIVE"
+    ) {
       size[1] += 17;
     }
     return size;
@@ -200,9 +215,19 @@ class NodeModeRelay extends BaseCollectorNode {
       }
     }
 
+    this.dispatchModeToRepeater(mode);
+    setTimeout(() => {
+      this.stabilize();
+    }, 500);
+  }
+
+  /**
+   * Sends the mode to the repeater, checking to see if we're modifying our mode.
+   */
+  private dispatchModeToRepeater(mode?: NodeMode | -99 | null) {
     if (mode != null) {
-      const propertyVal = this.properties?.[MODE_TO_PROPERTY.get(mode)||''];
-      const newMode = OPTION_TO_MODE.get(propertyVal)
+      const propertyVal = this.properties?.[MODE_TO_PROPERTY.get(mode) || ""];
+      const newMode = OPTION_TO_MODE.get(propertyVal);
       mode = (newMode !== null ? newMode : mode) as NodeMode | -99;
       if (mode !== null && mode !== MODE_NOTHING) {
         if (this.outputs?.length) {
@@ -216,9 +241,6 @@ class NodeModeRelay extends BaseCollectorNode {
         }
       }
     }
-    setTimeout(() => {
-      this.stabilize();
-    }, 500);
   }
 
   override getHelp() {
@@ -240,6 +262,11 @@ class NodeModeRelay extends BaseCollectorNode {
           <li><p>
             When any connected input nodes are active, the relay will set a connected repeater to
             active (by default).
+          </p></li>
+          <li><p>
+            If no inputs are connected, the relay will set a connected repeater to its mode <i>when
+            its own mode is changed</i>. <b>Note</b>, if any inputs are connected, then the above
+            will occur and the Relay's mode does not matter.
           </p></li>
       </ul>
       <p>

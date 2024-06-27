@@ -38,48 +38,68 @@ const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 
-export function query<T extends HTMLElement>(selector: string, parent: HTMLElement|Document = document) : T[] {
-  return Array.from(parent.querySelectorAll<T>(selector)).filter(n => !!n);
+export function query<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<HTMLElementTagNameMap[K]>;
+export function query<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<SVGElementTagNameMap[K]>;
+export function query<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<MathMLElementTagNameMap[K]>;
+export function query<T extends HTMLElement>(selectors: string, parent?: HTMLElement|Document): Array<T>;
+export function query(selectors: string, parent: HTMLElement|Document = document) {
+  return Array.from(parent.querySelectorAll(selectors)).filter(n => !!n);
+}
+
+export function queryOne<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): HTMLElementTagNameMap[K] | null;
+export function queryOne<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): SVGElementTagNameMap[K] | null;
+export function queryOne<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): MathMLElementTagNameMap[K] | null;
+export function queryOne<T extends HTMLElement>(selectors: string, parent?: HTMLElement|Document): T | null;
+export function queryOne(selectors: string, parent: HTMLElement|Document = document)  {
+  return parent.querySelector(selectors) ?? null;
 }
 
 export function createText(text: string) {
   return document.createTextNode(text);
 }
 
-export function getClosestOrSelf(element: EventTarget|HTMLElement|null, query: string) {
+export function getClosestOrSelf(element: EventTarget|HTMLElement|null, query: string) : HTMLElement|null {
   const el = (element as HTMLElement);
-  return el?.closest && (el.matches(query) || el.closest(query)) || null;
+  return (el?.closest && (el.matches(query) && el || el.closest(query)) as HTMLElement) || null;
 }
 
-export function createElement<T extends HTMLElement>(selectorOrText: string, attributes: {[name: string]: any}|null = null) {
-  let selector = selectorOrText.replace(/[\r\n]\s*/g, '');
-  let tag = getSelectorTag(selector);
-  if (!tag) {
-    tag = 'div';
-  }
-  const element = document.createElement(tag);
-  selector = selector.replace(RGX_TAG, '$2');
-  // Turn id and clasname into [attr]s that can be nested
-  selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
-  // selector = selector.replace(RGX_ATTR_CLASS, '$1[class="$2"]');
-  selector = selector.replace(RGX_ATTR_CLASS, (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, ' ')}"]`);
+type Attrs = {
+  [name: string]: any;
+};
 
-  const attrs = getSelectorAttributes(selector);
-  if (attrs) {
-    attrs.forEach((attr: string) => {
-      let matches = attr.substring(1, attr.length - 1).split('=');
+export function createElement<T extends HTMLElement>(selectorOrMarkup: string, attrs?: Attrs) {
+  const frag = getHtmlFragment(selectorOrMarkup);
+  let element = frag?.firstElementChild as HTMLElement;
+  let selector = "";
+  if (!element) {
+    selector = selectorOrMarkup.replace(/[\r\n]\s*/g, "");
+    const tag = getSelectorTag(selector) || "div";
+    element = document.createElement(tag);
+    selector = selector.replace(RGX_TAG, "$2");
+    // Turn id and classname into [attr]s that can be nested
+    selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
+    selector = selector.replace(
+      RGX_ATTR_CLASS,
+      (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, " ")}"]`,
+    );
+  }
+
+  const selectorAttrs = getSelectorAttributes(selector);
+  if (selectorAttrs) {
+    for (const attr of selectorAttrs) {
+      let matches = attr.substring(1, attr.length - 1).split("=");
       let key = localAssertNotFalsy(matches.shift());
-      let value: string  = matches.join('=');
+      let value: string = matches.join("=");
       if (value === undefined) {
         setAttribute(element, key, true);
       } else {
-        value = value.replace(/^['"](.*)['"]$/, '$1');
+        value = value.replace(/^['"](.*)['"]$/, "$1");
         setAttribute(element, key, value);
       }
-    });
+    }
   }
-  if (attributes) {
-    setAttributes(element, attributes);
+  if (attrs) {
+    setAttributes(element, attrs);
   }
   return element as T;
 }
@@ -139,13 +159,21 @@ export function setAttributes(element: HTMLElement, data: {[name: string]: any})
   }
 }
 
+function getHtmlFragment(value: string) {
+  if (value.match(/^\s*<.*?>[\s\S]*<\/[a-z0-9]+>\s*$/)) {
+    return document.createRange().createContextualFragment(value.trim());
+  }
+  return null;
+}
+
 function getChild(value: any) : HTMLElement|DocumentFragment|Text|null {
   if (value instanceof Node) {
     return value as HTMLElement;
   }
   if (typeof value === 'string') {
-    if (value.match(/<.*?>.*?<\/[a-z0-9]+>/)) {
-      return document.createRange().createContextualFragment(value);
+    let child = getHtmlFragment(value);
+    if (child) {
+      return child;
     }
     if (getSelectorTag(value)) {
       return createElement(value);
@@ -173,7 +201,13 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
     empty(element).innerHTML += value != null ? String(value) : '';
 
   } else if (attribute == 'style') {
-    element.style.cssText = isRemoving ? '' : (value != null ? String(value) : '');
+    if (typeof value === 'string') {
+      element.style.cssText = isRemoving ? '' : (value != null ? String(value) : '');
+    } else {
+      for (const [styleKey, styleValue] of Object.entries(value as {[key: string]: any})) {
+        element.style[styleKey as 'display'] = styleValue;
+      }
+    }
 
   } else if (attribute == 'events') {
     for (const [key, fn] of Object.entries(value as {[key: string]: (e: Event) => void})) {
@@ -193,6 +227,11 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
       } catch(e) {
         console.error(e);
       }
+    }
+
+    // "children" is a replace of the children, while "child" appends a new child if others exist.
+    if (attribute === 'children') {
+      empty(element);
     }
 
     let children = value instanceof Array ? value : [value];
@@ -285,9 +324,24 @@ function setStyle(element: HTMLElement, name: string, value: string|number|null)
   return element;
 };
 
-function empty(element: HTMLElement) {
+export function empty(element: HTMLElement) {
   while (element.firstChild) {
     element.removeChild(element.firstChild);
   }
   return element;
+}
+
+type ChildType = HTMLElement|DocumentFragment|Text|string|null;
+export function appendChildren(el: HTMLElement, children: ChildType|ChildType[]) {
+  children = !Array.isArray(children) ? [children] : children;
+  for (let child of children) {
+    child = getChild(child);
+    if (child instanceof Node) {
+      if (el instanceof HTMLTemplateElement) {
+        el.content.appendChild(child);
+      } else {
+        el.appendChild(child);
+      }
+    }
+  }
 }

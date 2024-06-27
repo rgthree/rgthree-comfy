@@ -47,11 +47,39 @@ export function getResolver<T>(timeout: number = 5000): Resolver<T> {
   return resolver as Resolver<T>;
 }
 
+/** The WeakMap for debounced functions. */
+const DEBOUNCE_FN_TO_PROMISE: WeakMap<Function, Promise<void>> = new WeakMap();
+
+/**
+ * Debounces a function call so it is only called once in the initially provided ms even if asked
+ * to be called multiple times within that period.
+ */
+export function debounce(fn: Function, ms = 64) {
+  if (!DEBOUNCE_FN_TO_PROMISE.get(fn)) {
+    DEBOUNCE_FN_TO_PROMISE.set(
+      fn,
+      wait(ms).then(() => {
+        DEBOUNCE_FN_TO_PROMISE.delete(fn);
+        fn();
+      }),
+    );
+  }
+  return DEBOUNCE_FN_TO_PROMISE.get(fn);
+}
+
 /** Waits a certain number of ms, as a `Promise.` */
-export function wait(ms = 16, value?: any) {
+export function wait(ms = 16): Promise<void> {
+  // Special logic, if we're waiting 16ms, then trigger on next frame.
+  if (ms === 16) {
+    return new Promise((resolve) => {
+      requestAnimationFrame(() => {
+        resolve();
+      });
+    });
+  }
   return new Promise((resolve) => {
     setTimeout(() => {
-      resolve(value);
+      resolve();
     }, ms);
   });
 }
@@ -118,15 +146,36 @@ export function setObjectValue(obj: any, objKey: string, value: any, createMissi
 /**
  * Moves an item in an array (by item or its index) to another index.
  */
-export function moveArrayItem<T>(arr: T[], itemOrFrom:T|number, to: number) {
-  const from = typeof itemOrFrom === 'number' ? itemOrFrom : arr.indexOf(itemOrFrom);
+export function moveArrayItem<T>(arr: T[], itemOrFrom: T | number, to: number) {
+  const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
   arr.splice(to, 0, arr.splice(from, 1)[0]!);
 }
 
 /**
  * Moves an item in an array (by item or its index) to another index.
  */
-export function removeArrayItem<T>(arr: T[], itemOrIndex:T|number) {
-  const index = typeof itemOrIndex === 'number' ? itemOrIndex : arr.indexOf(itemOrIndex);
+export function removeArrayItem<T>(arr: T[], itemOrIndex: T | number) {
+  const index = typeof itemOrIndex === "number" ? itemOrIndex : arr.indexOf(itemOrIndex);
   arr.splice(index, 1);
+}
+
+/**
+ * Injects CSS into the page with a promise when complete.
+ */
+export function injectCss(href: string): Promise<void> {
+  if (document.querySelector(`link[href^="${href}"]`)) {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const link = document.createElement("link");
+    link.setAttribute("rel", "stylesheet");
+    link.setAttribute("type", "text/css");
+    const timeout = setTimeout(resolve, 1000);
+    link.addEventListener("load", (e) => {
+      clearInterval(timeout);
+      resolve();
+    });
+    link.href = href;
+    document.head.appendChild(link);
+  });
 }

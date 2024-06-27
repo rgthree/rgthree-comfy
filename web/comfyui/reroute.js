@@ -79,14 +79,14 @@ class RerouteService {
     }
     handleLinkingKeydown(event) {
         if (!this.handledNewRerouteKeypress &&
-            rgthree.areAllKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING.split("+"))) {
+            rgthree.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)) {
             this.handledNewRerouteKeypress = true;
             this.insertNewRerouteWhileLinking();
         }
     }
     handleLinkingKeyup(event) {
         if (this.handledNewRerouteKeypress &&
-            !rgthree.areAllKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING.split("+"))) {
+            !rgthree.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)) {
             this.handledNewRerouteKeypress = false;
         }
     }
@@ -96,7 +96,7 @@ class RerouteService {
         if (!canvas.connecting_node ||
             !canvas.connecting_pos ||
             !(canvas.connecting_input || canvas.connecting_output)) {
-            throw new Error("Error, handling linkining keydown, but there's no link.");
+            throw new Error("Error, handling linking keydown, but there's no link.");
         }
         const node = LiteGraph.createNode("Reroute (rgthree)");
         const entry = {
@@ -672,7 +672,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         if (CONFIG_FAST_REROUTE_ENABLED) {
             for (const [key, shortcut] of Object.entries(this.shortcuts)) {
                 if (!shortcut.state) {
-                    const keys = rgthree.areAllKeysDown(shortcut.keys.split("+"));
+                    const keys = rgthree.areOnlyKeysDown(shortcut.keys);
                     if (keys) {
                         shortcut.state = true;
                         if (key === "rotate") {
@@ -695,7 +695,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         if (CONFIG_FAST_REROUTE_ENABLED) {
             for (const [key, shortcut] of Object.entries(this.shortcuts)) {
                 if (shortcut.state) {
-                    const keys = rgthree.areAllKeysDown(shortcut.keys.split("+"));
+                    const keys = rgthree.areOnlyKeysDown(shortcut.keys);
                     if (!keys) {
                         shortcut.state = false;
                         if (shortcut.initialMousePos) {
