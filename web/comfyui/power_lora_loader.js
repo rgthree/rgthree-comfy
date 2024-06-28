@@ -53,6 +53,24 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.size[1] = Math.max(this.size[1], computed[1]);
         this.setDirtyCanvas(true, true);
     }
+    getExtraMenuOptions(canvas, options) {
+        var _b;
+        (_b = super.getExtraMenuOptions) === null || _b === void 0 ? void 0 : _b.apply(this, [...arguments]);
+        const fetchInfoMenuItem = {
+            content: "Fetch info for all LoRAs",
+            callback: (_value, _options, _event, _parentMenu, _node) => {
+                const loraWidgets = this.widgets
+                    .filter((widget) => widget instanceof PowerLoraLoaderWidget);
+                const refreshPromises = loraWidgets
+                    .map(widget => widget.value.lora)
+                    .filter((file) => file !== null)
+                    .map((file) => MODEL_INFO_SERVICE.refreshLora(file));
+                Promise.all(refreshPromises).then((loraInfo) => {
+                });
+            },
+        };
+        options.splice(options.length - 1, 0, fetchInfoMenuItem);
+    }
     addNewLoraWidget(lora) {
         this.loraWidgetsCounter++;
         const widget = this.addCustomWidget(new PowerLoraLoaderWidget("lora_" + this.loraWidgetsCounter));
