@@ -1219,6 +1219,7 @@ export declare class LGraphGroup {
     title: string;
     // @rgthree - mark unprivate
     _bounding: Vector4;
+    // @rgthree - updated to make optional because it seems to be so.
     color?: string|null;
     font: string;
     // @rgthree
