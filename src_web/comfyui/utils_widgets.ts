@@ -8,6 +8,8 @@ import type {
   Vector2,
   AdjustedMouseEvent,
   Vector4,
+  SerializedLGraphNode,
+  LGraphCanvas,
 } from "../typings/litegraph.js";
 import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
 
@@ -412,6 +414,133 @@ export class RgthreeLabelWidget implements IWidget<null> {
       return false;
     }
     this.widgetOptions.actionCallback(event);
+    return true;
+  }
+}
+
+export class RgthreeToggleNavWidget implements IWidget<boolean> {
+  name = "RGTHREE_TOGGLE_AND_NAV";
+  label = "";
+  value = false;
+  disabled = false;
+  readonly options = { on: "yes", off: "no" };
+
+  constructor(
+    private readonly node: { pos: Vector2; size: Vector2 },
+    private readonly showNav: () => boolean,
+    readonly doModeChange: (force?: boolean, skipOtherNodeCheck?: boolean) => void,
+  ) {}
+
+  callback(
+    value: boolean,
+    graphCanvas: LGraphCanvas,
+    node: LGraphNode,
+    pos: Vector2,
+    event?: MouseEvent,
+  ) {
+    this.doModeChange();
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    node: LGraphNode,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    const widgetData = drawNodeWidget(ctx, {
+      width,
+      height,
+      posY,
+    });
+
+    // Render from right to left, since the text on left will take available space.
+    // `currentX` markes the current x position moving backwards.
+    let currentX = widgetData.width - widgetData.margin;
+
+    // The nav arrow
+    if (!widgetData.lowQuality && this.showNav()) {
+      currentX -= 7; // Arrow space margin
+      const midY = widgetData.posY + widgetData.height * 0.5;
+      ctx.fillStyle = ctx.strokeStyle = "#89A";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
+      ctx.fill(arrow);
+      ctx.stroke(arrow);
+      currentX -= 14;
+
+      currentX -= 7;
+      ctx.strokeStyle = widgetData.colorOutline;
+      ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
+    } else if (widgetData.lowQuality && this.showNav()) {
+      currentX -= 28;
+    }
+
+    // The toggle itself.
+    currentX -= 7;
+    ctx.fillStyle = this.value ? "#89A" : "#333";
+    ctx.beginPath();
+    const toggleRadius = height * 0.36;
+    ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    currentX -= toggleRadius * 2;
+
+    if (!widgetData.lowQuality) {
+      currentX -= 4;
+      ctx.textAlign = "right";
+      ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
+      const label = this.label || this.name;
+      const toggleLabelOn = this.options.on || "true";
+      const toggleLabelOff = this.options.off || "false";
+      ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
+      currentX -= Math.max(
+        ctx.measureText(toggleLabelOn).width,
+        ctx.measureText(toggleLabelOff).width,
+      );
+
+      currentX -= 7;
+      ctx.textAlign = "left";
+      let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
+      if (label != null) {
+        ctx.fillText(
+          fitString(ctx, label, maxLabelWidth),
+          widgetData.margin + 10,
+          posY + height * 0.7,
+        );
+      }
+    }
+  }
+
+  serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number) {
+    return this.value;
+  }
+
+  mouse(event: PointerEvent, pos: Vector2, selfNode: LGraphNode) {
+    if (event.type == "pointerdown") {
+      if (this.showNav() && pos[0] >= selfNode.size[0] - 15 - 28 - 1) {
+        const canvas = app.canvas as TLGraphCanvas;
+        const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
+        if (!lowQuality) {
+          // Clicked on right half with nav arrow, go to the group, center on group and set
+          // zoom to see it all.
+          canvas.centerOnNode(this.node);
+          const zoomCurrent = canvas.ds?.scale || 1;
+          const zoomX = canvas.canvas.width / this.node.size[0] - 0.02;
+          const zoomY = canvas.canvas.height / this.node.size[1] - 0.02;
+          canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+            canvas.canvas.width / 2,
+            canvas.canvas.height / 2,
+          ]);
+          canvas.setDirty(true, true);
+        }
+      } else {
+        this.value = !this.value;
+        setTimeout(() => {
+          this.callback?.(this.value, app.canvas, selfNode, pos, event);
+        }, 20);
+      }
+    }
     return true;
   }
 }

@@ -247,3 +247,97 @@ export class RgthreeLabelWidget {
         return true;
     }
 }
+export class RgthreeToggleNavWidget {
+    constructor(node, showNav, doModeChange) {
+        this.node = node;
+        this.showNav = showNav;
+        this.doModeChange = doModeChange;
+        this.name = "RGTHREE_TOGGLE_AND_NAV";
+        this.label = "";
+        this.value = false;
+        this.disabled = false;
+        this.options = { on: "yes", off: "no" };
+    }
+    callback(value, graphCanvas, node, pos, event) {
+        this.doModeChange();
+    }
+    draw(ctx, node, width, posY, height) {
+        const widgetData = drawNodeWidget(ctx, {
+            width,
+            height,
+            posY,
+        });
+        let currentX = widgetData.width - widgetData.margin;
+        if (!widgetData.lowQuality && this.showNav()) {
+            currentX -= 7;
+            const midY = widgetData.posY + widgetData.height * 0.5;
+            ctx.fillStyle = ctx.strokeStyle = "#89A";
+            ctx.lineJoin = "round";
+            ctx.lineCap = "round";
+            const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
+            ctx.fill(arrow);
+            ctx.stroke(arrow);
+            currentX -= 14;
+            currentX -= 7;
+            ctx.strokeStyle = widgetData.colorOutline;
+            ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
+        }
+        else if (widgetData.lowQuality && this.showNav()) {
+            currentX -= 28;
+        }
+        currentX -= 7;
+        ctx.fillStyle = this.value ? "#89A" : "#333";
+        ctx.beginPath();
+        const toggleRadius = height * 0.36;
+        ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+        ctx.fill();
+        currentX -= toggleRadius * 2;
+        if (!widgetData.lowQuality) {
+            currentX -= 4;
+            ctx.textAlign = "right";
+            ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
+            const label = this.label || this.name;
+            const toggleLabelOn = this.options.on || "true";
+            const toggleLabelOff = this.options.off || "false";
+            ctx.fillText(this.value ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
+            currentX -= Math.max(ctx.measureText(toggleLabelOn).width, ctx.measureText(toggleLabelOff).width);
+            currentX -= 7;
+            ctx.textAlign = "left";
+            let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
+            if (label != null) {
+                ctx.fillText(fitString(ctx, label, maxLabelWidth), widgetData.margin + 10, posY + height * 0.7);
+            }
+        }
+    }
+    serializeValue(serializedNode, widgetIndex) {
+        return this.value;
+    }
+    mouse(event, pos, selfNode) {
+        var _a, _b;
+        if (event.type == "pointerdown") {
+            if (this.showNav() && pos[0] >= selfNode.size[0] - 15 - 28 - 1) {
+                const canvas = app.canvas;
+                const lowQuality = (((_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) || 1) <= 0.5;
+                if (!lowQuality) {
+                    canvas.centerOnNode(this.node);
+                    const zoomCurrent = ((_b = canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) || 1;
+                    const zoomX = canvas.canvas.width / this.node.size[0] - 0.02;
+                    const zoomY = canvas.canvas.height / this.node.size[1] - 0.02;
+                    canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+                        canvas.canvas.width / 2,
+                        canvas.canvas.height / 2,
+                    ]);
+                    canvas.setDirty(true, true);
+                }
+            }
+            else {
+                this.value = !this.value;
+                setTimeout(() => {
+                    var _a;
+                    (_a = this.callback) === null || _a === void 0 ? void 0 : _a.call(this, this.value, app.canvas, selfNode, pos, event);
+                }, 20);
+            }
+        }
+        return true;
+    }
+}

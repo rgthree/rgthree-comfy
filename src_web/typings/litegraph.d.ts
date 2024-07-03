@@ -145,6 +145,9 @@ export interface IWidget<TValue = any, TOptions = any> {
     serializeValue?(serializedNode: SerializedLGraphNode, widgetIndex: number): TValue;
     // @rgthree - Checked in LGraphCanvas.prototype.processNodeWidgets, and figured I'd use it too.
     width?: number;
+
+    // @rgthree
+    doModeChange?(force?: boolean, skipOtherNodeCheck?: boolean): void;
 }
 export interface IButtonWidget extends IWidget<null, {}> {
     type: "button";
@@ -704,6 +707,8 @@ export declare class LGraphNode {
     inResizeCorner(x: number, y:number) : boolean;
     onWidgetChanged?(widgetName: string, widgetValue: any, oldWidgetValue: any, widget: IWidget): void;
 
+    isVirtualNode?: boolean;
+
     // end @rgthree added
 
     static title_color?: string;
@@ -1233,7 +1238,8 @@ export declare class LGraphGroup {
     size: Vector2;
     // @rgthree - apparently it is available?
     pos: Vector2;
-
+    // @rgthree
+    _rgthreeHasAnyActiveNode?: boolean;
 
     configure(o: SerializedLGraphGroup): void;
     serialize(): SerializedLGraphGroup;
