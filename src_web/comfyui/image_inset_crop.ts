@@ -4,11 +4,12 @@ import { app } from "../../scripts/app.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { LGraph, LGraphNode, SerializedLGraphNode } from "typings/litegraph.js";
+import { NodeTypesString } from "./constants.js";
 
 class ImageInsetCrop extends RgthreeBaseServerNode {
-  static override title = "Image Inset Crop (rgthree)";
-  static override type = "Image Inset Crop (rgthree)";
-  static comfyClass = "Image Inset Crop (rgthree)";
+  static override title = NodeTypesString.IMAGE_INSET_CROP;
+  static override type = NodeTypesString.IMAGE_INSET_CROP;
+  static comfyClass = NodeTypesString.IMAGE_INSET_CROP;
 
   static override exposedActions = ["Reset Crop"];
   static maxResolution = 8192;
@@ -67,7 +68,7 @@ app.registerExtension({
     nodeData: ComfyObjectInfo,
     _app: ComfyApp,
   ) {
-    if (nodeData.name === "Image Inset Crop (rgthree)") {
+    if (nodeData.name === NodeTypesString.IMAGE_INSET_CROP) {
       ImageInsetCrop.setUp(nodeType, nodeData);
     }
   },

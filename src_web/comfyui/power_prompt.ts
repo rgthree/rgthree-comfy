@@ -5,6 +5,7 @@ import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph} from 'typings/l
 import type {ComfyApp, ComfyObjectInfo, ComfyGraphNode} from 'typings/comfy.js'
 import {addConnectionLayoutSupport} from './utils.js';
 import { PowerPrompt } from './base_power_prompt.js';
+import { NodeTypesString } from './constants.js';
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -24,7 +25,7 @@ app.registerExtension({
 		}
 	},
   async loadedGraphNode(node: TLGraphNode) {
-		if (node.type === 'Power Prompt (rgthree)') {
+		if (node.type === NodeTypesString.POWER_PROMPT) {
       setTimeout(() => {
         // If the first output is STRING, then it's the text output from the initial launch.
         // Let's port it to the new

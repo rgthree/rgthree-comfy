@@ -1,6 +1,7 @@
 import { app } from '../../scripts/app.js';
 import { addConnectionLayoutSupport } from './utils.js';
 import { PowerPrompt } from './base_power_prompt.js';
+import { NodeTypesString } from './constants.js';
 let nodeData = null;
 app.registerExtension({
     name: 'rgthree.PowerPrompt',
@@ -16,7 +17,7 @@ app.registerExtension({
         }
     },
     async loadedGraphNode(node) {
-        if (node.type === 'Power Prompt (rgthree)') {
+        if (node.type === NodeTypesString.POWER_PROMPT) {
             setTimeout(() => {
                 if (node.outputs[0].type === 'STRING') {
                     if (node.outputs[0].links) {

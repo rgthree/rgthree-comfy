@@ -8,6 +8,7 @@ import type {
   ContextMenuItem,
   LGraph as TLGraph,
   AdjustedMouseEvent,
+  IContextMenuOptions,
 } from "typings/litegraph.js";
 import type { ComfyApiFormat, ComfyApiPrompt, ComfyApp } from "typings/comfy.js";
 // @ts-ignore
@@ -18,10 +19,10 @@ import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
-import { NodeTypesString } from "./constants.js";
+import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
+import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 import type { Bookmark } from "./bookmark";
 import { createElement, query } from "rgthree/common/utils_dom.js";
 
@@ -511,8 +512,11 @@ class Rgthree extends EventTarget {
     setTimeout(async () => {
       const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
       LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
-        const options = getCanvasMenuOptions.apply(this, [...args] as any);
+        let existingOptions = getCanvasMenuOptions.apply(this, [...args] as any);
 
+        const options = [];
+        options.push(null); // Divider
+        options.push(null); // Divider
         options.push(null); // Divider
         options.push({
           content: logoRgthree + `rgthree-comfy`,
@@ -521,10 +525,25 @@ class Rgthree extends EventTarget {
             options: that.getRgthreeContextMenuItems(),
           },
         });
+        options.push(null); // Divider
+        options.push(null); // Divider
 
-        return options;
+        let idx = null;
+        idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Queue Selected")) + 1;
+        idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Convert to Group"));
+        idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Arrange ("));
+        idx = idx || existingOptions.findIndex((o) => !o) + 1;
+        idx = idx || 3;
+        existingOptions.splice(idx, 0, ...options);
+        for (let i = existingOptions.length; i > 0; i--) {
+          if (existingOptions[i] === null && existingOptions[i + 1] === null) {
+            existingOptions.splice(i, 1);
+          }
+        }
+
+        return existingOptions;
       };
-    }, 1000);
+    }, 1016);
   }
 
   /**
@@ -545,6 +564,28 @@ class Rgthree extends EventTarget {
     const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
 
     return [
+      {
+        content: "Nodes",
+        disabled: true,
+        className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+      },
+      {
+        content: iconNode + "All",
+        className: "rgthree-contextmenu-item",
+        has_submenu: true,
+        submenu: {
+          options: Object.values(NodeTypesString).map(i => stripRgthree(i)).sort() as unknown as ContextMenuItem[],
+          callback: (value: string|ContextMenuItem, options: IContextMenuOptions, event: MouseEvent) => {
+            const node = LiteGraph.createNode(addRgthree(value as string));
+            node.pos = [rgthree.lastAdjustedMouseEvent!.canvasX, rgthree.lastAdjustedMouseEvent!.canvasY];
+            canvas.graph.add(node);
+            canvas.selectNode(node);
+            app.graph.setDirtyCanvas(true, true);
+          },
+          extra: {rgthree_doNotNest: true},
+        },
+      },
+
       {
         content: "Actions",
         disabled: true,

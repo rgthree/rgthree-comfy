@@ -4,10 +4,10 @@ import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
-import { NodeTypesString } from "./constants.js";
+import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { iconGear, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
 import { createElement, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
@@ -318,7 +318,10 @@ class Rgthree extends EventTarget {
         setTimeout(async () => {
             const getCanvasMenuOptions = LGraphCanvas.prototype.getCanvasMenuOptions;
             LGraphCanvas.prototype.getCanvasMenuOptions = function (...args) {
-                const options = getCanvasMenuOptions.apply(this, [...args]);
+                let existingOptions = getCanvasMenuOptions.apply(this, [...args]);
+                const options = [];
+                options.push(null);
+                options.push(null);
                 options.push(null);
                 options.push({
                     content: logoRgthree + `rgthree-comfy`,
@@ -327,9 +330,23 @@ class Rgthree extends EventTarget {
                         options: that.getRgthreeContextMenuItems(),
                     },
                 });
-                return options;
+                options.push(null);
+                options.push(null);
+                let idx = null;
+                idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Queue Selected"); }) + 1;
+                idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Convert to Group"); });
+                idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Arrange ("); });
+                idx = idx || existingOptions.findIndex((o) => !o) + 1;
+                idx = idx || 3;
+                existingOptions.splice(idx, 0, ...options);
+                for (let i = existingOptions.length; i > 0; i--) {
+                    if (existingOptions[i] === null && existingOptions[i + 1] === null) {
+                        existingOptions.splice(i, 1);
+                    }
+                }
+                return existingOptions;
             };
-        }, 1000);
+        }, 1016);
     }
     getRgthreeContextMenuItems() {
         const [canvas, graph] = [app.canvas, app.graph];
@@ -345,6 +362,27 @@ class Rgthree extends EventTarget {
         const showBookmarks = CONFIG_SERVICE.getFeatureValue("menu_bookmarks.enabled");
         const bookmarkMenuItems = showBookmarks ? getBookmarks() : [];
         return [
+            {
+                content: "Nodes",
+                disabled: true,
+                className: "rgthree-contextmenu-item rgthree-contextmenu-label",
+            },
+            {
+                content: iconNode + "All",
+                className: "rgthree-contextmenu-item",
+                has_submenu: true,
+                submenu: {
+                    options: Object.values(NodeTypesString).map(i => stripRgthree(i)).sort(),
+                    callback: (value, options, event) => {
+                        const node = LiteGraph.createNode(addRgthree(value));
+                        node.pos = [rgthree.lastAdjustedMouseEvent.canvasX, rgthree.lastAdjustedMouseEvent.canvasY];
+                        canvas.graph.add(node);
+                        canvas.selectNode(node);
+                        app.graph.setDirtyCanvas(true, true);
+                    },
+                    extra: { rgthree_doNotNest: true },
+                },
+            },
             {
                 content: "Actions",
                 disabled: true,

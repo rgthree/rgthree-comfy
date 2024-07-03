@@ -4,6 +4,7 @@ import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { debounce, wait } from "../../rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
+import { NodeTypesString } from "./constants.js";
 function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     const otherNodeType = (otherNode.type || "").toUpperCase();
     const otherNodeName = (otherNode.title || "").toUpperCase();
@@ -110,8 +111,9 @@ class BaseContextNode extends RgthreeBaseServerNode {
     static setUp(comfyClass, nodeData, ctxClass) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
         wait(500).then(() => {
-            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] = LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'] || [];
-            LiteGraph.slot_types_default_out['RGTHREE_CONTEXT'].push(comfyClass.comfyClass);
+            LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] =
+                LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"] || [];
+            LiteGraph.slot_types_default_out["RGTHREE_CONTEXT"].push(comfyClass.comfyClass);
         });
     }
     static onRegisteredForOverride(comfyClass, ctxClass) {
@@ -141,9 +143,9 @@ class ContextNode extends BaseContextNode {
         });
     }
 }
-ContextNode.title = "Context (rgthree)";
-ContextNode.type = "Context (rgthree)";
-ContextNode.comfyClass = "Context (rgthree)";
+ContextNode.title = NodeTypesString.CONTEXT;
+ContextNode.type = NodeTypesString.CONTEXT;
+ContextNode.comfyClass = NodeTypesString.CONTEXT;
 class ContextBigNode extends BaseContextNode {
     constructor(title = ContextBigNode.title) {
         super(title);
@@ -161,9 +163,9 @@ class ContextBigNode extends BaseContextNode {
         });
     }
 }
-ContextBigNode.title = "Context Big (rgthree)";
-ContextBigNode.type = "Context Big (rgthree)";
-ContextBigNode.comfyClass = "Context Big (rgthree)";
+ContextBigNode.title = NodeTypesString.CONTEXT_BIG;
+ContextBigNode.type = NodeTypesString.CONTEXT_BIG;
+ContextBigNode.comfyClass = NodeTypesString.CONTEXT_BIG;
 class BaseContextMultiCtxInputNode extends BaseContextNode {
     constructor(title) {
         super(title);
@@ -207,9 +209,9 @@ class ContextSwitchNode extends BaseContextMultiCtxInputNode {
         });
     }
 }
-ContextSwitchNode.title = "Context Switch (rgthree)";
-ContextSwitchNode.type = "Context Switch (rgthree)";
-ContextSwitchNode.comfyClass = "Context Switch (rgthree)";
+ContextSwitchNode.title = NodeTypesString.CONTEXT_SWITCH;
+ContextSwitchNode.type = NodeTypesString.CONTEXT_SWITCH;
+ContextSwitchNode.comfyClass = NodeTypesString.CONTEXT_SWITCH;
 class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextSwitchBigNode.title) {
         super(title);
@@ -227,9 +229,9 @@ class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
         });
     }
 }
-ContextSwitchBigNode.title = "Context Switch Big (rgthree)";
-ContextSwitchBigNode.type = "Context Switch Big (rgthree)";
-ContextSwitchBigNode.comfyClass = "Context Switch Big (rgthree)";
+ContextSwitchBigNode.title = NodeTypesString.CONTEXT_SWITCH_BIG;
+ContextSwitchBigNode.type = NodeTypesString.CONTEXT_SWITCH_BIG;
+ContextSwitchBigNode.comfyClass = NodeTypesString.CONTEXT_SWITCH_BIG;
 class ContextMergeNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeNode.title) {
         super(title);
@@ -247,9 +249,9 @@ class ContextMergeNode extends BaseContextMultiCtxInputNode {
         });
     }
 }
-ContextMergeNode.title = "Context Merge (rgthree)";
-ContextMergeNode.type = "Context Merge (rgthree)";
-ContextMergeNode.comfyClass = "Context Merge (rgthree)";
+ContextMergeNode.title = NodeTypesString.CONTEXT_MERGE;
+ContextMergeNode.type = NodeTypesString.CONTEXT_MERGE;
+ContextMergeNode.comfyClass = NodeTypesString.CONTEXT_MERGE;
 class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
     constructor(title = ContextMergeBigNode.title) {
         super(title);
@@ -267,9 +269,9 @@ class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
         });
     }
 }
-ContextMergeBigNode.title = "Context Merge Big (rgthree)";
-ContextMergeBigNode.type = "Context Merge Big (rgthree)";
-ContextMergeBigNode.comfyClass = "Context Merge Big (rgthree)";
+ContextMergeBigNode.title = NodeTypesString.CONTEXT_MERGE_BIG;
+ContextMergeBigNode.type = NodeTypesString.CONTEXT_MERGE_BIG;
+ContextMergeBigNode.comfyClass = NodeTypesString.CONTEXT_MERGE_BIG;
 const contextNodes = [
     ContextNode,
     ContextBigNode,

@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
+import { NodeTypesString } from "./constants.js";
 class ImageInsetCrop extends RgthreeBaseServerNode {
     constructor(title = ImageInsetCrop.title) {
         super(title);
@@ -43,15 +44,15 @@ class ImageInsetCrop extends RgthreeBaseServerNode {
         RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ImageInsetCrop);
     }
 }
-ImageInsetCrop.title = "Image Inset Crop (rgthree)";
-ImageInsetCrop.type = "Image Inset Crop (rgthree)";
-ImageInsetCrop.comfyClass = "Image Inset Crop (rgthree)";
+ImageInsetCrop.title = NodeTypesString.IMAGE_INSET_CROP;
+ImageInsetCrop.type = NodeTypesString.IMAGE_INSET_CROP;
+ImageInsetCrop.comfyClass = NodeTypesString.IMAGE_INSET_CROP;
 ImageInsetCrop.exposedActions = ["Reset Crop"];
 ImageInsetCrop.maxResolution = 8192;
 app.registerExtension({
     name: "rgthree.ImageInsetCrop",
     async beforeRegisterNodeDef(nodeType, nodeData, _app) {
-        if (nodeData.name === "Image Inset Crop (rgthree)") {
+        if (nodeData.name === NodeTypesString.IMAGE_INSET_CROP) {
             ImageInsetCrop.setUp(nodeType, nodeData);
         }
     },

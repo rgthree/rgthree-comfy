@@ -23,6 +23,7 @@ import { rgthree } from "./rgthree.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 import { debounce, wait } from "rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
+import { NodeTypesString } from "./constants.js";
 
 declare const LGraphNode: typeof TLGraphNode;
 declare const LiteGraph: typeof TLiteGraph;
@@ -221,9 +222,9 @@ class BaseContextNode extends RgthreeBaseServerNode {
  * The original Context node.
  */
 class ContextNode extends BaseContextNode {
-  static override title = "Context (rgthree)";
-  static override type = "Context (rgthree)";
-  static comfyClass = "Context (rgthree)";
+  static override title = NodeTypesString.CONTEXT;
+  static override type = NodeTypesString.CONTEXT;
+  static comfyClass = NodeTypesString.CONTEXT;
 
   constructor(title = ContextNode.title) {
     super(title);
@@ -248,9 +249,9 @@ class ContextNode extends BaseContextNode {
  * The Context Big node.
  */
 class ContextBigNode extends BaseContextNode {
-  static override title = "Context Big (rgthree)";
-  static override type = "Context Big (rgthree)";
-  static comfyClass = "Context Big (rgthree)";
+  static override title = NodeTypesString.CONTEXT_BIG;
+  static override type = NodeTypesString.CONTEXT_BIG;
+  static comfyClass = NodeTypesString.CONTEXT_BIG;
 
   constructor(title = ContextBigNode.title) {
     super(title);
@@ -321,9 +322,9 @@ class BaseContextMultiCtxInputNode extends BaseContextNode {
  * The Context Switch (original) node.
  */
 class ContextSwitchNode extends BaseContextMultiCtxInputNode {
-  static override title = "Context Switch (rgthree)";
-  static override type = "Context Switch (rgthree)";
-  static comfyClass = "Context Switch (rgthree)";
+  static override title = NodeTypesString.CONTEXT_SWITCH;
+  static override type = NodeTypesString.CONTEXT_SWITCH;
+  static comfyClass = NodeTypesString.CONTEXT_SWITCH;
 
   constructor(title = ContextSwitchNode.title) {
     super(title);
@@ -348,9 +349,9 @@ class ContextSwitchNode extends BaseContextMultiCtxInputNode {
  * The Context Switch Big node.
  */
 class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
-  static override title = "Context Switch Big (rgthree)";
-  static override type = "Context Switch Big (rgthree)";
-  static comfyClass = "Context Switch Big (rgthree)";
+  static override title = NodeTypesString.CONTEXT_SWITCH_BIG;
+  static override type = NodeTypesString.CONTEXT_SWITCH_BIG;
+  static comfyClass = NodeTypesString.CONTEXT_SWITCH_BIG;
 
   constructor(title = ContextSwitchBigNode.title) {
     super(title);
@@ -375,9 +376,9 @@ class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
  * The Context Merge (original) node.
  */
 class ContextMergeNode extends BaseContextMultiCtxInputNode {
-  static override title = "Context Merge (rgthree)";
-  static override type = "Context Merge (rgthree)";
-  static comfyClass = "Context Merge (rgthree)";
+  static override title = NodeTypesString.CONTEXT_MERGE;
+  static override type = NodeTypesString.CONTEXT_MERGE;
+  static comfyClass = NodeTypesString.CONTEXT_MERGE;
 
   constructor(title = ContextMergeNode.title) {
     super(title);
@@ -402,9 +403,9 @@ class ContextMergeNode extends BaseContextMultiCtxInputNode {
  * The Context Switch Big node.
  */
 class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
-  static override title = "Context Merge Big (rgthree)";
-  static override type = "Context Merge Big (rgthree)";
-  static comfyClass = "Context Merge Big (rgthree)";
+  static override title = NodeTypesString.CONTEXT_MERGE_BIG;
+  static override type = NodeTypesString.CONTEXT_MERGE_BIG;
+  static comfyClass = NodeTypesString.CONTEXT_MERGE_BIG;
 
   constructor(title = ContextMergeBigNode.title) {
     super(title);

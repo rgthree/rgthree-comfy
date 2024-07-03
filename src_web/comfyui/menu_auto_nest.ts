@@ -33,7 +33,7 @@ app.registerExtension({
       const enabled = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.subdirs", false);
 
       // If we're not enabled, or are incompatible, then just call out safely.
-      let incompatible: string | boolean = !enabled;
+      let incompatible: string | boolean = !enabled || !!options?.extra?.rgthree_doNotNest;
       if (!incompatible) {
         if (values.length <= threshold) {
           incompatible = `Skipping context menu auto nesting b/c threshold is not met (${threshold})`;

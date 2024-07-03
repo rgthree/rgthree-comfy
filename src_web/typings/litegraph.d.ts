@@ -207,6 +207,8 @@ export interface IContextMenuOptions {
     className?: string;
     // @rgthree - Added for menu_auto_nest
     rgthree_originalCallback?: ContextMenuEventListener;
+    // @rgthree - No idea since it's not documented, but we'll use it to pass data, like rgthree_doNotNest
+    extra?: any
 }
 
 export type ContextMenuItem = IContextMenuItem | null;
