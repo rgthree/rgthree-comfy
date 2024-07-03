@@ -43,7 +43,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
     }
     refreshWidgets() {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         const canvas = app.canvas;
         let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
         let customAlphabet = null;
@@ -106,7 +106,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         let index = 0;
         for (const group of groups) {
             if (filterColors.length) {
-                let groupColor = group.color.replace("#", "").trim().toLocaleLowerCase();
+                let groupColor = (_f = group.color) === null || _f === void 0 ? void 0 : _f.replace("#", "").trim().toLocaleLowerCase();
+                if (!groupColor) {
+                    continue;
+                }
                 if (groupColor.length === 3) {
                     groupColor = groupColor.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
                 }
@@ -115,7 +118,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                     continue;
                 }
             }
-            if ((_g = (_f = this.properties) === null || _f === void 0 ? void 0 : _f[PROPERTY_MATCH_TITLE]) === null || _g === void 0 ? void 0 : _g.trim()) {
+            if ((_h = (_g = this.properties) === null || _g === void 0 ? void 0 : _g[PROPERTY_MATCH_TITLE]) === null || _h === void 0 ? void 0 : _h.trim()) {
                 try {
                     if (!new RegExp(this.properties[PROPERTY_MATCH_TITLE], "i").exec(group.title)) {
                         continue;

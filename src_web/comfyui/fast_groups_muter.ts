@@ -167,7 +167,10 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     let index = 0;
     for (const group of groups) {
       if (filterColors.length) {
-        let groupColor = group.color.replace("#", "").trim().toLocaleLowerCase();
+        let groupColor = group.color?.replace("#", "").trim().toLocaleLowerCase();
+        if (!groupColor) {
+          continue;
+        }
         if (groupColor.length === 3) {
           groupColor = groupColor.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
         }

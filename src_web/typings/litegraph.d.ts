@@ -1219,7 +1219,7 @@ export declare class LGraphGroup {
     title: string;
     // @rgthree - mark unprivate
     _bounding: Vector4;
-    color: string;
+    color?: string|null;
     font: string;
     // @rgthree
     _nodes: LGraphNode[];
