@@ -17,14 +17,20 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
-import { wait } from "rgthree/common/shared_utils.js";
+import { injectCss, wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
+import {
+  iconGear,
+  iconNode,
+  iconReplace,
+  iconStarFilled,
+  logoRgthree,
+} from "rgthree/common/media/svgs.js";
 import type { Bookmark } from "./bookmark";
-import { createElement, query } from "rgthree/common/utils_dom.js";
+import { createElement, query, queryOne } from "rgthree/common/utils_dom.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphCanvas: typeof TLGraphCanvas;
@@ -92,10 +98,9 @@ const INVOKE_EXTENSIONS_BLOCKLIST = [
   {
     name: "efficiency.widgethider",
     reason:
-      "Overrides value getter before widget getter is prepared. Can be lifted if/when "+
-      "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled."
-
-  }
+      "Overrides value getter before widget getter is prepared. Can be lifted if/when " +
+      "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled.",
+  },
 ];
 
 /** A basic wrapper around logger. */
@@ -210,6 +215,7 @@ class Rgthree extends EventTarget {
   readonly api = api;
   private settingsDialog: RgthreeConfigDialog | null = null;
   private progressBarEl: RgthreeProgressBar | null = null;
+  private rgthreeCssPromise: Promise<void>;
 
   /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
   private queueNodeIds: number[] | null = null;
@@ -269,9 +275,7 @@ class Rgthree extends EventTarget {
     this.initializeComfyUIHooks();
     this.initializeContextMenu();
 
-    wait(100).then(() => {
-      this.injectRgthreeCss();
-    });
+    this.rgthreeCssPromise = injectCss("extensions/rgthree-comfy/rgthree.css");
 
     this.initializeProgressBar();
     this.initializeDebugShit();
@@ -303,10 +307,15 @@ class Rgthree extends EventTarget {
   /**
    * Initializes the top progress bar, if it's configured.
    */
-  initializeProgressBar() {
+  async initializeProgressBar() {
     if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
+      await this.rgthreeCssPromise;
       if (!this.progressBarEl) {
         this.progressBarEl = RgthreeProgressBar.create();
+        this.progressBarEl.setAttribute(
+          "title",
+          "Progress Bar by gthree. (Right-click for rgthree menu)",
+        );
 
         this.progressBarEl.addEventListener("contextmenu", async (e) => {
           e.stopPropagation();
@@ -343,7 +352,18 @@ class Rgthree extends EventTarget {
           }
         });
       }
-      if (!this.progressBarEl!.parentElement) {
+      // Handle both cases in case someone hasn't updated. Can probably just assume
+      // `isUpdatedComfyBodyClasses` is true in the near future.
+      const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+      const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
+      // If ComfyUI is updated with the body segments, then use that.
+      if (isUpdatedComfyBodyClasses) {
+        if (position === "bottom") {
+          queryOne(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
+        } else {
+          queryOne(".comfyui-body-top")!.appendChild(this.progressBarEl);
+        }
+      } else {
         document.body.appendChild(this.progressBarEl);
       }
       const height = CONFIG_SERVICE.getConfigValue("features.progress_bar.height") || 14;
@@ -351,12 +371,14 @@ class Rgthree extends EventTarget {
       const fontSize = Math.max(10, Number(height) - 10);
       this.progressBarEl.style.fontSize = `${fontSize}px`;
       this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
-      if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
-        this.progressBarEl.style.bottom = `0px`;
-        this.progressBarEl.style.top = `auto`;
-      } else {
-        this.progressBarEl.style.top = `0px`;
-        this.progressBarEl.style.bottom = `auto`;
+      if (!isUpdatedComfyBodyClasses) {
+        if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
+          this.progressBarEl.style.bottom = `0px`;
+          this.progressBarEl.style.top = `auto`;
+        } else {
+          this.progressBarEl.style.top = `0px`;
+          this.progressBarEl.style.bottom = `auto`;
+        }
       }
     } else {
       this.progressBarEl?.remove();
@@ -529,7 +551,8 @@ class Rgthree extends EventTarget {
         options.push(null); // Divider
 
         let idx = null;
-        idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Queue Selected")) + 1;
+        idx =
+          idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Queue Selected")) + 1;
         idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Convert to Group"));
         idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Arrange ("));
         idx = idx || existingOptions.findIndex((o) => !o) + 1;
@@ -574,15 +597,24 @@ class Rgthree extends EventTarget {
         className: "rgthree-contextmenu-item",
         has_submenu: true,
         submenu: {
-          options: Object.values(NodeTypesString).map(i => stripRgthree(i)).sort() as unknown as ContextMenuItem[],
-          callback: (value: string|ContextMenuItem, options: IContextMenuOptions, event: MouseEvent) => {
+          options: Object.values(NodeTypesString)
+            .map((i) => stripRgthree(i))
+            .sort() as unknown as ContextMenuItem[],
+          callback: (
+            value: string | ContextMenuItem,
+            options: IContextMenuOptions,
+            event: MouseEvent,
+          ) => {
             const node = LiteGraph.createNode(addRgthree(value as string));
-            node.pos = [rgthree.lastAdjustedMouseEvent!.canvasX, rgthree.lastAdjustedMouseEvent!.canvasY];
+            node.pos = [
+              rgthree.lastAdjustedMouseEvent!.canvasX,
+              rgthree.lastAdjustedMouseEvent!.canvasY,
+            ];
             canvas.graph.add(node);
             canvas.selectNode(node);
             app.graph.setDirtyCanvas(true, true);
           },
-          extra: {rgthree_doNotNest: true},
+          extra: { rgthree_doNotNest: true },
         },
       },
 
@@ -1051,17 +1083,6 @@ class Rgthree extends EventTarget {
       return allKeysDown && this.areAllKeysDown(["SHIFT"]);
     }
     return false;
-  }
-
-  /**
-   * Injects the rgthree.css file into the app.
-   */
-  private injectRgthreeCss() {
-    let link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.type = "text/css";
-    link.href = "extensions/rgthree-comfy/rgthree.css";
-    document.head.appendChild(link);
   }
 
   setLogLevel(level?: LogLevel | string) {

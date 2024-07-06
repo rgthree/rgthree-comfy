@@ -522,7 +522,7 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
 
 rgthree-progress-bar {
   display: block;
-  position: fixed;
+  position: relative;
   z-index: 999;
   top: 0;
   left: 0;
@@ -532,6 +532,14 @@ rgthree-progress-bar {
   overflow: hidden;
   box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.25);
   box-shadow: inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
+}
+
+* ~ rgthree-progress-bar {
+  box-shadow: inset 0px 1px 0px rgb(0, 0, 0), inset 0px 2px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
+}
+
+body > rgthree-progress-bar {
+  position: fixed;
 }
 
 .rgthree-debug-keydowns {

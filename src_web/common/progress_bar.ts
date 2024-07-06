@@ -89,17 +89,17 @@ export class RgthreeProgressBar extends HTMLElement {
       }
 
       if (nodeLabel || stepsLabel) {
-        progressText += ` - ${nodeLabel || '???'}${stepsLabel ? ` (${stepsLabel})` : ''}`;
+        progressText += ` - ${nodeLabel || "???"}${stepsLabel ? ` (${stepsLabel})` : ""}`;
       }
       if (!stepsLabel) {
         this.progressStepsEl.style.width = `0%`;
       }
       this.progressTextEl.innerText = progressText;
     } else {
-      if (e?.detail.queue)  {
+      if (e?.detail.queue) {
         this.progressTextEl.innerText = `(${e.detail.queue}) Running... in another tab`;
       } else {
-        this.progressTextEl.innerText = 'Idle';
+        this.progressTextEl.innerText = "Idle";
       }
       this.progressNodesEl.style.width = `0%`;
       this.progressStepsEl.style.width = `0%`;
@@ -108,12 +108,15 @@ export class RgthreeProgressBar extends HTMLElement {
 
   connectedCallback() {
     if (!this.connected) {
-      PROMPT_SERVICE.addEventListener("progress-update", this.onProgressUpdateBound as EventListener);
+      PROMPT_SERVICE.addEventListener(
+        "progress-update",
+        this.onProgressUpdateBound as EventListener,
+      );
       this.connected = true;
     }
     // We were already connected, so we just need to reset.
     if (this.shadow) {
-      this.progressTextEl.innerText = 'Idle';
+      this.progressTextEl.innerText = "Idle";
       this.progressNodesEl.style.width = `0%`;
       this.progressStepsEl.style.width = `0%`;
       return;
@@ -197,17 +200,19 @@ export class RgthreeProgressBar extends HTMLElement {
     `);
     this.shadow.adoptedStyleSheets = [sheet];
 
-    const overlayEl = createElement(`div.overlay[part="overlay"]`, {parent: this.shadow});
-    this.progressNodesEl = createElement(`div.bar[part="progress-nodes"]`, {parent: this.shadow});
-    this.progressStepsEl = createElement(`div.bar[part="progress-steps"]`, {parent: this.shadow});
-    this.progressTextEl = createElement(`span[part="text"]`, {text: 'Idle', parent: this.shadow});
+    const overlayEl = createElement(`div.overlay[part="overlay"]`, { parent: this.shadow });
+    this.progressNodesEl = createElement(`div.bar[part="progress-nodes"]`, { parent: this.shadow });
+    this.progressStepsEl = createElement(`div.bar[part="progress-steps"]`, { parent: this.shadow });
+    this.progressTextEl = createElement(`span[part="text"]`, { text: "Idle", parent: this.shadow });
   }
 
   disconnectedCallback() {
     this.connected = false;
-    PROMPT_SERVICE.removeEventListener("progress-update", this.onProgressUpdateBound as EventListener);
+    PROMPT_SERVICE.removeEventListener(
+      "progress-update",
+      this.onProgressUpdateBound as EventListener,
+    );
   }
-
 }
 
 customElements.define(RgthreeProgressBar.NAME, RgthreeProgressBar);

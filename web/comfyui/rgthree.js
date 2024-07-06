@@ -2,13 +2,13 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
-import { wait } from "../../rgthree/common/shared_utils.js";
+import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
-import { createElement, query } from "../../rgthree/common/utils_dom.js";
+import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
+import { createElement, query, queryOne } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -52,8 +52,8 @@ const INVOKE_EXTENSIONS_BLOCKLIST = [
     {
         name: "efficiency.widgethider",
         reason: "Overrides value getter before widget getter is prepared. Can be lifted if/when " +
-            "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled."
-    }
+            "https://github.com/jags111/efficiency-nodes-comfyui/pull/203 is pulled.",
+    },
 ];
 class Logger {
     log(level, message, ...args) {
@@ -150,9 +150,7 @@ class Rgthree extends EventTarget {
         this.initializeGraphAndCanvasHooks();
         this.initializeComfyUIHooks();
         this.initializeContextMenu();
-        wait(100).then(() => {
-            this.injectRgthreeCss();
-        });
+        this.rgthreeCssPromise = injectCss("extensions/rgthree-comfy/rgthree.css");
         this.initializeProgressBar();
         this.initializeDebugShit();
         CONFIG_SERVICE.addEventListener("config-change", ((e) => {
@@ -176,11 +174,13 @@ class Rgthree extends EventTarget {
         }
         this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
     }
-    initializeProgressBar() {
+    async initializeProgressBar() {
         var _a;
         if (CONFIG_SERVICE.getConfigValue("features.progress_bar.enabled")) {
+            await this.rgthreeCssPromise;
             if (!this.progressBarEl) {
                 this.progressBarEl = RgthreeProgressBar.create();
+                this.progressBarEl.setAttribute("title", "Progress Bar by gthree. (Right-click for rgthree menu)");
                 this.progressBarEl.addEventListener("contextmenu", async (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -212,7 +212,17 @@ class Rgthree extends EventTarget {
                     }
                 });
             }
-            if (!this.progressBarEl.parentElement) {
+            const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+            const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
+            if (isUpdatedComfyBodyClasses) {
+                if (position === "bottom") {
+                    queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
+                }
+                else {
+                    queryOne(".comfyui-body-top").appendChild(this.progressBarEl);
+                }
+            }
+            else {
                 document.body.appendChild(this.progressBarEl);
             }
             const height = CONFIG_SERVICE.getConfigValue("features.progress_bar.height") || 14;
@@ -220,13 +230,15 @@ class Rgthree extends EventTarget {
             const fontSize = Math.max(10, Number(height) - 10);
             this.progressBarEl.style.fontSize = `${fontSize}px`;
             this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
-            if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
-                this.progressBarEl.style.bottom = `0px`;
-                this.progressBarEl.style.top = `auto`;
-            }
-            else {
-                this.progressBarEl.style.top = `0px`;
-                this.progressBarEl.style.bottom = `auto`;
+            if (!isUpdatedComfyBodyClasses) {
+                if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
+                    this.progressBarEl.style.bottom = `0px`;
+                    this.progressBarEl.style.top = `auto`;
+                }
+                else {
+                    this.progressBarEl.style.top = `0px`;
+                    this.progressBarEl.style.bottom = `auto`;
+                }
             }
         }
         else {
@@ -333,7 +345,8 @@ class Rgthree extends EventTarget {
                 options.push(null);
                 options.push(null);
                 let idx = null;
-                idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Queue Selected"); }) + 1;
+                idx =
+                    idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Queue Selected"); }) + 1;
                 idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Convert to Group"); });
                 idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Arrange ("); });
                 idx = idx || existingOptions.findIndex((o) => !o) + 1;
@@ -372,10 +385,15 @@ class Rgthree extends EventTarget {
                 className: "rgthree-contextmenu-item",
                 has_submenu: true,
                 submenu: {
-                    options: Object.values(NodeTypesString).map(i => stripRgthree(i)).sort(),
+                    options: Object.values(NodeTypesString)
+                        .map((i) => stripRgthree(i))
+                        .sort(),
                     callback: (value, options, event) => {
                         const node = LiteGraph.createNode(addRgthree(value));
-                        node.pos = [rgthree.lastAdjustedMouseEvent.canvasX, rgthree.lastAdjustedMouseEvent.canvasY];
+                        node.pos = [
+                            rgthree.lastAdjustedMouseEvent.canvasX,
+                            rgthree.lastAdjustedMouseEvent.canvasY,
+                        ];
                         canvas.graph.add(node);
                         canvas.selectNode(node);
                         app.graph.setDirtyCanvas(true, true);
@@ -726,13 +744,6 @@ class Rgthree extends EventTarget {
             return allKeysDown && this.areAllKeysDown(["SHIFT"]);
         }
         return false;
-    }
-    injectRgthreeCss() {
-        let link = document.createElement("link");
-        link.rel = "stylesheet";
-        link.type = "text/css";
-        link.href = "extensions/rgthree-comfy/rgthree.css";
-        document.head.appendChild(link);
     }
     setLogLevel(level) {
         if (typeof level === "string") {

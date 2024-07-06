@@ -59,7 +59,7 @@ export class RgthreeProgressBar extends HTMLElement {
                 stepsLabel += `${Math.round(percent)}%`;
             }
             if (nodeLabel || stepsLabel) {
-                progressText += ` - ${nodeLabel || '???'}${stepsLabel ? ` (${stepsLabel})` : ''}`;
+                progressText += ` - ${nodeLabel || "???"}${stepsLabel ? ` (${stepsLabel})` : ""}`;
             }
             if (!stepsLabel) {
                 this.progressStepsEl.style.width = `0%`;
@@ -71,7 +71,7 @@ export class RgthreeProgressBar extends HTMLElement {
                 this.progressTextEl.innerText = `(${e.detail.queue}) Running... in another tab`;
             }
             else {
-                this.progressTextEl.innerText = 'Idle';
+                this.progressTextEl.innerText = "Idle";
             }
             this.progressNodesEl.style.width = `0%`;
             this.progressStepsEl.style.width = `0%`;
@@ -83,7 +83,7 @@ export class RgthreeProgressBar extends HTMLElement {
             this.connected = true;
         }
         if (this.shadow) {
-            this.progressTextEl.innerText = 'Idle';
+            this.progressTextEl.innerText = "Idle";
             this.progressNodesEl.style.width = `0%`;
             this.progressStepsEl.style.width = `0%`;
             return;
@@ -168,7 +168,7 @@ export class RgthreeProgressBar extends HTMLElement {
         const overlayEl = createElement(`div.overlay[part="overlay"]`, { parent: this.shadow });
         this.progressNodesEl = createElement(`div.bar[part="progress-nodes"]`, { parent: this.shadow });
         this.progressStepsEl = createElement(`div.bar[part="progress-steps"]`, { parent: this.shadow });
-        this.progressTextEl = createElement(`span[part="text"]`, { text: 'Idle', parent: this.shadow });
+        this.progressTextEl = createElement(`span[part="text"]`, { text: "Idle", parent: this.shadow });
     }
     disconnectedCallback() {
         this.connected = false;
