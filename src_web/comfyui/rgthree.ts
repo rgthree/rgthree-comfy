@@ -314,7 +314,7 @@ class Rgthree extends EventTarget {
         this.progressBarEl = RgthreeProgressBar.create();
         this.progressBarEl.setAttribute(
           "title",
-          "Progress Bar by gthree. (Right-click for rgthree menu)",
+          "Progress Bar by rgthree. right-click for rgthree menu.",
         );
 
         this.progressBarEl.addEventListener("contextmenu", async (e) => {
@@ -358,6 +358,9 @@ class Rgthree extends EventTarget {
       const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
       // If ComfyUI is updated with the body segments, then use that.
       if (isUpdatedComfyBodyClasses) {
+        // Looks like ComfyUI sets up the markup for its new grid layout, but only actually applies
+        // display: grid on the body when the new bar is used. We'll just apply it always here.
+        document.body.classList.add('rgthree-force-new-comfyui-grid-layout');
         if (position === "bottom") {
           queryOne(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
         } else {

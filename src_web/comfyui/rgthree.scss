@@ -260,16 +260,26 @@ rgthree-progress-bar {
   box-shadow:
     inset 0px -1px 0px rgba(0, 0, 0, 0.25),
     0px 1px 0px rgba(255, 255, 255, 0.125);
+
 }
 
-* ~ rgthree-progress-bar {
+* ~ rgthree-progress-bar,
+.comfyui-body-bottom rgthree-progress-bar {
   box-shadow:
-    inset 0px 1px 0px rgba(0, 0, 0, 1),
-    inset 0px 2px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
+    0px -1px 0px rgba(0, 0, 0, 1),
+    inset 0px 1px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
 }
 
 body > rgthree-progress-bar {
   position: fixed;
+}
+
+// When ComfyUI added the top/bottom bar for their UI in beta, they added markup for the grid
+// display, but they only actually apply a grid display when the bar is enabled. This doesn't allow
+// us (or other extensions) to start using the new layout... so we'll force it to be grid always
+// (when we add our class, which we do when we add the rgthree-comfy progress bar).
+body.rgthree-force-new-comfyui-grid-layout {
+  display: grid;
 }
 
 .rgthree-debug-keydowns {

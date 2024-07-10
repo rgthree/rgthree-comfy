@@ -180,7 +180,7 @@ class Rgthree extends EventTarget {
             await this.rgthreeCssPromise;
             if (!this.progressBarEl) {
                 this.progressBarEl = RgthreeProgressBar.create();
-                this.progressBarEl.setAttribute("title", "Progress Bar by gthree. (Right-click for rgthree menu)");
+                this.progressBarEl.setAttribute("title", "Progress Bar by rgthree. right-click for rgthree menu.");
                 this.progressBarEl.addEventListener("contextmenu", async (e) => {
                     e.stopPropagation();
                     e.preventDefault();
@@ -215,6 +215,7 @@ class Rgthree extends EventTarget {
             const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
             const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
             if (isUpdatedComfyBodyClasses) {
+                document.body.classList.add('rgthree-force-new-comfyui-grid-layout');
                 if (position === "bottom") {
                     queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
                 }
