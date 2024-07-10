@@ -10,6 +10,7 @@ import type {
   SerializedLGraphNode,
   Vector2,
   AdjustedMouseEvent,
+  IContextMenuOptions,
 } from "typings/litegraph.js";
 import type { ComfyObjectInfo, ComfyNodeConstructor } from "typings/comfy.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
@@ -149,7 +150,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         "➕ Add Lora",
         (event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) => {
           rgthreeApi.getLoras().then(loras => {
-            showLoraChooser(event as PointerEvent, (value: ContextMenuItem|string) => {
+            showLoraChooser(event as PointerEvent, (value: ContextMenuItem|string, _options: IContextMenuOptions, leafEvent: MouseEvent) => {
               if (typeof value === "string") {
                 if (value.includes('Power Lora Chooser')) {
                   // new RgthreePowerLoraChooserDialog().show();
@@ -161,6 +162,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                   this.setDirtyCanvas(true, true);
                 }
               }
+              // If true (Shift held down), keeps the context menu open to allow for selecting multiple LoRAs
+              return leafEvent.shiftKey;
             // }, null, ["⚡️ Power Lora Chooser", ...loras]);
             }, null, [...loras]);
           });

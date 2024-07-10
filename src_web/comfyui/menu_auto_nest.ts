@@ -100,7 +100,7 @@ app.registerExtension({
           parentMenu: ContextMenu | undefined,
           node: LGraphNode,
         ) => {
-          oldCallback?.(item?.rgthree_originalValue!, options, event, undefined, node);
+          return oldCallback?.(item?.rgthree_originalValue!, options, event, undefined, node);
         };
         const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
         console[n]?.(...v);
