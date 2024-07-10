@@ -539,12 +539,14 @@ rgthree-progress-bar {
   box-shadow: 0px -1px 0px rgb(0, 0, 0), inset 0px 1px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
 }
 
-body > rgthree-progress-bar {
+body:not([style*=grid]) rgthree-progress-bar {
   position: fixed;
+  top: 0px;
+  bottom: auto;
 }
-
-body.rgthree-force-new-comfyui-grid-layout {
-  display: grid;
+body:not([style*=grid]) rgthree-progress-bar.rgthree-pos-bottom {
+  top: auto;
+  bottom: 0px;
 }
 
 .rgthree-debug-keydowns {

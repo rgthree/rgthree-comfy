@@ -356,11 +356,9 @@ class Rgthree extends EventTarget {
       // `isUpdatedComfyBodyClasses` is true in the near future.
       const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
       const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
+      this.progressBarEl.classList.toggle('rgthree-pos-bottom', position === 'bottom');
       // If ComfyUI is updated with the body segments, then use that.
       if (isUpdatedComfyBodyClasses) {
-        // Looks like ComfyUI sets up the markup for its new grid layout, but only actually applies
-        // display: grid on the body when the new bar is used. We'll just apply it always here.
-        document.body.classList.add('rgthree-force-new-comfyui-grid-layout');
         if (position === "bottom") {
           queryOne(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
         } else {
@@ -374,15 +372,6 @@ class Rgthree extends EventTarget {
       const fontSize = Math.max(10, Number(height) - 10);
       this.progressBarEl.style.fontSize = `${fontSize}px`;
       this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
-      if (!isUpdatedComfyBodyClasses) {
-        if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
-          this.progressBarEl.style.bottom = `0px`;
-          this.progressBarEl.style.top = `auto`;
-        } else {
-          this.progressBarEl.style.top = `0px`;
-          this.progressBarEl.style.bottom = `auto`;
-        }
-      }
     } else {
       this.progressBarEl?.remove();
     }

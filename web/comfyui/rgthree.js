@@ -214,8 +214,8 @@ class Rgthree extends EventTarget {
             }
             const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
             const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
+            this.progressBarEl.classList.toggle('rgthree-pos-bottom', position === 'bottom');
             if (isUpdatedComfyBodyClasses) {
-                document.body.classList.add('rgthree-force-new-comfyui-grid-layout');
                 if (position === "bottom") {
                     queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
                 }
@@ -231,16 +231,6 @@ class Rgthree extends EventTarget {
             const fontSize = Math.max(10, Number(height) - 10);
             this.progressBarEl.style.fontSize = `${fontSize}px`;
             this.progressBarEl.style.fontWeight = fontSize <= 12 ? "bold" : "normal";
-            if (!isUpdatedComfyBodyClasses) {
-                if (CONFIG_SERVICE.getConfigValue("features.progress_bar.position") === "bottom") {
-                    this.progressBarEl.style.bottom = `0px`;
-                    this.progressBarEl.style.top = `auto`;
-                }
-                else {
-                    this.progressBarEl.style.top = `0px`;
-                    this.progressBarEl.style.bottom = `auto`;
-                }
-            }
         }
         else {
             (_a = this.progressBarEl) === null || _a === void 0 ? void 0 : _a.remove();
