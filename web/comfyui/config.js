@@ -148,7 +148,7 @@ const CONFIGURABLE = {
             isDevOnly: false,
             description: "Recommended to leave this enabled unles you are experiencing conflicts with other custom nodes" +
                 "e.g the Anything Everywhere nodes which connect nodes in ways not detected by our validation" +
-                "Setting to false will make model/prompt/clip outputs always available"
+                "Setting to false will make conditioning/model/clip outputs always available"
         },
     ],
 };
