@@ -9,6 +9,7 @@ import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteG
 import type {ComfyObjectInfo, ComfyGraphNode} from 'typings/comfy.js';
 import { wait } from "rgthree/common/shared_utils.js";
 import { rgthree } from "./rgthree.js";
+import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
 declare const LiteGraph: typeof TLiteGraph;
 declare const LGraphNode: typeof TLGraphNode;
@@ -23,6 +24,7 @@ export class PowerPrompt {
   readonly combos: {[key:string]: IComboWidget} = {};
   readonly combosValues: {[key:string]: string[]} = {};
   boundOnFreshNodeDefs!: (event: CustomEvent) => void;
+  doInputValidation: boolean = CONFIG_SERVICE.getConfigValue("features.do_clip_model_input_validation_check.enabled", true);
 
   private configuring = false;
 
@@ -110,6 +112,11 @@ export class PowerPrompt {
     const clipLinked = this.node.inputs.some(i=>i.name.includes('clip') && !!i.link);
     const modelLinked = this.node.inputs.some(i=>i.name.includes('model') && !!i.link);
     for (const output of this.node.outputs) {
+      // If input validation is disabled by config we should return all outputs are enabled
+      if (!this.doInputValidation) {
+        output.disabled = false;
+        continue;
+      }
       const type = (output.type as string).toLowerCase();
       if (type.includes('model')) {
         output.disabled = !modelLinked;

@@ -1,10 +1,12 @@
 import { api } from '../../scripts/api.js';
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { rgthree } from "./rgthree.js";
+import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 export class PowerPrompt {
     constructor(node, nodeData) {
         this.combos = {};
         this.combosValues = {};
+        this.doInputValidation = CONFIG_SERVICE.getConfigValue("features.do_clip_model_input_validation_check.enabled", true);
         this.configuring = false;
         this.node = node;
         this.node.properties = this.node.properties || {};
@@ -68,6 +70,10 @@ export class PowerPrompt {
         const clipLinked = this.node.inputs.some(i => i.name.includes('clip') && !!i.link);
         const modelLinked = this.node.inputs.some(i => i.name.includes('model') && !!i.link);
         for (const output of this.node.outputs) {
+            if (!this.doInputValidation) {
+                output.disabled = false;
+                continue;
+            }
             const type = output.type.toLowerCase();
             if (type.includes('model')) {
                 output.disabled = !modelLinked;

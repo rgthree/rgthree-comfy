@@ -52,6 +52,9 @@ DEFAULT_CONFIG = get_rgthree_default_config()
 if 'progress_bar' not in DEFAULT_CONFIG["features"]:
   DEFAULT_CONFIG["features"]["progress_bar"] = {"enabled": False}
 
+if 'do_clip_model_input_validation_check' not in DEFAULT_CONFIG["features"]:
+  DEFAULT_CONFIG["features"]["clip_model_input_validation_check"] = {"enabled": True}
+
 USER_CONFIG = get_rgthree_user_config()
 
 # Migrate old config options into "features"

@@ -167,6 +167,16 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
         "event on some rgthree-comfy nodes. Now it's possible and this option is only here in " +
         "for easy if something is wrong.",
     },
+    {
+      key: "features.do_clip_model_input_validation_check.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Power Prompt input checking",
+      isDevOnly: false,
+      description:
+        "Recommended to leave this enabled unles you are experiencing conflicts with other custom nodes" +
+        "e.g the Anything Everywhere nodes which connect nodes in ways not detected by our validation" +
+        "Setting to false will make model/prompt/clip outputs always available"
+    },
   ],
 };
 
