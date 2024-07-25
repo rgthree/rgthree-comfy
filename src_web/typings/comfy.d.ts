@@ -1,11 +1,17 @@
-import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph } from "./litegraph";
+import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph, LGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph";
 import type {Constructor, SerializedGraph} from './index';
+
+declare global {
+  const LiteGraph: typeof TLiteGraph;
+}
 
 // @rgthree: Types on ComfyApp as needed.
 export interface ComfyApp {
 	extensions: ComfyExtension[];
-	queuePrompt(number: number, batchCount = 1): void;
+	async queuePrompt(number?: number, batchCount = 1): Promise<void>;
 	graph: LGraph;
+	canvas: LGraphCanvas;
+	clean() : void;
  	registerExtension(extension: ComfyExtension): void;
 }
 
@@ -70,11 +76,12 @@ export interface ComfyExtension {
 	>;
 	/**
 	 * Allows the extension to add additional handling to the node before it is registered with LGraph
+	 * @rgthree changed nodeType from `typeof LGraphNode` to `ComfyNodeConstructor`
 	 * @param nodeType The node class (not an instance)
 	 * @param nodeData The original node object info config object
 	 * @param app The ComfyUI app instance
 	 */
-	beforeRegisterNodeDef?(nodeType: typeof LGraphNode, nodeData: ComfyObjectInfo, app: ComfyApp): Promise<void>;
+	beforeRegisterNodeDef?(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo, app: ComfyApp): Promise<void>;
 	/**
 	 * Allows the extension to register additional nodes with LGraph after standard nodes are added
 	 * @param app The ComfyUI app instance

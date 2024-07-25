@@ -6,18 +6,21 @@ from shutil import rmtree, copytree, ignore_patterns
 from glob import glob
 import time
 import re
+import argparse
 
 from py.log import COLORS
 from py.config import RGTHREE_CONFIG
 
 start = time.time()
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--with-tests", default=False, action="store_true")
+args = parser.parse_args()
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_SRC_WEB = os.path.abspath(f'{THIS_DIR}/src_web/')
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')
 DIR_WEB_COMFYUI = os.path.abspath(f'{DIR_WEB}/comfyui/')
-
-rmtree(DIR_WEB)
 
 
 def log_step(msg=None, status=None):
@@ -25,7 +28,8 @@ def log_step(msg=None, status=None):
   global step_msg  # pylint: disable=W0601
   global step_start  # pylint: disable=W0601
   if msg:
-    step_msg = f'▻ [Starting] {msg}...'
+    tag=f'{COLORS["YELLOW"]}[ Notice ]' if status == 'Notice' else f'{COLORS["RESET"]}[Starting]'
+    step_msg = f'▻ {tag}{COLORS["RESET"]} {msg}...'
     step_start = time.time()
     print(step_msg, end="\r")
   elif status:
@@ -34,17 +38,28 @@ def log_step(msg=None, status=None):
       status_msg=f'{COLORS["RED"]}⤫ {status}{COLORS["RESET"]}'
     else:
       status_msg=f'{COLORS["BRIGHT_GREEN"]}🗸 {status}{COLORS["RESET"]}'
-    print(
-      f'{step_msg.ljust(50, ".")} {COLORS["BRIGHT_GREEN"]}🗸 {status}{COLORS["RESET"]} ({step_time}s)'
-    )
+    print(f'{step_msg.ljust(64, ".")} {status_msg} ({step_time}s)')
 
 
 log_step(msg='Copying web directory')
+rmtree(DIR_WEB)
 copytree(DIR_SRC_WEB, DIR_WEB, ignore=ignore_patterns("typings*", "*.ts", "*.scss"))
 log_step(status="Done")
 
 log_step(msg='TypeScript')
 checked = subprocess.run(["node", "./node_modules/typescript/bin/tsc"], check=True)
+log_step(status="Done")
+
+if args.with_tests:
+  log_step(msg='Removing directories (KEEPING TESTING)', status="Notice")
+else:
+  log_step(msg='Removing uneeded directories')
+  test_path=os.path.join(DIR_WEB, 'comfyui', 'tests')
+  if os.path.exists(test_path):
+    rmtree(test_path)
+  rmtree(os.path.join(DIR_WEB, 'comfyui', 'testing'))
+# Always remove the dummy scripts_comfy directory
+rmtree(os.path.join(DIR_WEB, 'scripts_comfy'))
 log_step(status="Done")
 
 scsss = glob(os.path.join(DIR_SRC_WEB, "**", "*.scss"), recursive=True)
@@ -64,19 +79,19 @@ log_step(status="Done")
 # "src_web/common" directory, but then need to rewrite the comfyui JS files to load from
 # "../../rgthree/common" (which we map correctly in rgthree_server.py).
 log_step(msg='Cleaning Imports')
-print('▻ [Starting] Cleaning Imports...', end="\r")
-web_subfolders = [f.name for f in os.scandir(DIR_WEB) if f.is_dir()]
-for subfolder in web_subfolders:
-  js_files = glob(os.path.join(DIR_WEB, subfolder, '*.js'), recursive=True)
-  for file in js_files:
-    with open(file, 'r', encoding="utf-8") as f:
-      filedata = f.read()
-    if subfolder == 'comfyui':
-      filedata = re.sub(r'(from\s+["\'])rgthree/', '\\1../../rgthree/', filedata)
-    else:
-      filedata = re.sub(r'(from\s+["\'])rgthree/', '\\1../', filedata)
-    with open(file, 'w', encoding="utf-8") as f:
-      f.write(filedata)
+js_files = glob(os.path.join(DIR_WEB, '**', '*.js'), recursive=True)
+for file in js_files:
+  rel_path = file.replace(f'{DIR_WEB}/', "")
+  with open(file, 'r', encoding="utf-8") as f:
+    filedata = f.read()
+  num = rel_path.count(os.sep)
+  if rel_path.startswith('comfyui'):
+    filedata = re.sub(r'(from\s+["\'])rgthree/', f'\\1{"../" * (num + 1)}rgthree/', filedata)
+    filedata = re.sub(r'(from\s+["\'])scripts/', f'\\1{"../" * (num + 1)}scripts/', filedata)
+  else:
+    filedata = re.sub(r'(from\s+["\'])rgthree/', f'\\1{"../" * num}', filedata)
+  with open(file, 'w', encoding="utf-8") as f:
+    f.write(filedata)
 log_step(status="Done")
 
 print(f'Finished all in {round(time.time() - start, 3)}s')

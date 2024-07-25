@@ -9,7 +9,8 @@
     "paths": {
       "typings/*": ["src_web/typings/*"],
       "rgthree/common/*": ["src_web/common/*"],
-      "node_modules": ["node_modules/*"]
+      "node_modules": ["node_modules/*"],
+      "scripts/*":  ["src_web/scripts_comfy/*"],
     },
     "outDir": "web/",
     "removeComments": true,
