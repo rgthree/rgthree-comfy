@@ -1,6 +1,5 @@
-import { tryToGetWorkflowDataFromEvent, tryToGetWorkflowDataFromFile } from "rgthree/common/utils_workflow.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { tryToGetWorkflowDataFromEvent } from "rgthree/common/utils_workflow.js";
+import { app } from "scripts/app.js";
 import type { ComfyNode, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 
@@ -44,7 +43,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: ComfyNode, e: D
   }
 
   let handled = false;
-  const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
+  const { workflow, prompt } = await tryToGetWorkflowDataFromEvent(e);
   if (!handled && workflow) {
     const exact = (workflow.nodes || []).find((n) => n.id === node.id && n.type === node.type);
     if (

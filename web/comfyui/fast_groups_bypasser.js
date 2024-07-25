@@ -5,7 +5,7 @@ export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
     constructor(title = FastGroupsBypasser.title) {
         super(title);
         this.comfyClass = NodeTypesString.FAST_GROUPS_BYPASSER;
-        this.helpActions = 'bypass and enable';
+        this.helpActions = "bypass and enable";
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = 4;
         this.onConstructed();

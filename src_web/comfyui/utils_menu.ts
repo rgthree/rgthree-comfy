@@ -1,9 +1,7 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 
-import {
-  type LiteGraph as TLiteGraph,
+import type {
   LGraphCanvas as TLGraphCanvas,
   IWidget,
   LGraphNode,
@@ -11,8 +9,6 @@ import {
   ContextMenu,
   IContextMenuItem,
 } from "../typings/litegraph.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 const PASS_THROUGH = function <T extends any, I extends any>(item: T) {
   return item as T;
@@ -24,7 +20,7 @@ const PASS_THROUGH = function <T extends any, I extends any>(item: T) {
 export async function showLoraChooser(
   event: PointerEvent,
   callback: ContextMenuEventListener,
-  parentMenu?: ContextMenu|null,
+  parentMenu?: ContextMenu | null,
   loras?: string[],
 ) {
   const canvas = app.canvas as TLGraphCanvas;

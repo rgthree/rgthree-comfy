@@ -1,9 +1,6 @@
-
 import type { SerializedGraph, BadLinksData } from "typings/index";
 import { fixBadLinks } from "../common/link_fixer.js";
-// @ts-ignore
-import { getPngMetadata } from "../../scripts/pnginfo.js";
-
+import { getPngMetadata } from "scripts/pnginfo.js";
 
 function wait(ms = 16, value?: any) {
   return new Promise((resolve) => {
@@ -83,12 +80,14 @@ export class LinkPage {
     await this.saveFixedWorkflow();
 
     if (graphFinalResults.hasBadLinks) {
-      this.updateUi("⛔ Hmm... Still detecting bad links. Can you file an issue at https://github.com/rgthree/rgthree-comfy/issues with your image/workflow.");
+      this.updateUi(
+        "⛔ Hmm... Still detecting bad links. Can you file an issue at https://github.com/rgthree/rgthree-comfy/issues with your image/workflow.",
+      );
     } else {
-      this.updateUi("✅ Workflow fixed.<br><br><small>Please load new saved workflow json and double check linking and execution.</small>");
-
+      this.updateUi(
+        "✅ Workflow fixed.<br><br><small>Please load new saved workflow json and double check linking and execution.</small>",
+      );
     }
-
   }
 
   private async onDrop(event: DragEvent) {
@@ -165,7 +164,7 @@ export class LinkPage {
     this.file = file;
     this.updateUi();
 
-    let workflow: string | null = null;
+    let workflow: string | undefined | null = null;
     if (file.type.startsWith("image/")) {
       const pngInfo = await getPngMetadata(file);
       workflow = pngInfo?.workflow;
@@ -208,23 +207,23 @@ export class LinkPage {
       return false;
     }
 
-    let filename: string|null = (this.file as File).name || 'workflow.json';
-    let filenames = filename.split('.');
+    let filename: string | null = (this.file as File).name || "workflow.json";
+    let filenames = filename.split(".");
     filenames.pop();
-    filename = filenames.join('.');
-    filename += '_fixed.json';
+    filename = filenames.join(".");
+    filename += "_fixed.json";
     filename = prompt("Save workflow as:", filename);
     if (!filename) return false;
     if (!filename.toLowerCase().endsWith(".json")) {
       filename += ".json";
     }
     const json = JSON.stringify(this.graphFinalResults.graph, null, 2);
-    const blob = new Blob([json], {type: "application/json"});
+    const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
+    const anchor = document.createElement("a");
     anchor.download = filename;
     anchor.href = url;
-    anchor.style.display = 'none';
+    anchor.style.display = "none";
     document.body.appendChild(anchor);
     await wait();
     anchor.click();
@@ -234,4 +233,3 @@ export class LinkPage {
     return true;
   }
 }
-

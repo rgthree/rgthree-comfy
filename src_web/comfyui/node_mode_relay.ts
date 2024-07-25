@@ -1,15 +1,11 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  IWidget,
   LGraphCanvas,
   LGraphNode,
   LLink,
   SerializedLGraphNode,
-  LiteGraph as TLiteGraph,
   Vector2,
 } from "typings/litegraph.js";
 import type { NodeMode } from "typings/comfy.js";
@@ -24,8 +20,6 @@ import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";
 import { rgthree } from "./rgthree.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;

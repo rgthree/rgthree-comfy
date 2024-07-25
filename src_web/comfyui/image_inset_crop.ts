@@ -1,6 +1,4 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
+import { app } from "scripts/app.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { LGraph, LGraphNode, SerializedLGraphNode } from "typings/litegraph.js";

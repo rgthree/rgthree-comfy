@@ -60,9 +60,9 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     onMouseDown(event, pos, graphCanvas) {
         var _a;
-        const input = queryOne('.graphdialog > input.value');
+        const input = queryOne(".graphdialog > input.value");
         if (input && input.value === ((_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value)) {
-            input.addEventListener('keydown', (e) => {
+            input.addEventListener("keydown", (e) => {
                 rgthree.handleKeydown(e);
                 e.preventDefault();
                 e.stopPropagation();

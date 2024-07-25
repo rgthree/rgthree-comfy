@@ -1,25 +1,28 @@
-import { app } from '../../scripts/app.js';
-import { addConnectionLayoutSupport } from './utils.js';
-import { PowerPrompt } from './base_power_prompt.js';
-import { NodeTypesString } from './constants.js';
+import { app } from "../../scripts/app.js";
+import { addConnectionLayoutSupport } from "./utils.js";
+import { PowerPrompt } from "./base_power_prompt.js";
+import { NodeTypesString } from "./constants.js";
 let nodeData = null;
 app.registerExtension({
-    name: 'rgthree.PowerPrompt',
+    name: "rgthree.PowerPrompt",
     async beforeRegisterNodeDef(nodeType, passedNodeData, _app) {
-        if (passedNodeData.name.includes('Power Prompt') && passedNodeData.name.includes('rgthree')) {
+        if (passedNodeData.name.includes("Power Prompt") && passedNodeData.name.includes("rgthree")) {
             nodeData = passedNodeData;
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
                 this.powerPrompt = new PowerPrompt(this, passedNodeData);
             };
-            addConnectionLayoutSupport(nodeType, app, [['Left', 'Right'], ['Right', 'Left']]);
+            addConnectionLayoutSupport(nodeType, app, [
+                ["Left", "Right"],
+                ["Right", "Left"],
+            ]);
         }
     },
     async loadedGraphNode(node) {
         if (node.type === NodeTypesString.POWER_PROMPT) {
             setTimeout(() => {
-                if (node.outputs[0].type === 'STRING') {
+                if (node.outputs[0].type === "STRING") {
                     if (node.outputs[0].links) {
                         node.outputs[3].links = node.outputs[3].links || [];
                         for (const link of node.outputs[0].links) {
@@ -35,5 +38,5 @@ app.registerExtension({
                 }
             }, 50);
         }
-    }
+    },
 });

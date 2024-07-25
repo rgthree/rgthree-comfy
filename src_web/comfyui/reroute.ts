@@ -1,6 +1,4 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import {
   getWidgetConfig,
   mergeIfValid,
@@ -19,7 +17,6 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LGraphNode as TLGraphNode,
-  LiteGraph as TLiteGraph,
 } from "typings/litegraph.js";
 import {
   IoDirection,
@@ -36,10 +33,6 @@ import {
 import { wait } from "rgthree/common/shared_utils.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
-declare const LGraphCanvas: typeof TLGraphCanvas;
 
 const CONFIG_REROUTE = rgthreeConfig?.["nodes"]?.["reroute"] || {};
 
@@ -380,7 +373,6 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     this.addOutput("", "*");
     setTimeout(() => this.applyNodeSize(), 20);
     return super.onConstructed();
-
   }
 
   override configure(info: SerializedLGraphNode) {
@@ -426,18 +418,18 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     if (connected && type === LiteGraph.OUTPUT) {
       // Ignore wildcard nodes as these will be updated to real types
       const types = new Set(
-        this.outputs[0]!.links!.map((l) => app.graph.links[l].type).filter((t) => t !== "*"),
+        this.outputs[0]!.links!.map((l) => app.graph.links[l]!.type).filter((t) => t !== "*"),
       );
       if (types.size > 1) {
         const linksToDisconnect = [];
         for (let i = 0; i < this.outputs[0]!.links!.length - 1; i++) {
-          const linkId = this.outputs[0]!.links![i];
+          const linkId = this.outputs[0]!.links![i]!;
           const link = app.graph.links[linkId];
           linksToDisconnect.push(link);
         }
         for (const link of linksToDisconnect) {
-          const node = app.graph.getNodeById(link.target_id);
-          node.disconnectInput(link.target_slot);
+          const node = app.graph.getNodeById(link!.target_id)!;
+          node.disconnectInput(link!.target_slot);
         }
       }
     }

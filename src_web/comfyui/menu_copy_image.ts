@@ -1,5 +1,4 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import type { LGraphCanvas, ContextMenuItem } from "typings/litegraph.js";
 import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 

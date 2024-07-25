@@ -1,10 +1,7 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import type {
   ContextMenuItem,
   LGraphNode as TLGraphNode,
-  LiteGraph as TLiteGraph,
   IWidget,
   LGraphCanvas,
   SerializedLGraphNode,
@@ -37,9 +34,6 @@ import { RgthreeInfoDialog } from "./dialog_info.js";
 import type { RgthreeModelInfo } from "typings/rgthree.js";
 import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 // import { RgthreePowerLoraChooserDialog } from "./dialog_power_lora_chooser.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
 
 const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
@@ -148,21 +142,26 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       new RgthreeBetterButtonWidget(
         "➕ Add Lora",
         (event: AdjustedMouseEvent, pos: Vector2, node: TLGraphNode) => {
-          rgthreeApi.getLoras().then(loras => {
-            showLoraChooser(event as PointerEvent, (value: ContextMenuItem|string) => {
-              if (typeof value === "string") {
-                if (value.includes('Power Lora Chooser')) {
-                  // new RgthreePowerLoraChooserDialog().show();
-                } else if (value !== "NONE") {
-                  this.addNewLoraWidget(value);
-                  const computed = this.computeSize();
-                  const tempHeight = (this as any)._tempHeight ?? 15;
-                  this.size[1] = Math.max(tempHeight, computed[1]);
-                  this.setDirtyCanvas(true, true);
+          rgthreeApi.getLoras().then((loras) => {
+            showLoraChooser(
+              event as PointerEvent,
+              (value: ContextMenuItem | string) => {
+                if (typeof value === "string") {
+                  if (value.includes("Power Lora Chooser")) {
+                    // new RgthreePowerLoraChooserDialog().show();
+                  } else if (value !== "NONE") {
+                    this.addNewLoraWidget(value);
+                    const computed = this.computeSize();
+                    const tempHeight = (this as any)._tempHeight ?? 15;
+                    this.size[1] = Math.max(tempHeight, computed[1]);
+                    this.setDirtyCanvas(true, true);
+                  }
                 }
-              }
-            // }, null, ["⚡️ Power Lora Chooser", ...loras]);
-            }, null, [...loras]);
+                // }, null, ["⚡️ Power Lora Chooser", ...loras]);
+              },
+              null,
+              [...loras],
+            );
           });
           return true;
         },
@@ -372,7 +371,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
  * The PowerLoraLoaderHeaderWidget that renders a toggle all switch, as well as some title info
  * (more necessary for the double model & clip strengths to label them).
  */
-class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
+class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{ type: string }> {
   private showModelAndClip: boolean | null = null;
 
   value = { type: "PowerLoraLoaderHeaderWidget" };
@@ -454,10 +453,10 @@ const DEFAULT_LORA_WIDGET_DATA: PowerLoraLoaderWidgetValue = {
 
 type PowerLoraLoaderWidgetValue = {
   on: boolean;
-  lora: string|null;
+  lora: string | null;
   strength: number;
-  strengthTwo: number|null;
-}
+  strengthTwo: number | null;
+};
 
 /**
  * The PowerLoaderWidget that combines several custom drawing and functionality in a single row.

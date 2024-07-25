@@ -1,27 +1,25 @@
-// / <reference path='../node_modules/litegraph.js/src/litegraph.d.ts' />
-// @ts-ignore
-import {app} from '../../scripts/app.js';
-// @ts-ignore
-import {api} from '../../scripts/api.js';
-// @ts-ignore
-import { ComfyWidgets } from '../../scripts/widgets.js';
-import type {LLink, IComboWidget, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, INodeOutputSlot, INodeInputSlot, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
-import type {ComfyObjectInfo, ComfyGraphNode} from 'typings/comfy.js';
+import { api } from "scripts/api.js";
+import type {
+  LLink,
+  IComboWidget,
+  LGraphNode,
+  INodeOutputSlot,
+  INodeInputSlot,
+  IWidget,
+  SerializedLGraphNode,
+} from "typings/litegraph.js";
+import type { ComfyObjectInfo, ComfyGraphNode } from "typings/comfy.js";
 import { wait } from "rgthree/common/shared_utils.js";
 import { rgthree } from "./rgthree.js";
 
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
-
 /** Wraps a node instance keeping closure without mucking the finicky types. */
 export class PowerPrompt {
-
   readonly isSimple: boolean;
   readonly node: ComfyGraphNode;
   readonly promptEl: HTMLTextAreaElement;
   nodeData: ComfyObjectInfo;
-  readonly combos: {[key:string]: IComboWidget} = {};
-  readonly combosValues: {[key:string]: string[]} = {};
+  readonly combos: { [key: string]: IComboWidget } = {};
+  readonly combosValues: { [key: string]: string[] } = {};
   boundOnFreshNodeDefs!: (event: CustomEvent) => void;
 
   private configuring = false;
@@ -30,10 +28,10 @@ export class PowerPrompt {
     this.node = node;
     this.node.properties = this.node.properties || {};
 
-    this.node.properties['combos_filter'] = '';
+    this.node.properties["combos_filter"] = "";
 
     this.nodeData = nodeData;
-    this.isSimple = this.nodeData.name.includes('Simple');
+    this.isSimple = this.nodeData.name.includes("Simple");
 
     this.promptEl = (node.widgets[0]! as any).inputEl;
     this.addAndHandleKeyboardLoraEditWeight();
@@ -45,50 +43,88 @@ export class PowerPrompt {
       this.configuring = true;
       oldConfigure?.apply(this.node, [info]);
       this.configuring = false;
-    }
+    };
 
     const oldOnConnectionsChange = this.node.onConnectionsChange;
-    this.node.onConnectionsChange = (type: number, slotIndex: number, isConnected: boolean, link_info: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) => {
-      oldOnConnectionsChange?.apply(this.node, [type, slotIndex, isConnected, link_info,_ioSlot]);
-      this.onNodeConnectionsChange(type, slotIndex, isConnected, link_info,_ioSlot);
-    }
+    this.node.onConnectionsChange = (
+      type: number,
+      slotIndex: number,
+      isConnected: boolean,
+      link_info: LLink,
+      _ioSlot: INodeOutputSlot | INodeInputSlot,
+    ) => {
+      oldOnConnectionsChange?.apply(this.node, [type, slotIndex, isConnected, link_info, _ioSlot]);
+      this.onNodeConnectionsChange(type, slotIndex, isConnected, link_info, _ioSlot);
+    };
 
     const oldOnConnectInput = this.node.onConnectInput;
-    this.node.onConnectInput = (inputIndex: number, outputType: INodeOutputSlot["type"], outputSlot: INodeOutputSlot, outputNode: TLGraphNode, outputIndex: number) => {
+    this.node.onConnectInput = (
+      inputIndex: number,
+      outputType: INodeOutputSlot["type"],
+      outputSlot: INodeOutputSlot,
+      outputNode: LGraphNode,
+      outputIndex: number,
+    ) => {
       let canConnect = true;
       if (oldOnConnectInput) {
-        canConnect = oldOnConnectInput.apply(this.node, [inputIndex, outputType, outputSlot, outputNode,outputIndex]);
+        canConnect = oldOnConnectInput.apply(this.node, [
+          inputIndex,
+          outputType,
+          outputSlot,
+          outputNode,
+          outputIndex,
+        ]);
       }
-      return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.inputs[inputIndex]!.disabled);
-    }
+      return (
+        this.configuring ||
+        rgthree.loadingApiJson ||
+        (canConnect && !this.node.inputs[inputIndex]!.disabled)
+      );
+    };
 
     const oldOnConnectOutput = this.node.onConnectOutput;
-    this.node.onConnectOutput = (outputIndex: number, inputType: INodeInputSlot["type"], inputSlot: INodeInputSlot, inputNode: TLGraphNode, inputIndex: number) => {
+    this.node.onConnectOutput = (
+      outputIndex: number,
+      inputType: INodeInputSlot["type"],
+      inputSlot: INodeInputSlot,
+      inputNode: LGraphNode,
+      inputIndex: number,
+    ) => {
       let canConnect = true;
       if (oldOnConnectOutput) {
-        canConnect = oldOnConnectOutput?.apply(this.node, [outputIndex, inputType, inputSlot, inputNode, inputIndex]);
+        canConnect = oldOnConnectOutput?.apply(this.node, [
+          outputIndex,
+          inputType,
+          inputSlot,
+          inputNode,
+          inputIndex,
+        ]);
       }
-      return this.configuring || rgthree.loadingApiJson || (canConnect && !this.node.outputs[outputIndex]!.disabled);
-    }
+      return (
+        this.configuring ||
+        rgthree.loadingApiJson ||
+        (canConnect && !this.node.outputs[outputIndex]!.disabled)
+      );
+    };
 
     const onPropertyChanged = this.node.onPropertyChanged;
     this.node.onPropertyChanged = (property: string, value: any, prevValue: any) => {
       onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
-      if (property === 'combos_filter') {
+      if (property === "combos_filter") {
         this.refreshCombos(this.nodeData);
       }
-    }
+    };
 
     // Strip all widgets but prompt (we'll re-add them in refreshCombos)
     // this.node.widgets.splice(1);
-    for (let i = this.node.widgets.length-1; i >= 0; i--) {
+    for (let i = this.node.widgets.length - 1; i >= 0; i--) {
       if (this.shouldRemoveServerWidget(this.node.widgets[i]!)) {
         this.node.widgets.splice(i, 1);
       }
     }
 
     this.refreshCombos(nodeData);
-    setTimeout(()=> {
+    setTimeout(() => {
       this.stabilizeInputsOutputs();
     }, 32);
   }
@@ -96,7 +132,13 @@ export class PowerPrompt {
   /**
    * Cleans up optional out puts when we don't have the optional input. Purely a vanity function.
    */
-  onNodeConnectionsChange(_type: number, _slotIndex: number, _isConnected: boolean, _linkInfo: LLink, _ioSlot: (INodeOutputSlot | INodeInputSlot)) {
+  onNodeConnectionsChange(
+    _type: number,
+    _slotIndex: number,
+    _isConnected: boolean,
+    _linkInfo: LLink,
+    _ioSlot: INodeOutputSlot | INodeInputSlot,
+  ) {
     this.stabilizeInputsOutputs();
   }
 
@@ -107,21 +149,21 @@ export class PowerPrompt {
       return;
     }
     // If our first input is connected, then we can show the proper output.
-    const clipLinked = this.node.inputs.some(i=>i.name.includes('clip') && !!i.link);
-    const modelLinked = this.node.inputs.some(i=>i.name.includes('model') && !!i.link);
+    const clipLinked = this.node.inputs.some((i) => i.name.includes("clip") && !!i.link);
+    const modelLinked = this.node.inputs.some((i) => i.name.includes("model") && !!i.link);
     for (const output of this.node.outputs) {
       const type = (output.type as string).toLowerCase();
-      if (type.includes('model')) {
+      if (type.includes("model")) {
         output.disabled = !modelLinked;
-      } else if (type.includes('conditioning')) {
+      } else if (type.includes("conditioning")) {
         output.disabled = !clipLinked;
-      } else if (type.includes('clip')) {
+      } else if (type.includes("clip")) {
         output.disabled = !clipLinked;
-      } else if (type.includes('string')) {
+      } else if (type.includes("string")) {
         // Our text prompt is always enabled, but let's color it so it stands out
         // if the others are disabled. #7F7 is Litegraph's default.
-        output.color_off = '#7F7';
-        output.color_on = '#7F7';
+        output.color_off = "#7F7";
+        output.color_on = "#7F7";
       }
       if (output.disabled) {
         // this.node.disconnectOutput(index);
@@ -134,57 +176,82 @@ export class PowerPrompt {
   }
 
   shouldRemoveServerWidget(widget: IWidget) {
-    return widget.name?.startsWith('insert_') || widget.name?.startsWith('target_') || widget.name?.startsWith('crop_') || widget.name?.startsWith('values_');
+    return (
+      widget.name?.startsWith("insert_") ||
+      widget.name?.startsWith("target_") ||
+      widget.name?.startsWith("crop_") ||
+      widget.name?.startsWith("values_")
+    );
   }
 
   refreshCombos(nodeData: ComfyObjectInfo) {
     this.nodeData = nodeData;
-    let filter: RegExp|null = null;
-    if (this.node.properties['combos_filter']?.trim()) {
+    let filter: RegExp | null = null;
+    if (this.node.properties["combos_filter"]?.trim()) {
       try {
-        filter = new RegExp(this.node.properties['combos_filter'].trim(), 'i');
-      } catch(e) {
+        filter = new RegExp(this.node.properties["combos_filter"].trim(), "i");
+      } catch (e) {
         console.error(`Could not parse "${filter}" for Regular Expression`, e);
         filter = null;
       }
     }
 
-
     // Add the combo for hidden inputs of nodeData
-    let data = Object.assign({}, this.nodeData.input?.optional || {}, this.nodeData.input?.hidden || {});
+    let data = Object.assign(
+      {},
+      this.nodeData.input?.optional || {},
+      this.nodeData.input?.hidden || {},
+    );
 
-    for (const [key, value] of Object.entries(data)) {//Object.entries(this.nodeData.input?.hidden || {})) {
+    for (const [key, value] of Object.entries(data)) {
+      //Object.entries(this.nodeData.input?.hidden || {})) {
       if (Array.isArray(value[0])) {
         let values = value[0] as string[];
-        if (key.startsWith('insert')) {
-          values = filter ? values.filter((v, i) => i < 1 || (i == 1 && v.match(/^disable\s[a-z]/i)) || filter?.test(v)) : values;
-          const shouldShow = values.length > 2 || (values.length > 1 && !values[1]!.match(/^disable\s[a-z]/i));
+        if (key.startsWith("insert")) {
+          values = filter
+            ? values.filter(
+                (v, i) => i < 1 || (i == 1 && v.match(/^disable\s[a-z]/i)) || filter?.test(v),
+              )
+            : values;
+          const shouldShow =
+            values.length > 2 || (values.length > 1 && !values[1]!.match(/^disable\s[a-z]/i));
           if (shouldShow) {
             if (!this.combos[key]) {
-              this.combos[key] = this.node.addWidget('combo', key, values, (selected) => {
-                if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
-                  // We wait a frame because if we use a keydown event to call, it'll wipe out
-                  // the selection.
-                  wait().then(() => {
-                    if (key.includes('embedding')) {
-                      this.insertSelectionText(`embedding:${selected}`);
-                    } else if (key.includes('saved')) {
-                      this.insertSelectionText(this.combosValues[`values_${key}`]![values.indexOf(selected)]!);
-                    } else if (key.includes('lora')) {
-                      this.insertSelectionText(`<lora:${selected}:1.0>`);
-                    }
-                    this.combos[key]!.value = values[0];
-                  });
-                }
-              }, {
+              this.combos[key] = this.node.addWidget(
+                "combo",
+                key,
                 values,
-                serialize: true, // Don't include this in prompt.
-              });
+                (selected) => {
+                  if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
+                    // We wait a frame because if we use a keydown event to call, it'll wipe out
+                    // the selection.
+                    wait().then(() => {
+                      if (key.includes("embedding")) {
+                        this.insertSelectionText(`embedding:${selected}`);
+                      } else if (key.includes("saved")) {
+                        this.insertSelectionText(
+                          this.combosValues[`values_${key}`]![values.indexOf(selected)]!,
+                        );
+                      } else if (key.includes("lora")) {
+                        this.insertSelectionText(`<lora:${selected}:1.0>`);
+                      }
+                      this.combos[key]!.value = values[0];
+                    });
+                  }
+                },
+                {
+                  values,
+                  serialize: true, // Don't include this in prompt.
+                },
+              );
               (this.combos[key]! as any).oldComputeSize = this.combos[key]!.computeSize;
               let node = this.node;
-              this.combos[key]!.computeSize = function(width: number) {
-                const size = (this as any).oldComputeSize?.(width) || [width, LiteGraph.NODE_WIDGET_HEIGHT];
-                if (this === node.widgets[node.widgets.length- 1]) {
+              this.combos[key]!.computeSize = function (width: number) {
+                const size = (this as any).oldComputeSize?.(width) || [
+                  width,
+                  LiteGraph.NODE_WIDGET_HEIGHT,
+                ];
+                if (this === node.widgets[node.widgets.length - 1]) {
                   size[1] += 10;
                 }
                 return size;
@@ -196,8 +263,7 @@ export class PowerPrompt {
             this.node.widgets.splice(this.node.widgets.indexOf(this.combos[key]!), 1);
             delete this.combos[key];
           }
-
-        } else if (key.startsWith('values')) {
+        } else if (key.startsWith("values")) {
           this.combosValues[key] = values;
         }
       }
@@ -206,16 +272,16 @@ export class PowerPrompt {
 
   insertSelectionText(text: string) {
     if (!this.promptEl) {
-      console.error('Asked to insert text, but no textbox found.');
+      console.error("Asked to insert text, but no textbox found.");
       return;
     }
     let prompt = this.promptEl.value;
     // Use selectionEnd as the split; if we have highlighted text, then we likely don't want to
     // overwrite it (we could have just deleted it more easily).
-    let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, '');
-    first = first + (['\n'].includes(first[first.length-1]!) ? '' : first.length ? ' ' : '');
-    let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, '');
-    second = (['\n'].includes(second[0]!) ? '' : second.length ? ' ' : '') + second;
+    let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, "");
+    first = first + (["\n"].includes(first[first.length - 1]!) ? "" : first.length ? " " : "");
+    let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, "");
+    second = (["\n"].includes(second[0]!) ? "" : second.length ? " " : "") + second;
     this.promptEl.value = first + text + second;
     this.promptEl.focus();
     this.promptEl.selectionStart = first.length;
@@ -229,13 +295,13 @@ export class PowerPrompt {
    * be able to intercept and cancel the bubble if we're doing the same action within the lora tag.
    */
   addAndHandleKeyboardLoraEditWeight() {
-    this.promptEl.addEventListener('keydown',  (event: KeyboardEvent)=> {
+    this.promptEl.addEventListener("keydown", (event: KeyboardEvent) => {
       // If we're not doing a ctrl/cmd + arrow key, then bail.
       if (!(event.key === "ArrowUp" || event.key === "ArrowDown")) return;
       if (!event.ctrlKey && !event.metaKey) return;
       // Unfortunately, we can't see Comfy.EditAttention delta in settings, so we hardcode to 0.01.
       // We can acutally do better too, let's make it .1 by default, and .01 if also holding shift.
-      const delta = event.shiftKey ? .01 : .1;
+      const delta = event.shiftKey ? 0.01 : 0.1;
 
       let start = this.promptEl.selectionStart;
       let end = this.promptEl.selectionEnd;
@@ -247,25 +313,25 @@ export class PowerPrompt {
       // find something that we know can't be a lora, or a "<".
       if (!selectedText) {
         const stopOn = "<>()\r\n\t"; // Allow spaces, since they can be in the filename
-        if (fullText[start] == '>') {
-          start-=2;
-          end-=2;
+        if (fullText[start] == ">") {
+          start -= 2;
+          end -= 2;
         }
-        if (fullText[end-1] == '<') {
-          start+=2;
-          end+=2;
+        if (fullText[end - 1] == "<") {
+          start += 2;
+          end += 2;
         }
         while (!stopOn.includes(fullText[start]!) && start > 0) {
           start--;
         }
-        while (!stopOn.includes(fullText[end-1]!) && end < fullText.length) {
+        while (!stopOn.includes(fullText[end - 1]!) && end < fullText.length) {
           end++;
         }
         selectedText = fullText.substring(start, end);
       }
 
       // Bail if this isn't a lora.
-      if (!selectedText.startsWith('<lora:') || !selectedText.endsWith('>')) {
+      if (!selectedText.startsWith("<lora:") || !selectedText.endsWith(">")) {
         return;
       }
 
@@ -274,7 +340,7 @@ export class PowerPrompt {
       const updatedText = selectedText.replace(/(:-?\d*(\.\d*)?)?>$/, `:${weight.toFixed(2)}>`);
 
       // Handle the new value and cancel the bubble so Comfy.EditAttention doesn't also try.
-      this.promptEl.setRangeText(updatedText, start, end, 'select');
+      this.promptEl.setRangeText(updatedText, start, end, "select");
       event.preventDefault();
       event.stopPropagation();
     });
@@ -286,13 +352,13 @@ export class PowerPrompt {
    * only happens once at startup (but before custom nodes js runs), and then after clicking
    * the "Refresh" button in the floating menu, which is what we care about.
    */
-  patchNodeRefresh()  {
+  patchNodeRefresh() {
     this.boundOnFreshNodeDefs = this.onFreshNodeDefs.bind(this);
-    api.addEventListener('fresh-node-defs', this.boundOnFreshNodeDefs);
+    api.addEventListener("fresh-node-defs", this.boundOnFreshNodeDefs as EventListener);
     const oldNodeRemoved = this.node.onRemoved;
     this.node.onRemoved = () => {
       oldNodeRemoved?.call(this.node);
-      api.removeEventListener('fresh-node-defs', this.boundOnFreshNodeDefs);
-    }
+      api.removeEventListener("fresh-node-defs", this.boundOnFreshNodeDefs as EventListener);
+    };
   }
 }

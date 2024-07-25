@@ -1,13 +1,5 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-import type {
-  LiteGraph as TLiteGraph,
-  LGraphCanvas as TLGraphCanvas,
-  LGraphNode,
-  Vector2,
-} from "../typings/litegraph.js";
-
-declare const LiteGraph: typeof TLiteGraph;
+import { app } from "scripts/app.js";
+import type { LGraphCanvas as TLGraphCanvas, Vector2 } from "../typings/litegraph.js";
 
 function binarySearch(max: number, getValue: (n: number) => number, match: number) {
   let min = 0;

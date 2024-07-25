@@ -27,7 +27,7 @@ export const LAYOUT_LABEL_OPPOSITES = {
     Bottom: "Top",
 };
 export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
-export function addMenuItem(node, _app, config, after = 'Shape') {
+export function addMenuItem(node, _app, config, after = "Shape") {
     const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
     node.prototype.getExtraMenuOptions = function (canvas, menuOptions) {
         oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
@@ -70,7 +70,7 @@ export function waitForGraph() {
     }
     return graphResolver.promise;
 }
-export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after = 'Shape') {
+export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after = "Shape") {
     let idx = menuOptions
         .slice()
         .reverse()
@@ -86,7 +86,9 @@ export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after =
     else {
         idx = menuOptions.length - idx;
     }
-    const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(node) : config.subMenuOptions;
+    const subMenuOptions = typeof config.subMenuOptions === "function"
+        ? config.subMenuOptions(node)
+        : config.subMenuOptions;
     menuOptions.splice(idx, 0, {
         content: typeof config.name == "function" ? config.name(node) : config.name,
         has_submenu: !!(subMenuOptions === null || subMenuOptions === void 0 ? void 0 : subMenuOptions.length),
@@ -168,7 +170,8 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
     var _a, _b, _c;
     out = out || new Float32Array(2);
     node.properties = node.properties || {};
-    const layout = node.properties["connections_layout"] || node.defaultConnectionsLayout || ["Left", "Right"];
+    const layout = node.properties["connections_layout"] ||
+        node.defaultConnectionsLayout || ["Left", "Right"];
     const collapseConnections = node.properties["collapse_connections"] || false;
     const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : LiteGraph.NODE_SLOT_HEIGHT * 0.5;
     let side = isInput ? layout[0] : layout[1];
@@ -289,7 +292,7 @@ export function addHelpMenuItem(node, content, menuOptions) {
                 new RgthreeHelpDialog(node, content).show();
             }
         },
-    }, menuOptions, 'Properties Panel');
+    }, menuOptions, "Properties Panel");
 }
 export var PassThroughFollowing;
 (function (PassThroughFollowing) {
@@ -312,13 +315,13 @@ export function filterOutPassthroughNodes(nodes, passThroughFollowing = PassThro
     return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
 }
 export function getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return filterOutPassthroughNodes(getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
 }
 export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return filterOutPassthroughNodes(getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
@@ -432,7 +435,7 @@ export async function replaceNode(existingNode, typeOrNewNode, inputNameMap) {
     const oldComputeSize = [...existingNode.computeSize()];
     const oldSize = [
         existingNode.size[0] === oldComputeSize[0] ? null : existingNode.size[0],
-        existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1]
+        existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1],
     ];
     let setSizeIters = 0;
     const setSizeFn = () => {
@@ -485,7 +488,7 @@ export function getOriginNodeByLink(linkId) {
     let node = null;
     if (linkId != null) {
         const link = app.graph.links[linkId];
-        node = link != null && app.graph.getNodeById(link.origin_id);
+        node = (link != null && app.graph.getNodeById(link.origin_id)) || null;
     }
     return node;
 }
@@ -576,7 +579,8 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
                     else {
                         linkData.link.origin_slot = currentNodeSlot;
                         const nextNode = app.graph.getNodeById(linkData.link.target_id);
-                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
+                        if (nextNode &&
+                            ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
                             nextNode.stabilize && nextNode.stabilize();
                         }
                     }
@@ -593,10 +597,10 @@ export function isValidConnection(ioA, ioB) {
     const typeB = String(ioB.type);
     let isValid = LiteGraph.isValidConnection(typeA, typeB);
     if (!isValid) {
-        let areCombos = (typeA.includes(',') && typeB === 'COMBO') || (typeA === 'COMBO' && typeB.includes(','));
+        let areCombos = (typeA.includes(",") && typeB === "COMBO") || (typeA === "COMBO" && typeB.includes(","));
         if (areCombos) {
-            const nameA = ioA.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL');
-            const nameB = ioB.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL');
+            const nameA = ioA.name.toUpperCase().replace("_NAME", "").replace("CKPT", "MODEL");
+            const nameB = ioB.name.toUpperCase().replace("_NAME", "").replace("CKPT", "MODEL");
             isValid = nameA.includes(nameB) || nameB.includes(nameA);
         }
     }
@@ -608,8 +612,7 @@ LiteGraph.isValidConnection = function (typeA, typeB) {
     if (!isValid) {
         typeA = String(typeA);
         typeB = String(typeB);
-        let areCombos = (typeA.includes(',') && typeB === 'COMBO')
-            || (typeA === 'COMBO' && typeB.includes(','));
+        let areCombos = (typeA.includes(",") && typeB === "COMBO") || (typeA === "COMBO" && typeB.includes(","));
         isValid = areCombos;
     }
     return isValid;

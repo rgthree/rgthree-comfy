@@ -1,16 +1,11 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-import type {BaseFastGroupsModeChanger} from './fast_groups_muter.js';
+import { app } from "scripts/app.js";
+import type { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
 import {
-  type LiteGraph as TLiteGraph,
   type LGraph as TLGraph,
   type LGraphCanvas as TLGraphCanvas,
   LGraphGroup,
   Vector4,
 } from "typings/litegraph.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * A service that keeps global state that can be shared by multiple FastGroupsMuter or

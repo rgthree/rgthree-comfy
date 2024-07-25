@@ -1,10 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
-const SPECIAL_ENTRIES = [
-    /^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i,
-    /^\p{Extended_Pictographic}/ug
-];
+const SPECIAL_ENTRIES = [/^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i, /^\p{Extended_Pictographic}/gu];
 app.registerExtension({
     name: "rgthree.ContextMenuAutoNest",
     async setup() {
@@ -54,7 +51,7 @@ app.registerExtension({
                     folders[key] = folders[key] || [];
                     folders[key].push(newValue);
                 }
-                else if (SPECIAL_ENTRIES.some(r => r.test(valueContent))) {
+                else if (SPECIAL_ENTRIES.some((r) => r.test(valueContent))) {
                     specialOps.push(newValue);
                 }
                 else {

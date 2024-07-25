@@ -245,7 +245,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                         const success = await CONFIG_SERVICE.setConfigValues(changed);
                         if (success) {
                             for (const key of Object.keys(changed)) {
-                                (_b = (_a = CONFIGURABLE.features.find(f => f.key === key)) === null || _a === void 0 ? void 0 : _a.onSave) === null || _b === void 0 ? void 0 : _b.call(_a, changed[key]);
+                                (_b = (_a = CONFIGURABLE.features.find((f) => f.key === key)) === null || _a === void 0 ? void 0 : _a.onSave) === null || _b === void 0 ? void 0 : _b.call(_a, changed[key]);
                             }
                             this.close();
                             rgthree.showMessage({
@@ -277,7 +277,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             }
             else {
                 currentValue = currentValueEl === null || currentValueEl === void 0 ? void 0 : currentValueEl.value;
-                if (currentValueEl.nodeName === 'SELECT') {
+                if (currentValueEl.nodeName === "SELECT") {
                     currentValue = JSON.parse(currentValue).value;
                 }
                 else if (type === String(ConfigType.NUMBER)) {

@@ -1,17 +1,14 @@
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import type {LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
-
-// @ts-ignore
-import {app} from "../../scripts/app.js";
+import type {
+  LGraphNode as TLGraphNode,
+  IWidget,
+  SerializedLGraphNode,
+} from "typings/litegraph.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { PassThroughFollowing } from "./utils.js";
 import { wait } from "rgthree/common/shared_utils.js";
 
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
-
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
-
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
 
   static collapsible = false;
@@ -28,13 +25,13 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
 
   constructor(title?: string) {
     super(title);
-    this.properties['toggleRestriction'] = 'default';
+    this.properties["toggleRestriction"] = "default";
   }
 
   override onConstructed(): boolean {
     wait(10).then(() => {
       if (this.modeOn < 0 || this.modeOff < 0) {
-        throw new Error('modeOn and modeOff must be overridden.');
+        throw new Error("modeOn and modeOff must be overridden.");
       }
     });
     this.addOutput("OPT_CONNECTION", "*");
@@ -58,37 +55,37 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         // When we add a widget, litegraph is going to mess up the size, so we
         // store it so we can retrieve it in computeSize. Hacky..
         (this as any)._tempWidth = this.size[0];
-        widget = this.addWidget('toggle', '', false, '', {"on": 'yes', "off": 'no'});
+        widget = this.addWidget("toggle", "", false, "", { on: "yes", off: "no" });
       }
       node && this.setWidget(widget, node);
     }
     if (this.widgets && this.widgets.length > linkedNodes.length) {
-      this.widgets.length = linkedNodes.length
+      this.widgets.length = linkedNodes.length;
     }
   }
 
   protected setWidget(widget: IWidget, linkedNode: TLGraphNode, forceValue?: boolean) {
     const value = forceValue == null ? linkedNode.mode === this.modeOn : forceValue;
     widget.name = `Enable ${linkedNode.title}`;
-    widget.options = {'on': 'yes', 'off': 'no'}
+    widget.options = { on: "yes", off: "no" };
     widget.value = value;
     (widget as any).doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
       let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
       if (skipOtherNodeCheck !== true) {
-        if (newValue && this.properties?.['toggleRestriction']?.includes(' one')) {
+        if (newValue && this.properties?.["toggleRestriction"]?.includes(" one")) {
           for (const widget of this.widgets) {
             (widget as any).doModeChange(false, true);
           }
-        } else if (!newValue && this.properties?.['toggleRestriction'] === 'always one') {
-          newValue = this.widgets.every(w => !w.value || w === widget);
+        } else if (!newValue && this.properties?.["toggleRestriction"] === "always one") {
+          newValue = this.widgets.every((w) => !w.value || w === widget);
         }
       }
       linkedNode.mode = (newValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
       widget.value = newValue;
-    }
+    };
     widget.callback = () => {
       (widget as any).doModeChange();
-    }
+    };
     if (forceValue != null) {
       linkedNode.mode = (forceValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
     }
@@ -104,10 +101,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     (widget as any).doModeChange(!widget.value, skipOtherNodeCheck);
   }
 
-
   static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     BaseAnyInputConnectedNode.setUp(clazz);
   }
 }
-
-

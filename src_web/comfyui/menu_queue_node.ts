@@ -1,17 +1,12 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import type {
   LGraphCanvas as TLGraphCanvas,
   ContextMenuItem,
   LGraphNode,
-  LiteGraph as TLiteGraph,
 } from "typings/litegraph.js";
 import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphCanvas: typeof TLGraphCanvas;
 
 function getOutputNodesFromSelected(canvas: TLGraphCanvas) {
   return (

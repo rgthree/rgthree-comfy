@@ -1,29 +1,22 @@
-import type { ComfyApp, ComfyObjectInfo } from "typings/comfy";
+import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy";
 import type {
   Vector2,
-  LGraphCanvas as TLGraphCanvas,
+  LGraphCanvas,
   ContextMenuItem,
   LLink,
-  LGraph as TLGraph,
+  LGraph,
   IContextMenuOptions,
   ContextMenu,
-  LGraphNode as TLGraphNode,
-  LiteGraph as TLiteGraph,
+  LGraphNode,
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
 } from "typings/litegraph.js";
 import type { Constructor } from "typings/index.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
-import { api } from "../../scripts/api.js";
+import { app } from "scripts/app.js";
+import { api } from "scripts/api.js";
 import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
 import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
-
-declare const LGraph: typeof TLGraph;
-declare const LGraphNode: typeof TLGraphNode;
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * Override the api.getNodeDefs call to add a hook for refreshing node defs.
@@ -64,31 +57,36 @@ export const LAYOUT_LABEL_OPPOSITES: { [label: string]: string } = {
 export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 
 interface MenuConfig {
-  name: string | ((node: TLGraphNode) => string);
+  name: string | ((node: LGraphNode) => string);
   property?: string;
-  prepareValue?: (value: string, node: TLGraphNode) => any;
-  callback?: (node: TLGraphNode, value?: string) => void;
-  subMenuOptions?: (string | null)[] | ((node: TLGraphNode) => (string | null)[]);
+  prepareValue?: (value: string, node: LGraphNode) => any;
+  callback?: (node: LGraphNode, value?: string) => void;
+  subMenuOptions?: (string | null)[] | ((node: LGraphNode) => (string | null)[]);
 }
 
-export function addMenuItem(node: Constructor<TLGraphNode>, _app: ComfyApp, config: MenuConfig, after = 'Shape') {
+export function addMenuItem(
+  node: Constructor<LGraphNode>,
+  _app: ComfyApp,
+  config: MenuConfig,
+  after = "Shape",
+) {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function (
-    canvas: TLGraphCanvas,
+    canvas: LGraphCanvas,
     menuOptions: ContextMenuItem[],
   ) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
     addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
-  }
+  };
 }
 
 /**
  * Waits for the canvas to be available on app using a single promise.
  */
-let canvasResolver: Resolver<TLGraphCanvas>|null = null;
+let canvasResolver: Resolver<LGraphCanvas> | null = null;
 export function waitForCanvas() {
   if (canvasResolver === null) {
-    canvasResolver = getResolver<TLGraphCanvas>();
+    canvasResolver = getResolver<LGraphCanvas>();
     function _waitForCanvas() {
       if (!canvasResolver!.completed) {
         if (app?.canvas) {
@@ -106,10 +104,10 @@ export function waitForCanvas() {
 /**
  * Waits for the graph to be available on app using a single promise.
  */
-let graphResolver: Resolver<TLGraph>|null = null;
+let graphResolver: Resolver<LGraph> | null = null;
 export function waitForGraph() {
   if (graphResolver === null) {
-    graphResolver = getResolver<TLGraph>();
+    graphResolver = getResolver<LGraph>();
     function _wait() {
       if (!graphResolver!.completed) {
         if (app?.graph) {
@@ -124,8 +122,12 @@ export function waitForGraph() {
   return graphResolver.promise;
 }
 
-export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuConfig,
-    menuOptions: ContextMenuItem[], after = 'Shape') {
+export function addMenuItemOnExtraMenuOptions(
+  node: LGraphNode,
+  config: MenuConfig,
+  menuOptions: ContextMenuItem[],
+  after = "Shape",
+) {
   let idx = menuOptions
     .slice()
     .reverse()
@@ -142,7 +144,10 @@ export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuCon
     idx = menuOptions.length - idx;
   }
 
-  const subMenuOptions = typeof config.subMenuOptions === 'function' ? config.subMenuOptions(node) : config.subMenuOptions;
+  const subMenuOptions =
+    typeof config.subMenuOptions === "function"
+      ? config.subMenuOptions(node)
+      : config.subMenuOptions;
 
   menuOptions.splice(idx, 0, {
     content: typeof config.name == "function" ? config.name(node) : config.name,
@@ -153,7 +158,7 @@ export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuCon
       _options: IContextMenuOptions,
       event: MouseEvent,
       parentMenu: ContextMenu | undefined,
-      _node: TLGraphNode,
+      _node: LGraphNode,
     ) => {
       if (!!subMenuOptions?.length) {
         new LiteGraph.ContextMenu(
@@ -166,7 +171,7 @@ export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuCon
               _options: IContextMenuOptions,
               _event: MouseEvent,
               _parentMenu: ContextMenu | undefined,
-              _node: TLGraphNode,
+              _node: LGraphNode,
             ) => {
               if (config.property) {
                 node.properties = node.properties || {};
@@ -192,13 +197,13 @@ export function addMenuItemOnExtraMenuOptions(node: TLGraphNode, config: MenuCon
 }
 
 export function addConnectionLayoutSupport(
-  node: Constructor<TLGraphNode>,
+  node: Constructor<LGraphNode>,
   app: ComfyApp,
   options = [
     ["Left", "Right"],
     ["Right", "Left"],
   ],
-  callback?: (node: TLGraphNode) => void,
+  callback?: (node: LGraphNode) => void,
 ) {
   addMenuItem(node, app, {
     name: "Connections Layout",
@@ -228,10 +233,7 @@ export function addConnectionLayoutSupport(
   };
 }
 
-export function setConnectionsLayout(
-  node: TLGraphNode,
-  newLayout: [string, string],
-) {
+export function setConnectionsLayout(node: LGraphNode, newLayout: [string, string]) {
   newLayout = newLayout || (node as any).defaultConnectionsLayout || ["Left", "Right"];
   // If we didn't supply an output layout, and there's no outputs, then just choose the opposite of the
   // input as a safety.
@@ -247,7 +249,7 @@ export function setConnectionsLayout(
 
 /** Allows collapsing of connections into one. Pretty unusable, unless you're the muter. */
 export function setConnectionsCollapse(
-  node: TLGraphNode,
+  node: LGraphNode,
   collapseConnections: boolean | null = null,
 ) {
   node.properties = node.properties || {};
@@ -257,14 +259,15 @@ export function setConnectionsCollapse(
 }
 
 export function getConnectionPosForLayout(
-  node: TLGraphNode,
+  node: LGraphNode,
   isInput: boolean,
   slotNumber: number,
   out: Vector2,
 ) {
   out = out || new Float32Array(2);
   node.properties = node.properties || {};
-  const layout = node.properties["connections_layout"] || (node as any).defaultConnectionsLayout || ["Left", "Right"];
+  const layout = node.properties["connections_layout"] ||
+    (node as any).defaultConnectionsLayout || ["Left", "Right"];
   const collapseConnections = node.properties["collapse_connections"] || false;
   const offset = (node.constructor as any).layout_slot_offset ?? LiteGraph.NODE_SLOT_HEIGHT * 0.5;
   let side = isInput ? layout[0] : layout[1];
@@ -295,7 +298,6 @@ export function getConnectionPosForLayout(
     cxn.color_on = (cxn as any)._color_on_org || undefined;
     cxn.color_off = (cxn as any)._color_off_org || undefined;
   }
-  // @ts-ignore
   const displaySlot = collapseConnections
     ? 0
     : slotNumber -
@@ -387,18 +389,22 @@ function toggleConnectionLabel(cxn: any, hide = true) {
   return cxn;
 }
 
-export function addHelpMenuItem(node: TLGraphNode, content: string, menuOptions: ContextMenuItem[]) {
-  addMenuItemOnExtraMenuOptions(node, {
-    name: "🛟 Node Help",
-    callback: (node) => {
-      if ((node as any).showHelp) {
-        (node as any).showHelp();
-      } else {
-        new RgthreeHelpDialog(node, content).show();
-      }
-
+export function addHelpMenuItem(node: LGraphNode, content: string, menuOptions: ContextMenuItem[]) {
+  addMenuItemOnExtraMenuOptions(
+    node,
+    {
+      name: "🛟 Node Help",
+      callback: (node) => {
+        if ((node as any).showHelp) {
+          (node as any).showHelp();
+        } else {
+          new RgthreeHelpDialog(node, content).show();
+        }
+      },
     },
-  }, menuOptions, 'Properties Panel');
+    menuOptions,
+    "Properties Panel",
+  );
 }
 
 export enum PassThroughFollowing {
@@ -412,10 +418,10 @@ export enum PassThroughFollowing {
  * like reroutes, etc.
  */
 export function shouldPassThrough(
-  node?: TLGraphNode | null,
+  node?: LGraphNode | null,
   passThroughFollowing = PassThroughFollowing.ALL,
 ) {
-  const type = (node?.constructor as typeof TLGraphNode)?.type;
+  const type = (node?.constructor as typeof LGraphNode)?.type;
   if (!type || passThroughFollowing === PassThroughFollowing.NONE) {
     return false;
   }
@@ -428,7 +434,7 @@ export function shouldPassThrough(
 }
 
 export function filterOutPassthroughNodes(
-  nodes: TLGraphNode[],
+  nodes: LGraphNode[],
   passThroughFollowing = PassThroughFollowing.ALL,
 ) {
   return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
@@ -439,54 +445,65 @@ export function filterOutPassthroughNodes(
  * like reroute, etc. Will also disconnect duplicate nodes from a provided node
  */
 export function getConnectedInputNodes(
-  startNode: TLGraphNode,
-  currentNode?: TLGraphNode,
+  startNode: LGraphNode,
+  currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) : TLGraphNode[] {
-  return getConnectedNodes(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+): LGraphNode[] {
+  return getConnectedNodes(
+    startNode,
+    IoDirection.INPUT,
+    currentNode,
+    slot,
+    passThroughFollowing,
+  ).map((n) => n.node);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
-  startNode: TLGraphNode,
-  currentNode?: TLGraphNode,
+  startNode: LGraphNode,
+  currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-  ) : TLGraphNode[] {
+): LGraphNode[] {
   return filterOutPassthroughNodes(
     getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
   );
 }
 export function getConnectedOutputNodes(
-  startNode: TLGraphNode,
-  currentNode?: TLGraphNode,
+  startNode: LGraphNode,
+  currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) : TLGraphNode[] {
-  return getConnectedNodes(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map(n => n.node);
+): LGraphNode[] {
+  return getConnectedNodes(
+    startNode,
+    IoDirection.OUTPUT,
+    currentNode,
+    slot,
+    passThroughFollowing,
+  ).map((n) => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(
-  startNode: TLGraphNode,
-  currentNode?: TLGraphNode,
+  startNode: LGraphNode,
+  currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) : TLGraphNode[] {
+): LGraphNode[] {
   return filterOutPassthroughNodes(
     getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
   );
 }
 
-
 export function getConnectedNodes(
-  startNode: TLGraphNode,
+  startNode: LGraphNode,
   dir = IoDirection.INPUT,
-  currentNode?: TLGraphNode,
+  currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-) : {node:TLGraphNode, slot: number}[] {
+): { node: LGraphNode; slot: number }[] {
   currentNode = currentNode || startNode;
-  let rootNodes: {node:TLGraphNode, slot: number}[] = [];
+  let rootNodes: { node: LGraphNode; slot: number }[] = [];
   const slotsToRemove = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
     // const removeDups = startNode === currentNode;
@@ -503,7 +520,7 @@ export function getConnectedNodes(
         return [];
       }
     }
-    let graph = app.graph as TLGraph;
+    let graph = app.graph as LGraph;
     for (const linkId of linkIds) {
       const link: LLink = (linkId != null && graph.links[linkId]) as LLink;
       if (!link) {
@@ -511,7 +528,7 @@ export function getConnectedNodes(
       }
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
       const originSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
-      const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
+      const originNode: LGraphNode = graph.getNodeById(connectedId)!;
       if (!link) {
         console.error("No connected node found... weird");
         continue;
@@ -524,7 +541,7 @@ export function getConnectedNodes(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push({node: originNode, slot: originSlot});
+        rootNodes.push({ node: originNode, slot: originSlot });
         if (shouldPassThrough(originNode, passThroughFollowing)) {
           for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
             if (!rootNodes.includes(foundNode)) {
@@ -546,7 +563,7 @@ type ConnectionType = { type: string | string[]; label: string | undefined };
  * from, but find a type _after_ it (in case it needs to change).
  */
 export function followConnectionUntilType(
-  node: TLGraphNode,
+  node: LGraphNode,
   dir: IoDirection,
   slotNum?: number,
   skipSelf = false,
@@ -580,7 +597,7 @@ function getTypeFromSlot(
   dir: IoDirection,
   skipSelf = false,
 ): ConnectionType | null {
-  let graph = app.graph as TLGraph;
+  let graph = app.graph as LGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
     return { type: type as string, label: slot?.label || slot?.name };
@@ -590,7 +607,7 @@ function getTypeFromSlot(
     const connectedId = dir == IoDirection.OUTPUT ? link.link.target_id : link.link.origin_id;
     const connectedSlotNum =
       dir == IoDirection.OUTPUT ? link.link.target_slot : link.link.origin_slot;
-    const connectedNode: TLGraphNode = graph.getNodeById(connectedId)!;
+    const connectedNode: LGraphNode = graph.getNodeById(connectedId)!;
     // Reversed since if we're traveling down the output we want the connected node's input, etc.
     const connectedSlots =
       dir === IoDirection.OUTPUT ? connectedNode.inputs : connectedNode.outputs;
@@ -608,11 +625,11 @@ function getTypeFromSlot(
 }
 
 export async function replaceNode(
-  existingNode: TLGraphNode,
-  typeOrNewNode: string | TLGraphNode,
+  existingNode: LGraphNode,
+  typeOrNewNode: string | LGraphNode,
   inputNameMap?: Map<string, string>,
 ) {
-  const existingCtor = existingNode.constructor as typeof TLGraphNode;
+  const existingCtor = existingNode.constructor as typeof LGraphNode;
 
   const newNode =
     typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
@@ -627,44 +644,44 @@ export async function replaceNode(
   // the smalles side after conversion.
   const oldSize = [
     existingNode.size[0] === oldComputeSize[0] ? null : existingNode.size[0],
-    existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1]
+    existingNode.size[1] === oldComputeSize[1] ? null : existingNode.size[1],
   ];
 
   let setSizeIters = 0;
   const setSizeFn = () => {
     // Size gets messed up when ComfyUI adds the text widget, so reset after a delay.
     // Since we could be adding many more slots, let's take the larger of the two.
-    const newComputesize  = newNode.computeSize();
+    const newComputesize = newNode.computeSize();
     newNode.size[0] = Math.max(oldSize[0] || 0, newComputesize[0]);
     newNode.size[1] = Math.max(oldSize[1] || 0, newComputesize[1]);
     setSizeIters++;
     if (setSizeIters > 10) {
       requestAnimationFrame(setSizeFn);
     }
-  }
+  };
   setSizeFn();
 
   // We now collect the links data, inputs and outputs, of the old node since these will be
   // lost when we remove it.
   const links: {
-    node: TLGraphNode;
+    node: LGraphNode;
     slot: number | string;
-    targetNode: TLGraphNode;
+    targetNode: LGraphNode;
     targetSlot: number | string;
   }[] = [];
   for (const [index, output] of existingNode.outputs.entries()) {
     for (const linkId of output.links || []) {
-      const link: LLink = (app.graph as TLGraph).links[linkId]!;
+      const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (!link) continue;
-      const targetNode = app.graph.getNodeById(link.target_id);
+      const targetNode = app.graph.getNodeById(link.target_id)!;
       links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
     }
   }
   for (const [index, input] of existingNode.inputs.entries()) {
     const linkId = input.link;
     if (linkId) {
-      const link: LLink = (app.graph as TLGraph).links[linkId]!;
-      const originNode = app.graph.getNodeById(link.origin_id);
+      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const originNode = app.graph.getNodeById(link.origin_id)!;
       links.push({
         node: originNode,
         slot: link.origin_slot,
@@ -690,15 +707,15 @@ export async function replaceNode(
 }
 
 export function getOriginNodeByLink(linkId?: number | null) {
-  let node: TLGraphNode | null = null;
+  let node: LGraphNode | null = null;
   if (linkId != null) {
-    const link: LLink = app.graph.links[linkId];
-    node = link != null && app.graph.getNodeById(link.origin_id);
+    const link: LLink = app.graph.links[linkId]!;
+    node = (link != null && app.graph.getNodeById(link.origin_id)) || null;
   }
   return node;
 }
 
-export function applyMixins(original: Constructor<TLGraphNode>, constructors: any[]) {
+export function applyMixins(original: Constructor<LGraphNode>, constructors: any[]) {
   constructors.forEach((baseCtor) => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
       Object.defineProperty(
@@ -716,14 +733,14 @@ export function applyMixins(original: Constructor<TLGraphNode>, constructors: an
  * Obviously, for an input, this will be a max of one.
  */
 export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | null) {
-  const links : { id: number, link: LLink }[] = [];
+  const links: { id: number; link: LLink }[] = [];
   if (!inputOrOutput) {
     return links;
   }
   if ((inputOrOutput as INodeOutputSlot).links?.length) {
     const output = inputOrOutput as INodeOutputSlot;
     for (const linkId of output.links || []) {
-      const link: LLink = (app.graph as TLGraph).links[linkId]!;
+      const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (link) {
         links.push({ id: linkId, link: link });
       }
@@ -731,7 +748,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
   }
   if ((inputOrOutput as INodeInputSlot).link) {
     const input = inputOrOutput as INodeInputSlot;
-    const link: LLink = (app.graph as TLGraph).links[input.link!]!;
+    const link: LLink = (app.graph as LGraph).links[input.link!]!;
     if (link) {
       links.push({ id: input.link!, link: link });
     }
@@ -744,7 +761,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
  * slots to match the order.
  */
 export async function matchLocalSlotsToServer(
-  node: TLGraphNode,
+  node: LGraphNode,
   direction: IoDirection,
   serverNodeData: ComfyObjectInfo,
 ) {
@@ -813,8 +830,11 @@ export async function matchLocalSlotsToServer(
             const nextNode = app.graph.getNodeById(linkData.link.target_id);
             // (Check nextNode, as sometimes graphs seem to have very stale data and that node id
             //  doesn't exist).
-            if (nextNode && nextNode.constructor?.type.includes("Reroute")) {
-              nextNode.stabilize && nextNode.stabilize();
+            if (
+              nextNode &&
+              (nextNode.constructor as ComfyNodeConstructor)?.type!.includes("Reroute")
+            ) {
+              (nextNode as any).stabilize && (nextNode as any).stabilize();
             }
           }
         }
@@ -823,7 +843,7 @@ export async function matchLocalSlotsToServer(
   }
 }
 
-export function isValidConnection(ioA?: INodeSlot|null, ioB?: INodeSlot|null) {
+export function isValidConnection(ioA?: INodeSlot | null, ioB?: INodeSlot | null) {
   if (!ioA || !ioB) {
     return false;
   }
@@ -835,12 +855,13 @@ export function isValidConnection(ioA?: INodeSlot|null, ioB?: INodeSlot|null) {
   // This is here to fix the churn happening in list types in comfyui itself..
   // https://github.com/comfyanonymous/ComfyUI/issues/1674
   if (!isValid) {
-    let areCombos = (typeA.includes(',') && typeB === 'COMBO') || (typeA === 'COMBO' && typeB.includes(','));
+    let areCombos =
+      (typeA.includes(",") && typeB === "COMBO") || (typeA === "COMBO" && typeB.includes(","));
     // We don't want to let any old combo connect to any old combo, so we'll look at the names too.
     if (areCombos) {
       // Some nodes use "_name" and some use "model" and "ckpt", so normalize
-      const nameA = ioA.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL')
-      const nameB = ioB.name.toUpperCase().replace('_NAME', '').replace('CKPT', 'MODEL')
+      const nameA = ioA.name.toUpperCase().replace("_NAME", "").replace("CKPT", "MODEL");
+      const nameB = ioB.name.toUpperCase().replace("_NAME", "").replace("CKPT", "MODEL");
       isValid = nameA.includes(nameB) || nameB.includes(nameA);
     }
   }
@@ -852,7 +873,7 @@ export function isValidConnection(ioA?: INodeSlot|null, ioB?: INodeSlot|null) {
  * lists (without users needing to go through and re-create all their nodes one by one).
  */
 const oldIsValidConnection = LiteGraph.isValidConnection;
-LiteGraph.isValidConnection = function(typeA: string|string[], typeB: string|string[]) {
+LiteGraph.isValidConnection = function (typeA: string | string[], typeB: string | string[]) {
   let isValid = oldIsValidConnection.call(LiteGraph, typeA, typeB);
   if (!isValid) {
     typeA = String(typeA);
@@ -863,9 +884,9 @@ LiteGraph.isValidConnection = function(typeA: string|string[], typeB: string|str
     // current behavior today with new nodes anyway, where all lists are COMBO types.
     // Refs: https://github.com/comfyanonymous/ComfyUI/issues/1674
     //       https://github.com/comfyanonymous/ComfyUI/pull/1675
-    let areCombos = (typeA.includes(',') && typeB === 'COMBO')
-        || (typeA === 'COMBO' && typeB.includes(','));
+    let areCombos =
+      (typeA.includes(",") && typeB === "COMBO") || (typeA === "COMBO" && typeB.includes(","));
     isValid = areCombos;
   }
   return isValid;
-}
+};

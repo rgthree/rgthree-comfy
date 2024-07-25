@@ -1,12 +1,12 @@
 import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index";
-import type { LGraph, LGraphNode, LLink } from "typings/litegraph";
+import type { LGraph, LGraphNode, LLink, serializedLGraph } from "typings/litegraph";
 
 enum IoDirection {
   INPUT,
   OUTPUT,
 }
 
-function getNodeById(graph: SerializedGraph | LGraph, id: number) {
+function getNodeById(graph: SerializedGraph | LGraph | serializedLGraph, id: number) {
   if ((graph as LGraph).getNodeById) {
     return (graph as LGraph).getNodeById(id);
   }
@@ -374,7 +374,6 @@ export function fixBadLinks(
         data.deletedLinks.length || "no"
       } stale link removals.`,
     );
-
 
   let hasBadLinks: boolean = !!(data.patchedNodes.length || data.deletedLinks.length);
   // If we're fixing, then let's run it again to see if there are no more bad links.

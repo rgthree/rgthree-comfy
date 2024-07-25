@@ -1,23 +1,17 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import {
   type LGraphNode,
   type LGraph as TLGraph,
-  type LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   SerializedLGraphNode,
   IWidget,
 } from "typings/litegraph.js";
-import {SERVICE as FAST_GROUPS_SERVICE} from "./fast_groups_service.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-
-declare const LGraphCanvas: typeof TLGraphCanvas;
-declare const LiteGraph: typeof TLiteGraph;
 
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
@@ -32,7 +26,6 @@ const PROPERTY_RESTRICTION = "toggleRestriction";
 export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   static override type = NodeTypesString.FAST_GROUPS_MUTER;
   static override title = NodeTypesString.FAST_GROUPS_MUTER;
-
 
   static override exposedActions = ["Mute all", "Enable all", "Toggle all"];
 
@@ -208,7 +201,6 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             posY: number,
             height: number,
           ) {
-
             const widgetData = drawNodeWidget(ctx, {
               width,
               height,
@@ -268,9 +260,14 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
 
               currentX -= 7;
               ctx.textAlign = "left";
-              let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
+              let maxLabelWidth =
+                widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
               if (label != null) {
-                ctx.fillText(fitString(ctx, label, maxLabelWidth), widgetData.margin + 10, posY + height * 0.7);
+                ctx.fillText(
+                  fitString(ctx, label, maxLabelWidth),
+                  widgetData.margin + 10,
+                  posY + height * 0.7,
+                );
               }
             }
           },
@@ -476,7 +473,6 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   }
 }
 
-
 /**
  * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.
  */
@@ -502,7 +498,6 @@ export class FastGroupsMuter extends BaseFastGroupsModeChanger {
     clazz.category = clazz._category;
   }
 }
-
 
 app.registerExtension({
   name: "rgthree.FastGroupsMuter",

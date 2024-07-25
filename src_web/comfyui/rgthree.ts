@@ -1,20 +1,16 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
-  LGraphGroup as TLGraphGroup,
   SerializedLGraphNode,
   serializedLGraph,
-  LiteGraph as TLiteGraph,
   ContextMenuItem,
   LGraph as TLGraph,
   AdjustedMouseEvent,
   IContextMenuOptions,
 } from "typings/litegraph.js";
 import type { ComfyApiFormat, ComfyApiPrompt, ComfyApp } from "typings/comfy.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
-import { api } from "../../scripts/api.js";
+import { app } from "scripts/app.js";
+import { api } from "scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { injectCss, wait } from "rgthree/common/shared_utils.js";
@@ -31,11 +27,6 @@ import {
 } from "rgthree/common/media/svgs.js";
 import type { Bookmark } from "./bookmark";
 import { createElement, query, queryOne } from "rgthree/common/utils_dom.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphCanvas: typeof TLGraphCanvas;
-declare const LGraph: typeof TLGraph;
-declare const LGraphGroup: typeof TLGraphGroup;
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -356,7 +347,7 @@ class Rgthree extends EventTarget {
       // `isUpdatedComfyBodyClasses` is true in the near future.
       const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
       const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
-      this.progressBarEl.classList.toggle('rgthree-pos-bottom', position === 'bottom');
+      this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
       // If ComfyUI is updated with the body segments, then use that.
       if (isUpdatedComfyBodyClasses) {
         if (position === "bottom") {
@@ -491,8 +482,7 @@ class Rgthree extends EventTarget {
               console[n]?.(...v);
               return Promise.resolve();
             }
-            // @ts-ignore
-            return await ext[method]!(...args, comfyapp);
+            return await (ext[method] as Function)(...args, comfyapp);
           } catch (error) {
             const [n, v] = this.logParts(
               LogLevel.ERROR,
@@ -725,21 +715,21 @@ class Rgthree extends EventTarget {
     };
 
     // Keep state for when the app is in the middle of loading from an api JSON file.
-    const loadApiJson = app.loadApiJson as Function;
+    const loadApiJson = app.loadApiJson;
     app.loadApiJson = async function () {
       rgthree.loadingApiJson = true;
       try {
-        loadApiJson.apply(app, [...arguments]);
+        loadApiJson.apply(app, [...arguments] as any);
       } finally {
         rgthree.loadingApiJson = false;
       }
     };
 
     // Keep state for when the app is serizalizing the graph to prompt.
-    const graphToPrompt = app.graphToPrompt as Function;
+    const graphToPrompt = app.graphToPrompt;
     app.graphToPrompt = async function () {
       rgthree.dispatchCustomEvent("graph-to-prompt");
-      let promise = graphToPrompt.apply(app, [...arguments]);
+      let promise = graphToPrompt.apply(app, [...arguments] as any);
       await promise;
       rgthree.dispatchCustomEvent("graph-to-prompt-end");
       return promise;
@@ -771,7 +761,7 @@ class Rgthree extends EventTarget {
     const clean = app.clean;
     app.clean = function () {
       rgthree.clearAllMessages();
-      clean && clean.call(app, ...arguments);
+      clean && clean.apply(app, [...arguments] as any);
     };
 
     // Hook into a data load, like from an image or JSON drop-in. This is (currently) used to
@@ -795,7 +785,7 @@ class Rgthree extends EventTarget {
           .querySelector(".comfy-modal-content")
           ?.textContent?.includes("Loading aborted due");
         const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
-        const fixBadLinksResult = fixBadLinks(graphToUse);
+        const fixBadLinksResult = fixBadLinks(graphToUse as unknown as TLGraph);
         if (fixBadLinksResult.hasBadLinks) {
           const [n, v] = rgthree.logParts(
             LogLevel.WARN,
@@ -827,7 +817,10 @@ class Rgthree extends EventTarget {
                       )
                     ) {
                       try {
-                        const fixBadLinksResult = fixBadLinks(graphToUse, true);
+                        const fixBadLinksResult = fixBadLinks(
+                          graphToUse as unknown as TLGraph,
+                          true,
+                        );
                         if (!fixBadLinksResult.hasBadLinks) {
                           rgthree.hideMessage("bad-links");
                           alert(
@@ -863,7 +856,7 @@ class Rgthree extends EventTarget {
           }, 5000);
         }
       }, 100);
-      return loadGraphData && loadGraphData.call(app, ...arguments);
+      return loadGraphData && loadGraphData.apply(app, [...arguments] as any);
     };
   }
 
@@ -1156,5 +1149,5 @@ function getBookmarks(): ContextMenuItem[] {
 }
 
 export const rgthree = new Rgthree();
-// @ts-ignore. Expose it on window because, why not.
-window.rgthree = rgthree;
+// Expose it on window because, why not.
+(window as any).rgthree = rgthree;

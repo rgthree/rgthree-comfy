@@ -1,15 +1,9 @@
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 import type { ComfyApp, ComfyWidget } from "typings/comfy.js";
-import type {
-  IWidget,
-  LGraph,
-  LGraphNode,
-  SerializedLGraphNode,
-} from "typings/litegraph.js";
+import type { IWidget, LGraph, LGraphNode, SerializedLGraphNode } from "typings/litegraph.js";
 import type { RgthreeBaseNode } from "./base_node.js";
 
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addMenuItem } from "./utils.js";
@@ -48,10 +42,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   readonly buttonWidget: IWidget;
 
-  readonly widgetToData = new Map<
-    IWidget,
-    { comfy?: ComfyApp; node?: LGraphNode }
-  >();
+  readonly widgetToData = new Map<IWidget, { comfy?: ComfyApp; node?: LGraphNode }>();
   readonly nodeIdtoFunctionCache = new Map<number, string>();
 
   readonly keypressBound;
@@ -89,7 +80,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         for (let [index, value] of info.widgets_values.entries()) {
           if (index > 0) {
             if (value.startsWith("comfy_action:")) {
-              value = value.replace("comfy_action:", "")
+              value = value.replace("comfy_action:", "");
               this.addComfyActionWidget(index, value);
             }
             if (this.widgets[index]) {
@@ -158,11 +149,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     this.executingFromShortcut = false;
   }
 
-  override onPropertyChanged(
-    property: string,
-    value: any,
-    _prevValue: any,
-  ): boolean | void {
+  override onPropertyChanged(property: string, value: any, _prevValue: any): boolean | void {
     if (property == "buttonText") {
       this.buttonWidget.name = value;
     }
@@ -173,7 +160,6 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
-
     // Remove any widgets and data for widgets that are no longer linked.
     for (const [widget, data] of this.widgetToData.entries()) {
       if (!data.node) {
@@ -185,7 +171,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           this.widgetToData.delete(widget);
           this.removeWidget(widget);
         } else {
-          const [m, a] = this.logger.debugParts('Connected widget is not in widgets... weird.');
+          const [m, a] = this.logger.debugParts("Connected widget is not in widgets... weird.");
           console[m]?.(...a);
         }
       }
@@ -196,7 +182,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     for (const [index, node] of linkedNodes.entries()) {
       // Sometimes linkedNodes is stale.
       if (!node) {
-        const [m, a] = this.logger.debugParts('linkedNode provided that does not exist. ');
+        const [m, a] = this.logger.debugParts("linkedNode provided that does not exist. ");
         console[m]?.(...a);
         badNodes.push(node);
         continue;
@@ -219,15 +205,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
         if (!widget) {
           // Add a widget at this spot.
-          const exposedActions: string[] =
-            (node.constructor as any).exposedActions || [];
+          const exposedActions: string[] = (node.constructor as any).exposedActions || [];
           widget = this.addWidget("combo", node.title, "None", "", {
             values: ["None", "Mute", "Bypass", "Enable", ...exposedActions],
           });
-          (widget as ComfyWidget).serializeValue = async (
-            _node: SerializedLGraphNode,
-            _index: number,
-          ) => {
+          (widget as ComfyWidget).serializeValue = async (_node: LGraphNode, _index: number) => {
             return widget?.value;
           };
           this.widgetToData.set(widget, { node });
@@ -236,11 +218,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
 
     // Go backwards through widgets, and remove any that are not in out widgetToData
-    for (
-      let i = this.widgets.length - 1;
-      i > linkedNodes.length + indexOffset - 1;
-      i--
-    ) {
+    for (let i = this.widgets.length - 1; i > linkedNodes.length + indexOffset - 1; i--) {
       const widgetAtSlot = this.widgets[i];
       if (widgetAtSlot && this.widgetToData.get(widgetAtSlot)?.comfy) {
         continue;
@@ -250,10 +228,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
   override removeWidget(widgetOrSlot?: number | IWidget): void {
-    const widget =
-      typeof widgetOrSlot === "number"
-        ? this.widgets[widgetOrSlot]
-        : widgetOrSlot;
+    const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;
     if (widget && this.widgetToData.has(widget)) {
       this.widgetToData.delete(widget);
     }
@@ -305,9 +280,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       "None",
       () => {
         if (widget.value.startsWith("MOVE ")) {
-          this.widgets.push(
-            this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!,
-          );
+          this.widgets.push(this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
           widget.value = (widget as any)["lastValue_"];
         } else if (widget.value.startsWith("REMOVE ")) {
           this.removeWidget(widget);
@@ -320,20 +293,13 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     );
     (widget as any)["lastValue_"] = value;
 
-    (widget as ComfyWidget).serializeValue = async (
-      _node: SerializedLGraphNode,
-      _index: number,
-    ) => {
+    (widget as ComfyWidget).serializeValue = async (_node: LGraphNode, _index: number) => {
       return `comfy_app:${widget?.value}`;
     };
     this.widgetToData.set(widget, { comfy: app });
 
     if (slot != null) {
-      this.widgets.splice(
-        slot,
-        0,
-        this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!,
-      );
+      this.widgets.splice(slot, 0, this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
     }
     return widget;
   }

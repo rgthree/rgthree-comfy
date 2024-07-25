@@ -17,17 +17,17 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
         this.onQueueEndBound = this.onQueueEnd.bind(this);
         this.onGraphtoPromptBound = this.onGraphtoPrompt.bind(this);
         this.onGraphtoPromptEndBound = this.onGraphtoPromptEnd.bind(this);
-        rgthree.addEventListener('queue', this.onQueueBound);
-        rgthree.addEventListener('queue-end', this.onQueueEndBound);
-        rgthree.addEventListener('graph-to-prompt', this.onGraphtoPromptBound);
-        rgthree.addEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+        rgthree.addEventListener("queue", this.onQueueBound);
+        rgthree.addEventListener("queue-end", this.onQueueEndBound);
+        rgthree.addEventListener("graph-to-prompt", this.onGraphtoPromptBound);
+        rgthree.addEventListener("graph-to-prompt-end", this.onGraphtoPromptEndBound);
         this.onConstructed();
     }
     onRemoved() {
-        rgthree.removeEventListener('queue', this.onQueueBound);
-        rgthree.removeEventListener('queue-end', this.onQueueEndBound);
-        rgthree.removeEventListener('graph-to-prompt', this.onGraphtoPromptBound);
-        rgthree.removeEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+        rgthree.removeEventListener("queue", this.onQueueBound);
+        rgthree.removeEventListener("queue-end", this.onQueueEndBound);
+        rgthree.removeEventListener("graph-to-prompt", this.onGraphtoPromptBound);
+        rgthree.removeEventListener("graph-to-prompt-end", this.onGraphtoPromptEndBound);
     }
     onQueue(event) {
         this.processingQueue = true;
@@ -88,7 +88,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
         BaseAnyInputConnectedNode.setUp(clazz);
     }
 }
-RandomUnmuterNode.exposedActions = ['Mute all', 'Enable all'];
+RandomUnmuterNode.exposedActions = ["Mute all", "Enable all"];
 RandomUnmuterNode.type = NodeTypesString.RANDOM_UNMUTER;
 RandomUnmuterNode.title = RandomUnmuterNode.type;
 app.registerExtension({
@@ -100,5 +100,5 @@ app.registerExtension({
         if (node.type == RandomUnmuterNode.title) {
             node._tempWidth = node.size[0];
         }
-    }
+    },
 });

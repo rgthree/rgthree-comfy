@@ -1,7 +1,4 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
+import { app } from "scripts/app.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 
@@ -12,7 +9,6 @@ import type {
   LGraphNode,
   LLink,
   SerializedLGraphNode,
-  LiteGraph as TLiteGraph,
 } from "typings/litegraph.js";
 import {
   PassThroughFollowing,
@@ -22,10 +18,7 @@ import {
 } from "./utils.js";
 import { NodeMode } from "typings/comfy.js";
 
-declare const LiteGraph: typeof TLiteGraph;
-
 class NodeModeRepeater extends BaseCollectorNode {
-
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
 
   static override type = NodeTypesString.NODE_MODE_REPEATER;
@@ -68,13 +61,8 @@ class NodeModeRepeater extends BaseCollectorNode {
   ): boolean {
     // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
     let canConnect = !this.hasRelayInput;
-    canConnect = canConnect && super.onConnectOutput(
-        outputIndex,
-        inputType,
-        inputSlot,
-        inputNode,
-        inputIndex,
-      );
+    canConnect =
+      canConnect && super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
     // Output can only connect to a FAST MUTER, FAST BYPASSER, NODE_COLLECTOR OR ACTION BUTTON
     let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0] || inputNode;
     return (
@@ -99,12 +87,12 @@ class NodeModeRepeater extends BaseCollectorNode {
   ): boolean {
     // We can only connect to a a FAST_MUTER or FAST_BYPASSER if we aren't connectged to a relay, since the relay wins.
     let canConnect = super.onConnectInput?.(
-        inputIndex,
-        outputType,
-        outputSlot,
-        outputNode,
-        outputIndex,
-      );
+      inputIndex,
+      outputType,
+      outputSlot,
+      outputNode,
+      outputIndex,
+    );
     // Output can only connect to a FAST MUTER or FAST BYPASSER
     let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, outputNode)[0] || outputNode;
     const isNextNodeRelay = nextNode.type === NodeTypesString.NODE_MODE_RELAY;
@@ -139,9 +127,7 @@ class NodeModeRepeater extends BaseCollectorNode {
       if (inputNode?.type === NodeTypesString.NODE_MODE_RELAY) {
         // We can't be connected to a relay if we're connected to a toggler. Something has gone wrong.
         if (hasTogglerOutput) {
-          console.log(
-            `Can't be connected to a Relay if also output to a toggler.`,
-          );
+          console.log(`Can't be connected to a Relay if also output to a toggler.`);
           this.disconnectInput(index);
         } else {
           hasRelayInput = true;
@@ -175,7 +161,9 @@ class NodeModeRepeater extends BaseCollectorNode {
   /** When a mode change, we want all connected nodes to match except for connected relays. */
   override onModeChange(from: NodeMode, to: NodeMode) {
     super.onModeChange(from, to);
-    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
+    const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(
+      (node) => node.type !== NodeTypesString.NODE_MODE_RELAY,
+    );
     if (linkedNodes.length) {
       for (const node of linkedNodes) {
         if (node.type !== NodeTypesString.NODE_MODE_RELAY) {

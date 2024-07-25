@@ -1,14 +1,7 @@
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { NodeTypesString } from "./constants.js";
 import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
-import {
-  type LiteGraph as TLiteGraph,
-} from "typings/litegraph.js";
-
-
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.
@@ -20,7 +13,7 @@ export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
 
   static override exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 
-  protected override helpActions = 'bypass and enable';
+  protected override helpActions = "bypass and enable";
 
   override readonly modeOn = LiteGraph.ALWAYS;
   override readonly modeOff = 4; // Used by Comfy for "bypass"
@@ -47,4 +40,3 @@ app.registerExtension({
     }
   },
 });
-

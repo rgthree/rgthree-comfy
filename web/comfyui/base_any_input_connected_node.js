@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
 export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     constructor(title = BaseAnyInputConnectedNode.title) {
         super(title);
@@ -33,7 +33,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
                 cloned.removeInput(cloned.inputs.length - 1);
             }
             if (cloned.inputs[0]) {
-                cloned.inputs[0].label = '';
+                cloned.inputs[0].label = "";
             }
         }
         return cloned;
@@ -51,7 +51,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
             }
             else {
                 const node = getConnectedInputNodesAndFilterPassThroughs(this, this, index, this.inputsPassThroughFollowing)[0];
-                input.name = (node === null || node === void 0 ? void 0 : node.title) || '';
+                input.name = (node === null || node === void 0 ? void 0 : node.title) || "";
             }
         }
     }
@@ -68,13 +68,14 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     }
     handleLinkedNodesStabilization(linkedNodes) {
         linkedNodes;
-        throw new Error('handleLinkedNodesStabilization should be overridden.');
+        throw new Error("handleLinkedNodesStabilization should be overridden.");
     }
     onConnectionsChainChange() {
         this.scheduleStabilizeWidgets();
     }
     onConnectionsChange(type, index, connected, linkInfo, ioSlot) {
-        super.onConnectionsChange && super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
+        super.onConnectionsChange &&
+            super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
         if (!linkInfo)
             return;
         const connectedNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
@@ -111,9 +112,9 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
                 this._tempWidth = null;
             }, 32);
         }
-        if (this.properties['collapse_connections']) {
+        if (this.properties["collapse_connections"]) {
             const rows = Math.max(((_a = this.inputs) === null || _a === void 0 ? void 0 : _a.length) || 0, ((_b = this.outputs) === null || _b === void 0 ? void 0 : _b.length) || 0, 1) - 1;
-            size[1] = size[1] - (rows * LiteGraph.NODE_SLOT_HEIGHT);
+            size[1] = size[1] - rows * LiteGraph.NODE_SLOT_HEIGHT;
         }
         setTimeout(() => {
             app.graph.setDirtyCanvas(true, true);
@@ -128,10 +129,10 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         if (canConnect) {
             const nodes = getConnectedInputNodes(this);
             if (nodes.includes(inputNode)) {
-                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
-                    + `an situation that could create a time paradox, the results of which could cause a `
-                    + `chain reaction that would unravel the very fabric of the space time continuum, `
-                    + `and destroy the entire universe!`);
+                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, ` +
+                    `a situation that could create a time paradox, the results of which could cause a ` +
+                    `chain reaction that would unravel the very fabric of the space time continuum, ` +
+                    `and destroy the entire universe!`);
                 canConnect = false;
             }
         }
@@ -145,10 +146,10 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         if (canConnect) {
             const nodes = getConnectedOutputNodes(this);
             if (nodes.includes(outputNode)) {
-                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
-                    + `an situation that could create a time paradox, the results of which could cause a `
-                    + `chain reaction that would unravel the very fabric of the space time continuum, `
-                    + `and destroy the entire universe!`);
+                alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, ` +
+                    `a situation that could create a time paradox, the results of which could cause a ` +
+                    `chain reaction that would unravel the very fabric of the space time continuum, ` +
+                    `and destroy the entire universe!`);
                 canConnect = false;
             }
         }
@@ -156,19 +157,24 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     }
     connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn) {
         const lastInput = this.inputs[this.inputs.length - 1];
-        if (!(lastInput === null || lastInput === void 0 ? void 0 : lastInput.link) && (lastInput === null || lastInput === void 0 ? void 0 : lastInput.type) === '*') {
+        if (!(lastInput === null || lastInput === void 0 ? void 0 : lastInput.link) && (lastInput === null || lastInput === void 0 ? void 0 : lastInput.type) === "*") {
             var sourceSlot = sourceNode.findOutputSlotByType(sourceSlotType, false, true);
             return sourceNode.connect(sourceSlot, this, slot);
         }
         return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
     }
     static setUp(clazz) {
-        addConnectionLayoutSupport(clazz, app, [['Left', 'Right'], ['Right', 'Left']]);
+        addConnectionLayoutSupport(clazz, app, [
+            ["Left", "Right"],
+            ["Right", "Left"],
+        ]);
         addMenuItem(clazz, app, {
-            name: (node) => { var _a; return (`${((_a = node.properties) === null || _a === void 0 ? void 0 : _a['collapse_connections']) ? 'Show' : 'Collapse'} Connections`); },
-            property: 'collapse_connections',
-            prepareValue: (_value, node) => { var _a; return !((_a = node.properties) === null || _a === void 0 ? void 0 : _a['collapse_connections']); },
-            callback: (_node) => { app.graph.setDirtyCanvas(true, true); }
+            name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a["collapse_connections"]) ? "Show" : "Collapse"} Connections`; },
+            property: "collapse_connections",
+            prepareValue: (_value, node) => { var _a; return !((_a = node.properties) === null || _a === void 0 ? void 0 : _a["collapse_connections"]); },
+            callback: (_node) => {
+                app.graph.setDirtyCanvas(true, true);
+            },
         });
         LiteGraph.registerNodeType(clazz.type, clazz);
         clazz.category = clazz._category;
@@ -178,11 +184,13 @@ const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
 LGraphNode.prototype.connectByType = function connectByType(slot, sourceNode, sourceSlotType, optsIn) {
     if (sourceNode.inputs) {
         for (const [index, input] of sourceNode.inputs.entries()) {
-            if (!input.link && input.type === '*') {
+            if (!input.link && input.type === "*") {
                 this.connect(slot, sourceNode, index);
                 return null;
             }
         }
     }
-    return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null);
+    return ((oldLGraphNodeConnectByType &&
+        oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn)) ||
+        null);
 };

@@ -1,5 +1,4 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeDialog, RgthreeDialogOptions } from "rgthree/common/dialog.js";
 import { createElement as $el, query as $$ } from "rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "rgthree/common/media/svgs.js";
@@ -34,7 +33,7 @@ type ConfigurationSchema = {
   onSave?: (value: any) => void;
 };
 
-type ConfigurationSchemaOption = {value: any, label: string};
+type ConfigurationSchemaOption = { value: any; label: string };
 
 /**
  * A static schema of sorts to layout options found in the config.
@@ -128,7 +127,8 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       key: "features.import_individual_nodes.enabled",
       type: ConfigType.BOOLEAN,
       label: "Import Individual Nodes Widgets",
-      description: "Dragging & Dropping a similar image/JSON workflow onto (most) current " +
+      description:
+        "Dragging & Dropping a similar image/JSON workflow onto (most) current " +
         "workflow nodes will allow you to import that workflow's node's widgets when it has the " +
         "id and type. This is useful when you have several images and you'd like to import just " +
         "one part of a previous iteration, like a seed, or prompt.",
@@ -198,14 +198,13 @@ function fieldrow(item: ConfigurationSchema) {
       children: item.options.map((o) => {
         const label = (o as ConfigurationSchemaOption).label || String(o);
         const value = (o as ConfigurationSchemaOption).value || o;
-        const valueSerialized = JSON.stringify({value: value});
+        const valueSerialized = JSON.stringify({ value: value });
         return $el<HTMLOptionElement>(`option[value="${valueSerialized}"]`, {
           text: label,
-          selected: valueSerialized === JSON.stringify({value: initialValue}),
+          selected: valueSerialized === JSON.stringify({ value: initialValue }),
         });
       }),
     });
-
   } else if (item.type === ConfigType.BOOLEAN) {
     container.classList.toggle("-checked", !!initialValue);
     input = $el<HTMLInputElement>(`input[type="checkbox"][id="${item.key}"]`, {
@@ -283,7 +282,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             const success = await CONFIG_SERVICE.setConfigValues(changed);
             if (success) {
               for (const key of Object.keys(changed)) {
-                CONFIGURABLE.features.find(f => f.key === key)?.onSave?.(changed[key]);
+                CONFIGURABLE.features.find((f) => f.key === key)?.onSave?.(changed[key]);
               }
               this.close();
               rgthree.showMessage({
@@ -315,7 +314,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         el.classList.toggle("-checked", currentValue);
       } else {
         currentValue = currentValueEl?.value;
-        if (currentValueEl.nodeName === 'SELECT') {
+        if (currentValueEl.nodeName === "SELECT") {
           currentValue = JSON.parse(currentValue).value;
         } else if (type === String(ConfigType.NUMBER)) {
           currentValue = Number(currentValue) || initialValue;

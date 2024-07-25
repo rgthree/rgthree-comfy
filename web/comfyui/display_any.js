@@ -19,8 +19,8 @@ app.registerExtension({
                         n.widgets_values[index] = "";
                     }
                     else {
-                        console.warn('No serialized node found in workflow. May be attributed to '
-                            + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+                        console.warn("No serialized node found in workflow. May be attributed to " +
+                            "https://github.com/comfyanonymous/ComfyUI/issues/2193");
                     }
                     return "";
                 };

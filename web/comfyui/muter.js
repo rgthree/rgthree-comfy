@@ -41,5 +41,5 @@ app.registerExtension({
         if (node.type == MuterNode.title) {
             node._tempWidth = node.size[0];
         }
-    }
+    },
 });

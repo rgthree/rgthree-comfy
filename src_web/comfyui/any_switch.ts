@@ -1,8 +1,7 @@
 import type { INodeInputSlot, INodeOutputSlot, LLink } from "typings/litegraph.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
@@ -44,7 +43,10 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
 
   private addAnyInput(num = 1) {
     for (let i = 0; i < num; i++) {
-      this.addInput(`any_${String(this.inputs.length + 1).padStart(2, '0')}`, (this.nodeType || '*') as string);
+      this.addInput(
+        `any_${String(this.inputs.length + 1).padStart(2, "0")}`,
+        (this.nodeType || "*") as string,
+      );
     }
   }
 

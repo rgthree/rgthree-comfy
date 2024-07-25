@@ -24,7 +24,7 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
     }
     addAnyInput(num = 1) {
         for (let i = 0; i < num; i++) {
-            this.addInput(`any_${String(this.inputs.length + 1).padStart(2, '0')}`, (this.nodeType || '*'));
+            this.addInput(`any_${String(this.inputs.length + 1).padStart(2, "0")}`, (this.nodeType || "*"));
         }
     }
     stabilize() {

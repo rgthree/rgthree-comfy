@@ -90,6 +90,7 @@ for file in js_files:
     filedata = re.sub(r'(from\s+["\'])scripts/', f'\\1{"../" * (num + 1)}scripts/', filedata)
   else:
     filedata = re.sub(r'(from\s+["\'])rgthree/', f'\\1{"../" * num}', filedata)
+    filedata = re.sub(r'(from\s+["\'])scripts/', f'\\1{"../" * (num + 1)}scripts/', filedata)
   with open(file, 'w', encoding="utf-8") as f:
     f.write(filedata)
 log_step(status="Done")

@@ -1,8 +1,7 @@
-import type {LGraphNode} from 'typings/litegraph.js';
+import type { LGraphNode } from "typings/litegraph.js";
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
-// @ts-ignore
-import {app} from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";
@@ -12,8 +11,7 @@ const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;
 
 class RandomUnmuterNode extends BaseAnyInputConnectedNode {
-
-  static override exposedActions = ['Mute all', 'Enable all'];
+  static override exposedActions = ["Mute all", "Enable all"];
 
   static override type = NodeTypesString.RANDOM_UNMUTER;
   override comfyClass = NodeTypesString.RANDOM_UNMUTER;
@@ -24,7 +22,6 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
   tempEnabledNode: LGraphNode | null = null;
   processingQueue: boolean = false;
 
-
   onQueueBound = this.onQueue.bind(this);
   onQueueEndBound = this.onQueueEnd.bind(this);
   onGraphtoPromptBound = this.onGraphtoPrompt.bind(this);
@@ -33,18 +30,18 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
   constructor(title = RandomUnmuterNode.title) {
     super(title);
 
-    rgthree.addEventListener('queue', this.onQueueBound);
-    rgthree.addEventListener('queue-end', this.onQueueEndBound);
-    rgthree.addEventListener('graph-to-prompt', this.onGraphtoPromptBound);
-    rgthree.addEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+    rgthree.addEventListener("queue", this.onQueueBound);
+    rgthree.addEventListener("queue-end", this.onQueueEndBound);
+    rgthree.addEventListener("graph-to-prompt", this.onGraphtoPromptBound);
+    rgthree.addEventListener("graph-to-prompt-end", this.onGraphtoPromptEndBound);
     this.onConstructed();
   }
 
   override onRemoved() {
-    rgthree.removeEventListener('queue', this.onQueueBound);
-    rgthree.removeEventListener('queue-end', this.onQueueEndBound);
-    rgthree.removeEventListener('graph-to-prompt', this.onGraphtoPromptBound);
-    rgthree.removeEventListener('graph-to-prompt-end', this.onGraphtoPromptEndBound);
+    rgthree.removeEventListener("queue", this.onQueueBound);
+    rgthree.removeEventListener("queue-end", this.onQueueEndBound);
+    rgthree.removeEventListener("graph-to-prompt", this.onGraphtoPromptBound);
+    rgthree.removeEventListener("graph-to-prompt-end", this.onGraphtoPromptEndBound);
   }
 
   onQueue(event: Event) {
@@ -110,7 +107,6 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
   static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
     BaseAnyInputConnectedNode.setUp(clazz);
   }
-
 }
 
 app.registerExtension({
@@ -122,5 +118,5 @@ app.registerExtension({
     if (node.type == RandomUnmuterNode.title) {
       (node as any)._tempWidth = node.size[0];
     }
-  }
+  },
 });

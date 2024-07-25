@@ -1,17 +1,13 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import type {
   IWidget,
   LGraphNode,
-  LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   AdjustedMouseEvent,
   Vector4,
 } from "../typings/litegraph.js";
 import { drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality } from "./utils_canvas.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * Draws a label on teft, and a value on the right, ellipsizing when out of space.
@@ -47,12 +43,27 @@ export function drawLabelAndValue(
 export type RgthreeBaseWidgetBounds = {
   /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
   bounds: Vector2 | Vector4;
-  onDown?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
-  onDown?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
-  onUp?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
-  onUp?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
-  onMove?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode) : boolean | void;
-  onMove?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds) : boolean | void;
+  onDown?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
+  onDown?(
+    event: AdjustedMouseEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
+  onUp?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
+  onUp?(
+    event: AdjustedMouseEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
+  onMove?(event: AdjustedMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
+  onMove?(
+    event: AdjustedMouseEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
   data?: any;
 };
 
@@ -60,12 +71,10 @@ export type RgthreeBaseHitAreas<Keys extends string> = {
   [K in Keys]: RgthreeBaseWidgetBounds;
 };
 
-
 /**
  * A base widget that handles mouse events more properly.
  */
 export abstract class RgthreeBaseWidget<T> implements IWidget<T, any> {
-
   // We don't want our value to be an array as a widget will be serialized as an "input" for the API
   // which uses an array value to represent a link. To keep things simpler, we'll avoid using an
   // array at all.

@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
-import { BaseCollectorNode } from './base_node_collector.js';
+import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString } from "./constants.js";
 class CollectorNode extends BaseCollectorNode {
     constructor(title = CollectorNode.title) {
@@ -28,25 +28,26 @@ class CombinerNode extends CollectorNode {
     constructor(title = CombinerNode.title) {
         super(title);
         const note = ComfyWidgets["STRING"](this, "last_seed", ["STRING", { multiline: true }], app).widget;
-        note.inputEl.value = 'The Node Combiner has been renamed to Node Collector. You can right-click and select "Update to Node Collector" to attempt to automatically update.';
+        note.inputEl.value =
+            'The Node Combiner has been renamed to Node Collector. You can right-click and select "Update to Node Collector" to attempt to automatically update.';
         note.inputEl.readOnly = true;
-        note.inputEl.style.backgroundColor = '#332222';
-        note.inputEl.style.fontWeight = 'bold';
-        note.inputEl.style.fontStyle = 'italic';
-        note.inputEl.style.opacity = '0.8';
+        note.inputEl.style.backgroundColor = "#332222";
+        note.inputEl.style.fontWeight = "bold";
+        note.inputEl.style.fontStyle = "italic";
+        note.inputEl.style.opacity = "0.8";
         this.getExtraMenuOptions = (_, options) => {
             options.splice(options.length - 1, 0, {
                 content: "‼️ Update to Node Collector",
                 callback: (_value, _options, _event, _parentMenu, _node) => {
                     updateCombinerToCollector(this);
-                }
+                },
             });
         };
     }
     configure(info) {
         super.configure(info);
-        if (this.title != CombinerNode.title && !this.title.startsWith('‼️')) {
-            this.title = '‼️ ' + this.title;
+        if (this.title != CombinerNode.title && !this.title.startsWith("‼️")) {
+            this.title = "‼️ " + this.title;
         }
     }
 }
@@ -56,14 +57,14 @@ async function updateCombinerToCollector(node) {
     if (node.type === CombinerNode.legacyType) {
         const newNode = new CollectorNode();
         if (node.title != CombinerNode.title) {
-            newNode.title = node.title.replace('‼️ ', '');
+            newNode.title = node.title.replace("‼️ ", "");
         }
         newNode.pos = [...node.pos];
         newNode.size = [...node.size];
         newNode.properties = { ...node.properties };
         const links = [];
         for (const [index, output] of node.outputs.entries()) {
-            for (const linkId of (output.links || [])) {
+            for (const linkId of output.links || []) {
                 const link = app.graph.links[linkId];
                 if (!link)
                     continue;
@@ -76,7 +77,12 @@ async function updateCombinerToCollector(node) {
             if (linkId) {
                 const link = app.graph.links[linkId];
                 const originNode = app.graph.getNodeById(link.origin_id);
-                links.push({ node: originNode, slot: link.origin_slot, targetNode: newNode, targetSlot: index });
+                links.push({
+                    node: originNode,
+                    slot: link.origin_slot,
+                    targetNode: newNode,
+                    targetSlot: index,
+                });
             }
         }
         app.graph.add(newNode);
@@ -91,7 +97,10 @@ async function updateCombinerToCollector(node) {
 app.registerExtension({
     name: "rgthree.NodeCollector",
     registerCustomNodes() {
-        addConnectionLayoutSupport(CollectorNode, app, [['Left', 'Right'], ['Right', 'Left']]);
+        addConnectionLayoutSupport(CollectorNode, app, [
+            ["Left", "Right"],
+            ["Right", "Left"],
+        ]);
         LiteGraph.registerNodeType(CollectorNode.title, CollectorNode);
         CollectorNode.category = CollectorNode._category;
     },
@@ -99,7 +108,10 @@ app.registerExtension({
 app.registerExtension({
     name: "rgthree.NodeCombiner",
     registerCustomNodes() {
-        addConnectionLayoutSupport(CombinerNode, app, [['Left', 'Right'], ['Right', 'Left']]);
+        addConnectionLayoutSupport(CombinerNode, app, [
+            ["Left", "Right"],
+            ["Right", "Left"],
+        ]);
         LiteGraph.registerNodeType(CombinerNode.legacyType, CombinerNode);
         CombinerNode.category = CombinerNode._category;
     },

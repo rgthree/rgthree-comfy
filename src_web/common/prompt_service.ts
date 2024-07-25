@@ -9,8 +9,7 @@ import type {
   ComfyApiFormat,
   ComfyApiPrompt,
 } from "typings/comfy.js";
-// @ts-ignore
-import { api } from "../../scripts/api.js";
+import { api } from "scripts/api.js";
 import type { LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "typings/litegraph.js";
 import { Resolver, getResolver } from "./shared_utils.js";
 

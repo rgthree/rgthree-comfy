@@ -1,20 +1,16 @@
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { NodeTypesString } from "./constants.js";
 import type {
-  LGraph as TLGraph,
-  LiteGraph as TLiteGraph,
-  LGraphCanvas as TLGraphCanvas,
+  LGraph,
+  LGraphCanvas,
   INumberWidget,
   LGraphNode,
   Vector2,
 } from "typings/litegraph.js";
 import { getClosestOrSelf, queryOne } from "rgthree/common/utils_dom.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
@@ -42,7 +38,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   }
 
   override set _collapsed_width(width: number) {
-    const canvas = app.canvas as TLGraphCanvas;
+    const canvas = app.canvas as LGraphCanvas;
     const ctx = canvas.canvas.getContext("2d")!;
     const oldFont = ctx.font;
     ctx.font = canvas.title_text_font;
@@ -86,7 +82,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     return this.widgets[0]?.value?.toLocaleLowerCase() ?? "";
   }
 
-  override onAdded(graph: TLGraph): void {
+  override onAdded(graph: LGraph): void {
     rgthree.addEventListener("keydown", this.keypressBound as EventListener);
   }
 
@@ -114,10 +110,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
    * shortcut_key, so we check if it exists and then add our own event listener so we can track the
    * keys down for the user.
    */
-  override onMouseDown(event: MouseEvent, pos: Vector2, graphCanvas: TLGraphCanvas): void {
-    const input = queryOne<HTMLInputElement>('.graphdialog > input.value');
+  override onMouseDown(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
+    const input = queryOne<HTMLInputElement>(".graphdialog > input.value");
     if (input && input.value === this.widgets[0]?.value) {
-      input.addEventListener('keydown', (e) => {
+      input.addEventListener("keydown", (e) => {
         // ComfyUI swallows keydown on inputs, so we need to call out to rgthree to use downkeys.
         rgthree.handleKeydown(e);
         e.preventDefault();
@@ -128,7 +124,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   }
 
   canvasToBookmark() {
-    const canvas = app.canvas as TLGraphCanvas;
+    const canvas = app.canvas as LGraphCanvas;
     // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
     // https://github.com/rgthree/rgthree-comfy/issues/71
     if (canvas?.ds?.offset) {
@@ -159,7 +155,7 @@ function isBookmark(node: LGraphNode): node is Bookmark {
 }
 
 function getExistingShortcuts() {
-  const graph: TLGraph = app.graph;
+  const graph: LGraph = app.graph;
   const bookmarkNodes = graph._nodes.filter(isBookmark);
   const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
   return usedShortcuts;

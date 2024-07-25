@@ -1,19 +1,22 @@
-import type { LLink, INodeOutputSlot, LGraphNode } from "typings/litegraph.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import type { INodeOutputSlot, LGraphNode } from "typings/litegraph.js";
 import { rgthree } from "./rgthree.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { PassThroughFollowing, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getOriginNodeByLink, shouldPassThrough } from "./utils.js";
+import {
+  PassThroughFollowing,
+  getConnectedInputNodes,
+  getConnectedInputNodesAndFilterPassThroughs,
+  shouldPassThrough,
+} from "./utils.js";
 
 /**
  * Base collector node that monitors changing inputs and outputs.
  */
 export class BaseCollectorNode extends BaseAnyInputConnectedNode {
-
   /**
    * We only want to show nodes through re_route nodes, other pass through nodes show each input.
    */
-  override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.REROUTE_ONLY;
+  override readonly inputsPassThroughFollowing: PassThroughFollowing =
+    PassThroughFollowing.REROUTE_ONLY;
 
   readonly logger = rgthree.newLogSession("[BaseCollectorNode]");
 
@@ -33,8 +36,20 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
   /**
    * When we connect an input, check to see if it's already connected and cancel it.
    */
-  override onConnectInput(inputIndex: number, outputType: string | -1, outputSlot: INodeOutputSlot, outputNode: LGraphNode, outputIndex: number): boolean {
-    let canConnect = super.onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+  override onConnectInput(
+    inputIndex: number,
+    outputType: string | -1,
+    outputSlot: INodeOutputSlot,
+    outputNode: LGraphNode,
+    outputIndex: number,
+  ): boolean {
+    let canConnect = super.onConnectInput(
+      inputIndex,
+      outputType,
+      outputSlot,
+      outputNode,
+      outputIndex,
+    );
     if (canConnect) {
       const allConnectedNodes = getConnectedInputNodes(this); // We want passthrough nodes, since they will loop.
       const nodesAlreadyInSlot = getConnectedInputNodes(this, undefined, inputIndex);

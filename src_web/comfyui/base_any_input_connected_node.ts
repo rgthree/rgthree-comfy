@@ -1,21 +1,31 @@
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import type {Vector2, LLink, INodeInputSlot, INodeOutputSlot, LGraphNode as TLGraphNode, LiteGraph as TLiteGraph, IWidget, SerializedLGraphNode} from 'typings/litegraph.js';
+import type {
+  Vector2,
+  LLink,
+  INodeInputSlot,
+  INodeOutputSlot,
+  LGraphNode as TLGraphNode,
+  IWidget,
+} from "typings/litegraph.js";
 
-// @ts-ignore
-import {app} from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
-import {rgthree} from "./rgthree.js"
+import { rgthree } from "./rgthree.js";
 
-import { PassThroughFollowing, addConnectionLayoutSupport, addMenuItem, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodes, getConnectedOutputNodesAndFilterPassThroughs} from "./utils.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
+import {
+  PassThroughFollowing,
+  addConnectionLayoutSupport,
+  addMenuItem,
+  getConnectedInputNodes,
+  getConnectedInputNodesAndFilterPassThroughs,
+  getConnectedOutputNodes,
+  getConnectedOutputNodesAndFilterPassThroughs,
+} from "./utils.js";
 
 /**
  * A Virtual Node that allows any node's output to connect to it.
  */
 export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
-
   override isVirtualNode = true;
 
   /**
@@ -41,7 +51,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     if (!this.schedulePromise) {
       this.schedulePromise = new Promise((resolve) => {
         setTimeout(() => {
-          this.schedulePromise = null
+          this.schedulePromise = null;
           this.doStablization();
           resolve();
         }, ms);
@@ -61,7 +71,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         cloned.removeInput(cloned.inputs.length - 1);
       }
       if (cloned.inputs[0]) {
-        cloned.inputs[0].label = '';
+        cloned.inputs[0].label = "";
       }
     }
     return cloned;
@@ -79,12 +89,16 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
       if (!input.link) {
         this.removeInput(index);
       } else {
-        const node = getConnectedInputNodesAndFilterPassThroughs(this, this, index, this.inputsPassThroughFollowing)[0];
-        input.name = node?.title || '';
+        const node = getConnectedInputNodesAndFilterPassThroughs(
+          this,
+          this,
+          index,
+          this.inputsPassThroughFollowing,
+        )[0];
+        input.name = node?.title || "";
       }
     }
   }
-
 
   /**
    * Stabilizes the node's inputs and widgets.
@@ -110,15 +124,22 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
 
   handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
     linkedNodes; // No-op, but makes overridding in VSCode cleaner.
-    throw new Error('handleLinkedNodesStabilization should be overridden.');
+    throw new Error("handleLinkedNodesStabilization should be overridden.");
   }
 
   onConnectionsChainChange() {
     this.scheduleStabilizeWidgets();
   }
 
-  override onConnectionsChange(type: number, index: number, connected: boolean, linkInfo: LLink, ioSlot: (INodeOutputSlot | INodeInputSlot)) {
-    super.onConnectionsChange && super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
+  override onConnectionsChange(
+    type: number,
+    index: number,
+    connected: boolean,
+    linkInfo: LLink,
+    ioSlot: INodeOutputSlot | INodeInputSlot,
+  ) {
+    super.onConnectionsChange &&
+      super.onConnectionsChange(type, index, connected, linkInfo, ioSlot);
     if (!linkInfo) return;
     // Follow outputs to see if we need to trigger an onConnectionChange.
     const connectedNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
@@ -135,12 +156,18 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     return super.removeInput(slot);
   }
 
-  override addInput(name: string, type: string|-1, extra_info?: Partial<INodeInputSlot>) {
+  override addInput(name: string, type: string | -1, extra_info?: Partial<INodeInputSlot>) {
     (this as any)._tempWidth = this.size[0];
     return super.addInput(name, type, extra_info);
   }
 
-  override addWidget<T extends IWidget>(type: T["type"], name: string, value: T["value"], callback?: T["callback"] | string, options?: T["options"]) {
+  override addWidget<T extends IWidget>(
+    type: T["type"],
+    name: string,
+    value: T["value"],
+    callback?: T["callback"] | string,
+    options?: T["options"],
+  ) {
     (this as any)._tempWidth = this.size[0];
     return super.addWidget(type, name, value, callback, options);
   }
@@ -156,17 +183,17 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
   override computeSize(out: Vector2) {
     let size = super.computeSize(out);
     if ((this as any)._tempWidth) {
-        size[0] = (this as any)._tempWidth;
-        // We sometimes get repeated calls to compute size, so debounce before clearing.
-        this.debouncerTempWidth && clearTimeout(this.debouncerTempWidth);
-        this.debouncerTempWidth = setTimeout(() => {
-          (this as any)._tempWidth = null;
-        }, 32);
+      size[0] = (this as any)._tempWidth;
+      // We sometimes get repeated calls to compute size, so debounce before clearing.
+      this.debouncerTempWidth && clearTimeout(this.debouncerTempWidth);
+      this.debouncerTempWidth = setTimeout(() => {
+        (this as any)._tempWidth = null;
+      }, 32);
     }
     // If we're collapsed, then subtract the total calculated height of the other input slots.
-    if (this.properties['collapse_connections']) {
+    if (this.properties["collapse_connections"]) {
       const rows = Math.max(this.inputs?.length || 0, this.outputs?.length || 0, 1) - 1;
-      size[1] = size[1] - (rows * LiteGraph.NODE_SLOT_HEIGHT);
+      size[1] = size[1] - rows * LiteGraph.NODE_SLOT_HEIGHT;
     }
     setTimeout(() => {
       app.graph.setDirtyCanvas(true, true);
@@ -177,7 +204,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
   /**
    * When we connect our output, check our inputs and make sure we're not trying to connect a loop.
    */
-  override onConnectOutput(outputIndex: number, inputType: string | -1, inputSlot: INodeInputSlot, inputNode: TLGraphNode, inputIndex: number): boolean {
+  override onConnectOutput(
+    outputIndex: number,
+    inputType: string | -1,
+    inputSlot: INodeInputSlot,
+    inputNode: TLGraphNode,
+    inputIndex: number,
+  ): boolean {
     let canConnect = true;
     if (super.onConnectOutput) {
       canConnect = super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
@@ -185,35 +218,49 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     if (canConnect) {
       const nodes = getConnectedInputNodes(this); // We want passthrough nodes, since they will loop.
       if (nodes.includes(inputNode)) {
-        alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
-          + `an situation that could create a time paradox, the results of which could cause a `
-          + `chain reaction that would unravel the very fabric of the space time continuum, `
-          + `and destroy the entire universe!`);
+        alert(
+          `Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, ` +
+            `a situation that could create a time paradox, the results of which could cause a ` +
+            `chain reaction that would unravel the very fabric of the space time continuum, ` +
+            `and destroy the entire universe!`,
+        );
         canConnect = false;
       }
     }
     return canConnect;
   }
 
-  override onConnectInput(inputIndex: number, outputType: string | -1, outputSlot: INodeOutputSlot, outputNode: TLGraphNode, outputIndex: number): boolean {
-
+  override onConnectInput(
+    inputIndex: number,
+    outputType: string | -1,
+    outputSlot: INodeOutputSlot,
+    outputNode: TLGraphNode,
+    outputIndex: number,
+  ): boolean {
     let canConnect = true;
     if (super.onConnectInput) {
-      canConnect = super.onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex);
+      canConnect = super.onConnectInput(
+        inputIndex,
+        outputType,
+        outputSlot,
+        outputNode,
+        outputIndex,
+      );
     }
     if (canConnect) {
       const nodes = getConnectedOutputNodes(this); // We want passthrough nodes, since they will loop.
       if (nodes.includes(outputNode)) {
-        alert(`Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, `
-          + `an situation that could create a time paradox, the results of which could cause a `
-          + `chain reaction that would unravel the very fabric of the space time continuum, `
-          + `and destroy the entire universe!`);
+        alert(
+          `Whoa, whoa, whoa. You've just tried to create a connection that loops back on itself, ` +
+            `a situation that could create a time paradox, the results of which could cause a ` +
+            `chain reaction that would unravel the very fabric of the space time continuum, ` +
+            `and destroy the entire universe!`,
+        );
         canConnect = false;
       }
     }
     return canConnect;
   }
-
 
   /**
    * If something is dropped on us, just add it to the bottom. onConnectInput should already cancel
@@ -226,7 +273,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     optsIn: string,
   ): T | null {
     const lastInput = this.inputs[this.inputs.length - 1];
-    if (!lastInput?.link && lastInput?.type === '*') {
+    if (!lastInput?.link && lastInput?.type === "*") {
       var sourceSlot = sourceNode.findOutputSlotByType(sourceSlotType, false, true);
       return sourceNode.connect(sourceSlot, this, slot);
     }
@@ -234,15 +281,18 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
   }
 
   static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    // @ts-ignore: Fix incorrect litegraph typings.
-    addConnectionLayoutSupport(clazz, app, [['Left', 'Right'],['Right', 'Left']]);
-
-    // @ts-ignore: Fix incorrect litegraph typings.
+    addConnectionLayoutSupport(clazz, app, [
+      ["Left", "Right"],
+      ["Right", "Left"],
+    ]);
     addMenuItem(clazz, app, {
-      name: (node) => (`${node.properties?.['collapse_connections'] ? 'Show' : 'Collapse'} Connections`),
-      property: 'collapse_connections',
-      prepareValue: (_value, node) => !node.properties?.['collapse_connections'],
-      callback: (_node) => {app.graph.setDirtyCanvas(true, true)}
+      name: (node) =>
+        `${node.properties?.["collapse_connections"] ? "Show" : "Collapse"} Connections`,
+      property: "collapse_connections",
+      prepareValue: (_value, node) => !node.properties?.["collapse_connections"],
+      callback: (_node) => {
+        app.graph.setDirtyCanvas(true, true);
+      },
     });
 
     LiteGraph.registerNodeType(clazz.type, clazz);
@@ -250,26 +300,28 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
   }
 }
 
-
 // Ok, hack time! LGraphNode's connectByType is powerful, but for our nodes, that have multiple "*"
 // input types, it seems it just takes the first one, and disconnects it. I'd rather we don't do
 // that and instead take the next free one. If that doesn't work, then we'll give it to the old
 // method.
 const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
 LGraphNode.prototype.connectByType = function connectByType<T = any>(
-    slot: string | number,
-    sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string): T | null {
+  slot: string | number,
+  sourceNode: TLGraphNode,
+  sourceSlotType: string,
+  optsIn: string,
+): T | null {
   // If we're droppiong on a node, and the last input is free and an "*" type, then connect there
   // first...
   if (sourceNode.inputs) {
     for (const [index, input] of sourceNode.inputs.entries()) {
-      if (!input.link && input.type === '*') {
+      if (!input.link && input.type === "*") {
         this.connect(slot, sourceNode, index);
         return null;
       }
     }
   }
-  return (oldLGraphNodeConnectByType && oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn) || null) as T;
-}
+  return ((oldLGraphNodeConnectByType &&
+    oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn)) ||
+    null) as T;
+};

@@ -1,16 +1,12 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
 import type {
   INodeInputSlot,
   INodeOutputSlot,
   LGraphCanvas as TLGraphCanvas,
-  LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
-  SerializedLGraphNode,
   LLink,
 } from "typings/litegraph.js";
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
+import { app } from "scripts/app.js";
 import {
   IoDirection,
   addConnectionLayoutSupport,
@@ -24,10 +20,6 @@ import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 import { debounce, wait } from "rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 import { NodeTypesString } from "./constants.js";
-
-declare const LGraphNode: typeof TLGraphNode;
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphCanvas: typeof TLGraphCanvas;
 
 /**
  * Takes a non-context node and determins for its input or output slot, if there is a valid

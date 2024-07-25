@@ -677,6 +677,8 @@ export declare class LLink {
     );
     configure(o: LLink | SerializedLLink): void;
     serialize(): SerializedLLink;
+    // @rgthree
+    color?: string;
 }
 
 export type SerializedLGraphNode<T extends LGraphNode = LGraphNode> = {
@@ -1330,6 +1332,9 @@ export declare class LGraphCanvas {
 
     // @rgthree. This was "HTMLCanvasElement" but that is just wrong... it's LGraphCanvas
     static active_canvas: LGraphCanvas;
+
+    // @rgthree
+    pointer_is_down: boolean;
 
     allow_dragcanvas: boolean;
     allow_dragnodes: boolean;

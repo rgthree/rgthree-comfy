@@ -27,7 +27,8 @@ class NodeModeRepeater extends BaseCollectorNode {
     }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
         let canConnect = !this.hasRelayInput;
-        canConnect = canConnect && super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
+        canConnect =
+            canConnect && super.onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex);
         let nextNode = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0] || inputNode;
         return (canConnect &&
             [
@@ -95,7 +96,7 @@ class NodeModeRepeater extends BaseCollectorNode {
     onModeChange(from, to) {
         var _a, _b;
         super.onModeChange(from, to);
-        const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(node => node.type !== NodeTypesString.NODE_MODE_RELAY);
+        const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter((node) => node.type !== NodeTypesString.NODE_MODE_RELAY);
         if (linkedNodes.length) {
             for (const node of linkedNodes) {
                 if (node.type !== NodeTypesString.NODE_MODE_RELAY) {

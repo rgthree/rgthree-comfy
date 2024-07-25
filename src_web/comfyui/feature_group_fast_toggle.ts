@@ -1,20 +1,15 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphGroup as TLGraphGroup,
-  LiteGraph as TLiteGraph,
   LGraph as TLGraph,
   AdjustedMouseEvent,
   Vector2,
 } from "typings/litegraph.js";
 import type { AdjustedMouseCustomEvent } from "typings/rgthree.js";
 
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphCanvas: typeof TLGraphCanvas;
 
 const BTN_SIZE = 20;
 const BTN_MARGIN: Vector2 = [6, 4];

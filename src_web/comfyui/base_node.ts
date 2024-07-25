@@ -2,17 +2,14 @@ import { ComfyNodeConstructor, ComfyObjectInfo, NodeMode } from "typings/comfy.j
 import type {
   IWidget,
   SerializedLGraphNode,
-  LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
   LGraphCanvas,
   ContextMenuItem,
   INodeOutputSlot,
   INodeInputSlot,
 } from "typings/litegraph.js";
-// @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
+import { app } from "scripts/app.js";
 
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
@@ -22,9 +19,6 @@ import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
-
-declare const LGraphNode: typeof TLGraphNode;
-declare const LiteGraph: typeof TLiteGraph;
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -355,11 +349,11 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
           // Support custom widgets by Type:Name
           Object.assign(
             config,
-            WIDGETS[`${type}:${inputName}`](this, inputName, inputData, app) || {},
+            WIDGETS[`${type}:${inputName}`]!(this, inputName, inputData, app) || {},
           );
         } else if (type in WIDGETS) {
           // Standard type widgets
-          Object.assign(config, WIDGETS[type](this, inputName, inputData, app) || {});
+          Object.assign(config, WIDGETS[type]!(this, inputName, inputData, app) || {});
         } else {
           // Node connection inputs
           this.addInput(inputName, type);

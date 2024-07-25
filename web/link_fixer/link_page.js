@@ -166,11 +166,11 @@ export class LinkPage {
             this.updateUi("⛔ Save w/o final graph patched.");
             return false;
         }
-        let filename = this.file.name || 'workflow.json';
-        let filenames = filename.split('.');
+        let filename = this.file.name || "workflow.json";
+        let filenames = filename.split(".");
         filenames.pop();
-        filename = filenames.join('.');
-        filename += '_fixed.json';
+        filename = filenames.join(".");
+        filename += "_fixed.json";
         filename = prompt("Save workflow as:", filename);
         if (!filename)
             return false;
@@ -180,10 +180,10 @@ export class LinkPage {
         const json = JSON.stringify(this.graphFinalResults.graph, null, 2);
         const blob = new Blob([json], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        const anchor = document.createElement('a');
+        const anchor = document.createElement("a");
         anchor.download = filename;
         anchor.href = url;
-        anchor.style.display = 'none';
+        anchor.style.display = "none";
         document.body.appendChild(anchor);
         await wait();
         anchor.click();

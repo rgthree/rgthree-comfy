@@ -1,18 +1,33 @@
-import type { LGraphNode, IWidget, SerializedLGraphNode, LGraph, LGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph";
+import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph";
 import type {Constructor, SerializedGraph} from './index';
 
 declare global {
   const LiteGraph: typeof TLiteGraph;
+	const LGraph: typeof TLGraph;
+	const LGraphNode: typeof TLGraphNode;
+	const LGraphCanvas: typeof TLGraphCanvas;
+	const LGraphGroup: typeof TLGraphGroup;
 }
 
 // @rgthree: Types on ComfyApp as needed.
 export interface ComfyApp {
 	extensions: ComfyExtension[];
 	async queuePrompt(number?: number, batchCount = 1): Promise<void>;
-	graph: LGraph;
-	canvas: LGraphCanvas;
+	graph: TLGraph;
+	canvas: TLGraphCanvas;
 	clean() : void;
  	registerExtension(extension: ComfyExtension): void;
+	getPreviewFormatParam(): string;
+	getRandParam(): string;
+	loadApiJson(apiData: {}, fileName: string): void;
+	async graphToPrompt(graph?: TLGraph, clean?: boolean): Promise<void>;
+	// workflow: ComfyWorkflowInstance ???
+	async loadGraphData(graphData: {}, clean?: boolean, restore_view?: boolean, workflow?: any|null): Promise<void>
+	ui: {
+		settings: {
+			addSetting(config: {id: string, name: string, type: () => HTMLElement}) : void;
+		}
+	}
 }
 
 export interface ComfyWidget extends IWidget {
@@ -24,12 +39,12 @@ export interface ComfyWidget extends IWidget {
 	width: number;
 }
 
-export interface ComfyGraphNode extends LGraphNode {
+export interface ComfyGraphNode extends TLGraphNode {
 	getExtraMenuOptions: (node: TLGraphNode, options: ContextMenuItem[]) => void;
 	onExecuted(message: any): void;
 }
 
-export interface ComfyNode extends LGraphNode {
+export interface ComfyNode extends TLGraphNode {
 	comfyClass: string;
 }
 
@@ -95,13 +110,13 @@ export interface ComfyExtension {
 	 * @param node The node that has been loaded
 	 * @param app The ComfyUI app instance
 	 */
-	loadedGraphNode?(node: LGraphNode, app: ComfyApp);
+	loadedGraphNode?(node: TLGraphNode, app: ComfyApp);
 	/**
 	 * Allows the extension to run code after the constructor of the node
 	 * @param node The node that has been created
 	 * @param app The ComfyUI app instance
 	 */
-	nodeCreated?(node: LGraphNode, app: ComfyApp);
+	nodeCreated?(node: TLGraphNode, app: ComfyApp);
 }
 
 export type ComfyObjectInfo = {

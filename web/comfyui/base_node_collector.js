@@ -1,6 +1,6 @@
 import { rgthree } from "./rgthree.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { PassThroughFollowing, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, shouldPassThrough } from "./utils.js";
+import { PassThroughFollowing, getConnectedInputNodes, getConnectedInputNodesAndFilterPassThroughs, shouldPassThrough, } from "./utils.js";
 export class BaseCollectorNode extends BaseAnyInputConnectedNode {
     constructor(title) {
         super(title);

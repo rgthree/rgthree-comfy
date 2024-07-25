@@ -1,6 +1,5 @@
 import { getResolver } from "./shared_utils.js";
-// @ts-ignore
-import { getPngMetadata, getWebpMetadata } from "../../scripts/pnginfo.js";
+import { getPngMetadata, getWebpMetadata } from "scripts/pnginfo.js";
 import type { SerializedGraph } from "typings/index.js";
 import type { ComfyApiFormat } from "typings/comfy.js";
 

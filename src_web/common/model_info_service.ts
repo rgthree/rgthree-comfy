@@ -1,7 +1,6 @@
 import type { RgthreeModelInfo } from "typings/rgthree";
 import { rgthreeApi } from "./rgthree_api.js";
-// @ts-ignore
-import { api } from "../../scripts/api.js";
+import { api } from "scripts/api.js";
 
 /**
  * A singleton service to fetch and cache model infos from rgthree-comfy.
@@ -11,7 +10,10 @@ class ModelInfoService extends EventTarget {
 
   constructor() {
     super();
-    api.addEventListener("rgthree-refreshed-lora-info", this.handleLoraAsyncUpdate.bind(this));
+    api.addEventListener(
+      "rgthree-refreshed-lora-info",
+      this.handleLoraAsyncUpdate.bind(this) as EventListener,
+    );
   }
 
   /**

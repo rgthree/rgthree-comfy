@@ -1,21 +1,14 @@
-// @ts-ignore
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import type {
-  LiteGraph as TLiteGraph,
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
   AdjustedMouseEvent,
   Vector2,
-  LGraph as TLGraph,
 } from "typings/litegraph.js";
 import { rgthree } from "./rgthree.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraph: typeof TLGraph;
-declare const LGraphCanvas: typeof TLGraphCanvas;
 
 /**
  * A label node that allows you to put floating text anywhere on the graph. The text is the `Title`
@@ -119,7 +112,6 @@ export class Label extends RgthreeBaseVirtualNode {
     // resize icon...
     return this.resizable;
   }
-
 
   override getHelp() {
     return `

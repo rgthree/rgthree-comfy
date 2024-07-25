@@ -114,7 +114,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     this.removeWidget(widget);
                 }
                 else {
-                    const [m, a] = this.logger.debugParts('Connected widget is not in widgets... weird.');
+                    const [m, a] = this.logger.debugParts("Connected widget is not in widgets... weird.");
                     (_a = console[m]) === null || _a === void 0 ? void 0 : _a.call(console, ...a);
                 }
             }
@@ -123,7 +123,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         let indexOffset = 1;
         for (const [index, node] of linkedNodes.entries()) {
             if (!node) {
-                const [m, a] = this.logger.debugParts('linkedNode provided that does not exist. ');
+                const [m, a] = this.logger.debugParts("linkedNode provided that does not exist. ");
                 (_b = console[m]) === null || _b === void 0 ? void 0 : _b.call(console, ...a);
                 badNodes.push(node);
                 continue;
@@ -163,9 +163,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
     }
     removeWidget(widgetOrSlot) {
-        const widget = typeof widgetOrSlot === "number"
-            ? this.widgets[widgetOrSlot]
-            : widgetOrSlot;
+        const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;
         if (widget && this.widgetToData.has(widget)) {
             this.widgetToData.delete(widget);
         }

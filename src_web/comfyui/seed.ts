@@ -1,14 +1,10 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import type {
   ContextMenuItem,
   IContextMenuOptions,
   ContextMenu,
   LGraphNode as TLGraphNode,
-  LiteGraph as TLiteGraph,
   IWidget,
   LGraphCanvas,
   SerializedLGraphNode,
@@ -24,9 +20,6 @@ import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 import { SerializedNode } from "typings/index.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
 
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 
@@ -54,7 +47,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
   lastSeed?: number = undefined;
   serializedCtx: SeedSerializedCtx = {};
   seedWidget!: IWidget;
-  lastSeedButton!: ComfyWidget;
+  lastSeedButton!: IWidget;
   lastSeedValue: ComfyWidget | null = null;
 
   randMax = 1125899906842624;

@@ -214,7 +214,7 @@ class Rgthree extends EventTarget {
             }
             const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
             const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
-            this.progressBarEl.classList.toggle('rgthree-pos-bottom', position === 'bottom');
+            this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
             if (isUpdatedComfyBodyClasses) {
                 if (position === "bottom") {
                     queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
@@ -525,7 +525,7 @@ class Rgthree extends EventTarget {
         const clean = app.clean;
         app.clean = function () {
             rgthree.clearAllMessages();
-            clean && clean.call(app, ...arguments);
+            clean && clean.apply(app, [...arguments]);
         };
         const loadGraphData = app.loadGraphData;
         app.loadGraphData = function (graph) {
@@ -600,7 +600,7 @@ class Rgthree extends EventTarget {
                     }, 5000);
                 }
             }, 100);
-            return loadGraphData && loadGraphData.call(app, ...arguments);
+            return loadGraphData && loadGraphData.apply(app, [...arguments]);
         };
     }
     getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node) {

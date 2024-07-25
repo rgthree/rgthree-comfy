@@ -1,26 +1,16 @@
-// / <reference path="../node_modules/litegraph.js/src/litegraph.d.ts" />
-// @ts-ignore
-import { app } from "../../scripts/app.js";
-// @ts-ignore
-import { ComfyWidgets } from "../../scripts/widgets.js";
-import type {
-  SerializedLGraphNode,
-  LGraphNode as TLGraphNode,
-  LiteGraph as TLiteGraph,
-} from "typings/litegraph.js";
-import type { ComfyApp, ComfyObjectInfo } from "typings/comfy.js";
-import { addConnectionLayoutSupport, replaceNode } from "./utils.js";
+import { app } from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
+import type { LGraphNode as TLGraphNode } from "typings/litegraph.js";
+import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
+import { addConnectionLayoutSupport } from "./utils.js";
 import { rgthree } from "./rgthree.js";
-
-declare const LiteGraph: typeof TLiteGraph;
-declare const LGraphNode: typeof TLGraphNode;
 
 let hasShownAlertForUpdatingInt = false;
 
 app.registerExtension({
   name: "rgthree.DisplayAny",
   async beforeRegisterNodeDef(
-    nodeType: typeof LGraphNode,
+    nodeType: ComfyNodeConstructor,
     nodeData: ComfyObjectInfo,
     app: ComfyApp,
   ) {
@@ -38,18 +28,18 @@ app.registerExtension({
           app,
         ).widget;
         (this as any).showValueWidget.inputEl!.readOnly = true;
-        (this as any).showValueWidget.serializeValue = async (
-          node: TLGraphNode,
-          index: number,
-        ) => {
-          const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
+        (this as any).showValueWidget.serializeValue = async (node: TLGraphNode, index: number) => {
+          const n =
+            rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
           if (n) {
             // Since we need a round trip to get the value, the serizalized value means nothing, and
             // saving it to the metadata would just be confusing. So, we clear it here.
             n.widgets_values![index] = "";
           } else {
-            console.warn('No serialized node found in workflow. May be attributed to '
-              + 'https://github.com/comfyanonymous/ComfyUI/issues/2193');
+            console.warn(
+              "No serialized node found in workflow. May be attributed to " +
+                "https://github.com/comfyanonymous/ComfyUI/issues/2193",
+            );
           }
           return "";
         };
@@ -58,7 +48,7 @@ app.registerExtension({
       addConnectionLayoutSupport(nodeType, app, [["Left"], ["Right"]]);
 
       const onExecuted = nodeType.prototype.onExecuted;
-      nodeType.prototype.onExecuted = function (message) {
+      nodeType.prototype.onExecuted = function (message: any) {
         onExecuted?.apply(this, [message]);
         (this as any).showValueWidget.value = message.text[0];
       };
