@@ -41,7 +41,7 @@ class BypasserNode extends BaseNodeModeChanger {
 app.registerExtension({
   name: "rgthree.Bypasser",
   registerCustomNodes() {
-    BypasserNode.setUp(BypasserNode);
+    BypasserNode.setUp();
   },
   loadedGraphNode(node: LGraphNode) {
     if (node.type == BypasserNode.title) {

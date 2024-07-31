@@ -100,8 +100,4 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   forceWidgetToggle(widget: IWidget, skipOtherNodeCheck?: boolean) {
     (widget as any).doModeChange(!widget.value, skipOtherNodeCheck);
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    BaseAnyInputConnectedNode.setUp(clazz);
-  }
 }

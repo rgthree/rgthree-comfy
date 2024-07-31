@@ -780,6 +780,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     }
 }
 RerouteNode.title = NodeTypesString.REROUTE;
+RerouteNode.type = NodeTypesString.REROUTE;
 RerouteNode.title_mode = LiteGraph.NO_TITLE;
 RerouteNode.collapsable = false;
 RerouteNode.layout_slot_offset = 5;
@@ -934,7 +935,6 @@ addMenuItem(RerouteNode, app, {
 app.registerExtension({
     name: "rgthree.Reroute",
     registerCustomNodes() {
-        LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
-        RerouteNode.category = RerouteNode._category;
+        RerouteNode.setUp();
     },
 });

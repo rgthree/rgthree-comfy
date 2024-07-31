@@ -62,10 +62,6 @@ export class Label extends RgthreeBaseVirtualNode {
     onDblClick(event, pos, canvas) {
         LGraphCanvas.active_canvas.showShowNodePanel(this);
     }
-    static setUp(clazz) {
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
-    }
     onShowCustomPanelInfo(panel) {
         var _a, _b;
         (_a = panel.querySelector('div.property[data-property="Mode"]')) === null || _a === void 0 ? void 0 : _a.remove();
@@ -151,6 +147,6 @@ LGraph.prototype.getNodeOnPos = function (x, y, nodes_list, margin) {
 app.registerExtension({
     name: "rgthree.Label",
     registerCustomNodes() {
-        Label.setUp(Label);
+        Label.setUp();
     },
 });

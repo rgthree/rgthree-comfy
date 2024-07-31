@@ -35,7 +35,7 @@ BypasserNode.title = NodeTypesString.FAST_BYPASSER;
 app.registerExtension({
     name: "rgthree.Bypasser",
     registerCustomNodes() {
-        BypasserNode.setUp(BypasserNode);
+        BypasserNode.setUp();
     },
     loadedGraphNode(node) {
         if (node.type == BypasserNode.title) {

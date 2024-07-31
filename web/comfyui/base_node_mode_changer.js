@@ -76,9 +76,6 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     forceWidgetToggle(widget, skipOtherNodeCheck) {
         widget.doModeChange(!widget.value, skipOtherNodeCheck);
     }
-    static setUp(clazz) {
-        BaseAnyInputConnectedNode.setUp(clazz);
-    }
 }
 BaseNodeModeChanger.collapsible = false;
 BaseNodeModeChanger["@toggleRestriction"] = {

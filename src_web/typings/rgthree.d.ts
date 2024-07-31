@@ -5,6 +5,13 @@ import type {RgthreeBaseVirtualNode} from '../comfyui/base_node.js'
 export type AdjustedMouseCustomEvent = CustomEvent<{ originalEvent: AdjustedMouseEvent }>;
 
 
+export interface RgthreeBaseNodeConstructor extends Constructor<RgthreeBaseNode> {
+	static type: string;
+	static category: string;
+  static comfyClass: string;
+	static exposedActions: string[];
+}
+
 export interface RgthreeBaseVirtualNodeConstructor extends Constructor<RgthreeBaseVirtualNode> {
 	static type: string;
 	static category: string;

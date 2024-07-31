@@ -234,9 +234,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
             }
         }
     }
-    static setUp(clazz) {
-        BaseAnyInputConnectedNode.setUp(clazz);
-        addMenuItem(clazz, app, {
+    static setUp() {
+        super.setUp();
+        addMenuItem(this, app, {
             name: "➕ Append a Comfy Action",
             callback: (nodeArg) => {
                 nodeArg.addComfyActionWidget();
@@ -256,7 +256,7 @@ FastActionsButton.collapsible = false;
 app.registerExtension({
     name: "rgthree.FastActionsButton",
     registerCustomNodes() {
-        FastActionsButton.setUp(FastActionsButton);
+        FastActionsButton.setUp();
     },
     loadedGraphNode(node) {
         if (node.type == FastActionsButton.title) {

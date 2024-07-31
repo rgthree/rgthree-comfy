@@ -163,12 +163,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         }
         return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
     }
-    static setUp(clazz) {
-        addConnectionLayoutSupport(clazz, app, [
+    static setUp() {
+        super.setUp();
+        addConnectionLayoutSupport(this, app, [
             ["Left", "Right"],
             ["Right", "Left"],
         ]);
-        addMenuItem(clazz, app, {
+        addMenuItem(this, app, {
             name: (node) => { var _a; return `${((_a = node.properties) === null || _a === void 0 ? void 0 : _a["collapse_connections"]) ? "Show" : "Collapse"} Connections`; },
             property: "collapse_connections",
             prepareValue: (_value, node) => { var _a; return !((_a = node.properties) === null || _a === void 0 ? void 0 : _a["collapse_connections"]); },
@@ -176,8 +177,6 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
                 app.graph.setDirtyCanvas(true, true);
             },
         });
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
     }
 }
 const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;

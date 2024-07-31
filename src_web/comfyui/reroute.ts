@@ -325,6 +325,7 @@ const SERVICE = new RerouteService();
  */
 class RerouteNode extends RgthreeBaseVirtualNode {
   static override title = NodeTypesString.REROUTE;
+  static override type = NodeTypesString.REROUTE;
   override comfyClass = NodeTypesString.REROUTE;
 
   static readonly title_mode = LiteGraph.NO_TITLE;
@@ -1210,7 +1211,6 @@ addMenuItem(RerouteNode, app, {
 app.registerExtension({
   name: "rgthree.Reroute",
   registerCustomNodes() {
-    LiteGraph.registerNodeType(RerouteNode.title, RerouteNode);
-    RerouteNode.category = RerouteNode._category;
+    RerouteNode.setUp();
   },
 });

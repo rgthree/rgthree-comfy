@@ -40,7 +40,7 @@ class MuterNode extends BaseNodeModeChanger {
 app.registerExtension({
   name: "rgthree.Muter",
   registerCustomNodes() {
-    MuterNode.setUp(MuterNode);
+    MuterNode.setUp();
   },
   loadedGraphNode(node: LGraphNode) {
     if (node.type == MuterNode.title) {

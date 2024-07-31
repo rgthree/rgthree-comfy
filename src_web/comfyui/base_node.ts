@@ -1,4 +1,4 @@
-import { ComfyNodeConstructor, ComfyObjectInfo, NodeMode } from "typings/comfy.js";
+import type { ComfyNodeConstructor, ComfyObjectInfo, NodeMode } from "typings/comfy.js";
 import type {
   IWidget,
   SerializedLGraphNode,
@@ -8,13 +8,13 @@ import type {
   INodeOutputSlot,
   INodeInputSlot,
 } from "typings/litegraph.js";
+import type { RgthreeBaseServerNodeConstructor, RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+
 import { ComfyWidgets } from "scripts/widgets.js";
 import { app } from "scripts/app.js";
-
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
-import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
@@ -278,6 +278,16 @@ export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
 
   constructor(title = RgthreeBaseNode.title) {
     super(title, false);
+  }
+
+  static override setUp() {
+    if (!this.type) {
+      throw new Error(`Missing type for RgthreeBaseVirtualNode: ${this.title}`);
+    }
+    LiteGraph.registerNodeType(this.type, this);
+    if (this._category) {
+      this.category = this._category;
+    }
   }
 }
 

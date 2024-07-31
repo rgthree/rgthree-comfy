@@ -168,6 +168,15 @@ export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
         super(title, false);
         this.isVirtualNode = true;
     }
+    static setUp() {
+        if (!this.type) {
+            throw new Error(`Missing type for RgthreeBaseVirtualNode: ${this.title}`);
+        }
+        LiteGraph.registerNodeType(this.type, this);
+        if (this._category) {
+            this.category = this._category;
+        }
+    }
 }
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
     constructor(title) {

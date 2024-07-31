@@ -22,17 +22,12 @@ export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
     super(title);
     this.onConstructed();
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    LiteGraph.registerNodeType(clazz.type, clazz);
-    clazz.category = clazz._category;
-  }
 }
 
 app.registerExtension({
   name: "rgthree.FastGroupsBypasser",
   registerCustomNodes() {
-    FastGroupsBypasser.setUp(FastGroupsBypasser);
+    FastGroupsBypasser.setUp();
   },
   loadedGraphNode(node: FastGroupsBypasser) {
     if (node.type == FastGroupsBypasser.title) {

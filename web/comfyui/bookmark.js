@@ -82,10 +82,6 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         }
         canvas.setDirty(true, true);
     }
-    static setUp(clazz) {
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
-    }
 }
 Bookmark.type = NodeTypesString.BOOKMARK;
 Bookmark.title = NodeTypesString.BOOKMARK;
@@ -93,7 +89,7 @@ Bookmark.slot_start_y = -20;
 app.registerExtension({
     name: "rgthree.Bookmark",
     registerCustomNodes() {
-        Bookmark.setUp(Bookmark);
+        Bookmark.setUp();
     },
 });
 function isBookmark(node) {

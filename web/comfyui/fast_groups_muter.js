@@ -376,10 +376,6 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         </li>
       </ul>`;
     }
-    static setUp(clazz) {
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
-    }
 }
 BaseFastGroupsModeChanger.type = NodeTypesString.FAST_GROUPS_MUTER;
 BaseFastGroupsModeChanger.title = NodeTypesString.FAST_GROUPS_MUTER;
@@ -405,10 +401,6 @@ export class FastGroupsMuter extends BaseFastGroupsModeChanger {
         this.modeOff = LiteGraph.NEVER;
         this.onConstructed();
     }
-    static setUp(clazz) {
-        LiteGraph.registerNodeType(clazz.type, clazz);
-        clazz.category = clazz._category;
-    }
 }
 FastGroupsMuter.type = NodeTypesString.FAST_GROUPS_MUTER;
 FastGroupsMuter.title = NodeTypesString.FAST_GROUPS_MUTER;
@@ -416,7 +408,7 @@ FastGroupsMuter.exposedActions = ["Bypass all", "Enable all", "Toggle all"];
 app.registerExtension({
     name: "rgthree.FastGroupsMuter",
     registerCustomNodes() {
-        FastGroupsMuter.setUp(FastGroupsMuter);
+        FastGroupsMuter.setUp();
     },
     loadedGraphNode(node) {
         if (node.type == FastGroupsMuter.title) {

@@ -136,17 +136,12 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     canvas.setDirty(true, true);
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    LiteGraph.registerNodeType(clazz.type, clazz);
-    clazz.category = clazz._category;
-  }
 }
 
 app.registerExtension({
   name: "rgthree.Bookmark",
   registerCustomNodes() {
-    Bookmark.setUp(Bookmark);
+    Bookmark.setUp();
   },
 });
 

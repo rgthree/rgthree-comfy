@@ -84,9 +84,6 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
       </ul>
     `;
     }
-    static setUp(clazz) {
-        BaseAnyInputConnectedNode.setUp(clazz);
-    }
 }
 RandomUnmuterNode.exposedActions = ["Mute all", "Enable all"];
 RandomUnmuterNode.type = NodeTypesString.RANDOM_UNMUTER;
@@ -94,7 +91,7 @@ RandomUnmuterNode.title = RandomUnmuterNode.type;
 app.registerExtension({
     name: "rgthree.RandomUnmuter",
     registerCustomNodes() {
-        RandomUnmuterNode.setUp(RandomUnmuterNode);
+        RandomUnmuterNode.setUp();
     },
     loadedGraphNode(node) {
         if (node.type == RandomUnmuterNode.title) {

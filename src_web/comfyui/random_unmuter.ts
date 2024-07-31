@@ -103,16 +103,12 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
       </ul>
     `;
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    BaseAnyInputConnectedNode.setUp(clazz);
-  }
 }
 
 app.registerExtension({
   name: "rgthree.RandomUnmuter",
   registerCustomNodes() {
-    RandomUnmuterNode.setUp(RandomUnmuterNode);
+    RandomUnmuterNode.setUp();
   },
   loadedGraphNode(node: LGraphNode) {
     if (node.type == RandomUnmuterNode.title) {

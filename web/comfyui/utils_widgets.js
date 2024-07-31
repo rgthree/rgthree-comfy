@@ -109,31 +109,7 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {
         this.mouseUpCallback = mouseUpCallback;
     }
     draw(ctx, node, width, y, height) {
-        if (!isLowQuality() && !this.isMouseDownedAndOver) {
-            drawRoundedRectangle(ctx, {
-                width: width - 30 - 2,
-                height,
-                posY: y + 1,
-                posX: 15 + 1,
-                borderRadius: 4,
-                colorBackground: "#000000aa",
-                colorStroke: "#000000aa",
-            });
-        }
-        drawRoundedRectangle(ctx, {
-            width: width - 30,
-            height,
-            posY: y + (this.isMouseDownedAndOver ? 1 : 0),
-            posX: 15,
-            borderRadius: isLowQuality() ? 0 : 4,
-            colorBackground: this.isMouseDownedAndOver ? "#444" : LiteGraph.WIDGET_BGCOLOR,
-        });
-        if (!isLowQuality()) {
-            ctx.textBaseline = "middle";
-            ctx.textAlign = "center";
-            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
-            ctx.fillText(this.name, node.size[0] / 2, y + height / 2 + (this.isMouseDownedAndOver ? 1 : 0));
-        }
+        drawWidgetButton({ ctx, node, width, height, y }, this.name, this.isMouseDownedAndOver);
     }
     onMouseUp(event, pos, node) {
         return this.mouseUpCallback(event, pos, node);
@@ -245,5 +221,32 @@ export class RgthreeLabelWidget {
         }
         this.widgetOptions.actionCallback(event);
         return true;
+    }
+}
+export function drawWidgetButton(drawCtx, text, isMouseDownedAndOver = false) {
+    if (!isLowQuality() && !isMouseDownedAndOver) {
+        drawRoundedRectangle(drawCtx.ctx, {
+            width: drawCtx.width - 30 - 2,
+            height: drawCtx.height,
+            posY: drawCtx.y + 1,
+            posX: 15 + 1,
+            borderRadius: 4,
+            colorBackground: "#000000aa",
+            colorStroke: "#000000aa",
+        });
+    }
+    drawRoundedRectangle(drawCtx.ctx, {
+        width: drawCtx.width - 30,
+        height: drawCtx.height,
+        posY: drawCtx.y + (isMouseDownedAndOver ? 1 : 0),
+        posX: 15,
+        borderRadius: isLowQuality() ? 0 : 4,
+        colorBackground: isMouseDownedAndOver ? "#444" : LiteGraph.WIDGET_BGCOLOR,
+    });
+    if (!isLowQuality()) {
+        drawCtx.ctx.textBaseline = "middle";
+        drawCtx.ctx.textAlign = "center";
+        drawCtx.ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+        drawCtx.ctx.fillText(text, drawCtx.node.size[0] / 2, drawCtx.y + drawCtx.height / 2 + (isMouseDownedAndOver ? 1 : 0));
     }
 }

@@ -313,10 +313,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
   }
 
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    BaseAnyInputConnectedNode.setUp(clazz);
-
-    addMenuItem(clazz, app, {
+  static override setUp() {
+    super.setUp();
+    addMenuItem(this, app, {
       name: "➕ Append a Comfy Action",
       callback: (nodeArg: LGraphNode) => {
         (nodeArg as FastActionsButton).addComfyActionWidget();
@@ -328,7 +327,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 app.registerExtension({
   name: "rgthree.FastActionsButton",
   registerCustomNodes() {
-    FastActionsButton.setUp(FastActionsButton);
+    FastActionsButton.setUp();
   },
   loadedGraphNode(node: LGraphNode) {
     if (node.type == FastActionsButton.title) {

@@ -35,7 +35,7 @@ MuterNode.title = NodeTypesString.FAST_MUTER;
 app.registerExtension({
     name: "rgthree.Muter",
     registerCustomNodes() {
-        MuterNode.setUp(MuterNode);
+        MuterNode.setUp();
     },
     loadedGraphNode(node) {
         if (node.type == MuterNode.title) {

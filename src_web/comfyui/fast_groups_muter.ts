@@ -466,11 +466,6 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         </li>
       </ul>`;
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    LiteGraph.registerNodeType(clazz.type, clazz);
-    clazz.category = clazz._category;
-  }
 }
 
 /**
@@ -492,17 +487,12 @@ export class FastGroupsMuter extends BaseFastGroupsModeChanger {
     super(title);
     this.onConstructed();
   }
-
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    LiteGraph.registerNodeType(clazz.type, clazz);
-    clazz.category = clazz._category;
-  }
 }
 
 app.registerExtension({
   name: "rgthree.FastGroupsMuter",
   registerCustomNodes() {
-    FastGroupsMuter.setUp(FastGroupsMuter);
+    FastGroupsMuter.setUp();
   },
   loadedGraphNode(node: LGraphNode) {
     if (node.type == FastGroupsMuter.title) {

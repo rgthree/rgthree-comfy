@@ -280,12 +280,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     return super.connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn);
   }
 
-  static override setUp(clazz: RgthreeBaseVirtualNodeConstructor) {
-    addConnectionLayoutSupport(clazz, app, [
+  static override setUp() {
+    super.setUp();
+    addConnectionLayoutSupport(this, app, [
       ["Left", "Right"],
       ["Right", "Left"],
     ]);
-    addMenuItem(clazz, app, {
+    addMenuItem(this, app, {
       name: (node) =>
         `${node.properties?.["collapse_connections"] ? "Show" : "Collapse"} Connections`,
       property: "collapse_connections",
@@ -294,9 +295,6 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         app.graph.setDirtyCanvas(true, true);
       },
     });
-
-    LiteGraph.registerNodeType(clazz.type, clazz);
-    clazz.category = clazz._category;
   }
 }
 
