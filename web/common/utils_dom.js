@@ -226,6 +226,9 @@ export function setAttribute(element, attribute, value) {
             element.dataset[key] = String(val);
         }
     }
+    else if (attribute == 'onclick' && typeof value === 'function') {
+        element.addEventListener('click', value);
+    }
     else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
         element[attribute] = !!value;
         if (!value) {

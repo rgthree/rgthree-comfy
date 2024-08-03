@@ -30,6 +30,7 @@ import {
   setConnectionsLayout,
   waitForCanvas,
 } from "./utils.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { wait } from "rgthree/common/shared_utils.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
@@ -137,8 +138,8 @@ class RerouteService {
    */
   private startingLinking() {
     this.isFastLinking = true;
-    window.addEventListener("keydown", this.handleLinkingKeydownBound);
-    window.addEventListener("keyup", this.handleLinkingKeyupBound);
+    KEY_EVENT_SERVICE.addEventListener("keydown", this.handleLinkingKeydownBound as EventListener);
+    KEY_EVENT_SERVICE.addEventListener("keyup", this.handleLinkingKeyupBound as EventListener);
   }
 
   /**
@@ -150,8 +151,8 @@ class RerouteService {
   private stoppingLinking() {
     this.isFastLinking = false;
     this.fastReroutesHistory = [];
-    window.removeEventListener("keydown", this.handleLinkingKeydownBound);
-    window.removeEventListener("keyup", this.handleLinkingKeyupBound);
+    KEY_EVENT_SERVICE.removeEventListener("keydown", this.handleLinkingKeydownBound as EventListener);
+    KEY_EVENT_SERVICE.removeEventListener("keyup", this.handleLinkingKeyupBound as EventListener);
   }
 
   /**
@@ -163,7 +164,7 @@ class RerouteService {
   private handleLinkingKeydown(event: KeyboardEvent) {
     if (
       !this.handledNewRerouteKeypress &&
-      rgthree.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)
+      KEY_EVENT_SERVICE.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)
     ) {
       this.handledNewRerouteKeypress = true;
       this.insertNewRerouteWhileLinking();
@@ -179,7 +180,7 @@ class RerouteService {
   private handleLinkingKeyup(event: KeyboardEvent) {
     if (
       this.handledNewRerouteKeypress &&
-      !rgthree.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)
+      !KEY_EVENT_SERVICE.areOnlyKeysDown(CONFIG_KEY_CREATE_WHILE_LINKING)
     ) {
       this.handledNewRerouteKeypress = false;
     }
@@ -924,7 +925,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
    * Handles a key down while this node is selected, starting a shortcut if the keys are newly
    * pressed.
    */
-  override onKeyDown(event: KeyboardEvent): void {
+  override onKeyDown(event: KeyboardEvent) {
     super.onKeyDown(event);
     const canvas = app.canvas as TLGraphCanvas;
 
@@ -932,7 +933,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     if (CONFIG_FAST_REROUTE_ENABLED) {
       for (const [key, shortcut] of Object.entries(this.shortcuts)) {
         if (!shortcut.state) {
-          const keys = rgthree.areOnlyKeysDown(shortcut.keys);
+          const keys = KEY_EVENT_SERVICE.areOnlyKeysDown(shortcut.keys);
           if (keys) {
             shortcut.state = true;
             if (key === "rotate") {
@@ -952,7 +953,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
   /**
    * Handles a key up while this node is selected, canceling any current shortcut.
    */
-  override onKeyUp(event: KeyboardEvent): void {
+  override onKeyUp(event: KeyboardEvent) {
     super.onKeyUp(event);
     const canvas = app.canvas as TLGraphCanvas;
 
@@ -960,7 +961,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     if (CONFIG_FAST_REROUTE_ENABLED) {
       for (const [key, shortcut] of Object.entries(this.shortcuts)) {
         if (shortcut.state) {
-          const keys = rgthree.areOnlyKeysDown(shortcut.keys);
+          const keys = KEY_EVENT_SERVICE.areOnlyKeysDown(shortcut.keys);
           if (!keys) {
             shortcut.state = false;
             if ((shortcut as any).initialMousePos) {

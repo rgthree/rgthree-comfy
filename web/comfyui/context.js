@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, addMenuItem, matchLocalSlotsToServer, replaceNode, } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { debounce, wait } from "../../rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
 import { NodeTypesString } from "./constants.js";
@@ -74,7 +74,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
             canConnect = LGraphNode.prototype.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
         }
         if (!canConnect && slot === 0) {
-            const ctrlKey = rgthree.ctrlKey;
+            const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
             for (const [index, input] of (sourceNode.inputs || []).entries()) {
                 if (input.link && !ctrlKey) {
                     continue;
@@ -95,7 +95,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
             canConnect = LGraphNode.prototype.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
         }
         if (!canConnect && slot === 0) {
-            const ctrlKey = rgthree.ctrlKey;
+            const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
             for (const [index, output] of (sourceNode.outputs || []).entries()) {
                 if (((_a = output.links) === null || _a === void 0 ? void 0 : _a.length) && !ctrlKey) {
                     continue;

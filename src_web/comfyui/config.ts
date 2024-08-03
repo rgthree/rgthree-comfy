@@ -38,7 +38,7 @@ type ConfigurationSchemaOption = { value: any; label: string };
 /**
  * A static schema of sorts to layout options found in the config.
  */
-const CONFIGURABLE: { features: ConfigurationSchema[] } = {
+const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
   features: [
     {
       key: "features.patch_recursive_execution",
@@ -68,9 +68,29 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
       ],
     },
     {
+      key: "features.import_individual_nodes.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Import Individual Nodes Widgets",
+      description:
+        "Dragging & Dropping a similar image/JSON workflow onto (most) current workflow nodes" +
+        "will allow you to import that workflow's node's widgets when it has the same " +
+        "id and type. This is useful when you have several images and you'd like to import just " +
+        "one part of a previous iteration, like a seed, or prompt.",
+    },
+  ],
+  menus: [
+    {
+      key: "features.comfy_top_bar_menu.enabled",
+      type: ConfigType.BOOLEAN,
+      label: "Enable Top Bar Menu",
+      description:
+        "Have quick access from ComfyUI's new top bar to rgthree-comfy bookmarks, settings " +
+        "(and more to come).",
+    },
+    {
       key: "features.menu_queue_selected_nodes",
       type: ConfigType.BOOLEAN,
-      label: "(Menu) Show 'Queue Selected Output Nodes'",
+      label: "Show 'Queue Selected Output Nodes'",
       description:
         "Will show a menu item in the right-click context menus to queue (only) the selected " +
         "output nodes.",
@@ -78,7 +98,7 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
     {
       key: "features.menu_auto_nest.subdirs",
       type: ConfigType.BOOLEAN,
-      label: "(Menu) Auto Nest Subdirectories",
+      label: "Auto Nest Subdirectories in Menus",
       description:
         "When a large, flat list of values contain sub-directories, auto nest them. (Like, for " +
         "a large list of checkpoints).",
@@ -93,13 +113,15 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
     {
       key: "features.menu_bookmarks.enabled",
       type: ConfigType.BOOLEAN,
-      label: "(Menu) Show bookmark shortcuts in context menu",
-      description: "Will list bookmarks in the rgthree-comfy context menu.",
+      label: "Show Bookmarks in context menu",
+      description: "Will list bookmarks in the rgthree-comfy right-click context menu.",
     },
+  ],
+  groups: [
     {
       key: "features.group_header_fast_toggle.enabled",
       type: ConfigType.BOOLEAN,
-      label: "(Groups) Show fast toggles in Group Headers",
+      label: "Show fast toggles in Group Headers",
       description: "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
       subconfig: [
         {
@@ -123,16 +145,8 @@ const CONFIGURABLE: { features: ConfigurationSchema[] } = {
         },
       ],
     },
-    {
-      key: "features.import_individual_nodes.enabled",
-      type: ConfigType.BOOLEAN,
-      label: "Import Individual Nodes Widgets",
-      description:
-        "Dragging & Dropping a similar image/JSON workflow onto (most) current " +
-        "workflow nodes will allow you to import that workflow's node's widgets when it has the " +
-        "id and type. This is useful when you have several images and you'd like to import just " +
-        "one part of a previous iteration, like a seed, or prompt.",
-    },
+  ],
+  advanced: [
     {
       key: "features.show_alerts_for_corrupt_workflows",
       type: ConfigType.BOOLEAN,
@@ -227,24 +241,11 @@ function fieldrow(item: ConfigurationSchema) {
 export class RgthreeConfigDialog extends RgthreeDialog {
   constructor() {
     const content = $el("div");
-    const features = $el(`fieldset`, { children: [$el(`legend[text="Features"]`)] });
 
-    for (const feature of CONFIGURABLE.features) {
-      if (feature.isDevOnly && !rgthree.isDevMode()) {
-        continue;
-      }
-      const container = $el("div.formrow");
-      container.appendChild(fieldrow(feature));
-
-      if (feature.subconfig) {
-        for (const subfeature of feature.subconfig) {
-          container.appendChild(fieldrow(subfeature));
-        }
-      }
-
-      features.appendChild(container);
-    }
-    content.appendChild(features);
+    content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["features"]!, "Features"));
+    content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["menus"]!, "Menus"));
+    content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["groups"]!, "Groups"));
+    content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["advanced"]!, "Advanced"));
 
     content.addEventListener("input", (e) => {
       const changed = this.getChangedFormData();
@@ -282,7 +283,10 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             const success = await CONFIG_SERVICE.setConfigValues(changed);
             if (success) {
               for (const key of Object.keys(changed)) {
-                CONFIGURABLE.features.find((f) => f.key === key)?.onSave?.(changed[key]);
+                Object.values(CONFIGURABLE)
+                  .flat()
+                  .find((f) => f.key === key)
+                  ?.onSave?.(changed[key]);
               }
               this.close();
               rgthree.showMessage({
@@ -299,6 +303,25 @@ export class RgthreeConfigDialog extends RgthreeDialog {
       ],
     };
     super(dialogOptions);
+  }
+
+  private static buildFieldset(datas: ConfigurationSchema[], label: string) {
+    const fieldset = $el(`fieldset`, { children: [$el(`legend[text="${label}"]`)] });
+    for (const data of datas) {
+      if (data.isDevOnly && !rgthree.isDevMode()) {
+        continue;
+      }
+      const container = $el("div.formrow");
+      container.appendChild(fieldrow(data));
+
+      if (data.subconfig) {
+        for (const subfeature of data.subconfig) {
+          container.appendChild(fieldrow(subfeature));
+        }
+      }
+      fieldset.appendChild(container);
+    }
+    return fieldset;
   }
 
   getChangedFormData() {

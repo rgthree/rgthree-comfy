@@ -15,7 +15,7 @@ import {
   replaceNode,
 } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
 import { debounce, wait } from "rgthree/common/shared_utils.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
@@ -128,7 +128,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
       );
     }
     if (!canConnect && slot === 0) {
-      const ctrlKey = rgthree.ctrlKey;
+      const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
       // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
       // Unfortunately, we don't know which are null now, so we'll just connect any that are
       // not already connected.
@@ -164,7 +164,7 @@ class BaseContextNode extends RgthreeBaseServerNode {
       );
     }
     if (!canConnect && slot === 0) {
-      const ctrlKey = rgthree.ctrlKey;
+      const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
       // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
       // Unfortunately, we don't know which are null now, so we'll just connect any that are
       // not already connected.

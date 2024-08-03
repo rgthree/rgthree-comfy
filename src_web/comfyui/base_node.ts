@@ -11,6 +11,7 @@ import type {
 import type { RgthreeBaseServerNodeConstructor, RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
 import { ComfyWidgets } from "scripts/widgets.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { app } from "scripts/app.js";
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
@@ -237,14 +238,14 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   }
 
   override onKeyDown(event: KeyboardEvent): void {
-    rgthree.handleKeydown(event);
+    KEY_EVENT_SERVICE.handleKeyDownOrUp(event);
     if (event.key == "?" && !this.helpDialog) {
       this.showHelp();
     }
   }
 
   override onKeyUp(event: KeyboardEvent): void {
-    rgthree.handleKeyup(event);
+    KEY_EVENT_SERVICE.handleKeyDownOrUp(event);
   }
 
   override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {

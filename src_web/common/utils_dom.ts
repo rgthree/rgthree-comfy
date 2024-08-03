@@ -265,6 +265,9 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
       element.dataset[key] = String(val);
     }
 
+  } else if (attribute == 'onclick' && typeof value === 'function') {
+    element.addEventListener('click', value);
+
   } else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
     // Could be input, button, etc. We are not discriminate.
     (element as HTMLInputElement)[attribute as 'checked'] = !!value;

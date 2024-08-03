@@ -23,6 +23,12 @@
       "height": 16,
       "position": "top"
     },
+    "comfy_top_bar_menu": {
+      "enabled": true,
+      "button_bookmarks": {
+        "enabled": true
+      }
+    },
     // Allows for dragging and dropping a workflow (image, json) onto an individual node to import
     // that specific node's widgets if it also exists in the dropped workflow (same id, type).
     "import_individual_nodes": {

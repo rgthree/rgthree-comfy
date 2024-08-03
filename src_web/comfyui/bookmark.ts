@@ -1,7 +1,6 @@
-import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { NodeTypesString } from "./constants.js";
 import type {
   LGraph,
@@ -69,6 +68,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       precision: 2,
     });
     this.keypressBound = this.onKeypress.bind(this);
+    this.title = "🔖";
     this.onConstructed();
   }
 
@@ -83,11 +83,11 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   }
 
   override onAdded(graph: LGraph): void {
-    rgthree.addEventListener("keydown", this.keypressBound as EventListener);
+    KEY_EVENT_SERVICE.addEventListener("keydown", this.keypressBound as EventListener);
   }
 
   override onRemoved(): void {
-    rgthree.removeEventListener("keydown", this.keypressBound as EventListener);
+    KEY_EVENT_SERVICE.removeEventListener("keydown", this.keypressBound as EventListener);
   }
 
   onKeypress(event: CustomEvent<{ originalEvent: KeyboardEvent }>) {
@@ -98,7 +98,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
 
     // Only the shortcut keys are held down, otionally including "shift".
-    if (rgthree.areOnlyKeysDown(this.widgets[0]!.value, true)) {
+    if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0]!.value, true)) {
       this.canvasToBookmark();
       originalEvent.preventDefault();
       originalEvent.stopPropagation();
@@ -115,10 +115,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     if (input && input.value === this.widgets[0]?.value) {
       input.addEventListener("keydown", (e) => {
         // ComfyUI swallows keydown on inputs, so we need to call out to rgthree to use downkeys.
-        rgthree.handleKeydown(e);
+        KEY_EVENT_SERVICE.handleKeyDownOrUp(e);
         e.preventDefault();
         e.stopPropagation();
-        input.value = Object.keys(rgthree.downKeys).join(" + ");
+        input.value = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" + ");
       });
     }
   }

@@ -1,4 +1,5 @@
 import { ComfyWidgets } from "../../scripts/widgets.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { app } from "../../scripts/app.js";
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
@@ -134,13 +135,13 @@ export class RgthreeBaseNode extends LGraphNode {
         }
     }
     onKeyDown(event) {
-        rgthree.handleKeydown(event);
+        KEY_EVENT_SERVICE.handleKeyDownOrUp(event);
         if (event.key == "?" && !this.helpDialog) {
             this.showHelp();
         }
     }
     onKeyUp(event) {
-        rgthree.handleKeyup(event);
+        KEY_EVENT_SERVICE.handleKeyDownOrUp(event);
     }
     getExtraMenuOptions(canvas, options) {
         var _a, _b, _c, _d, _e, _f;

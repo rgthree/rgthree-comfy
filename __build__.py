@@ -28,16 +28,18 @@ def log_step(msg=None, status=None):
   global step_msg  # pylint: disable=W0601
   global step_start  # pylint: disable=W0601
   if msg:
-    tag=f'{COLORS["YELLOW"]}[ Notice ]' if status == 'Notice' else f'{COLORS["RESET"]}[Starting]'
+    tag = f'{COLORS["YELLOW"]}[ Notice ]' if status == 'Notice' else f'{COLORS["RESET"]}[Starting]'
     step_msg = f'▻ {tag}{COLORS["RESET"]} {msg}...'
     step_start = time.time()
     print(step_msg, end="\r")
   elif status:
     step_time = round(time.time() - step_start, 3)
     if status == 'Error':
-      status_msg=f'{COLORS["RED"]}⤫ {status}{COLORS["RESET"]}'
+      status_msg = f'{COLORS["RED"]}⤫ {status}{COLORS["RESET"]}'
+    elif status == 'Warn':
+      status_msg = f'{COLORS["YELLOW"]}! {status}{COLORS["RESET"]}'
     else:
-      status_msg=f'{COLORS["BRIGHT_GREEN"]}🗸 {status}{COLORS["RESET"]}'
+      status_msg = f'{COLORS["BRIGHT_GREEN"]}🗸 {status}{COLORS["RESET"]}'
     print(f'{step_msg.ljust(64, ".")} {status_msg} ({step_time}s)')
 
 
@@ -54,7 +56,7 @@ if args.with_tests:
   log_step(msg='Removing directories (KEEPING TESTING)', status="Notice")
 else:
   log_step(msg='Removing uneeded directories')
-  test_path=os.path.join(DIR_WEB, 'comfyui', 'tests')
+  test_path = os.path.join(DIR_WEB, 'comfyui', 'tests')
   if os.path.exists(test_path):
     rmtree(test_path)
   rmtree(os.path.join(DIR_WEB, 'comfyui', 'testing'))
@@ -80,6 +82,7 @@ log_step(status="Done")
 # "../../rgthree/common" (which we map correctly in rgthree_server.py).
 log_step(msg='Cleaning Imports')
 js_files = glob(os.path.join(DIR_WEB, '**', '*.js'), recursive=True)
+warns = []
 for file in js_files:
   rel_path = file.replace(f'{DIR_WEB}/', "")
   with open(file, 'r', encoding="utf-8") as f:
@@ -91,8 +94,14 @@ for file in js_files:
   else:
     filedata = re.sub(r'(from\s+["\'])rgthree/', f'\\1{"../" * num}', filedata)
     filedata = re.sub(r'(from\s+["\'])scripts/', f'\\1{"../" * (num + 1)}scripts/', filedata)
+  filedata, n = re.subn(r'(import .*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', filedata)
+  if n > 0:
+    filename = os.path.basename(file)
+    warns.append(f'  {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
   with open(file, 'w', encoding="utf-8") as f:
     f.write(filedata)
-log_step(status="Done")
+log_step(status="Warn" if len(warns) > 0 else "Done")
+for warn in warns:
+  print(warn)
 
 print(f'Finished all in {round(time.time() - start, 3)}s')

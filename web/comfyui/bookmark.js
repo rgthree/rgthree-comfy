@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { NodeTypesString } from "./constants.js";
 import { getClosestOrSelf, queryOne } from "../../rgthree/common/utils_dom.js";
 export class Bookmark extends RgthreeBaseVirtualNode {
@@ -34,6 +34,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
             precision: 2,
         });
         this.keypressBound = this.onKeypress.bind(this);
+        this.title = "🔖";
         this.onConstructed();
     }
     get shortcutKey() {
@@ -41,10 +42,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : "";
     }
     onAdded(graph) {
-        rgthree.addEventListener("keydown", this.keypressBound);
+        KEY_EVENT_SERVICE.addEventListener("keydown", this.keypressBound);
     }
     onRemoved() {
-        rgthree.removeEventListener("keydown", this.keypressBound);
+        KEY_EVENT_SERVICE.removeEventListener("keydown", this.keypressBound);
     }
     onKeypress(event) {
         const originalEvent = event.detail.originalEvent;
@@ -52,7 +53,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
             return;
         }
-        if (rgthree.areOnlyKeysDown(this.widgets[0].value, true)) {
+        if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0].value, true)) {
             this.canvasToBookmark();
             originalEvent.preventDefault();
             originalEvent.stopPropagation();
@@ -63,10 +64,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         const input = queryOne(".graphdialog > input.value");
         if (input && input.value === ((_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value)) {
             input.addEventListener("keydown", (e) => {
-                rgthree.handleKeydown(e);
+                KEY_EVENT_SERVICE.handleKeyDownOrUp(e);
                 e.preventDefault();
                 e.stopPropagation();
-                input.value = Object.keys(rgthree.downKeys).join(" + ");
+                input.value = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" + ");
             });
         }
     }

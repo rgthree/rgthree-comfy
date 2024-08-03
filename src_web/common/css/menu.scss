@@ -41,3 +41,65 @@
     pointer-events: all;
   }
 }
+
+
+.rgthree-top-menu {
+  box-sizing: border-box;
+  white-space: nowrap;
+  background: var(--content-bg);
+  color: var(--content-fg);
+  display: flex;
+  flex-direction: column;
+  // ComfyUI's code has a bug that always puts the popup at the bottom if its < 30px.
+  min-height: 32px;
+  min-width: 32px;
+  * {
+    box-sizing: inherit;
+  }
+
+  menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    > li:not(#fakeid) {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+
+      > button {
+        cursor: pointer;
+        padding: 8px 12px 8px 8px;
+        width: 100%;
+        text-align: start;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        justify-content: start;
+
+        &:hover {
+          background-color: var(--comfy-input-bg);
+        }
+
+        svg {
+          height: 16px;
+          width: auto;
+          margin-inline-end: 0.6em;
+
+          &.github-star {
+            fill: rgb(227, 179, 65);
+          }
+        }
+      }
+
+      &.rgthree-message > span {
+        padding: 8px 12px;
+        display: block;
+        width: 100%;
+        text-align: center;
+        font-style: italic;
+        font-size: 12px;
+      }
+    }
+  }
+}

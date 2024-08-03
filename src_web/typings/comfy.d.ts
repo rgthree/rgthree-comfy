@@ -28,6 +28,8 @@ export interface ComfyApp {
 			addSetting(config: {id: string, name: string, type: () => HTMLElement}) : void;
 		}
 	}
+	// Just marking as any for now.
+	menu?: any;
 }
 
 export interface ComfyWidget extends IWidget {

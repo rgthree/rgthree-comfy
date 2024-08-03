@@ -8,7 +8,7 @@ import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
-import { createElement, query, queryOne } from "../../rgthree/common/utils_dom.js";
+import { query, queryOne } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -118,11 +118,6 @@ class Rgthree extends EventTarget {
         this.settingsDialog = null;
         this.progressBarEl = null;
         this.queueNodeIds = null;
-        this.ctrlKey = false;
-        this.altKey = false;
-        this.metaKey = false;
-        this.shiftKey = false;
-        this.downKeys = {};
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
@@ -141,38 +136,17 @@ class Rgthree extends EventTarget {
             ((_c = (_b = navigator.userAgentData) === null || _b === void 0 ? void 0 : _b.platform) === null || _c === void 0 ? void 0 : _c.toLocaleUpperCase().startsWith("MAC")));
         const logLevel = (_d = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _d !== void 0 ? _d : GLOBAL_LOG_LEVEL;
         this.setLogLevel(logLevel);
-        document.addEventListener("visibilitychange", (e) => {
-            this.clearKeydowns();
-        });
-        window.addEventListener("blur", (e) => {
-            this.clearKeydowns();
-        });
         this.initializeGraphAndCanvasHooks();
         this.initializeComfyUIHooks();
         this.initializeContextMenu();
         this.rgthreeCssPromise = injectCss("extensions/rgthree-comfy/rgthree.css");
         this.initializeProgressBar();
-        this.initializeDebugShit();
         CONFIG_SERVICE.addEventListener("config-change", ((e) => {
             var _a, _b;
             if ((_b = (_a = e.detail) === null || _a === void 0 ? void 0 : _a.key) === null || _b === void 0 ? void 0 : _b.includes("features.progress_bar")) {
                 this.initializeProgressBar();
             }
         }));
-    }
-    initializeDebugShit() {
-        if (!this.isDebugMode()) {
-            return;
-        }
-        this.elDebugKeydowns = createElement("div.rgthree-debug-keydowns", {
-            parent: document.body,
-        });
-    }
-    debugRenderKeys() {
-        if (!this.elDebugKeydowns) {
-            return;
-        }
-        this.elDebugKeydowns.innerText = Object.keys(this.downKeys).join(" ");
     }
     async initializeProgressBar() {
         var _a;
@@ -271,16 +245,6 @@ class Rgthree extends EventTarget {
             const graph = app.graph;
             onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
-        };
-        const processKey = LGraphCanvas.prototype.processKey;
-        LGraphCanvas.prototype.processKey = function (e) {
-            if (e.type === "keydown") {
-                rgthree.handleKeydown(e);
-            }
-            else if (e.type === "keyup") {
-                rgthree.handleKeyup(e);
-            }
-            return processKey.apply(this, [...arguments]);
         };
     }
     async invokeExtensionsAsync(method, ...args) {
@@ -672,69 +636,6 @@ class Rgthree extends EventTarget {
     async clearAllMessages() {
         let container = document.querySelector(".rgthree-top-messages-container");
         container && (container.innerHTML = "");
-    }
-    clearKeydowns() {
-        this.ctrlKey = false;
-        this.altKey = false;
-        this.metaKey = false;
-        this.shiftKey = false;
-        for (const key in this.downKeys)
-            delete this.downKeys[key];
-        this.debugRenderKeys();
-    }
-    handleKeydown(e) {
-        this.ctrlKey = !!e.ctrlKey;
-        this.altKey = !!e.altKey;
-        this.metaKey = !!e.metaKey;
-        this.shiftKey = !!e.shiftKey;
-        this.downKeys[e.key.toLocaleUpperCase()] = true;
-        this.debugRenderKeys();
-        this.dispatchCustomEvent("keydown", { originalEvent: e });
-    }
-    handleKeyup(e) {
-        this.ctrlKey = !!e.ctrlKey;
-        this.altKey = !!e.altKey;
-        this.metaKey = !!e.metaKey;
-        this.shiftKey = !!e.shiftKey;
-        const key = e.key.toLocaleUpperCase();
-        if (key === "META" && this.isMac) {
-            this.clearKeydowns();
-        }
-        else {
-            delete this.downKeys[e.key.toLocaleUpperCase()];
-            this.debugRenderKeys();
-        }
-        this.dispatchCustomEvent("keyup", { originalEvent: e });
-    }
-    getKeysFromShortcut(shortcut) {
-        let keys;
-        if (typeof shortcut === "string") {
-            shortcut = shortcut.replace(/\s/g, "");
-            shortcut = shortcut.replace(/^\+/, "__PLUS__").replace(/\+\+/, "+__PLUS__");
-            keys = shortcut.split("+").map((i) => i.replace("__PLUS__", "+"));
-        }
-        else {
-            keys = [...shortcut];
-        }
-        return keys.map((k) => k.toLocaleUpperCase());
-    }
-    areAllKeysDown(keys) {
-        keys = this.getKeysFromShortcut(keys);
-        return keys.every((k) => {
-            return rgthree.downKeys[k];
-        });
-    }
-    areOnlyKeysDown(keys, alsoAllowShift = false) {
-        keys = this.getKeysFromShortcut(keys);
-        const allKeysDown = this.areAllKeysDown(keys);
-        const downKeysLength = Object.values(rgthree.downKeys).length;
-        if (allKeysDown && keys.length === downKeysLength) {
-            return true;
-        }
-        if (alsoAllowShift && !keys.includes("SHIFT") && keys.length === downKeysLength - 1) {
-            return allKeysDown && this.areAllKeysDown(["SHIFT"]);
-        }
-        return false;
     }
     setLogLevel(level) {
         if (typeof level === "string") {
