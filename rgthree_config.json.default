@@ -39,6 +39,9 @@
     // entry in case it causes issues. This is only for the nodeCreated event/function as of now.
     "invoke_extensions_async": {
       "node_created": true
+    },
+    "do_clip_model_input_validation_check": {
+      "enabled": true
     }
   },
   "nodes": {
