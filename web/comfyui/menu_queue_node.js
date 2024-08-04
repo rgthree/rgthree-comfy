@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 function getOutputNodesFromSelected(canvas) {
     return ((canvas.selected_nodes &&
         Object.values(canvas.selected_nodes).filter((n) => {

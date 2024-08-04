@@ -3,7 +3,7 @@ import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, query as $$ } from "../../rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "../../rgthree/common/media/svgs.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 var ConfigType;
 (function (ConfigType) {
     ConfigType[ConfigType["UNKNOWN"] = 0] = "UNKNOWN";

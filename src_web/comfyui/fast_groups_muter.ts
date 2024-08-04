@@ -9,7 +9,7 @@ import {
   SerializedLGraphNode,
   IWidget,
 } from "typings/litegraph.js";
-import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 

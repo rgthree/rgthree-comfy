@@ -6,7 +6,7 @@ import type {
 } from "typings/litegraph.js";
 import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
 function getOutputNodesFromSelected(canvas: TLGraphCanvas) {
   return (

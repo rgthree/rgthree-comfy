@@ -6,7 +6,7 @@ import type {
   IContextMenuOptions,
 } from "typings/litegraph.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
 const SPECIAL_ENTRIES = [/^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i, /^\p{Extended_Pictographic}/gu];
 

@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 const BTN_SIZE = 20;
 const BTN_MARGIN = [6, 4];
 const BTN_SPACING = 8;

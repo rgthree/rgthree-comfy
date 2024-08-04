@@ -1,5 +1,5 @@
 import { app } from "scripts/app.js";
-import type { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
+import type { BaseFastGroupsModeChanger } from "../fast_groups_muter.js";
 import {
   type LGraph as TLGraph,
   type LGraphCanvas as TLGraphCanvas,

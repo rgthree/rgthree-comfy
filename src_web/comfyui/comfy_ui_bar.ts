@@ -4,7 +4,7 @@ import { ComfyButton } from "scripts/ui/components/button.js";
 import { iconGear, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
 import { createElement, empty, queryOne } from "rgthree/common/utils_dom.js";
 import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { ComfyPopup } from "scripts/ui/components/popup.js";
 import { RgthreeConfigDialog } from "./config.js";
 

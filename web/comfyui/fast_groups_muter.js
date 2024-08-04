@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { SERVICE as FAST_GROUPS_SERVICE } from "./fast_groups_service.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";

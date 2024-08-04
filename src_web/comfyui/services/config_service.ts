@@ -1,4 +1,3 @@
-
 // @ts-ignore
 import { rgthreeConfig } from "rgthree/config.js";
 import { getObjectValue, setObjectValue } from "rgthree/common/shared_utils.js";
@@ -13,7 +12,7 @@ class ConfigService extends EventTarget {
   }
 
   getFeatureValue(key: string, def?: any) {
-    key = 'features.' + key.replace(/^features\./, '');
+    key = "features." + key.replace(/^features\./, "");
     return getObjectValue(rgthreeConfig, key, def);
   }
 

@@ -9,7 +9,7 @@ import type { AdjustedMouseCustomEvent } from "typings/rgthree.js";
 
 import { app } from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
 const BTN_SIZE = 20;
 const BTN_MARGIN: Vector2 = [6, 4];

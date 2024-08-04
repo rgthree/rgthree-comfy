@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";

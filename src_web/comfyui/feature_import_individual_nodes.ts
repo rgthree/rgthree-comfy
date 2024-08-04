@@ -1,7 +1,7 @@
 import { tryToGetWorkflowDataFromEvent } from "rgthree/common/utils_workflow.js";
 import { app } from "scripts/app.js";
 import type { ComfyNode, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { SERVICE as CONFIG_SERVICE } from "./config_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
 /**
  * Registers the GroupHeaderToggles which places a mute and/or bypass icons in groups headers for
