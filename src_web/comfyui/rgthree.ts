@@ -483,6 +483,7 @@ class Rgthree extends EventTarget {
         options.push(null); // Divider
 
         let idx = null;
+        idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Queue Group")) + 1;
         idx =
           idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Queue Selected")) + 1;
         idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Convert to Group"));

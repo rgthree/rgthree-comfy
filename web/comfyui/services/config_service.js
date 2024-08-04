@@ -6,7 +6,7 @@ class ConfigService extends EventTarget {
         return getObjectValue(rgthreeConfig, key, def);
     }
     getFeatureValue(key, def) {
-        key = 'features.' + key.replace(/^features\./, '');
+        key = "features." + key.replace(/^features\./, "");
         return getObjectValue(rgthreeConfig, key, def);
     }
     async setConfigValues(changed) {

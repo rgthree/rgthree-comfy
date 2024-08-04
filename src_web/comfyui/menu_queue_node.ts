@@ -8,41 +8,63 @@ import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
-function getOutputNodesFromSelected(canvas: TLGraphCanvas) {
+function getOutputNodes(nodes: LGraphNode[]) {
   return (
-    (canvas.selected_nodes &&
-      Object.values(canvas.selected_nodes).filter((n) => {
-        return (
-          n.mode != LiteGraph.NEVER &&
-          ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
-        );
-      })) ||
-    []
+    nodes?.filter((n) => {
+      return (
+        n.mode != LiteGraph.NEVER &&
+        ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
+      );
+    }) || []
   );
 }
 
-function showQueueNodesMenuIfOutputNodesAreSelected(
-  existingOptions: ContextMenuItem[],
-  node?: LGraphNode,
-) {
-  if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") != false) {
-    const canvas = app.canvas as TLGraphCanvas;
-    const outputNodes = getOutputNodesFromSelected(canvas);
-    const menuItem = {
-      content: `Queue Selected Output Nodes (rgthree) &nbsp;`,
-      className: "rgthree-contextmenu-item",
-      callback: () => {
-        rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
-      },
-      disabled: !outputNodes.length,
-    };
-
-    let idx = existingOptions.findIndex((o) => o?.content === "Outputs") + 1;
-    idx = idx || existingOptions.findIndex((o) => o?.content === "Align") + 1;
-    idx = idx || 3;
-    existingOptions.splice(idx, 0, menuItem);
+function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions: ContextMenuItem[]) {
+  if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
+    return;
   }
-  return existingOptions;
+  const outputNodes = getOutputNodes(Object.values(app.canvas.selected_nodes));
+  const menuItem = {
+    content: `Queue Selected Output Nodes (rgthree) &nbsp;`,
+    className: "rgthree-contextmenu-item",
+    callback: () => {
+      rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+    },
+    disabled: !outputNodes.length,
+  };
+
+  let idx = existingOptions.findIndex((o) => o?.content === "Outputs") + 1;
+  idx = idx || existingOptions.findIndex((o) => o?.content === "Align") + 1;
+  idx = idx || 3;
+  existingOptions.splice(idx, 0, menuItem);
+}
+
+function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions: ContextMenuItem[]) {
+  if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
+    return;
+  }
+  const group =
+    rgthree.lastAdjustedMouseEvent &&
+    app.graph.getGroupOnPos(
+      rgthree.lastAdjustedMouseEvent.canvasX,
+      rgthree.lastAdjustedMouseEvent.canvasY,
+    );
+
+  const outputNodes = group && getOutputNodes(group._nodes);
+  const menuItem = {
+    content: `Queue Group Output Nodes (rgthree) &nbsp;`,
+    className: "rgthree-contextmenu-item",
+    callback: () => {
+      outputNodes && rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+    },
+    disabled: !outputNodes?.length,
+  };
+
+  let idx = existingOptions.findIndex((o) => o?.content.startsWith("Queue Selected ")) + 1;
+  idx = idx || existingOptions.findIndex((o) => o?.content === "Outputs") + 1;
+  idx = idx || existingOptions.findIndex((o) => o?.content === "Align") + 1;
+  idx = idx || 3;
+  existingOptions.splice(idx, 0, menuItem);
 }
 
 /**
@@ -58,7 +80,8 @@ app.registerExtension({
       options: ContextMenuItem[],
     ) {
       getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
-      showQueueNodesMenuIfOutputNodesAreSelected(options, this);
+      showQueueNodesMenuIfOutputNodesAreSelected(options);
+      showQueueGroupNodesMenuIfGroupIsSelected(options);
     };
   },
 
@@ -67,6 +90,7 @@ app.registerExtension({
     LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
       const options = getCanvasMenuOptions.apply(this, [...args] as any);
       showQueueNodesMenuIfOutputNodesAreSelected(options);
+      showQueueGroupNodesMenuIfGroupIsSelected(options);
       return options;
     };
   },

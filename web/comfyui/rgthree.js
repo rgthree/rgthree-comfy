@@ -300,6 +300,7 @@ class Rgthree extends EventTarget {
                 options.push(null);
                 options.push(null);
                 let idx = null;
+                idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Queue Group"); }) + 1;
                 idx =
                     idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Queue Selected"); }) + 1;
                 idx = idx || existingOptions.findIndex((o) => { var _a, _b; return (_b = (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith) === null || _b === void 0 ? void 0 : _b.call(_a, "Convert to Group"); });
