@@ -3,6 +3,18 @@ import { getPngMetadata, getWebpMetadata } from "scripts/pnginfo.js";
 import type { SerializedGraph } from "typings/index.js";
 import type { ComfyApiFormat } from "typings/comfy.js";
 
+/**
+ * Parses the workflow JSON and do any necessary cleanup.
+ */
+function parseWorkflowJson(stringJson?: string) {
+  stringJson = stringJson || "null";
+  // Starting around August 2024 the serialized JSON started to get messy and contained `NaN` (for
+  // an is_changed property, specifically). NaN is not parseable, so we'll get those on out of there
+  // and cleanup anything else we need.
+  stringJson = stringJson.replace(/:\s*NaN/g, ": null");
+  return JSON.parse(stringJson);
+}
+
 export async function tryToGetWorkflowDataFromEvent(
   e: DragEvent,
 ): Promise<{ workflow: SerializedGraph | null; prompt: ComfyApiFormat | null }> {
@@ -30,16 +42,16 @@ export async function tryToGetWorkflowDataFromFile(
   if (file.type === "image/png") {
     const pngInfo = await getPngMetadata(file);
     return {
-      workflow: JSON.parse(pngInfo?.workflow ?? "null"),
-      prompt: JSON.parse(pngInfo?.prompt ?? "null"),
+      workflow: parseWorkflowJson(pngInfo?.workflow),
+      prompt: parseWorkflowJson(pngInfo?.prompt),
     };
   }
 
   if (file.type === "image/webp") {
     const pngInfo = await getWebpMetadata(file);
     // Support loading workflows from that webp custom node.
-    const workflow = JSON.parse(pngInfo?.workflow || pngInfo?.Workflow || "null");
-    const prompt = JSON.parse(pngInfo?.prompt || pngInfo?.Prompt || "null");
+    const workflow = parseWorkflowJson(pngInfo?.workflow || pngInfo?.Workflow || "null");
+    const prompt = parseWorkflowJson(pngInfo?.prompt || pngInfo?.Prompt || "null");
     return { workflow, prompt };
   }
 
@@ -47,7 +59,7 @@ export async function tryToGetWorkflowDataFromFile(
     const resolver = getResolver<{ workflow: any; prompt: any }>();
     const reader = new FileReader();
     reader.onload = async () => {
-      const json = JSON.parse(reader.result as string);
+      const json = parseWorkflowJson(reader.result as string);
       const isApiJson = Object.values(json).every((v: any) => v.class_type);
       const prompt = isApiJson ? json : null;
       const workflow = !isApiJson && !json?.templates ? json : null;
