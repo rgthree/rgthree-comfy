@@ -450,7 +450,7 @@ export function getConnectedInputNodes(
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
-  return getConnectedNodes(
+  return getConnectedNodesInfo(
     startNode,
     IoDirection.INPUT,
     currentNode,
@@ -469,13 +469,14 @@ export function getConnectedInputNodesAndFilterPassThroughs(
     passThroughFollowing,
   );
 }
+
 export function getConnectedOutputNodes(
   startNode: LGraphNode,
   currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
-  return getConnectedNodes(
+  return getConnectedNodesInfo(
     startNode,
     IoDirection.OUTPUT,
     currentNode,
@@ -483,6 +484,7 @@ export function getConnectedOutputNodes(
     passThroughFollowing,
   ).map((n) => n.node);
 }
+
 export function getConnectedOutputNodesAndFilterPassThroughs(
   startNode: LGraphNode,
   currentNode?: LGraphNode,
@@ -495,19 +497,27 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
   );
 }
 
-export function getConnectedNodes(
+export type ConnectedNodeInfo = {
+  node: LGraphNode;
+  travelFromSlot: number;
+  travelToSlot: number;
+  originTravelFromSlot: number;
+};
+
+export function getConnectedNodesInfo(
   startNode: LGraphNode,
   dir = IoDirection.INPUT,
   currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-): { node: LGraphNode; slot: number }[] {
+  originTravelFromSlot?: number,
+): ConnectedNodeInfo[] {
   currentNode = currentNode || startNode;
-  let rootNodes: { node: LGraphNode; slot: number }[] = [];
+  let rootNodes: ConnectedNodeInfo[] = [];
   const slotsToRemove = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
-    // const removeDups = startNode === currentNode;
     let linkIds: Array<number | null>;
+
     if (dir == IoDirection.OUTPUT) {
       linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
     } else {
@@ -522,12 +532,17 @@ export function getConnectedNodes(
     }
     let graph = app.graph as LGraph;
     for (const linkId of linkIds) {
-      const link: LLink = (linkId != null && graph.links[linkId]) as LLink;
+      let link: LLink | null = null;
+      if (typeof linkId == "number") {
+        link = graph.links[linkId] as LLink;
+      }
       if (!link) {
         continue;
       }
+      const travelFromSlot = dir == IoDirection.OUTPUT ? link.origin_slot : link.target_slot;
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
-      const originSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+      const travelToSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
+      originTravelFromSlot = originTravelFromSlot != null ? originTravelFromSlot : travelFromSlot;
       const originNode: LGraphNode = graph.getNodeById(connectedId)!;
       if (!link) {
         console.error("No connected node found... weird");
@@ -541,10 +556,17 @@ export function getConnectedNodes(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push({ node: originNode, slot: originSlot });
+        rootNodes.push({ node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot });
         if (shouldPassThrough(originNode, passThroughFollowing)) {
-          for (const foundNode of getConnectedNodes(startNode, dir, originNode)) {
-            if (!rootNodes.includes(foundNode)) {
+          for (const foundNode of getConnectedNodesInfo(
+            startNode,
+            dir,
+            originNode,
+            undefined,
+            undefined,
+            originTravelFromSlot,
+          )) {
+            if (!rootNodes.map((n) => n.node).includes(foundNode.node)) {
               rootNodes.push(foundNode);
             }
           }
@@ -555,7 +577,11 @@ export function getConnectedNodes(
   return rootNodes;
 }
 
-type ConnectionType = { type: string | string[]; label: string | undefined };
+export type ConnectionType = {
+  type: string | string[];
+  name: string | undefined;
+  label: string | undefined;
+};
 
 /**
  * Follows a connection until we find a type associated with a slot.
@@ -600,7 +626,7 @@ function getTypeFromSlot(
   let graph = app.graph as LGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
-    return { type: type as string, label: slot?.label || slot?.name };
+    return { type: type as string, label: slot?.label, name: slot?.name };
   }
   const links = getSlotLinks(slot);
   for (const link of links) {
@@ -615,7 +641,8 @@ function getTypeFromSlot(
     if (connectedSlot?.type != null && connectedSlot?.type != "*") {
       return {
         type: connectedSlot.type as string,
-        label: connectedSlot?.label || connectedSlot?.name,
+        label: connectedSlot?.label,
+        name: connectedSlot?.name,
       };
     } else if (connectedSlot?.type == "*") {
       return followConnectionUntilType(connectedNode, dir);

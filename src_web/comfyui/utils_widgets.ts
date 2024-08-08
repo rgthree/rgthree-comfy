@@ -394,6 +394,26 @@ export class RgthreeLabelWidget implements IWidget<null> {
   }
 }
 
+/** An invisible widget. */
+export class RgthreeInvisibleWidget<T> implements IWidget<T> {
+  name: string;
+  type: string;
+  value: T;
+  serializeValue: IWidget['serializeValue'] = undefined;
+
+  constructor(name: string, type: string, value: T, serializeValueFn: ()=> T) {
+    this.name = name;
+    this.type = type;
+    this.value = value;
+    if (serializeValueFn) {
+      this.serializeValue = serializeValueFn
+    }
+  }
+  draw() { return; }
+  computeSize(width: number) : Vector2 { return [0, 0]; }
+}
+
+
 type DrawContext = {
   ctx: CanvasRenderingContext2D,
   node: LGraphNode,

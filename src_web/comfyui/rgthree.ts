@@ -15,7 +15,7 @@ import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { fixBadLinks } from "rgthree/common/link_fixer.js";
 import { injectCss, wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
-import { NodeTypesString, addRgthree, stripRgthree } from "./constants.js";
+import { NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree } from "./constants.js";
 import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import {
@@ -530,9 +530,7 @@ class Rgthree extends EventTarget {
         className: "rgthree-contextmenu-item",
         has_submenu: true,
         submenu: {
-          options: Object.values(NodeTypesString)
-            .map((i) => stripRgthree(i))
-            .sort() as unknown as ContextMenuItem[],
+          options: getNodeTypeStrings() as unknown as ContextMenuItem[],
           callback: (
             value: string | ContextMenuItem,
             options: IContextMenuOptions,

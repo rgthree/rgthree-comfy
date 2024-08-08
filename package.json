@@ -1,8 +1,8 @@
 {
   "devDependencies": {
-    "prettier": "3.0.3",
-    "typescript": "^5.2.2",
-    "sass": "^1.70.0"
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4",
+    "sass": "^1.77.8"
   },
   "scripts": {
     "build": "./__build__.py || python .\\__build__.py"

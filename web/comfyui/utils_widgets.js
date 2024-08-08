@@ -223,6 +223,19 @@ export class RgthreeLabelWidget {
         return true;
     }
 }
+export class RgthreeInvisibleWidget {
+    constructor(name, type, value, serializeValueFn) {
+        this.serializeValue = undefined;
+        this.name = name;
+        this.type = type;
+        this.value = value;
+        if (serializeValueFn) {
+            this.serializeValue = serializeValueFn;
+        }
+    }
+    draw() { return; }
+    computeSize(width) { return [0, 0]; }
+}
 export function drawWidgetButton(drawCtx, text, isMouseDownedAndOver = false) {
     if (!isLowQuality() && !isMouseDownedAndOver) {
         drawRoundedRectangle(drawCtx.ctx, {

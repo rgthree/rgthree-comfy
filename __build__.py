@@ -17,6 +17,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--with-tests", default=False, action="store_true")
 args = parser.parse_args()
 
+parser = argparse.ArgumentParser()
+parser.add_argument("-t", "--with-tests", default=False, action="store_true")
+args = parser.parse_args()
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_SRC_WEB = os.path.abspath(f'{THIS_DIR}/src_web/')
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')
@@ -48,7 +52,13 @@ rmtree(DIR_WEB)
 copytree(DIR_SRC_WEB, DIR_WEB, ignore=ignore_patterns("typings*", "*.ts", "*.scss"))
 log_step(status="Done")
 
-log_step(msg='TypeScript')
+ts_version_result = subprocess.run(["node", "./node_modules/typescript/bin/tsc", "-v"],
+                                   capture_output=True,
+                                   text=True,
+                                   check=True)
+ts_version = re.sub(r'^.*Version\s*([\d\.]+).*', 'v\\1', ts_version_result.stdout, flags=re.DOTALL)
+
+log_step(msg=f'TypeScript ({ts_version})')
 checked = subprocess.run(["node", "./node_modules/typescript/bin/tsc"], check=True)
 log_step(status="Done")
 
@@ -97,7 +107,7 @@ for file in js_files:
   filedata, n = re.subn(r'(import .*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', filedata)
   if n > 0:
     filename = os.path.basename(file)
-    warns.append(f'  {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
+    warns.append(f'  - {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
   with open(file, 'w', encoding="utf-8") as f:
     f.write(filedata)
 log_step(status="Warn" if len(warns) > 0 else "Done")

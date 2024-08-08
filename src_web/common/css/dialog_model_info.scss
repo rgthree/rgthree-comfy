@@ -356,8 +356,11 @@
             }
           }
           &:empty {
-            &::before {content: 'No data.'}
             text-align: center;
+
+            &::before {
+              content: 'No data.';
+            }
           }
         }
       }
