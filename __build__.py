@@ -17,10 +17,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--with-tests", default=False, action="store_true")
 args = parser.parse_args()
 
-parser = argparse.ArgumentParser()
-parser.add_argument("-t", "--with-tests", default=False, action="store_true")
-args = parser.parse_args()
-
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_SRC_WEB = os.path.abspath(f'{THIS_DIR}/src_web/')
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/web/')

@@ -433,11 +433,12 @@ export function shouldPassThrough(
   );
 }
 
-export function filterOutPassthroughNodes(
-  nodes: LGraphNode[],
+
+function filterOutPassthroughNodes(
+  infos: ConnectedNodeInfo[],
   passThroughFollowing = PassThroughFollowing.ALL,
 ) {
-  return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
+  return infos.filter((i) => !shouldPassThrough(i.node, passThroughFollowing));
 }
 
 /**
@@ -458,16 +459,22 @@ export function getConnectedInputNodes(
     passThroughFollowing,
   ).map((n) => n.node);
 }
+export function getConnectedInputInfosAndFilterPassThroughs(
+  startNode: LGraphNode,
+  currentNode?: LGraphNode,
+  slot?: number,
+  passThroughFollowing = PassThroughFollowing.ALL) {
+    return filterOutPassthroughNodes(
+      getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing),
+      passThroughFollowing);
+}
 export function getConnectedInputNodesAndFilterPassThroughs(
   startNode: LGraphNode,
   currentNode?: LGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
-  return filterOutPassthroughNodes(
-    getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing),
-    passThroughFollowing,
-  );
+  return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 
 export function getConnectedOutputNodes(
@@ -492,9 +499,9 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
   return filterOutPassthroughNodes(
-    getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing),
+    getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
-  );
+  ).map(n => n.node);
 }
 
 export type ConnectedNodeInfo = {
@@ -514,20 +521,21 @@ export function getConnectedNodesInfo(
 ): ConnectedNodeInfo[] {
   currentNode = currentNode || startNode;
   let rootNodes: ConnectedNodeInfo[] = [];
-  const slotsToRemove = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
-    let linkIds: Array<number | null>;
+    let linkIds: Array<number | undefined | null>;
 
+    slot = slot != null && slot > -1 ? slot : undefined;
     if (dir == IoDirection.OUTPUT) {
-      linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
-    } else {
-      linkIds = currentNode.inputs?.map((i) => i.link) || [];
-    }
-    if (typeof slot == "number" && slot > -1) {
-      if (linkIds[slot]) {
-        linkIds = [linkIds[slot]!];
+      if (slot != null) {
+        linkIds = [...(currentNode.outputs?.[slot]?.links || [])];
       } else {
-        return [];
+        linkIds = currentNode.outputs?.flatMap((i) => i.links) || [];
+      }
+    } else {
+      if (slot != null) {
+        linkIds = [currentNode.inputs?.[slot]?.link];
+      } else {
+        linkIds = currentNode.inputs?.map((i) => i.link) || [];
       }
     }
     let graph = app.graph as LGraph;

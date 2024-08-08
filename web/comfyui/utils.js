@@ -311,40 +311,45 @@ export function shouldPassThrough(node, passThroughFollowing = PassThroughFollow
     }
     return (type.includes("Reroute") || type.includes("Node Combiner") || type.includes("Node Collector"));
 }
-export function filterOutPassthroughNodes(nodes, passThroughFollowing = PassThroughFollowing.ALL) {
-    return nodes.filter((n) => !shouldPassThrough(n, passThroughFollowing));
+function filterOutPassthroughNodes(infos, passThroughFollowing = PassThroughFollowing.ALL) {
+    return infos.filter((i) => !shouldPassThrough(i.node, passThroughFollowing));
 }
 export function getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
+export function getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
+    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing), passThroughFollowing);
+}
 export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(getConnectedInputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
+    return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
 }
 export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing), passThroughFollowing);
+    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map(n => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
-    var _a, _b;
+    var _a, _b, _c, _d, _e, _f;
     currentNode = currentNode || startNode;
     let rootNodes = [];
-    const slotsToRemove = [];
     if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
         let linkIds;
+        slot = slot != null && slot > -1 ? slot : undefined;
         if (dir == IoDirection.OUTPUT) {
-            linkIds = ((_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a.flatMap((i) => i.links)) || [];
-        }
-        else {
-            linkIds = ((_b = currentNode.inputs) === null || _b === void 0 ? void 0 : _b.map((i) => i.link)) || [];
-        }
-        if (typeof slot == "number" && slot > -1) {
-            if (linkIds[slot]) {
-                linkIds = [linkIds[slot]];
+            if (slot != null) {
+                linkIds = [...(((_b = (_a = currentNode.outputs) === null || _a === void 0 ? void 0 : _a[slot]) === null || _b === void 0 ? void 0 : _b.links) || [])];
             }
             else {
-                return [];
+                linkIds = ((_c = currentNode.outputs) === null || _c === void 0 ? void 0 : _c.flatMap((i) => i.links)) || [];
+            }
+        }
+        else {
+            if (slot != null) {
+                linkIds = [(_e = (_d = currentNode.inputs) === null || _d === void 0 ? void 0 : _d[slot]) === null || _e === void 0 ? void 0 : _e.link];
+            }
+            else {
+                linkIds = ((_f = currentNode.inputs) === null || _f === void 0 ? void 0 : _f.map((i) => i.link)) || [];
             }
         }
         let graph = app.graph;
