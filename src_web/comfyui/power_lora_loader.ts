@@ -7,6 +7,8 @@ import type {
   SerializedLGraphNode,
   Vector2,
   AdjustedMouseEvent,
+  IContextMenuOptions,
+  ContextMenu,
 } from "typings/litegraph.js";
 import type { ComfyObjectInfo, ComfyNodeConstructor } from "typings/comfy.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
@@ -108,6 +110,32 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     this.size[0] = Math.max(this.size[0], computed[0]);
     this.size[1] = Math.max(this.size[1], computed[1]);
     this.setDirtyCanvas(true, true);
+  }
+
+  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
+    super.getExtraMenuOptions?.apply(this, [...arguments] as any);
+    const fetchInfoMenuItem = {
+      content: "Fetch info for all LoRAs",
+      callback: (
+        _value: ContextMenuItem,
+        _options: IContextMenuOptions,
+        _event: MouseEvent,
+        _parentMenu: ContextMenu | undefined,
+        _node: TLGraphNode,
+      ) => {
+        const loraWidgets: PowerLoraLoaderWidget[] = this.widgets
+          .filter((widget): widget is PowerLoraLoaderWidget => widget instanceof PowerLoraLoaderWidget);
+        const refreshPromises = loraWidgets
+          .map(widget => widget.value.lora)
+          .filter((file): file is string => file !== null)
+          .map((file) => MODEL_INFO_SERVICE.refreshLora(file));
+          Promise.all(refreshPromises).then((loraInfo) => {
+            // Silently succeeds or fails. Probably want a better notification than `alert`
+            // alert(`LoRA info refreshed. ${loraInfo.length} checked`);
+          });
+      },
+    };
+    options.splice(options.length - 1, 0, fetchInfoMenuItem);
   }
 
   /** Adds a new lora widget in the proper slot. */
