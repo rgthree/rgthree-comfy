@@ -1,5 +1,5 @@
-import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index";
-import type { LGraph, LGraphNode, LLink, serializedLGraph } from "typings/litegraph";
+import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index.js";
+import type { LGraph, LGraphNode, LLink, serializedLGraph } from "typings/litegraph.js";
 
 enum IoDirection {
   INPUT,

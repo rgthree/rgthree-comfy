@@ -1,4 +1,4 @@
-import type { ComfyApp } from "typings/comfy.ts";
+import type { ComfyApp } from "typings/comfy.js";
 
 type ComfyButtonProps = {
   icon?: string;

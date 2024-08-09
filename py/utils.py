@@ -100,3 +100,14 @@ def path_exists(path):
   if path is not None:
     return os.path.exists(path)
   return False
+
+
+class ByPassTypeTuple(tuple):
+  """A special class that will return additional "AnyType" strings beyond defined values.
+  Credit to Trung0246
+  """
+
+  def __getitem__(self, index):
+    if index > len(self) - 1:
+      return AnyType("*")
+    return super().__getitem__(index)

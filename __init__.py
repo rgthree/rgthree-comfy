@@ -29,6 +29,8 @@ from .py.power_prompt import RgthreePowerPrompt
 from .py.power_prompt_simple import RgthreePowerPromptSimple
 from .py.image_inset_crop import RgthreeImageInsetCrop
 from .py.context_big import RgthreeBigContext
+from .py.dynamic_context import RgthreeDynamicContext
+from .py.dynamic_context_switch import RgthreeDynamicContextSwitch
 from .py.ksampler_config import RgthreeKSamplerConfig
 from .py.sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 from .py.sdxl_power_prompt_simple import RgthreeSDXLPowerPromptSimple
@@ -60,6 +62,10 @@ NODE_CLASS_MAPPINGS = {
   RgthreeImageComparer.NAME: RgthreeImageComparer,
   RgthreePowerLoraLoader.NAME: RgthreePowerLoraLoader,
 }
+
+if get_config_value('unreleased.dynamic_context.enabled') is True:
+  NODE_CLASS_MAPPINGS[RgthreeDynamicContext.NAME] = RgthreeDynamicContext
+  NODE_CLASS_MAPPINGS[RgthreeDynamicContextSwitch.NAME] = RgthreeDynamicContextSwitch
 
 # WEB_DIRECTORY is the comfyui nodes directory that ComfyUI will link and auto-load.
 WEB_DIRECTORY = "./web/comfyui"

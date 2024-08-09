@@ -1,4 +1,4 @@
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy";
+import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import type {
   Vector2,
   LGraphCanvas,

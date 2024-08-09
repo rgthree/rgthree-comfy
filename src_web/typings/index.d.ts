@@ -1,4 +1,4 @@
-import { LGraph } from "litegraph";
+import { LGraph } from "./litegraph.js";
 
 export type Constructor<T> = new(...args: any[]) => T;
 

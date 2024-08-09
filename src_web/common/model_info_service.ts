@@ -1,4 +1,4 @@
-import type { RgthreeModelInfo } from "typings/rgthree";
+import type { RgthreeModelInfo } from "typings/rgthree.js";
 import { rgthreeApi } from "./rgthree_api.js";
 import { api } from "scripts/api.js";
 

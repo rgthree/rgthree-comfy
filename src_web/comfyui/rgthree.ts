@@ -25,7 +25,7 @@ import {
   iconStarFilled,
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
-import type { Bookmark } from "./bookmark";
+import type { Bookmark } from "./bookmark.js";
 import { createElement, query, queryOne } from "rgthree/common/utils_dom.js";
 
 export enum LogLevel {

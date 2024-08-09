@@ -50,7 +50,7 @@ function findMatchingIndexByTypeOrName(otherNode, otherSlot, ctxSlots) {
     }
     return ctxSlotIndex;
 }
-class BaseContextNode extends RgthreeBaseServerNode {
+export class BaseContextNode extends RgthreeBaseServerNode {
     constructor(title) {
         super(title);
         this.___collapsed_width = 0;

@@ -1,4 +1,4 @@
-import { ComfyApp } from "../typings/comfy";
+import { ComfyApp } from "../typings/comfy.js";
 
 /**
  * A dummy ComfyApp that we can import from our code, which we'll rewrite later to the comfyui

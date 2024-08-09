@@ -1,4 +1,4 @@
-import type {ComfyButton} from "scripts/ui/components/button.ts";
+import type {ComfyButton} from "scripts/ui/components/button.js";
 
 export declare class ComfyButtonGroup {
   element: HTMLElement;

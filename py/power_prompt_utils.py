@@ -14,12 +14,16 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
   matches = re.findall(pattern, prompt)
 
   loras = []
+  unfound_loras = []
+  skipped_loras = []
   for match in matches:
     tag_path = match[0]
 
     strength = float(match[1] if len(match) > 1 and len(match[1]) else 1.0)
-    if strength == 0 and not silent:
-      log_node_info(log_node, f'Skipping "{tag_path}" with strength of zero')
+    if strength == 0:
+      if not silent:
+        log_node_info(log_node, f'Skipping "{tag_path}" with strength of zero')
+      skipped_loras.append({'lora': tag_path, 'strength': strength})
       continue
 
     lora_path = get_lora_by_filename(tag_path, lora_paths, log_node=None if silent else log_node)

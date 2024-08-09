@@ -1,4 +1,4 @@
-import type { SerializedGraph, BadLinksData } from "typings/index";
+import type { SerializedGraph, BadLinksData } from "typings/index.js";
 import { fixBadLinks } from "../common/link_fixer.js";
 import { getPngMetadata } from "scripts/pnginfo.js";
 

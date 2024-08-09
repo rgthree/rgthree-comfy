@@ -85,7 +85,7 @@ function findMatchingIndexByTypeOrName(
 /**
  * A Base Context node for other context based nodes to extend.
  */
-class BaseContextNode extends RgthreeBaseServerNode {
+export class BaseContextNode extends RgthreeBaseServerNode {
   constructor(title: string) {
     super(title);
   }

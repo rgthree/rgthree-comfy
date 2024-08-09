@@ -1,5 +1,5 @@
-import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph";
-import type {Constructor, SerializedGraph} from './index';
+import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph.js";
+import type {Constructor, SerializedGraph} from './index.js';
 
 declare global {
   const LiteGraph: typeof TLiteGraph;

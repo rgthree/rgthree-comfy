@@ -1,4 +1,4 @@
-import type { RgthreeModelInfo } from "typings/rgthree";
+import type { RgthreeModelInfo } from "typings/rgthree.js";
 
 class RgthreeApi {
   private baseUrl: string;

@@ -1,4 +1,4 @@
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
 export function addRgthree(str: string) {
   return str + " (rgthree)";
@@ -16,6 +16,8 @@ export const NodeTypesString = {
   CONTEXT_SWITCH_BIG: addRgthree("Context Switch Big"),
   CONTEXT_MERGE: addRgthree("Context Merge"),
   CONTEXT_MERGE_BIG: addRgthree("Context Merge Big"),
+  DYNAMIC_CONTEXT: addRgthree("Dynamic Context"),
+  DYNAMIC_CONTEXT_SWITCH: addRgthree("Dynamic Context Switch"),
   DISPLAY_ANY: addRgthree("Display Any"),
   NODE_MODE_RELAY: addRgthree("Mute / Bypass Relay"),
   NODE_MODE_REPEATER: addRgthree("Mute / Bypass Repeater"),
@@ -47,5 +49,14 @@ export const NodeTypesString = {
 export function getNodeTypeStrings() {
   return Object.values(NodeTypesString)
     .map((i) => stripRgthree(i))
+    .filter((i) => {
+      if (
+        i.startsWith("Dynamic Context") &&
+        !CONFIG_SERVICE.getConfigValue("unreleased.dynamic_context.enabled")
+      ) {
+        return false;
+      }
+      return true;
+    })
     .sort();
 }

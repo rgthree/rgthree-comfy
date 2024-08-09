@@ -40,6 +40,8 @@ export interface INodeSlot {
     disabled?: boolean;
     // @rgthree - Found this checked in getSlotMenuOptions default.
     removable?: boolean;
+    // @rgthree - A status we put on some nodes so we can draw things around it.
+    rgthree_status?: 'WARN' | 'ERROR';
 }
 
 export interface INodeInputSlot extends INodeSlot {
@@ -1172,7 +1174,8 @@ export declare class LGraphNode {
         slotIndex: number,
         isConnected: boolean,
         link: LLink,
-        ioSlot: (INodeOutputSlot | INodeInputSlot)
+        // @rgthree - Make it INodeSlot instead of union
+        ioSlot: INodeSlot
     ): void;
 
     /**
@@ -1267,6 +1270,13 @@ export declare class DragAndScale {
     changeScale(value: number, zooming_center?: Vector2): void;
     changeDeltaScale(value: number, zooming_center?: Vector2): void;
     reset(): void;
+}
+
+// @rgthree.
+interface CanvasDivDialog extends HTMLDivElement {
+    close: () => void;
+    modified: () => void;
+    is_modified: boolean;
 }
 
 /**
@@ -1662,7 +1672,10 @@ export declare class LGraphCanvas {
     createDialog(
         html: string,
         options?: { position?: Vector2; event?: MouseEvent }
-    ): void;
+    // @rgthree - Fix return type from void (added above)
+    ): CanvasDivDialog;
+
+
 
     convertOffsetToCanvas: DragAndScale["convertOffsetToCanvas"];
     convertCanvasToOffset: DragAndScale["convertCanvasToOffset"];

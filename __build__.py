@@ -15,6 +15,7 @@ start = time.time()
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--with-tests", default=False, action="store_true")
+parser.add_argument("-f", "--fix", default=False, action="store_true")
 args = parser.parse_args()
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,12 +28,16 @@ def log_step(msg=None, status=None):
   """ Logs a step keeping track of timing and initial msg. """
   global step_msg  # pylint: disable=W0601
   global step_start  # pylint: disable=W0601
+  global step_warns  # pylint: disable=W0601
   if msg:
     tag = f'{COLORS["YELLOW"]}[ Notice ]' if status == 'Notice' else f'{COLORS["RESET"]}[Starting]'
     step_msg = f'▻ {tag}{COLORS["RESET"]} {msg}...'
     step_start = time.time()
+    step_warns = []
     print(step_msg, end="\r")
   elif status:
+    if status != 'Error':
+      status = "Warn" if len(step_warns) > 0 else status
     step_time = round(time.time() - step_start, 3)
     if status == 'Error':
       status_msg = f'{COLORS["RED"]}⤫ {status}{COLORS["RESET"]}'
@@ -41,7 +46,25 @@ def log_step(msg=None, status=None):
     else:
       status_msg = f'{COLORS["BRIGHT_GREEN"]}🗸 {status}{COLORS["RESET"]}'
     print(f'{step_msg.ljust(64, ".")} {status_msg} ({step_time}s)')
+    for warning in step_warns:
+      print(warning)
 
+
+if args.fix:
+  tss = glob(os.path.join(DIR_SRC_WEB, "**", "*.ts"), recursive=True)
+  log_step(msg=f'Fixing {len(tss)} ts files')
+  for ts in tss:
+    with open(ts, 'r', encoding="utf-8") as f:
+      content = f.read()
+    # (\s*from\s*['"](?!.*[.]js['"]).*?)(['"];) in vscode.
+    content, n = re.subn(r'(\s*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', content)
+    if n > 0:
+      filename = os.path.basename(ts)
+      step_warns.append(
+        f'  - {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
+      with open(ts, 'w', encoding="utf-8") as f:
+        f.write(content)
+  log_step(status="Done")
 
 log_step(msg='Copying web directory')
 rmtree(DIR_WEB)
@@ -88,7 +111,6 @@ log_step(status="Done")
 # "../../rgthree/common" (which we map correctly in rgthree_server.py).
 log_step(msg='Cleaning Imports')
 js_files = glob(os.path.join(DIR_WEB, '**', '*.js'), recursive=True)
-warns = []
 for file in js_files:
   rel_path = file.replace(f'{DIR_WEB}/', "")
   with open(file, 'r', encoding="utf-8") as f:
@@ -100,14 +122,13 @@ for file in js_files:
   else:
     filedata = re.sub(r'(from\s+["\'])rgthree/', f'\\1{"../" * num}', filedata)
     filedata = re.sub(r'(from\s+["\'])scripts/', f'\\1{"../" * (num + 1)}scripts/', filedata)
-  filedata, n = re.subn(r'(import .*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', filedata)
+  filedata, n = re.subn(r'(\s*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', filedata)
   if n > 0:
     filename = os.path.basename(file)
-    warns.append(f'  - {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
+    step_warns.append(
+      f'  - {filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"')
   with open(file, 'w', encoding="utf-8") as f:
     f.write(filedata)
-log_step(status="Warn" if len(warns) > 0 else "Done")
-for warn in warns:
-  print(warn)
+log_step(status="Done")
 
 print(f'Finished all in {round(time.time() - start, 3)}s')
