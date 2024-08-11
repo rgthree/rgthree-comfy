@@ -84,8 +84,19 @@ def load_json_file(file: str, default=None):
   """Reads a json file and returns the json dict, stripping out "//" comments first."""
   if path_exists(file):
     with open(file, 'r', encoding='UTF-8') as file:
-      config = re.sub(r"(?:^|\s)//.*", "", file.read(), flags=re.MULTILINE)
-    return json.loads(config)
+      config = file.read()
+      try:
+        return json.loads(config)
+      except json.decoder.JSONDecodeError:
+        try:
+          config = re.sub(r"^\s*//\s.*", "", config, flags=re.MULTILINE)
+          return json.loads(config)
+        except json.decoder.JSONDecodeError:
+          try:
+            config = re.sub(r"(?:^|\s)//.*", "", config, flags=re.MULTILINE)
+            return json.loads(config)
+          except json.decoder.JSONDecodeError:
+            pass
   return default
 
 
