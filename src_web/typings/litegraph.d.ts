@@ -1366,17 +1366,22 @@ export declare class LGraphCanvas {
     // @rgthree - Looks like this is to replace canvas_mouse.
     graph_mouse: Vector2;
     clear_background: boolean;
-    connecting_node: LGraphNode | null;
-    // @rgthree - for overriding.
-    _connecting_node: LGraphNode | null;
+    // connecting_node: LGraphNode | null;
+    // // @rgthree - for overriding.
+    // _connecting_node: LGraphNode | null;
     // @rgthree
-    connecting_input: INodeInputSlot | null;
-    // @rgthree
-    connecting_output: INodeOutputSlot | null;
-    // @rgthree
-    connecting_slot: number;
-    // @rgthree
-    connecting_pos: Vector2 | null;
+    // connecting_input: INodeInputSlot | null;
+    // // @rgthree
+    // connecting_output: INodeOutputSlot | null;
+    // // @rgthree
+    // connecting_slot: number;
+    // // @rgthree
+    // connecting_pos: Vector2 | null;
+    // @rgthree - for some reason, the new comfyUI update renamed connecting_node to connecting_links (maybe)
+    connecting_links: {
+        node: LGraphNode, input?: INodeInputSlot, output?: INodeOutputSlot, pos: Vector2, slot: number
+    }[] | null;
+    _connecting_links: this['connecting_links'] | null;
 
     connections_width: number;
     ctx: CanvasRenderingContext2D;

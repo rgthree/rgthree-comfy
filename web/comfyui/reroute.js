@@ -39,6 +39,7 @@ class RerouteService {
     constructor() {
         this.isFastLinking = false;
         this.handledNewRerouteKeypress = false;
+        this.connectingData = null;
         this.fastReroutesHistory = [];
         this.handleLinkingKeydownBound = this.handleLinkingKeydown.bind(this);
         this.handleLinkingKeyupBound = this.handleLinkingKeyup.bind(this);
@@ -48,21 +49,26 @@ class RerouteService {
     }
     async onCanvasSetUpListenerForLinking() {
         const canvas = await waitForCanvas();
-        canvas._connecting_node;
+        const canvasProperty = true ? 'connecting_links' : 'connecting_node';
+        canvas[`_${canvasProperty}`];
         const thisService = this;
-        Object.defineProperty(canvas, "connecting_node", {
+        Object.defineProperty(canvas, canvasProperty, {
             get: function () {
-                return this._connecting_node;
+                return this[`_${canvasProperty}`];
             },
-            set: function (node) {
-                const isStartingLinking = node != null && this._connecting_node == null;
-                const isStoppingLinking = canvas._connecting_node != null && node == null;
-                this._connecting_node = node;
+            set: function (value) {
+                var _a;
+                const isValNull = !value || !(value === null || value === void 0 ? void 0 : value.length);
+                const isPropNull = !this[`_${canvasProperty}`] || !((_a = this[`_${canvasProperty}`]) === null || _a === void 0 ? void 0 : _a.length);
+                const isStartingLinking = !isValNull && isPropNull;
+                const isStoppingLinking = !isPropNull && isValNull;
+                this[`_${canvasProperty}`] = value;
                 if (isStartingLinking) {
                     thisService.startingLinking();
                 }
                 if (isStoppingLinking) {
                     thisService.stoppingLinking();
+                    thisService.connectingData = null;
                 }
             },
         });
@@ -91,29 +97,69 @@ class RerouteService {
             this.handledNewRerouteKeypress = false;
         }
     }
+    getConnectingData() {
+        var _a, _b;
+        const oldCanvas = app.canvas;
+        if (oldCanvas.connecting_node && oldCanvas.connecting_slot != null && ((_a = oldCanvas.connecting_pos) === null || _a === void 0 ? void 0 : _a.length)) {
+            return {
+                node: oldCanvas.connecting_node,
+                input: oldCanvas.connecting_input,
+                output: oldCanvas.connecting_output,
+                slot: oldCanvas.connecting_slot,
+                pos: [...oldCanvas.connecting_pos],
+            };
+        }
+        const canvas = app.canvas;
+        if ((_b = canvas.connecting_links) === null || _b === void 0 ? void 0 : _b.length) {
+            const link = canvas.connecting_links[0];
+            return {
+                node: link.node,
+                input: link.input,
+                output: link.output,
+                slot: link.slot,
+                pos: [...link.pos],
+            };
+        }
+        throw new Error("Error, handling linking keydown, but there's no link.");
+    }
+    setCanvasConnectingData(ctx) {
+        var _a, _b;
+        const oldCanvas = app.canvas;
+        if (oldCanvas.connecting_node && oldCanvas.connecting_slot != null && ((_a = oldCanvas.connecting_pos) === null || _a === void 0 ? void 0 : _a.length)) {
+            oldCanvas.connecting_node = ctx.node;
+            oldCanvas.connecting_input = ctx.input;
+            oldCanvas.connecting_output = ctx.output;
+            oldCanvas.connecting_slot = ctx.slot;
+            oldCanvas.connecting_pos = ctx.pos;
+        }
+        const canvas = app.canvas;
+        if ((_b = canvas.connecting_links) === null || _b === void 0 ? void 0 : _b.length) {
+            const link = canvas.connecting_links[0];
+            link.node = ctx.node;
+            link.input = ctx.input;
+            link.output = ctx.output;
+            link.slot = ctx.slot;
+            link.pos = ctx.pos;
+        }
+    }
     insertNewRerouteWhileLinking() {
         var _a;
         const canvas = app.canvas;
-        if (!canvas.connecting_node ||
-            !canvas.connecting_pos ||
-            !(canvas.connecting_input || canvas.connecting_output)) {
+        this.connectingData = this.getConnectingData();
+        if (!this.connectingData) {
             throw new Error("Error, handling linking keydown, but there's no link.");
         }
+        const data = this.connectingData;
         const node = LiteGraph.createNode("Reroute (rgthree)");
         const entry = {
             node,
-            context: {
-                connecting_node: canvas.connecting_node,
-                connecting_input: canvas.connecting_input,
-                connecting_output: canvas.connecting_output,
-                connecting_slot: canvas.connecting_slot,
-                connecting_pos: [...canvas.connecting_pos],
-            },
+            previous: { ...this.connectingData },
+            current: undefined,
         };
         this.fastReroutesHistory.push(entry);
-        let connectingDir = (_a = (canvas.connecting_input || canvas.connecting_output)) === null || _a === void 0 ? void 0 : _a.dir;
+        let connectingDir = (_a = (data.input || data.output)) === null || _a === void 0 ? void 0 : _a.dir;
         if (!connectingDir) {
-            connectingDir = canvas.connecting_input ? LiteGraph.LEFT : LiteGraph.RIGHT;
+            connectingDir = data.input ? LiteGraph.LEFT : LiteGraph.RIGHT;
         }
         let newPos = canvas.convertEventToCanvasOffset({
             clientX: Math.round(canvas.last_mouse_position[0] / 10) * 10,
@@ -122,75 +168,67 @@ class RerouteService {
         entry.node.pos = newPos;
         canvas.graph.add(entry.node);
         canvas.selectNode(entry.node);
-        const distX = entry.node.pos[0] - canvas.connecting_pos[0];
-        const distY = entry.node.pos[1] - canvas.connecting_pos[1];
+        const distX = entry.node.pos[0] - data.pos[0];
+        const distY = entry.node.pos[1] - data.pos[1];
         const layout = ["Left", "Right"];
         if (distX > 0 && Math.abs(distX) > Math.abs(distY)) {
-            layout[0] = canvas.connecting_output ? "Left" : "Right";
+            layout[0] = data.output ? "Left" : "Right";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
             node.pos[0] -= node.size[0] + 10;
             node.pos[1] -= Math.round(node.size[1] / 2 / 10) * 10;
         }
         else if (distX < 0 && Math.abs(distX) > Math.abs(distY)) {
-            layout[0] = canvas.connecting_output ? "Right" : "Left";
+            layout[0] = data.output ? "Right" : "Left";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
             node.pos[1] -= Math.round(node.size[1] / 2 / 10) * 10;
         }
         else if (distY < 0 && Math.abs(distY) > Math.abs(distX)) {
-            layout[0] = canvas.connecting_output ? "Bottom" : "Top";
+            layout[0] = data.output ? "Bottom" : "Top";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
             node.pos[0] -= Math.round(node.size[0] / 2 / 10) * 10;
         }
         else if (distY > 0 && Math.abs(distY) > Math.abs(distX)) {
-            layout[0] = canvas.connecting_output ? "Top" : "Bottom";
+            layout[0] = data.output ? "Top" : "Bottom";
             layout[1] = LAYOUT_LABEL_OPPOSITES[layout[0]];
             node.pos[0] -= Math.round(node.size[0] / 2 / 10) * 10;
             node.pos[1] -= node.size[1] + 10;
         }
         setConnectionsLayout(entry.node, layout);
-        if (canvas.connecting_output) {
-            canvas.connecting_node.connect(canvas.connecting_slot, entry.node, 0);
-            canvas.connecting_node = entry.node;
-            canvas.connecting_output = entry.node.outputs[0];
-            canvas.connecting_slot = 0;
-            canvas.connecting_pos = entry.node.getConnectionPos(false, 0);
+        if (data.output) {
+            data.node.connect(data.slot, entry.node, 0);
+            data.node = entry.node;
+            data.output = entry.node.outputs[0];
+            data.slot = 0;
+            data.pos = entry.node.getConnectionPos(false, 0);
         }
         else {
-            entry.node.connect(0, canvas.connecting_node, canvas.connecting_slot);
-            canvas.connecting_node = entry.node;
-            canvas.connecting_input = entry.node.inputs[0];
-            canvas.connecting_slot = 0;
-            canvas.connecting_pos = entry.node.getConnectionPos(true, 0);
+            entry.node.connect(0, data.node, data.slot);
+            data.node = entry.node;
+            data.input = entry.node.inputs[0];
+            data.slot = 0;
+            data.pos = entry.node.getConnectionPos(true, 0);
         }
-        entry.context.connecting_node = canvas.connecting_node;
-        entry.context.connecting_input = canvas.connecting_input;
-        entry.context.connecting_output = canvas.connecting_output;
-        entry.context.connecting_slot = canvas.connecting_slot;
-        entry.context.connecting_pos = [...canvas.connecting_pos];
+        this.setCanvasConnectingData(data);
+        entry.current = { ...this.connectingData };
         app.graph.setDirtyCanvas(true, true);
     }
     handleMoveOrResizeNodeMaybeWhileDragging(node) {
-        const canvas = app.canvas;
-        if (this.isFastLinking && node === canvas.connecting_node) {
+        const data = this.connectingData;
+        if (this.isFastLinking && node === (data === null || data === void 0 ? void 0 : data.node)) {
             const entry = this.fastReroutesHistory[this.fastReroutesHistory.length - 1];
             if (entry) {
-                canvas.connecting_pos = entry.node.getConnectionPos(!!canvas.connecting_input, 0);
+                data.pos = entry.node.getConnectionPos(!!data.input, 0);
+                this.setCanvasConnectingData(data);
             }
         }
     }
     handleRemovedNodeMaybeWhileDragging(node) {
-        const lastEntry = this.fastReroutesHistory[this.fastReroutesHistory.length - 1];
-        const prevEntry = this.fastReroutesHistory[this.fastReroutesHistory.length - 2];
-        if (prevEntry && lastEntry && lastEntry.node === node) {
-            const canvas = app.canvas;
-            canvas.connecting_node = prevEntry.context.connecting_node;
-            canvas.connecting_input = prevEntry.context.connecting_input;
-            canvas.connecting_output = prevEntry.context.connecting_output;
-            canvas.connecting_slot = prevEntry.context.connecting_slot;
-            canvas.connecting_pos = [...prevEntry.context.connecting_pos];
+        const currentEntry = this.fastReroutesHistory[this.fastReroutesHistory.length - 1];
+        if ((currentEntry === null || currentEntry === void 0 ? void 0 : currentEntry.node) === node) {
+            this.setCanvasConnectingData(currentEntry.previous);
             this.fastReroutesHistory.splice(this.fastReroutesHistory.length - 1, 1);
-            if ((prevEntry === null || prevEntry === void 0 ? void 0 : prevEntry.node) instanceof RerouteNode) {
-                canvas.selectNode(prevEntry.node);
+            if (currentEntry.previous.node) {
+                app.canvas.selectNode(currentEntry.previous.node);
             }
         }
     }
