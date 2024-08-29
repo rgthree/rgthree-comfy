@@ -50,9 +50,6 @@
   color: var(--content-fg);
   display: flex;
   flex-direction: column;
-  // ComfyUI's code has a bug that always puts the popup at the bottom if its < 30px.
-  min-height: 32px;
-  min-width: 32px;
   * {
     box-sizing: inherit;
   }
@@ -92,13 +89,19 @@
         }
       }
 
-      &.rgthree-message > span {
-        padding: 8px 12px;
-        display: block;
-        width: 100%;
-        text-align: center;
-        font-style: italic;
-        font-size: 12px;
+      &.rgthree-message {
+        // ComfyUI's code has strange behavior that that always puts the popupat to if its less than
+        // 30px... we'll force our message to be at least 32px tall so it won't do that unless it's
+        // actually on the bottom.
+        min-height: 32px;
+        > span {
+          padding: 8px 12px;
+          display: block;
+          width: 100%;
+          text-align: center;
+          font-style: italic;
+          font-size: 12px;
+        }
       }
     }
   }

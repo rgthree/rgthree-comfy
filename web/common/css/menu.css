@@ -43,8 +43,6 @@
   color: var(--content-fg);
   display: flex;
   flex-direction: column;
-  min-height: 32px;
-  min-width: 32px;
 }
 .rgthree-top-menu * {
   box-sizing: inherit;
@@ -79,6 +77,9 @@
 }
 .rgthree-top-menu menu > li:not(#fakeid) > button svg.github-star {
   fill: rgb(227, 179, 65);
+}
+.rgthree-top-menu menu > li:not(#fakeid).rgthree-message {
+  min-height: 32px;
 }
 .rgthree-top-menu menu > li:not(#fakeid).rgthree-message > span {
   padding: 8px 12px;
