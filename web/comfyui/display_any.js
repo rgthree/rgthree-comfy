@@ -7,7 +7,6 @@ app.registerExtension({
     name: "rgthree.DisplayAny",
     async beforeRegisterNodeDef(nodeType, nodeData, app) {
         if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {
-            nodeType.title_mode = LiteGraph.NO_TITLE;
             const onNodeCreated = nodeType.prototype.onNodeCreated;
             nodeType.prototype.onNodeCreated = function () {
                 onNodeCreated ? onNodeCreated.apply(this, []) : undefined;

@@ -15,8 +15,6 @@ app.registerExtension({
     app: ComfyApp,
   ) {
     if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {
-      (nodeType as any).title_mode = LiteGraph.NO_TITLE;
-
       const onNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function () {
         onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
