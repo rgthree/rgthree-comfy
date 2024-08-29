@@ -105,25 +105,33 @@ class RgthreeSDXLPowerPromptPositive:
            values_insert_saved=None):
 
     if insert_lora == 'DISABLE LORAS':
-      prompt_g, loras_g = get_and_strip_loras(prompt_g, True, log_node=self.NAME)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l, True, log_node=self.NAME)
+      prompt_g, loras_g, _skipped, _unfound = get_and_strip_loras(prompt_g,
+                                                                  True,
+                                                                  log_node=self.NAME)
+      prompt_l, loras_l, _skipped, _unfound = get_and_strip_loras(prompt_l,
+                                                                  True,
+                                                                  log_node=self.NAME)
       loras = loras_g + loras_l
       log_node_info(
         NODE_NAME,
         f'Disabling all found loras ({len(loras)}) and stripping lora tags for TEXT output.')
-    elif opt_model != None and opt_clip != None:
-      prompt_g, loras_g = get_and_strip_loras(prompt_g, log_node=self.NAME)
-      prompt_l, loras_l = get_and_strip_loras(prompt_l, log_node=self.NAME)
+    elif opt_model is not None and opt_clip is not None:
+      prompt_g, loras_g, _skipped, _unfound = get_and_strip_loras(prompt_g, log_node=self.NAME)
+      prompt_l, loras_l, _skipped, _unfound = get_and_strip_loras(prompt_l, log_node=self.NAME)
       loras = loras_g + loras_l
-      if len(loras):
+      if len(loras) > 0:
         for lora in loras:
           opt_model, opt_clip = LoraLoader().load_lora(opt_model, opt_clip, lora['lora'],
                                                        lora['strength'], lora['strength'])
           log_node_success(NODE_NAME, f'Loaded "{lora["lora"]}" from prompt')
         log_node_info(NODE_NAME, f'{len(loras)} Loras processed; stripping tags for TEXT output.')
     elif '<lora:' in prompt_g or '<lora:' in prompt_l:
-      _prompt_stripped_g, loras_g = get_and_strip_loras(prompt_g, True, log_node=self.NAME)
-      _prompt_stripped_l, loras_l = get_and_strip_loras(prompt_l, True, log_node=self.NAME)
+      _prompt_g, loras_g, _skipped, _unfound = get_and_strip_loras(prompt_g,
+                                                                   True,
+                                                                   log_node=self.NAME)
+      _prompt_l, loras_l, _skipped, _unfound = get_and_strip_loras(prompt_l,
+                                                                   True,
+                                                                   log_node=self.NAME)
       loras = loras_g + loras_l
       if len(loras):
         log_node_warn(

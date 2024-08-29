@@ -68,20 +68,20 @@ class RgthreePowerPrompt:
            insert_saved=None,
            values_insert_saved=None):
     if insert_lora == 'DISABLE LORAS':
-      prompt, loras = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
+      prompt, loras, skipped, unfound = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
       log_node_info(
         NODE_NAME,
         f'Disabling all found loras ({len(loras)}) and stripping lora tags for TEXT output.')
-    elif opt_model != None and opt_clip != None:
-      prompt, loras = get_and_strip_loras(prompt, log_node=NODE_NAME)
-      if len(loras):
+    elif opt_model is not None and opt_clip is not None:
+      prompt, loras, skipped, unfound = get_and_strip_loras(prompt, log_node=NODE_NAME)
+      if len(loras) > 0:
         for lora in loras:
           opt_model, opt_clip = LoraLoader().load_lora(opt_model, opt_clip, lora['lora'],
                                                        lora['strength'], lora['strength'])
           log_node_success(NODE_NAME, f'Loaded "{lora["lora"]}" from prompt')
         log_node_info(NODE_NAME, f'{len(loras)} Loras processed; stripping tags for TEXT output.')
     elif '<lora:' in prompt:
-      _prompt_stripped, loras, skipped, unfound = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
+      prompt, loras, skipped, unfound = get_and_strip_loras(prompt, log_node=NODE_NAME, silent=True)
       total_loras = len(loras) + len(skipped) + len(unfound)
       if total_loras:
         log_node_warn(
@@ -89,7 +89,7 @@ class RgthreePowerPrompt:
         log_node_info(NODE_NAME, 'Loras not processed, keeping for TEXT output.')
 
     conditioning = None
-    if opt_clip != None:
+    if opt_clip is not None:
       conditioning = CLIPTextEncode().encode(opt_clip, prompt)[0]
 
     return (conditioning, opt_model, opt_clip, prompt)

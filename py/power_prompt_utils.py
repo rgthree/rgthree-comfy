@@ -28,11 +28,12 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
 
     lora_path = get_lora_by_filename(tag_path, lora_paths, log_node=None if silent else log_node)
     if lora_path is None:
+      unfound_loras.append({'lora': tag_path, 'strength': strength})
       continue
 
     loras.append({'lora': lora_path, 'strength': strength})
 
-  return (re.sub(pattern, '', prompt), loras)
+  return (re.sub(pattern, '', prompt), loras, skipped_loras, unfound_loras)
 
 
 # pylint: disable = too-many-return-statements, too-many-branches
