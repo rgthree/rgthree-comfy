@@ -60,7 +60,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions: ContextMenuIt
     disabled: !outputNodes?.length,
   };
 
-  let idx = existingOptions.findIndex((o) => o?.content.startsWith("Queue Selected ")) + 1;
+  let idx = existingOptions.findIndex((o) => o?.content?.startsWith("Queue Selected ")) + 1;
   idx = idx || existingOptions.findIndex((o) => o?.content === "Outputs") + 1;
   idx = idx || existingOptions.findIndex((o) => o?.content === "Align") + 1;
   idx = idx || 3;

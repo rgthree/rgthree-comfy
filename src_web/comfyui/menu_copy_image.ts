@@ -43,7 +43,7 @@ app.registerExtension({
           if (this.imgs?.length) {
             let img =
               this.imgs[this.imageIndex || 0] || this.imgs[this.overIndex || 0] || this.imgs[0];
-            const foundIdx = options.findIndex((option) => option?.content.includes("Copy Image"));
+            const foundIdx = options.findIndex((option) => option?.content?.includes("Copy Image"));
             if (img && foundIdx === -1) {
               const menuItem: ContextMenuItem = {
                 content: "Copy Image (rgthree)",
@@ -58,7 +58,7 @@ app.registerExtension({
                   });
                 },
               };
-              let idx = options.findIndex((option) => option?.content.includes("Open Image")) + 1;
+              let idx = options.findIndex((option) => option?.content?.includes("Open Image")) + 1;
               if (idx != null) {
                 options.splice(idx, 0, menuItem);
               } else {

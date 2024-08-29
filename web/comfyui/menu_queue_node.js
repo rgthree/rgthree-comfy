@@ -41,7 +41,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions) {
         },
         disabled: !(outputNodes === null || outputNodes === void 0 ? void 0 : outputNodes.length),
     };
-    let idx = existingOptions.findIndex((o) => o === null || o === void 0 ? void 0 : o.content.startsWith("Queue Selected ")) + 1;
+    let idx = existingOptions.findIndex((o) => { var _a; return (_a = o === null || o === void 0 ? void 0 : o.content) === null || _a === void 0 ? void 0 : _a.startsWith("Queue Selected "); }) + 1;
     idx = idx || existingOptions.findIndex((o) => (o === null || o === void 0 ? void 0 : o.content) === "Outputs") + 1;
     idx = idx || existingOptions.findIndex((o) => (o === null || o === void 0 ? void 0 : o.content) === "Align") + 1;
     idx = idx || 3;

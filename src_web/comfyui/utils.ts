@@ -133,7 +133,7 @@ export function addMenuItemOnExtraMenuOptions(
     .reverse()
     .findIndex((option) => (option as any)?.isRgthree);
   if (idx == -1) {
-    idx = menuOptions.findIndex((option) => option?.content.includes(after)) + 1;
+    idx = menuOptions.findIndex((option) => option?.content?.includes(after)) + 1;
     if (!idx) {
       idx = menuOptions.length - 1;
     }
@@ -176,8 +176,8 @@ export function addMenuItemOnExtraMenuOptions(
               if (config.property) {
                 node.properties = node.properties || {};
                 node.properties[config.property] = config.prepareValue
-                  ? config.prepareValue(subValue!.content, node)
-                  : subValue!.content;
+                  ? config.prepareValue(subValue!.content || '', node)
+                  : subValue!.content || '';
               }
               config.callback && config.callback(node, subValue?.content);
             },

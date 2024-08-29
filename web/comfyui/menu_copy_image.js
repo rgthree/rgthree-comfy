@@ -30,7 +30,7 @@ app.registerExtension({
                     getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
                     if ((_a = this.imgs) === null || _a === void 0 ? void 0 : _a.length) {
                         let img = this.imgs[this.imageIndex || 0] || this.imgs[this.overIndex || 0] || this.imgs[0];
-                        const foundIdx = options.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes("Copy Image"));
+                        const foundIdx = options.findIndex((option) => { var _a; return (_a = option === null || option === void 0 ? void 0 : option.content) === null || _a === void 0 ? void 0 : _a.includes("Copy Image"); });
                         if (img && foundIdx === -1) {
                             const menuItem = {
                                 content: "Copy Image (rgthree)",
@@ -45,7 +45,7 @@ app.registerExtension({
                                     });
                                 },
                             };
-                            let idx = options.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes("Open Image")) + 1;
+                            let idx = options.findIndex((option) => { var _a; return (_a = option === null || option === void 0 ? void 0 : option.content) === null || _a === void 0 ? void 0 : _a.includes("Open Image"); }) + 1;
                             if (idx != null) {
                                 options.splice(idx, 0, menuItem);
                             }

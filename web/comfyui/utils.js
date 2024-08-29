@@ -76,7 +76,7 @@ export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after =
         .reverse()
         .findIndex((option) => option === null || option === void 0 ? void 0 : option.isRgthree);
     if (idx == -1) {
-        idx = menuOptions.findIndex((option) => option === null || option === void 0 ? void 0 : option.content.includes(after)) + 1;
+        idx = menuOptions.findIndex((option) => { var _a; return (_a = option === null || option === void 0 ? void 0 : option.content) === null || _a === void 0 ? void 0 : _a.includes(after); }) + 1;
         if (!idx) {
             idx = menuOptions.length - 1;
         }
@@ -102,8 +102,8 @@ export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after =
                         if (config.property) {
                             node.properties = node.properties || {};
                             node.properties[config.property] = config.prepareValue
-                                ? config.prepareValue(subValue.content, node)
-                                : subValue.content;
+                                ? config.prepareValue(subValue.content || '', node)
+                                : subValue.content || '';
                         }
                         config.callback && config.callback(node, subValue === null || subValue === void 0 ? void 0 : subValue.content);
                     },

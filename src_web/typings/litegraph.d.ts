@@ -175,7 +175,8 @@ export interface ITextWidget extends IWidget<string, {}> {
 }
 
 export interface IContextMenuItem {
-    content: string;
+    // @rgthree - Make optional because, I guess it is?
+    content?: string;
     value?: any;
     callback?: ContextMenuEventListener;
     /** Used as innerHTML for extra child element */
