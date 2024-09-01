@@ -14,6 +14,7 @@ export class Label extends RgthreeBaseVirtualNode {
         this.properties["backgroundColor"] = "transparent";
         this.properties["padding"] = 0;
         this.properties["borderRadius"] = 0;
+        this.properties["stayOnTop"] = true;
         this.color = "#fff0";
         this.bgcolor = "#fff0";
         this.onConstructed();
@@ -118,6 +119,7 @@ Label["@textAlign"] = { type: "combo", values: ["left", "center", "right"] };
 Label["@backgroundColor"] = { type: "string" };
 Label["@padding"] = { type: "number" };
 Label["@borderRadius"] = { type: "number" };
+Label["@stayOnTop"] = { type: "boolean" };
 const oldDrawNode = LGraphCanvas.prototype.drawNode;
 LGraphCanvas.prototype.drawNode = function (node, ctx) {
     if (node.constructor === Label) {
@@ -143,6 +145,15 @@ LGraph.prototype.getNodeOnPos = function (x, y, nodes_list, margin) {
         }
     }
     return oldGetNodeOnPos.apply(this, [x, y, nodes_list, margin]);
+};
+const oldDraw = LGraphCanvas.prototype.draw;
+LGraphCanvas.prototype.draw = function() {
+    oldDraw.call(this);
+    for (const node of this.graph._nodes) {
+        if (node.constructor === Label && node.properties?.stayOnTop) {
+            this.bringToFront(node)
+        }
+    }
 };
 app.registerExtension({
     name: "rgthree.Label",
