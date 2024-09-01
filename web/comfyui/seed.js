@@ -1,5 +1,4 @@
 import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
@@ -9,6 +8,7 @@ const SPECIAL_SEED_RANDOM = -1;
 const SPECIAL_SEED_INCREMENT = -2;
 const SPECIAL_SEED_DECREMENT = -3;
 const SPECIAL_SEEDS = [SPECIAL_SEED_RANDOM, SPECIAL_SEED_INCREMENT, SPECIAL_SEED_DECREMENT];
+const MAX_SEED_HISTORY_SIZE = 50;
 class RgthreeSeed extends RgthreeBaseServerNode {
     constructor(title = RgthreeSeed.title) {
         super(title);
@@ -16,7 +16,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.logger = rgthree.newLogSession(`[Seed]`);
         this.lastSeed = undefined;
         this.serializedCtx = {};
-        this.lastSeedValue = null;
+        this.seedHistory = null;
         this.randMax = 1125899906842624;
         this.randMin = 0;
         this.randomRange = 1125899906842624;
@@ -29,8 +29,8 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     configure(info) {
         var _a;
         super.configure(info);
-        if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a["showLastSeed"]) {
-            this.addLastSeedValue();
+        if ((_a = this.properties) === null || _a === void 0 ? void 0 : _a["ShowSeedHistory"]) {
+            this.addSeedHistory();
         }
     }
     async handleAction(action) {
@@ -77,34 +77,35 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         var _a;
         (_a = super.getExtraMenuOptions) === null || _a === void 0 ? void 0 : _a.apply(this, [...arguments]);
         options.splice(options.length - 1, 0, {
-            content: "Show/Hide Last Seed Value",
+            content: "Enable/Disable Seed History",
             callback: (_value, _options, _event, _parentMenu, _node) => {
-                this.properties["showLastSeed"] = !this.properties["showLastSeed"];
-                if (this.properties["showLastSeed"]) {
-                    this.addLastSeedValue();
+                this.properties["ShowSeedHistory"] = !this.properties["ShowSeedHistory"];
+                if (this.properties["ShowSeedHistory"]) {
+                    this.addSeedHistory();
                 }
                 else {
-                    this.removeLastSeedValue();
+                    this.removeSeedHistory();
                 }
             },
         });
     }
-    addLastSeedValue() {
-        if (this.lastSeedValue)
+    addSeedHistory() {
+        if (this.seedHistory)
             return;
-        this.lastSeedValue = ComfyWidgets["STRING"](this, "last_seed", ["STRING", { multiline: true }], app).widget;
-        this.lastSeedValue.inputEl.readOnly = true;
-        this.lastSeedValue.inputEl.style.fontSize = "0.75rem";
-        this.lastSeedValue.inputEl.style.textAlign = "center";
+        this.seedHistory = this.addWidget("combo", "Seed history", this.lastSeed != null ? this.lastSeed : "empty", () => {
+            this.seedWidget.value = this.seedHistory.value.split(' ').pop();
+        }, { values: this.lastSeed != null ? [this.lastSeed] : [], serialize: false });
+        this.seedHistory.disabled = true;
         this.computeSize();
+        this.setDirtyCanvas(true, true);
     }
-    removeLastSeedValue() {
-        if (!this.lastSeedValue)
+    removeSeedHistory() {
+        if (!this.seedHistory)
             return;
-        this.lastSeedValue.inputEl.remove();
-        this.widgets.splice(this.widgets.indexOf(this.lastSeedValue), 1);
-        this.lastSeedValue = null;
+        this.widgets.splice(this.widgets.indexOf(this.seedHistory), 1);
+        this.seedHistory = null;
         this.computeSize();
+        this.setDirtyCanvas(true, true);
     }
     handleApiHijacking(e) {
         var _a, _b, _c, _d;
@@ -136,8 +137,18 @@ class RgthreeSeed extends RgthreeBaseServerNode {
             this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
         }
-        if (this.lastSeedValue) {
-            this.lastSeedValue.value = `Last Seed: ${this.lastSeed}`;
+        if (this.seedHistory) {
+            if (this.seedHistory.options.values.length == 0 || this.lastSeed != this.seedHistory.options.values[0].split(' ').pop()) {
+                const now = new Date();
+                const date = `${now.getMonth() + 1}/${now.getDate()} ${('0' +
+                    now.getHours()).slice(-2)}:${('0' + now.getMinutes()).slice(-2)}`;
+                this.seedHistory.options.values.unshift(`${date} - ${this.lastSeed}`);
+                if (this.seedHistory.options.values.length > MAX_SEED_HISTORY_SIZE) {
+                    this.seedHistory.options.values.pop();
+                }
+            }
+            this.seedHistory.value = this.seedHistory.options.values[0];
+            this.seedHistory.disabled = false;
         }
     }
     getSeedToUse() {
