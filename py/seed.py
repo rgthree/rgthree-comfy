@@ -51,6 +51,14 @@ class RgthreeSeed:
   RETURN_NAMES = ("SEED",)
   FUNCTION = "main"
 
+  @classmethod
+  def IS_CHANGED(cls, seed, prompt=None, extra_pnginfo=None, unique_id=None):
+    """Forces a changed state if we happen to get a special seed, as if from the API directly."""
+    if seed in (-1, -2, -3):
+      # This isn't used, but a different value than previous will force it to be "changed"
+      return new_random_seed()
+    return seed
+
   def main(self, seed=0, prompt=None, extra_pnginfo=None, unique_id=None):
     """Returns the passed seed on execution."""
 
