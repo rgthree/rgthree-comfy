@@ -1,13 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
+import { getOutputNodes } from "./utils.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
-function getOutputNodes(nodes) {
-    return ((nodes === null || nodes === void 0 ? void 0 : nodes.filter((n) => {
-        var _a;
-        return (n.mode != LiteGraph.NEVER &&
-            ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
-    })) || []);
-}
 function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions) {
     if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
         return;

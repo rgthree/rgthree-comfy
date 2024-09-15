@@ -12,6 +12,11 @@ var ConfigType;
     ConfigType[ConfigType["NUMBER"] = 3] = "NUMBER";
     ConfigType[ConfigType["ARRAY"] = 4] = "ARRAY";
 })(ConfigType || (ConfigType = {}));
+var ConfigInputType;
+(function (ConfigInputType) {
+    ConfigInputType[ConfigInputType["UNKNOWN"] = 0] = "UNKNOWN";
+    ConfigInputType[ConfigInputType["CHECKLIST"] = 1] = "CHECKLIST";
+})(ConfigInputType || (ConfigInputType = {}));
 const TYPE_TO_STRING = {
     [ConfigType.UNKNOWN]: "unknown",
     [ConfigType.BOOLEAN]: "boolean",
@@ -98,16 +103,17 @@ const CONFIGURABLE = {
             key: "features.group_header_fast_toggle.enabled",
             type: ConfigType.BOOLEAN,
             label: "Show fast toggles in Group Headers",
-            description: "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
+            description: "Show quick toggles in Groups' Headers to quickly mute, bypass or queue.",
             subconfig: [
                 {
                     key: "features.group_header_fast_toggle.toggles",
                     type: ConfigType.ARRAY,
                     label: "Which toggles to show.",
+                    inputType: ConfigInputType.CHECKLIST,
                     options: [
-                        { value: ["mute"], label: "mute only" },
-                        { value: ["bypass"], label: "bypass only" },
-                        { value: ["mute", "bypass"], label: "mute and bypass" },
+                        { value: "queue", label: "queue" },
+                        { value: "bypass", label: "bypass" },
+                        { value: "mute", label: "mute" },
                     ],
                 },
                 {
@@ -175,18 +181,43 @@ function fieldrow(item) {
     });
     let input;
     if ((_a = item.options) === null || _a === void 0 ? void 0 : _a.length) {
-        input = $el(`select[id="${item.key}"]`, {
-            parent: container,
-            children: item.options.map((o) => {
-                const label = o.label || String(o);
-                const value = o.value || o;
-                const valueSerialized = JSON.stringify({ value: value });
-                return $el(`option[value="${valueSerialized}"]`, {
-                    text: label,
-                    selected: valueSerialized === JSON.stringify({ value: initialValue }),
-                });
-            }),
-        });
+        if (item.inputType === ConfigInputType.CHECKLIST) {
+            const initialValueList = initialValue || [];
+            input = $el(`fieldset.rgthree-checklist-group[id="${item.key}"]`, {
+                parent: container,
+                children: item.options.map((o) => {
+                    const label = o.label || String(o);
+                    const value = o.value || o;
+                    const id = `${item.key}_${value}`;
+                    return $el(`span.rgthree-checklist-item`, {
+                        children: [
+                            $el(`input[type="checkbox"][value="${value}"]`, {
+                                id,
+                                checked: initialValueList.includes(value),
+                            }),
+                            $el(`label`, {
+                                for: id,
+                                text: label,
+                            })
+                        ]
+                    });
+                }),
+            });
+        }
+        else {
+            input = $el(`select[id="${item.key}"]`, {
+                parent: container,
+                children: item.options.map((o) => {
+                    const label = o.label || String(o);
+                    const value = o.value || o;
+                    const valueSerialized = JSON.stringify({ value: value });
+                    return $el(`option[value="${valueSerialized}"]`, {
+                        text: label,
+                        selected: valueSerialized === JSON.stringify({ value: initialValue }),
+                    });
+                }),
+            });
+        }
     }
     else if (item.type === ConfigType.BOOLEAN) {
         container.classList.toggle("-checked", !!initialValue);
@@ -290,7 +321,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
             const name = el.dataset["name"];
             const type = el.dataset["type"];
             const initialValue = CONFIG_SERVICE.getConfigValue(name);
-            let currentValueEl = $$("input, textarea, select", el)[0];
+            let currentValueEl = $$("fieldset.rgthree-checklist-group, input, textarea, select", el)[0];
             let currentValue = null;
             if (type === String(ConfigType.BOOLEAN)) {
                 currentValue = currentValueEl.checked;
@@ -300,6 +331,14 @@ export class RgthreeConfigDialog extends RgthreeDialog {
                 currentValue = currentValueEl === null || currentValueEl === void 0 ? void 0 : currentValueEl.value;
                 if (currentValueEl.nodeName === "SELECT") {
                     currentValue = JSON.parse(currentValue).value;
+                }
+                else if (currentValueEl.classList.contains('rgthree-checklist-group')) {
+                    currentValue = [];
+                    for (const check of $$('input[type="checkbox"]', currentValueEl)) {
+                        if (check.checked) {
+                            currentValue.push(check.value);
+                        }
+                    }
                 }
                 else if (type === String(ConfigType.NUMBER)) {
                     currentValue = Number(currentValue) || initialValue;

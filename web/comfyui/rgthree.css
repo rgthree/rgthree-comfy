@@ -521,6 +521,27 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   cursor: pointer;
 }
 
+.rgthree-dialog.-settings .fieldrow fieldset.rgthree-checklist-group {
+  padding: 0;
+  border: 0;
+  margin: 0;
+}
+.rgthree-dialog.-settings .fieldrow fieldset.rgthree-checklist-group > span.rgthree-checklist-item {
+  display: inline-block;
+  white-space: nowrap;
+  padding-right: 6px;
+  vertical-align: middle;
+}
+.rgthree-dialog.-settings .fieldrow fieldset.rgthree-checklist-group > span.rgthree-checklist-item input[type=checkbox] {
+  width: 16px;
+  height: 16px;
+}
+.rgthree-dialog.-settings .fieldrow fieldset.rgthree-checklist-group > span.rgthree-checklist-item label {
+  padding-left: 4px;
+  text-align: left;
+  cursor: pointer;
+}
+
 .rgthree-comfyui-settings-row div {
   display: flex;
   flex-direction: row;

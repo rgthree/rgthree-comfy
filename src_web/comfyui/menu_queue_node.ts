@@ -6,18 +6,9 @@ import type {
 } from "typings/litegraph.js";
 import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import { rgthree } from "./rgthree.js";
+import { getOutputNodes } from "./utils.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
-function getOutputNodes(nodes: LGraphNode[]) {
-  return (
-    nodes?.filter((n) => {
-      return (
-        n.mode != LiteGraph.NEVER &&
-        ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
-      );
-    }) || []
-  );
-}
 
 function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions: ContextMenuItem[]) {
   if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {

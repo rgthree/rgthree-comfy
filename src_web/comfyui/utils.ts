@@ -925,3 +925,17 @@ LiteGraph.isValidConnection = function (typeA: string | string[], typeB: string 
   }
   return isValid;
 };
+
+/**
+ * Returns a list of output nodes given a list of nodes.
+ */
+export function getOutputNodes(nodes: LGraphNode[]) {
+  return (
+    nodes?.filter((n) => {
+      return (
+        n.mode != LiteGraph.NEVER &&
+        ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
+      );
+    }) || []
+  );
+}

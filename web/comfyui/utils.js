@@ -628,3 +628,10 @@ LiteGraph.isValidConnection = function (typeA, typeB) {
     }
     return isValid;
 };
+export function getOutputNodes(nodes) {
+    return ((nodes === null || nodes === void 0 ? void 0 : nodes.filter((n) => {
+        var _a;
+        return (n.mode != LiteGraph.NEVER &&
+            ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
+    })) || []);
+}

@@ -15,7 +15,7 @@
     },
     "group_header_fast_toggle": {
       "enabled": null,
-      "toggles": ["mute", "bypass"],
+      "toggles": ["queue", "bypass", "mute"],
       "show": "hover"
     },
     "progress_bar": {

@@ -14,6 +14,11 @@ enum ConfigType {
   ARRAY,
 }
 
+enum ConfigInputType {
+  UNKNOWN,
+  CHECKLIST, // Which is a multiselect array.
+}
+
 const TYPE_TO_STRING = {
   [ConfigType.UNKNOWN]: "unknown",
   [ConfigType.BOOLEAN]: "boolean",
@@ -26,6 +31,7 @@ type ConfigurationSchema = {
   key: string;
   type: ConfigType;
   label: string;
+  inputType?: ConfigInputType,
   options?: string[] | number[] | ConfigurationSchemaOption[];
   description?: string;
   subconfig?: ConfigurationSchema[];
@@ -122,16 +128,17 @@ const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
       key: "features.group_header_fast_toggle.enabled",
       type: ConfigType.BOOLEAN,
       label: "Show fast toggles in Group Headers",
-      description: "Show quick toggles in Groups' Headers to quickly mute and/or bypass.",
+      description: "Show quick toggles in Groups' Headers to quickly mute, bypass or queue.",
       subconfig: [
         {
           key: "features.group_header_fast_toggle.toggles",
           type: ConfigType.ARRAY,
           label: "Which toggles to show.",
+          inputType: ConfigInputType.CHECKLIST,
           options: [
-            { value: ["mute"], label: "mute only" },
-            { value: ["bypass"], label: "bypass only" },
-            { value: ["mute", "bypass"], label: "mute and bypass" },
+            { value: "queue", label: "queue" },
+            { value: "bypass", label: "bypass" },
+            { value: "mute", label: "mute" },
           ],
         },
         {
@@ -207,18 +214,42 @@ function fieldrow(item: ConfigurationSchema) {
 
   let input;
   if (item.options?.length) {
-    input = $el<HTMLSelectElement>(`select[id="${item.key}"]`, {
-      parent: container,
-      children: item.options.map((o) => {
-        const label = (o as ConfigurationSchemaOption).label || String(o);
-        const value = (o as ConfigurationSchemaOption).value || o;
-        const valueSerialized = JSON.stringify({ value: value });
-        return $el<HTMLOptionElement>(`option[value="${valueSerialized}"]`, {
-          text: label,
-          selected: valueSerialized === JSON.stringify({ value: initialValue }),
-        });
-      }),
-    });
+    if (item.inputType === ConfigInputType.CHECKLIST) {
+      const initialValueList = initialValue || [];
+      input = $el<HTMLSelectElement>(`fieldset.rgthree-checklist-group[id="${item.key}"]`, {
+        parent: container,
+        children: item.options.map((o) => {
+          const label = (o as ConfigurationSchemaOption).label || String(o);
+          const value = (o as ConfigurationSchemaOption).value || o;
+          const id = `${item.key}_${value}`;
+          return $el<HTMLSpanElement>(`span.rgthree-checklist-item`, {
+            children: [
+              $el<HTMLInputElement>(`input[type="checkbox"][value="${value}"]`, {
+                id,
+                checked: initialValueList.includes(value),
+              }),
+              $el<HTMLInputElement>(`label`, {
+                for: id,
+                text: label,
+              })
+            ]
+          });
+        }),
+      });
+    } else {
+      input = $el<HTMLSelectElement>(`select[id="${item.key}"]`, {
+        parent: container,
+        children: item.options.map((o) => {
+          const label = (o as ConfigurationSchemaOption).label || String(o);
+          const value = (o as ConfigurationSchemaOption).value || o;
+          const valueSerialized = JSON.stringify({ value: value });
+          return $el<HTMLOptionElement>(`option[value="${valueSerialized}"]`, {
+            text: label,
+            selected: valueSerialized === JSON.stringify({ value: initialValue }),
+          });
+        }),
+      });
+    }
   } else if (item.type === ConfigType.BOOLEAN) {
     container.classList.toggle("-checked", !!initialValue);
     input = $el<HTMLInputElement>(`input[type="checkbox"][id="${item.key}"]`, {
@@ -329,7 +360,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
       const name = el.dataset["name"]!;
       const type = el.dataset["type"]!;
       const initialValue = CONFIG_SERVICE.getConfigValue(name);
-      let currentValueEl = $$("input, textarea, select", el)[0] as HTMLInputElement;
+      let currentValueEl = $$("fieldset.rgthree-checklist-group, input, textarea, select", el)[0] as HTMLInputElement;
       let currentValue: any = null;
       if (type === String(ConfigType.BOOLEAN)) {
         currentValue = currentValueEl.checked;
@@ -339,6 +370,13 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         currentValue = currentValueEl?.value;
         if (currentValueEl.nodeName === "SELECT") {
           currentValue = JSON.parse(currentValue).value;
+        } else if (currentValueEl.classList.contains('rgthree-checklist-group')) {
+          currentValue = [];
+          for (const check of $$<HTMLInputElement>('input[type="checkbox"]', currentValueEl)) {
+            if (check.checked) {
+              currentValue.push(check.value);
+            }
+          }
         } else if (type === String(ConfigType.NUMBER)) {
           currentValue = Number(currentValue) || initialValue;
         }
