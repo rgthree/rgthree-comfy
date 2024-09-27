@@ -47,14 +47,6 @@ type ConfigurationSchemaOption = { value: any; label: string };
 const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
   features: [
     {
-      key: "features.patch_recursive_execution",
-      type: ConfigType.BOOLEAN,
-      label: "Optimize ComfyUI's Execution",
-      description:
-        "Patches ComfyUI's backend execution making complex workflows 1000's of times faster." +
-        "<br>⚠️ Disable if execution seems broken due to forward ComfyUI changes.",
-    },
-    {
       key: "features.progress_bar.enabled",
       type: ConfigType.BOOLEAN,
       label: "Prompt Progress Bar",

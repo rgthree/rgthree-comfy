@@ -341,18 +341,9 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > <i>You can remove/enable from rgthree-comfy settings, as well as configure the height/size.</i>
 
 
-## ComfyUI Recursive Optimization
-> An optimization to ComfyUI's recursive execution. Because rgthree-comfy nodes make it easy to build larger, more complex workflows, I (and others) started to hit a wall of poor execution times.
-> <details>
->    <summary>ℹ️ <i>More Information</i></summary>
->
->    - Until [ComfyUI/issues/1502](https://github.com/comfyanonymous/ComfyUI/issues/1502) is resolved and/or [ComfyUI/pull/1503](https://github.com/comfyanonymous/ComfyUI/pull/1503) is pulled in, then know that you're benefiting from hundreds of millions of saved cycles each run.
->
->    - Specifically, for a rather complex test workflow, the patch reduces iterations of `recursive_will_execute` from 113,292,566 to just 135 (and 116.32 seconds to 69.84 seconds on my machine) on a fresh queue, and reduces recursive calls of `recursive_output_delete_if_changed` from 250,496,808 to 142 (and 158.13 seconds to 0.0 seconds on my machine).
->
->    - ⚠️ *However,* there is a chance ComfyUI changes something in/around the code I patched which could break. If that's the case, you should disable the optimization from rgthree-comfy settings.
->
-> </details>
+## ~~ComfyUI Recursive Optimization~~
+> 🎉 The newest version of ComfyUI no longer suffers from poor execution recursion! This feature
+> has been removed from rgthree-comfy.
 
 
 ## "Queue Selected Output Nodes" in right-click menu

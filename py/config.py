@@ -60,10 +60,11 @@ USER_CONFIG = get_rgthree_user_config()
 # Migrate old config options into "features"
 needs_to_write_user_config = False
 if 'patch_recursive_execution' in USER_CONFIG:
-  if 'features' not in USER_CONFIG:
-    USER_CONFIG['features'] = {}
-  USER_CONFIG['features']['patch_recursive_execution'] = USER_CONFIG['patch_recursive_execution']
   del USER_CONFIG['patch_recursive_execution']
+  needs_to_write_user_config = True
+
+if 'features' in USER_CONFIG and 'patch_recursive_execution' in USER_CONFIG['features']:
+  del USER_CONFIG['features']['patch_recursive_execution']
   needs_to_write_user_config = True
 
 if 'show_alerts_for_corrupt_workflows' in USER_CONFIG:

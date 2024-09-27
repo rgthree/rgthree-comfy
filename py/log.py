@@ -76,6 +76,6 @@ def log(message, color=None, msg_color=None, prefix=None):
   color = COLORS[color] if color is not None and color in COLORS else COLORS["BRIGHT_GREEN"]
   msg_color = COLORS[msg_color] if msg_color is not None and msg_color in COLORS else ''
   prefix = f'[{prefix}]' if prefix is not None else ''
-  msg = f'{color}[rgthree]{prefix}'
+  msg = f'{color}[rgthree-comfy]{prefix}'
   msg += f'{msg_color} {message}{COLORS["RESET"]}'
   print(msg)
