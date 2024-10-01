@@ -43,6 +43,13 @@ const LogLevelToCSS = {
     [LogLevel.DEV]: "color: #004b68;",
 };
 let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
+const apiURL = api.apiURL;
+api.apiURL = function (route) {
+    if (route.includes("rgthree/")) {
+        return (this.api_base + "/" + route).replace(/\/\//g, "/");
+    }
+    return apiURL.apply(this, arguments);
+};
 const INVOKE_EXTENSIONS_BLOCKLIST = [
     {
         name: "Comfy.WidgetInputs",

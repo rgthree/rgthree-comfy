@@ -1,18 +1,15 @@
 import hashlib
 import requests
 import json
-import torch
 import re
 import os
-import copy
-
 from datetime import datetime
 
-from .utils import get_dict_value, load_json_file, path_exists, save_json_file
-from .utils_userdata import read_userdata_json, save_userdata_json, delete_userdata_file
-
-import folder_paths
 from server import PromptServer
+import folder_paths
+
+from ..utils import get_dict_value, load_json_file, path_exists, save_json_file
+from ..utils_userdata import read_userdata_json, save_userdata_json, delete_userdata_file
 
 
 def _get_info_cache_file(data_type: str, file_hash: str):
@@ -20,7 +17,7 @@ def _get_info_cache_file(data_type: str, file_hash: str):
 
 
 async def delete_model_info(file: str,
-                            model_type="loras",
+                            model_type,
                             del_info=True,
                             del_metadata=True,
                             del_civitai=True):
@@ -43,7 +40,7 @@ async def delete_model_info(file: str,
 
 
 async def get_model_info(file: str,
-                         model_type="loras",
+                         model_type,
                          default=None,
                          maybe_fetch_civitai=False,
                          force_fetch_civitai=False,
@@ -106,15 +103,12 @@ async def get_model_info(file: str,
                                                            'metadata' not in info_data['raw'])
 
   if should_fetch_metadata:
-    data_meta = _get_model_metadata(file,
-                                    model_type=model_type,
-                                    default={},
-                                    refresh=force_fetch_metadata)
+    data_meta = _get_model_metadata(file, model_type, default={}, refresh=force_fetch_metadata)
     should_save = _merge_metadata(info_data, data_meta) or should_save
 
   if should_fetch_civitai:
     data_civitai = _get_model_civitai_data(file,
-                                           model_type=model_type,
+                                           model_type,
                                            default={},
                                            refresh=force_fetch_civitai)
     should_save = _merge_civitai_data(info_data, data_civitai) or should_save
@@ -131,7 +125,7 @@ async def get_model_info(file: str,
       info_data['trainedWords'] = sorted(info_data['trainedWords'],
                                          key=lambda w: w['count'] if 'count' in w else 99999,
                                          reverse=True)
-    save_model_info(file, info_data, model_type=model_type)
+    save_model_info(file, info_data, model_type)
 
     # If we're saving, then the UI is likely waiting to see if the refreshed data is coming in.
     await PromptServer.instance.send("rgthree-refreshed-lora-info", {"data": info_data})
@@ -296,7 +290,7 @@ def _merge_civitai_data(info_data: dict, data_civitai: dict) -> bool:
   return should_save
 
 
-def _get_model_civitai_data(file: str, model_type="loras", default=None, refresh=False):
+def _get_model_civitai_data(file: str, model_type, default=None, refresh=False):
   """Gets the civitai data, either cached from the user directory, or from civitai api."""
   file_hash = _get_sha256_hash(get_folder_path(file, model_type))
   if file_hash is None:
@@ -325,7 +319,7 @@ def _get_model_civitai_data(file: str, model_type="loras", default=None, refresh
   return response if response is not None else default
 
 
-def _get_model_metadata(file: str, model_type="loras", default=None, refresh=False):
+def _get_model_metadata(file: str, model_type, default=None, refresh=False):
   """Gets the metadata from the file itself."""
   file_path = get_folder_path(file, model_type)
   file_hash = _get_sha256_hash(file_path)
@@ -381,7 +375,7 @@ def _read_file_metadata_from_header(file_path: str) -> dict:
   return data
 
 
-def get_folder_path(file: str, model_type="loras"):
+def get_folder_path(file: str, model_type):
   """Gets the file path ensuring it exists."""
   file_path = folder_paths.get_full_path(model_type, file)
   if file_path and not path_exists(file_path):
@@ -405,14 +399,14 @@ def _get_sha256_hash(file_path: str):
   return file_hash
 
 
-async def set_model_info_partial(file: str, info_data_partial, model_type="loras"):
+async def set_model_info_partial(file: str, model_type: str, info_data_partial):
   """Sets partial data into the existing model info data."""
-  info_data = await get_model_info(file, model_type=model_type, default={})
+  info_data = await get_model_info(file, model_type, default={})
   info_data = {**info_data, **info_data_partial}
-  save_model_info(file, info_data, model_type=model_type)
+  save_model_info(file, info_data, model_type)
 
 
-def save_model_info(file: str, info_data, model_type="loras"):
+def save_model_info(file: str, info_data, model_type):
   """Saves the model info alongside the model itself."""
   file_path = get_folder_path(file, model_type)
   if file_path is None:

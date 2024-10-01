@@ -5,10 +5,10 @@ export function getResolver(timeout = 5000) {
     resolver.resolved = false;
     resolver.rejected = false;
     resolver.promise = new Promise((resolve, reject) => {
-        resolver.reject = () => {
+        resolver.reject = (e) => {
             resolver.completed = true;
             resolver.rejected = true;
-            reject();
+            reject(e);
         };
         resolver.resolve = (data) => {
             resolver.completed = true;

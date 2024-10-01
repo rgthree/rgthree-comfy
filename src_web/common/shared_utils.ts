@@ -10,11 +10,9 @@ export type Resolver<T> = {
   rejected: boolean;
   promise: Promise<T>;
   resolve: (data: T) => void;
-  reject: () => void;
+  reject: (e?: Error) => void;
   timeout: number | null;
-  // A caller property to store a defer timeout on.
-  deferredTimeout?: number | null;
-  deferredData?: any;
+  deferment?: {data?: any, timeout?: number|null, signal?: string};
 };
 
 /**
@@ -28,10 +26,10 @@ export function getResolver<T>(timeout: number = 5000): Resolver<T> {
   resolver.resolved = false;
   resolver.rejected = false;
   resolver.promise = new Promise((resolve, reject) => {
-    resolver.reject = () => {
+    resolver.reject = (e?: Error) => {
       resolver.completed = true;
       resolver.rejected = true;
-      reject();
+      reject(e);
     };
     resolver.resolve = (data: T) => {
       resolver.completed = true;

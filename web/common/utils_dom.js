@@ -43,6 +43,10 @@ export function getClosestOrSelf(element, query) {
     const el = element;
     return ((el === null || el === void 0 ? void 0 : el.closest) && (el.matches(query) && el || el.closest(query))) || null;
 }
+export function containsOrSelf(parent, contained) {
+    var _a;
+    return parent === contained || ((_a = parent === null || parent === void 0 ? void 0 : parent.contains) === null || _a === void 0 ? void 0 : _a.call(parent, contained)) || false;
+}
 export function createElement(selectorOrMarkup, attrs) {
     const frag = getHtmlFragment(selectorOrMarkup);
     let element = frag === null || frag === void 0 ? void 0 : frag.firstElementChild;
@@ -75,6 +79,7 @@ export function createElement(selectorOrMarkup, attrs) {
     }
     return element;
 }
+export const $el = createElement;
 function getSelectorTag(str) {
     return tryMatch(str, RGX_TAG);
 }
@@ -226,8 +231,8 @@ export function setAttribute(element, attribute, value) {
             element.dataset[key] = String(val);
         }
     }
-    else if (attribute == 'onclick' && typeof value === 'function') {
-        element.addEventListener('click', value);
+    else if (attribute.startsWith('on') && typeof value === 'function') {
+        element.addEventListener(attribute.substring(2), value);
     }
     else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
         element[attribute] = !!value;

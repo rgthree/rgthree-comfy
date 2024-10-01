@@ -16,7 +16,7 @@ import execution
 
 from .py.log import log
 from .py.config import get_config_value
-from .py.rgthree_server import *
+from .py.server.rgthree_server import *
 
 from .py.context import RgthreeContext
 from .py.context_switch import RgthreeContextSwitch

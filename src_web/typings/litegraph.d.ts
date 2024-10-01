@@ -648,7 +648,7 @@ export declare class LGraph {
     clearTriggeredSlots(): void;
     /* Called when something visually changed (not the graph!) */
     change(): void;
-    setDirtyCanvas(fg: boolean, bg: boolean): void;
+    setDirtyCanvas(fg: boolean, bg?: boolean): void;
     /** Destroys a link */
     removeLink(link_id: number): void;
     /** Creates a Object containing all the info about this graph, it can be serialized */
@@ -1048,7 +1048,7 @@ export declare class LGraphNode {
     /** Console output */
     trace(msg: string): void;
     /** Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
-    setDirtyCanvas(fg: boolean, bg: boolean): void;
+    setDirtyCanvas(fg: boolean, bg?: boolean): void;
     loadImage(url: string): void;
     /** Allows to get onMouseMove and onMouseUp events even if the mouse is out of focus */
     captureInput(v: any): void;
@@ -1521,7 +1521,7 @@ export declare class LGraphCanvas {
      * @param fg if the foreground canvas is dirty (the one containing the nodes)
      * @param bg if the background canvas is dirty (the one containing the wires)
      */
-    setDirty(fg: boolean, bg: boolean): void;
+    setDirty(fg: boolean, bg?: boolean): void;
 
     /**
      * Used to attach the canvas in a popup

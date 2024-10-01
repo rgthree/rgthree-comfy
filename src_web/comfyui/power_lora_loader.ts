@@ -30,9 +30,9 @@ import {
 import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 import { showLoraChooser } from "./utils_menu.js";
 import { moveArrayItem, removeArrayItem } from "rgthree/common/shared_utils.js";
-import { RgthreeInfoDialog } from "./dialog_info.js";
+import { RgthreeLoraInfoDialog } from "./dialog_info.js";
 import type { RgthreeModelInfo } from "typings/rgthree.js";
-import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
+import { LORA_INFO_SERVICE } from "rgthree/common/model_info_service.js";
 // import { RgthreePowerLoraChooserDialog } from "./dialog_power_lora_chooser.js";
 
 const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
@@ -761,7 +761,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     if (!this.value.lora || this.value.lora === "None") {
       return;
     }
-    const infoDialog = new RgthreeInfoDialog(this.value.lora).show();
+    const infoDialog = new RgthreeLoraInfoDialog(this.value.lora).show();
     infoDialog.addEventListener("close", ((e: CustomEvent<{ dirty: boolean }>) => {
       if (e.detail.dirty) {
         this.getLoraInfo(true);
@@ -780,7 +780,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     if (!this.loraInfoPromise || force == true) {
       let promise;
       if (this.value.lora && this.value.lora != "None") {
-        promise = MODEL_INFO_SERVICE.getLora(this.value.lora, force, true);
+        promise = LORA_INFO_SERVICE.getInfo(this.value.lora, force, true);
       } else {
         promise = Promise.resolve(null);
       }

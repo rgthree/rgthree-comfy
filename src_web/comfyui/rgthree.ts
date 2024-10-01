@@ -8,16 +8,16 @@ import type {
   AdjustedMouseEvent,
   IContextMenuOptions,
 } from "typings/litegraph.js";
-import type { ComfyApiFormat, ComfyApiPrompt, ComfyApp } from "typings/comfy.js";
-import { app } from "scripts/app.js";
-import { api } from "scripts/api.js";
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
-import { fixBadLinks } from "rgthree/common/link_fixer.js";
-import { injectCss, wait } from "rgthree/common/shared_utils.js";
-import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
-import { NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree } from "./constants.js";
-import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
-import { RgthreeConfigDialog } from "./config.js";
+import type {ComfyApiFormat, ComfyApiPrompt, ComfyApp} from "typings/comfy.js";
+import {app} from "scripts/app.js";
+import {api} from "scripts/api.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import {fixBadLinks} from "rgthree/common/link_fixer.js";
+import {injectCss, wait} from "rgthree/common/shared_utils.js";
+import {replaceNode, waitForCanvas, waitForGraph} from "./utils.js";
+import {NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree} from "./constants.js";
+import {RgthreeProgressBar} from "rgthree/common/progress_bar.js";
+import {RgthreeConfigDialog} from "./config.js";
 import {
   iconGear,
   iconNode,
@@ -25,8 +25,8 @@ import {
   iconStarFilled,
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
-import type { Bookmark } from "./bookmark.js";
-import { createElement, query, queryOne } from "rgthree/common/utils_dom.js";
+import type {Bookmark} from "./bookmark.js";
+import {createElement, query, queryOne} from "rgthree/common/utils_dom.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -37,7 +37,7 @@ export enum LogLevel {
   DEV,
 }
 
-const LogLevelKeyToLogLevel: { [key: string]: LogLevel } = {
+const LogLevelKeyToLogLevel: {[key: string]: LogLevel} = {
   IMPORTANT: LogLevel.IMPORTANT,
   ERROR: LogLevel.ERROR,
   WARN: LogLevel.WARN,
@@ -47,7 +47,7 @@ const LogLevelKeyToLogLevel: { [key: string]: LogLevel } = {
 };
 
 type ConsoleLogFns = "log" | "error" | "warn" | "debug" | "info";
-const LogLevelToMethod: { [key in LogLevel]: ConsoleLogFns } = {
+const LogLevelToMethod: {[key in LogLevel]: ConsoleLogFns} = {
   [LogLevel.IMPORTANT]: "log",
   [LogLevel.ERROR]: "error",
   [LogLevel.WARN]: "warn",
@@ -55,7 +55,7 @@ const LogLevelToMethod: { [key in LogLevel]: ConsoleLogFns } = {
   [LogLevel.DEBUG]: "log",
   [LogLevel.DEV]: "log",
 };
-const LogLevelToCSS: { [key in LogLevel]: string } = {
+const LogLevelToCSS: {[key in LogLevel]: string} = {
   [LogLevel.IMPORTANT]: "font-weight: bold; color: blue;",
   [LogLevel.ERROR]: "",
   [LogLevel.WARN]: "",
@@ -65,6 +65,19 @@ const LogLevelToCSS: { [key in LogLevel]: string } = {
 };
 
 let GLOBAL_LOG_LEVEL = LogLevel.ERROR;
+
+/**
+ * At some point in Summer of 2024 ComfyUI broke third-party api calls by assuming api paths follow
+ * a certain structure. However, rgthree-comfy wants an `/rgthree/` prefix for that same reason, so
+ * we overwrite the apiUrl method to fix.
+ */
+const apiURL = api.apiURL;
+api.apiURL = function (route: string): string {
+  if (route.includes("rgthree/")) {
+    return (this.api_base + "/" + route).replace(/\/\//g, "/");
+  }
+  return apiURL.apply(this, arguments as any);
+};
 
 /**
  * A blocklist of extensions to disallow hooking into rgthree's base classes when calling the
@@ -131,7 +144,7 @@ class Logger {
  */
 class LogSession {
   readonly logger = new Logger();
-  readonly logsCache: { [key: string]: { lastShownTime: number } } = {};
+  readonly logsCache: {[key: string]: {lastShownTime: number}} = {};
 
   constructor(readonly name?: string) {}
 
@@ -162,7 +175,7 @@ class LogSession {
     }
     const parts = this.logger.logParts(level, message, ...args);
     if (console[parts[0]]) {
-      this.logsCache[cacheKey] = this.logsCache[cacheKey] || ({} as { lastShownTime: number });
+      this.logsCache[cacheKey] = this.logsCache[cacheKey] || ({} as {lastShownTime: number});
       this.logsCache[cacheKey]!.lastShownTime = now;
     }
     return parts;
@@ -356,7 +369,7 @@ class Rgthree extends EventTarget {
     LGraphCanvas.prototype.processMouseDown = function (e: AdjustedMouseEvent) {
       rgthree.processingMouseDown = true;
       const returnVal = processMouseDown.apply(this, [...arguments] as any);
-      rgthree.dispatchCustomEvent("on-process-mouse-down", { originalEvent: e });
+      rgthree.dispatchCustomEvent("on-process-mouse-down", {originalEvent: e});
       rgthree.processingMouseDown = false;
       return returnVal;
     };
@@ -437,9 +450,9 @@ class Rgthree extends EventTarget {
             const [n, v] = this.logParts(
               LogLevel.ERROR,
               `Error calling extension '${ext.name}' method '${method}' for rgthree-node.`,
-              { error },
-              { extension: ext },
-              { args },
+              {error},
+              {extension: ext},
+              {args},
             );
             console[n]?.(...v);
           }
@@ -453,7 +466,7 @@ class Rgthree extends EventTarget {
    */
   private dispatchCustomEvent(event: string, detail?: any) {
     if (detail != null) {
-      return this.dispatchEvent(new CustomEvent(event, { detail }));
+      return this.dispatchEvent(new CustomEvent(event, {detail}));
     }
     return this.dispatchEvent(new CustomEvent(event));
   }
@@ -545,7 +558,7 @@ class Rgthree extends EventTarget {
             canvas.selectNode(node);
             app.graph.setDirtyCanvas(true, true);
           },
-          extra: { rgthree_doNotNest: true },
+          extra: {rgthree_doNotNest: true},
         },
       },
 

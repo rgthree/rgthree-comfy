@@ -1,12 +1,12 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, query, setAttributes, } from "../../rgthree/common/utils_dom.js";
 import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
-import { SERVICE as MODEL_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
+import { LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "../../rgthree/common/menu.js";
 import { generateId, injectCss } from "../../rgthree/common/shared_utils.js";
-export class RgthreeInfoDialog extends RgthreeDialog {
-    constructor(file) {
+class RgthreeInfoDialog extends RgthreeDialog {
+    constructor(file, type = "lora") {
         const dialogOptions = {
             class: "rgthree-info-dialog",
             title: `<h2>Loading...</h2>`,
@@ -23,7 +23,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     async init(file) {
         var _a, _b;
         const cssPromise = injectCss("rgthree/common/css/dialog_model_info.css");
-        this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
+        this.modelInfo = await this.getModelInfo(file);
         await cssPromise;
         this.setContent(this.getInfoContent());
         this.setTitle(((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a["name"]) || ((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["file"]) || "Unknown");
@@ -52,7 +52,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             return;
         }
         if (action === "fetch-civitai") {
-            this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
+            this.modelInfo = await this.refreshModelInfo(info.file);
             this.setContent(this.getInfoContent());
             this.setTitle(((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a["name"]) || ((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["file"]) || "Unknown");
         }
@@ -179,7 +179,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
               -->${imgInfoField("model", img.model)}<!--
               -->${imgInfoField("positive", img.positive)}<!--
               -->${imgInfoField("negative", img.negative)}<!--
-            --><!--${''}--></figcaption>
+            --><!--${""}--></figcaption>
           </figure>
         </li>`).join("")) !== null && _y !== void 0 ? _y : ""}</ul>
     `;
@@ -205,7 +205,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
                                 callback: async (e) => {
                                     var _a, _b, _c;
                                     if ((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a.file) {
-                                        this.modelInfo = await MODEL_INFO_SERVICE.clearLoraFetchedData(this.modelInfo.file);
+                                        this.modelInfo = await LORA_INFO_SERVICE.clearFetchedInfo(this.modelInfo.file);
                                         this.setContent(this.getInfoContent());
                                         this.setTitle(((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["name"]) || ((_c = this.modelInfo) === null || _c === void 0 ? void 0 : _c["file"]) || "Unknown");
                                     }
@@ -217,6 +217,17 @@ export class RgthreeInfoDialog extends RgthreeDialog {
             });
         }
         return div;
+    }
+}
+export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
+    async getModelInfo(file) {
+        return LORA_INFO_SERVICE.getInfo(file, false, false);
+    }
+    async refreshModelInfo(file) {
+        return LORA_INFO_SERVICE.refreshInfo(file);
+    }
+    async clearModelInfo(file) {
+        return LORA_INFO_SERVICE.clearFetchedInfo(file);
     }
 }
 function infoTableRow(name, value, help = "", editableFieldName = "") {
@@ -256,7 +267,7 @@ function saveEditableRow(info, tr, saving = true) {
             }
             newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
         }
-        MODEL_INFO_SERVICE.saveLoraPartial(info.file, { [fieldName]: newValue });
+        LORA_INFO_SERVICE.savePartialInfo(info.file, { [fieldName]: newValue });
         modified = true;
     }
     tr.classList.remove("-rgthree-editing");

@@ -1,4 +1,4 @@
-import { RgthreeDialog, RgthreeDialogOptions } from "rgthree/common/dialog.js";
+import {RgthreeDialog, RgthreeDialogOptions} from "rgthree/common/dialog.js";
 import {
   createElement as $el,
   empty,
@@ -15,21 +15,21 @@ import {
   diskColored,
   dotdotdot,
 } from "rgthree/common/media/svgs.js";
-import { RgthreeModelInfo } from "typings/rgthree.js";
-import { SERVICE as MODEL_INFO_SERVICE } from "rgthree/common/model_info_service.js";
-import { rgthree } from "./rgthree.js";
-import { MenuButton } from "rgthree/common/menu.js";
-import { generateId, injectCss } from "rgthree/common/shared_utils.js";
-import { rgthreeApi } from "rgthree/common/rgthree_api.js";
+import {RgthreeModelInfo} from "typings/rgthree.js";
+import {LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
+import {rgthree} from "./rgthree.js";
+import {MenuButton} from "rgthree/common/menu.js";
+import {generateId, injectCss} from "rgthree/common/shared_utils.js";
+import {rgthreeApi} from "rgthree/common/rgthree_api.js";
 
 /**
  * A dialog that displays information about a model/lora/etc.
  */
-export class RgthreeInfoDialog extends RgthreeDialog {
+abstract class RgthreeInfoDialog extends RgthreeDialog {
   private modifiedModelData = false;
   private modelInfo: RgthreeModelInfo | null = null;
 
-  constructor(file: string) {
+  constructor(file: string, type: string = "lora") {
     const dialogOptions: RgthreeDialogOptions = {
       class: "rgthree-info-dialog",
       title: `<h2>Loading...</h2>`,
@@ -42,20 +42,24 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     this.init(file);
   }
 
+  abstract getModelInfo(file: string): Promise<RgthreeModelInfo | null>;
+  abstract refreshModelInfo(file: string): Promise<RgthreeModelInfo | null>;
+  abstract clearModelInfo(file: string): Promise<RgthreeModelInfo | null>;
+
   private async init(file: string) {
     const cssPromise = injectCss("rgthree/common/css/dialog_model_info.css");
-    this.modelInfo = await MODEL_INFO_SERVICE.getLora(file, false, false);
+    this.modelInfo = await this.getModelInfo(file);
     await cssPromise;
     this.setContent(this.getInfoContent());
     this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
     this.attachEvents();
   }
 
-  protected override getCloseEventDetail(): { detail: any } {
+  protected override getCloseEventDetail(): {detail: any} {
     const detail = {
       dirty: this.modifiedModelData,
     };
-    return { detail };
+    return {detail};
   }
 
   private attachEvents() {
@@ -75,7 +79,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
       return;
     }
     if (action === "fetch-civitai") {
-      this.modelInfo = await MODEL_INFO_SERVICE.refreshLora(info.file);
+      this.modelInfo = await this.refreshModelInfo(info.file);
       this.setContent(this.getInfoContent());
       this.setTitle(this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown");
     } else if (action === "copy-trained-words") {
@@ -97,7 +101,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
         const span = queryOne("td:first-child > *", tr)!;
         let small = queryOne("small", span);
         if (!small) {
-          small = $el("small", { parent: span });
+          small = $el("small", {parent: span});
         }
         const num = query(".-rgthree-is-selected", tr).length;
         small.innerHTML = num
@@ -172,18 +176,18 @@ export class RgthreeInfoDialog extends RgthreeDialog {
                 `<a href="${civitaiLink}" target="_blank">${logoCivitai}View on Civitai</a>`,
               )
             : info.raw?.civitai?.error === "Model not found"
-            ? infoTableRow(
-                "Civitai",
-                '<i>Model not found</i> <span class="-help" title="The model was not found on civitai with the sha256 hash. It\'s possible the model was removed, re-uploaded, or was never on civitai to begin with."></span>',
-              )
-            : info.raw?.civitai?.error
-            ? infoTableRow("Civitai", info.raw?.civitai?.error)
-            : !info.raw?.civitai
-            ? infoTableRow(
-                "Civitai",
-                `<button class="rgthree-button" data-action="fetch-civitai">Fetch info from civitai</button>`,
-              )
-            : ""
+              ? infoTableRow(
+                  "Civitai",
+                  '<i>Model not found</i> <span class="-help" title="The model was not found on civitai with the sha256 hash. It\'s possible the model was removed, re-uploaded, or was never on civitai to begin with."></span>',
+                )
+              : info.raw?.civitai?.error
+                ? infoTableRow("Civitai", info.raw?.civitai?.error)
+                : !info.raw?.civitai
+                  ? infoTableRow(
+                      "Civitai",
+                      `<button class="rgthree-button" data-action="fetch-civitai">Fetch info from civitai</button>`,
+                    )
+                  : ""
         }
 
         ${infoTableRow(
@@ -268,7 +272,8 @@ export class RgthreeInfoDialog extends RgthreeDialog {
               -->${imgInfoField("model", img.model)}<!--
               -->${imgInfoField("positive", img.positive)}<!--
               -->${imgInfoField("negative", img.negative)}<!--
-            --><!--${''
+            --><!--${
+              ""
               //   img.resources?.length
               //     ? `
               //   <tr><td>Resources</td><td><ul>
@@ -284,7 +289,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
               //   </ul></td></tr>
               // `
               //     : ""
-              }--></figcaption>
+            }--></figcaption>
           </figure>
         </li>`,
           )
@@ -292,7 +297,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
       }</ul>
     `;
 
-    const div = $el("div", { html });
+    const div = $el("div", {html});
 
     if (rgthree.isDevMode()) {
       setAttributes(queryOne('[stub="menu"]', div)!, {
@@ -300,7 +305,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
           new MenuButton({
             icon: dotdotdot,
             options: [
-              { label: "More Actions", type: "title" },
+              {label: "More Actions", type: "title"},
               {
                 label: "Open API JSON",
                 callback: async (e: PointerEvent) => {
@@ -315,9 +320,7 @@ export class RgthreeInfoDialog extends RgthreeDialog {
                 label: "Clear all local info",
                 callback: async (e: PointerEvent) => {
                   if (this.modelInfo?.file) {
-                    this.modelInfo = await MODEL_INFO_SERVICE.clearLoraFetchedData(
-                      this.modelInfo.file,
-                    );
+                    this.modelInfo = await LORA_INFO_SERVICE.clearFetchedInfo(this.modelInfo.file);
                     this.setContent(this.getInfoContent());
                     this.setTitle(
                       this.modelInfo?.["name"] || this.modelInfo?.["file"] || "Unknown",
@@ -332,6 +335,18 @@ export class RgthreeInfoDialog extends RgthreeDialog {
     }
 
     return div;
+  }
+}
+
+export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
+  override async getModelInfo(file: string) {
+    return LORA_INFO_SERVICE.getInfo(file, false, false);
+  }
+  override async refreshModelInfo(file: string) {
+    return LORA_INFO_SERVICE.refreshInfo(file);
+  }
+  override async clearModelInfo(file: string) {
+    return LORA_INFO_SERVICE.clearFetchedInfo(file);
   }
 }
 
@@ -392,12 +407,12 @@ function saveEditableRow(info: RgthreeModelInfo, tr: HTMLElement, saving = true)
       }
       newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
     }
-    MODEL_INFO_SERVICE.saveLoraPartial(info.file!, { [fieldName]: newValue });
+    LORA_INFO_SERVICE.savePartialInfo(info.file!, {[fieldName]: newValue});
     modified = true;
   }
   tr.classList.remove("-rgthree-editing");
   const td = queryOne("td:nth-child(2)", tr)!;
-  appendChildren(empty(td), [$el("span", { text: newValue })]);
+  appendChildren(empty(td), [$el("span", {text: newValue})]);
   return modified;
 }
 

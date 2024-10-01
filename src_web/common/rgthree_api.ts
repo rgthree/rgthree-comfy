@@ -1,4 +1,6 @@
-import type { RgthreeModelInfo } from "typings/rgthree.js";
+import type {RgthreeModelInfo} from "typings/rgthree.js";
+
+type ModelInfoType = "loras";
 
 class RgthreeApi {
   private baseUrl: string;
@@ -28,12 +30,12 @@ class RgthreeApi {
   async postJson(route: string, json: any) {
     const body = new FormData();
     body.append("json", JSON.stringify(json));
-    return await rgthreeApi.fetchJson(route, { method: "POST", body });
+    return await rgthreeApi.fetchJson(route, {method: "POST", body});
   }
 
   getLoras(force = false) {
     if (!this.getLorasPromise || force) {
-      this.getLorasPromise = this.fetchJson("/loras", { cache: "no-store" });
+      this.getLorasPromise = this.fetchJson("/loras", {cache: "no-store"});
     }
     return this.getLorasPromise;
   }
@@ -55,45 +57,64 @@ class RgthreeApi {
   async getLorasInfo(lora: string, light?: boolean): Promise<RgthreeModelInfo | null>;
   async getLorasInfo(light?: boolean): Promise<RgthreeModelInfo[] | null>;
   async getLorasInfo(...args: any) {
-    const params = new URLSearchParams();
-    const isSingleLora = typeof args[0] == 'string';
-    if (isSingleLora) {
-      params.set("file", args[0]);
-    }
-    params.set("light", (isSingleLora ? args[1] : args[0]) === false ? '0' : '1');
-    const path = `/loras/info?` + params.toString();
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo[]|RgthreeModelInfo>(path);
+    return this.getModelInfo("loras", ...args);
   }
 
   async refreshLorasInfo(file: string): Promise<RgthreeModelInfo | null>;
   async refreshLorasInfo(): Promise<RgthreeModelInfo[] | null>;
   async refreshLorasInfo(file?: string) {
-    const path = `/loras/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : '');
-    const infos = await this.fetchApiJsonOrNull<RgthreeModelInfo[]|RgthreeModelInfo>(path);
-    return infos;
+    return this.refreshModelInfo("loras", file);
   }
 
   async clearLorasInfo(file?: string): Promise<void> {
-    const path = `/loras/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : '');
-    await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
-    return;
+    return this.clearModelInfo("loras", file);
   }
 
   /**
    * Saves partial data sending it to the backend..
    */
   async saveLoraInfo(
-    lora: string,
+    file: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null> {
+    return this.saveModelInfo("loras", file, data);
+  }
+
+  private async getModelInfo(type: ModelInfoType, ...args: any) {
+    const params = new URLSearchParams();
+    const isSingle = typeof args[0] == "string";
+    if (isSingle) {
+      params.set("file", args[0]);
+    }
+    params.set("light", (isSingle ? args[1] : args[0]) === false ? "0" : "1");
+    const path = `/${type}/info?` + params.toString();
+    return await this.fetchApiJsonOrNull<RgthreeModelInfo[] | RgthreeModelInfo>(path);
+  }
+
+  private async refreshModelInfo(type: ModelInfoType, file?: string) {
+    const path = `/${type}/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : "");
+    const infos = await this.fetchApiJsonOrNull<RgthreeModelInfo[] | RgthreeModelInfo>(path);
+    return infos;
+  }
+
+  private async clearModelInfo(type: ModelInfoType, file?: string) {
+    const path = `/${type}/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : "");
+    await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
+    return;
+  }
+
+  private async saveModelInfo(
+    type: ModelInfoType,
+    file: string,
     data: Partial<RgthreeModelInfo>,
   ): Promise<RgthreeModelInfo | null> {
     const body = new FormData();
     body.append("json", JSON.stringify(data));
     return await this.fetchApiJsonOrNull<RgthreeModelInfo>(
-      `/loras/info?file=${encodeURIComponent(lora)}`,
-      { cache: "no-store", method: "POST", body },
+      `/${type}/info?file=${encodeURIComponent(file)}`,
+      {cache: "no-store", method: "POST", body},
     );
   }
-
 }
 
 export const rgthreeApi = new RgthreeApi();

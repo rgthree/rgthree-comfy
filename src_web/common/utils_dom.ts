@@ -63,6 +63,10 @@ export function getClosestOrSelf(element: EventTarget|HTMLElement|null, query: s
   return (el?.closest && (el.matches(query) && el || el.closest(query)) as HTMLElement) || null;
 }
 
+export function containsOrSelf(parent: EventTarget|HTMLElement|null, contained: EventTarget|HTMLElement|null) : boolean {
+  return parent === contained || (parent as HTMLElement)?.contains?.(contained as HTMLElement) || false;
+}
+
 type Attrs = {
   [name: string]: any;
 };
@@ -103,6 +107,7 @@ export function createElement<T extends HTMLElement>(selectorOrMarkup: string, a
   }
   return element as T;
 }
+export const $el = createElement;
 
 function getSelectorTag(str: string) {
   return tryMatch(str, RGX_TAG);
@@ -265,8 +270,8 @@ export function setAttribute(element: HTMLElement, attribute: string, value: any
       element.dataset[key] = String(val);
     }
 
-  } else if (attribute == 'onclick' && typeof value === 'function') {
-    element.addEventListener('click', value);
+  } else if (attribute.startsWith('on') && typeof value === 'function') {
+    element.addEventListener(attribute.substring(2), value);
 
   } else if (['checked', 'disabled', 'readonly', 'required', 'selected'].includes(attribute)) {
     // Could be input, button, etc. We are not discriminate.

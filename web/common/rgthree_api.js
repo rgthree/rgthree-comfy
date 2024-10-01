@@ -36,29 +36,41 @@ class RgthreeApi {
         return null;
     }
     async getLorasInfo(...args) {
-        const params = new URLSearchParams();
-        const isSingleLora = typeof args[0] == 'string';
-        if (isSingleLora) {
-            params.set("file", args[0]);
-        }
-        params.set("light", (isSingleLora ? args[1] : args[0]) === false ? '0' : '1');
-        const path = `/loras/info?` + params.toString();
-        return await this.fetchApiJsonOrNull(path);
+        return this.getModelInfo("loras", ...args);
     }
     async refreshLorasInfo(file) {
-        const path = `/loras/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : '');
+        return this.refreshModelInfo("loras", file);
+    }
+    async clearLorasInfo(file) {
+        return this.clearModelInfo("loras", file);
+    }
+    async saveLoraInfo(file, data) {
+        return this.saveModelInfo("loras", file, data);
+    }
+    async getModelInfo(type, ...args) {
+        const params = new URLSearchParams();
+        const isSingle = typeof args[0] == "string";
+        if (isSingle) {
+            params.set("file", args[0]);
+        }
+        params.set("light", (isSingle ? args[1] : args[0]) === false ? "0" : "1");
+        const path = `/${type}/info?` + params.toString();
+        return await this.fetchApiJsonOrNull(path);
+    }
+    async refreshModelInfo(type, file) {
+        const path = `/${type}/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : "");
         const infos = await this.fetchApiJsonOrNull(path);
         return infos;
     }
-    async clearLorasInfo(file) {
-        const path = `/loras/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : '');
+    async clearModelInfo(type, file) {
+        const path = `/${type}/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : "");
         await this.fetchApiJsonOrNull(path);
         return;
     }
-    async saveLoraInfo(lora, data) {
+    async saveModelInfo(type, file, data) {
         const body = new FormData();
         body.append("json", JSON.stringify(data));
-        return await this.fetchApiJsonOrNull(`/loras/info?file=${encodeURIComponent(lora)}`, { cache: "no-store", method: "POST", body });
+        return await this.fetchApiJsonOrNull(`/${type}/info?file=${encodeURIComponent(file)}`, { cache: "no-store", method: "POST", body });
     }
 }
 export const rgthreeApi = new RgthreeApi();

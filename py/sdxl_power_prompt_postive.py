@@ -149,20 +149,29 @@ class RgthreeSDXLPowerPromptPositive:
     """Checks the inputs and gets the conditioning."""
     conditioning = None
     if opt_clip is not None:
-      if opt_clip_width and opt_clip_height:
+      do_regular_clip_text_encode = opt_clip_width and opt_clip_height
+      if do_regular_clip_text_encode:
         target_width = target_width if target_width and target_width > 0 else opt_clip_width
         target_height = target_height if target_height and target_height > 0 else opt_clip_height
         crop_width = crop_width if crop_width and crop_width > 0 else 0
         crop_height = crop_height if crop_height and crop_height > 0 else 0
-        conditioning = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
-                                                   crop_width, crop_height, target_width,
-                                                   target_height, prompt_g, prompt_l)[0]
+        try:
+          conditioning = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
+                                                     crop_width, crop_height, target_width,
+                                                     target_height, prompt_g, prompt_l)[0]
+        except Exception:
+          do_regular_clip_text_encode = True
+          log_node_info(
+            self.NAME,
+            'Exception while attempting to CLIPTextEncodeSDXL, will fall back to standard encoding.'
+          )
       else:
-        # If we got an opt_clip, but no clip_width or _height, then use normal CLIPTextEncode
         log_node_info(
           self.NAME,
-          'CLIP supplied, but not CLIP_WIDTH and CLIP_HEIGHT. Text encoding will use standard encoding with prompt_g and prompt_l concatenated.'
-        )
+          'CLIP supplied, but not CLIP_WIDTH and CLIP_HEIGHT. Text encoding will use standard ' +
+          'encoding with prompt_g and prompt_l concatenated.')
+
+      if not do_regular_clip_text_encode:
         conditioning = CLIPTextEncode().encode(
           opt_clip, f'{prompt_g if prompt_g else ""}\n{prompt_l if prompt_l else ""}')[0]
     return conditioning
