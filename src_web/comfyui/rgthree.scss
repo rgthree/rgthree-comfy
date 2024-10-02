@@ -294,7 +294,7 @@ rgthree-progress-bar {
     inset 0px 1px 0px rgba(255, 255, 255, 0.15), inset 0px -1px 0px rgba(0, 0, 0, 0.25), 0px 1px 0px rgba(255, 255, 255, 0.125);
 }
 
-body:not([style*=grid]){
+body:not([style*=grid]):not([class*=grid]) {
   rgthree-progress-bar {
     position: fixed;
     top: 0px;
