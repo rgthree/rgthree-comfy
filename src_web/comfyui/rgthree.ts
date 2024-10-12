@@ -943,18 +943,18 @@ class Rgthree extends EventTarget {
     return this.logger.newSession(name);
   }
 
+  isDebugMode() {
+    if (window.location.href.includes("rgthree-debug=false")) {
+      return false;
+    }
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-debug");
+  }
+
   isDevMode() {
     if (window.location.href.includes("rgthree-dev=false")) {
       return false;
     }
-    return GLOBAL_LOG_LEVEL >= LogLevel.DEBUG || window.location.href.includes("rgthree-dev");
-  }
-
-  isDebugMode() {
-    if (!this.isDevMode() || window.location.href.includes("rgthree-debug=false")) {
-      return false;
-    }
-    return window.location.href.includes("rgthree-debug");
+    return GLOBAL_LOG_LEVEL >= LogLevel.DEV || window.location.href.includes("rgthree-dev");
   }
 
   monitorBadLinks() {

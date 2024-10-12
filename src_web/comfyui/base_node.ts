@@ -20,6 +20,7 @@ import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
+import { defineProperty } from "rgthree/common/shared_utils.js";
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -57,7 +58,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   _tempWidth = 0;
 
   /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
-  private mode_: NodeMode;
+  private rgthree_mode: NodeMode;
   /** An internal bool set when `onConstructed` is run. */
   private __constructed__ = false;
   /** The help dialog. */
@@ -81,6 +82,19 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       }
       // Ensure we've called onConstructed before we got here.
       this.checkAndRunOnConstructed();
+    });
+
+    defineProperty(this, 'mode', {
+      get: () => {
+        return this.rgthree_mode;
+      },
+      set: (mode: NodeMode) => {
+        if (this.rgthree_mode != mode) {
+          const oldMode = this.rgthree_mode;
+          this.rgthree_mode = mode;
+          this.onModeChange(oldMode, mode);
+        }
+      },
     });
   }
 
@@ -142,18 +156,6 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       cloned.properties = structuredClone(cloned.properties);
     }
     return cloned;
-  }
-
-  // @ts-ignore - Changing the property to an accessor here seems to work, but ts compiler complains.
-  override set mode(mode: NodeMode) {
-    if (this.mode_ != mode) {
-      const oldMode = this.mode_;
-      this.mode_ = mode;
-      this.onModeChange(oldMode, mode);
-    }
-  }
-  override get mode() {
-    return this.mode_;
   }
 
   /** When a mode change, we want all connected nodes to match. */

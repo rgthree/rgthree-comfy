@@ -5,6 +5,7 @@ import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
+import { defineProperty } from "../../rgthree/common/shared_utils.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
@@ -27,6 +28,18 @@ export class RgthreeBaseNode extends LGraphNode {
                 throw new Error("RgthreeBaseNode needs a comfy class override.");
             }
             this.checkAndRunOnConstructed();
+        });
+        defineProperty(this, 'mode', {
+            get: () => {
+                return this.rgthree_mode;
+            },
+            set: (mode) => {
+                if (this.rgthree_mode != mode) {
+                    const oldMode = this.rgthree_mode;
+                    this.rgthree_mode = mode;
+                    this.onModeChange(oldMode, mode);
+                }
+            },
         });
     }
     checkAndRunOnConstructed() {
@@ -71,16 +84,6 @@ export class RgthreeBaseNode extends LGraphNode {
             cloned.properties = structuredClone(cloned.properties);
         }
         return cloned;
-    }
-    set mode(mode) {
-        if (this.mode_ != mode) {
-            const oldMode = this.mode_;
-            this.mode_ = mode;
-            this.onModeChange(oldMode, mode);
-        }
-    }
-    get mode() {
-        return this.mode_;
     }
     onModeChange(from, to) {
     }

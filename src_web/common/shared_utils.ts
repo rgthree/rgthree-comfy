@@ -177,3 +177,37 @@ export function injectCss(href: string): Promise<void> {
     document.head.appendChild(link);
   });
 }
+
+/**
+ * Calls `Object.defineProperty` with special care around getters and setters to call out to a
+ * parent getter or setter (like a super.set call)   to ensure any side effects up the chain
+ * are still invoked.
+ */
+export function defineProperty(instance: any, property: string, desc: PropertyDescriptor) {
+  const existingDesc = Object.getOwnPropertyDescriptor(instance, property);
+  if (existingDesc?.configurable === false) {
+    throw new Error(`Error: rgthree-comfy cannot define un-configurable property "${property}"`);
+  }
+
+  if (existingDesc?.get && desc.get) {
+    const descGet = desc.get;
+    desc.get = () => {
+      existingDesc.get!.apply(instance, []);
+      return descGet!.apply(instance, []);
+    };
+  }
+  if (existingDesc?.set && desc.set) {
+    const descSet = desc.set;
+    desc.set = (v: any) => {
+      existingDesc.set!.apply(instance, [v]);
+      return descSet!.apply(instance, [v]);
+    };
+  }
+
+  desc.enumerable = desc.enumerable ?? existingDesc?.enumerable ?? true;
+  desc.configurable = desc.configurable ?? existingDesc?.configurable ?? true;
+  if (!desc.get && !desc.set) {
+    desc.writable = desc.writable ?? existingDesc?.writable ?? true;
+  }
+  return Object.defineProperty(instance, property, desc);
+}
