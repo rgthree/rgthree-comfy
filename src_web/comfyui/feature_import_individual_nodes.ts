@@ -47,17 +47,20 @@ export async function importIndividualNodesInnerOnDragDrop(node: ComfyNode, e: D
   if (!handled && workflow) {
     const exact = (workflow.nodes || []).find((n) => n.id === node.id && n.type === node.type);
     if (
-      exact &&
-      exact.widgets_values?.length &&
+      exact?.widgets_values?.length &&
       confirm(
         "Found a node match from embedded workflow (same id & type) in this workflow. Would you like to set the widget values?",
       )
     ) {
-      node.configure({ widgets_values: [...(exact?.widgets_values || [])] } as any);
+      node.configure({
+        // Title is overridden if it's not supplied; set it to the current then.
+        title: node.title,
+        widgets_values: [...(exact?.widgets_values || [])]
+      } as any);
       handled = true;
     }
   }
-  if (!handled) {
+  if (!handled && workflow) {
     handled = !confirm(
       "No exact match found in workflow. Would you like to replace the whole workflow?",
     );

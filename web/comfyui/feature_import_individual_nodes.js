@@ -38,14 +38,16 @@ export async function importIndividualNodesInnerOnDragDrop(node, e) {
     const { workflow, prompt } = await tryToGetWorkflowDataFromEvent(e);
     if (!handled && workflow) {
         const exact = (workflow.nodes || []).find((n) => n.id === node.id && n.type === node.type);
-        if (exact &&
-            ((_b = exact.widgets_values) === null || _b === void 0 ? void 0 : _b.length) &&
+        if (((_b = exact === null || exact === void 0 ? void 0 : exact.widgets_values) === null || _b === void 0 ? void 0 : _b.length) &&
             confirm("Found a node match from embedded workflow (same id & type) in this workflow. Would you like to set the widget values?")) {
-            node.configure({ widgets_values: [...((exact === null || exact === void 0 ? void 0 : exact.widgets_values) || [])] });
+            node.configure({
+                title: node.title,
+                widgets_values: [...((exact === null || exact === void 0 ? void 0 : exact.widgets_values) || [])]
+            });
             handled = true;
         }
     }
-    if (!handled) {
+    if (!handled && workflow) {
         handled = !confirm("No exact match found in workflow. Would you like to replace the whole workflow?");
     }
     return handled;
