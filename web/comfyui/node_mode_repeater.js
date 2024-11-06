@@ -100,7 +100,7 @@ class NodeModeRepeater extends BaseCollectorNode {
         if (linkedNodes.length) {
             for (const node of linkedNodes) {
                 if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
-                    node.mode = this.mode;
+                    node.mode = to;
                 }
             }
         }
@@ -109,7 +109,9 @@ class NodeModeRepeater extends BaseCollectorNode {
                 group.recomputeInsideNodes();
                 if ((_b = group._nodes) === null || _b === void 0 ? void 0 : _b.includes(this)) {
                     for (const node of group._nodes) {
-                        node.mode = this.mode;
+                        if (node !== this) {
+                            node.mode = to;
+                        }
                     }
                 }
             }

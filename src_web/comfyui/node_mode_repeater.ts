@@ -167,7 +167,8 @@ class NodeModeRepeater extends BaseCollectorNode {
     if (linkedNodes.length) {
       for (const node of linkedNodes) {
         if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
-          node.mode = this.mode;
+          // Use "to" as there may be other getters in the way to access this.mode directly.
+          node.mode = to;
         }
       }
     } else if (app.graph._groups?.length) {
@@ -176,7 +177,10 @@ class NodeModeRepeater extends BaseCollectorNode {
         group.recomputeInsideNodes();
         if (group._nodes?.includes(this)) {
           for (const node of group._nodes) {
-            node.mode = this.mode;
+            if (node !== this) {
+              // Use "to" as there may be other getters in the way to access this.mode directly.
+              node.mode = to;
+            }
           }
         }
       }

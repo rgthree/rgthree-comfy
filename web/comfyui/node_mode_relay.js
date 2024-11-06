@@ -55,7 +55,7 @@ class NodeModeRelay extends BaseCollectorNode {
         if (this.inputs.length <= 1 && !this.isInputConnected(0) && this.isAnyOutputConnected()) {
             const [n, v] = logger.infoParts(`Mode change without any inputs; relaying our mode.`);
             (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
-            this.dispatchModeToRepeater(this.mode);
+            this.dispatchModeToRepeater(to);
         }
     }
     configure(info) {
