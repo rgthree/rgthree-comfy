@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
 import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
@@ -8,7 +9,7 @@ import { NodeTypesString, addRgthree, getNodeTypeStrings } from "./constants.js"
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
-import { query, queryOne } from "../../rgthree/common/utils_dom.js";
+import { createElement, query, queryOne } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -138,7 +139,6 @@ class Rgthree extends EventTarget {
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
-        this.elDebugKeydowns = null;
         this.isMac = !!(((_a = navigator.platform) === null || _a === void 0 ? void 0 : _a.toLocaleUpperCase().startsWith("MAC")) ||
             ((_c = (_b = navigator.userAgentData) === null || _b === void 0 ? void 0 : _b.platform) === null || _c === void 0 ? void 0 : _c.toLocaleUpperCase().startsWith("MAC")));
         const logLevel = (_d = LogLevelKeyToLogLevel[CONFIG_SERVICE.getConfigValue("log_level")]) !== null && _d !== void 0 ? _d : GLOBAL_LOG_LEVEL;
@@ -154,6 +154,16 @@ class Rgthree extends EventTarget {
                 this.initializeProgressBar();
             }
         }));
+        if (CONFIG_SERVICE.getConfigValue("debug.keys_down.enabled")) {
+            const elDebugKeydowns = createElement("div.rgthree-debug-keydowns", {
+                parent: document.body,
+            });
+            const updateDebugKeyDown = () => {
+                elDebugKeydowns.innerText = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" ");
+            };
+            KEY_EVENT_SERVICE.addEventListener("keydown", updateDebugKeyDown);
+            KEY_EVENT_SERVICE.addEventListener("keyup", updateDebugKeyDown);
+        }
     }
     async initializeProgressBar() {
         var _a;

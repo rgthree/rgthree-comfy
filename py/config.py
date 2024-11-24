@@ -99,6 +99,9 @@ def refresh_config():
   if "unreleased" in USER_CONFIG and "unreleased" not in RGTHREE_CONFIG:
     RGTHREE_CONFIG["unreleased"] = USER_CONFIG["unreleased"]
 
+  if "debug" in USER_CONFIG and "debug" not in RGTHREE_CONFIG:
+    RGTHREE_CONFIG["debug"] = USER_CONFIG["debug"]
+
 
 def get_config():
   """Returns the congfig."""

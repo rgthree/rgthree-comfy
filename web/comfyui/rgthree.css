@@ -627,10 +627,11 @@ body:not([style*=grid]):not([class*=grid]) rgthree-progress-bar.rgthree-pos-bott
 .rgthree-debug-keydowns {
   display: block;
   position: fixed;
-  z-index: 999;
+  z-index: 1050;
   top: 3px;
   right: 8px;
   font-size: 10px;
   color: #fff;
   font-family: sans-serif;
+  pointer-events: none;
 }

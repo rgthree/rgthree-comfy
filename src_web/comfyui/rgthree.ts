@@ -12,6 +12,7 @@ import type {ComfyApiFormat, ComfyApiPrompt, ComfyApp} from "typings/comfy.js";
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {fixBadLinks} from "rgthree/common/link_fixer.js";
 import {injectCss, wait} from "rgthree/common/shared_utils.js";
 import {replaceNode, waitForCanvas, waitForGraph} from "./utils.js";
@@ -242,8 +243,6 @@ class Rgthree extends EventTarget {
   canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
   initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff: any = null;
 
-  private elDebugKeydowns: HTMLDivElement | null = null;
-
   private readonly isMac: boolean = !!(
     navigator.platform?.toLocaleUpperCase().startsWith("MAC") ||
     (navigator as any).userAgentData?.platform?.toLocaleUpperCase().startsWith("MAC")
@@ -269,6 +268,17 @@ class Rgthree extends EventTarget {
         this.initializeProgressBar();
       }
     }) as EventListener);
+
+    if (CONFIG_SERVICE.getConfigValue("debug.keys_down.enabled")) {
+      const elDebugKeydowns = createElement<HTMLDivElement>("div.rgthree-debug-keydowns", {
+        parent: document.body,
+      });
+      const updateDebugKeyDown = () => {
+        elDebugKeydowns.innerText = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" ");
+      }
+      KEY_EVENT_SERVICE.addEventListener("keydown", updateDebugKeyDown);
+      KEY_EVENT_SERVICE.addEventListener("keyup", updateDebugKeyDown);
+    }
   }
 
   /**
