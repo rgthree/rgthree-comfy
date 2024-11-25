@@ -48,7 +48,16 @@ app.registerExtension({
       const onExecuted = nodeType.prototype.onExecuted;
       nodeType.prototype.onExecuted = function (message: any) {
         onExecuted?.apply(this, [message]);
-        (this as any).showValueWidget.value = message.text[0];
+        let displayText = message.text[0];
+        try {
+          if (typeof displayText === 'string' && 
+              (displayText.includes('\\u') || displayText.startsWith('"'))) {
+            displayText = JSON.parse(`"${displayText.replace(/^"|"$/g, '')}"`);
+          }
+        } catch (e) {
+          console.warn('Failed to decode Unicode text:', e);
+        }
+        (this as any).showValueWidget.value = displayText;
       };
     }
   },
