@@ -107,6 +107,7 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget {
         super(name);
         this.value = "";
         this.mouseUpCallback = mouseUpCallback;
+        this.type = "RgthreeBetterButtonWidget";
     }
     draw(ctx, node, width, y, height) {
         drawWidgetButton({ ctx, node, width, height, y }, this.name, this.isMouseDownedAndOver);
@@ -119,6 +120,7 @@ export class RgthreeBetterTextWidget {
     constructor(name, value) {
         this.name = name;
         this.value = value;
+        this.type = "RgthreeBetterTextWidget";
     }
     draw(ctx, node, width, y, height) {
         const widgetData = drawNodeWidget(ctx, { width, height, posY: y });
@@ -148,6 +150,7 @@ export class RgthreeDividerWidget {
             color: LiteGraph.WIDGET_OUTLINE_COLOR,
             thickness: 1,
         };
+        this.type = "RgthreeDividerWidget";
         Object.assign(this.widgetOptions, widgetOptions || {});
     }
     draw(ctx, node, width, posY, h) {
@@ -173,6 +176,7 @@ export class RgthreeLabelWidget {
         this.widgetOptions = {};
         this.posY = 0;
         this.name = name;
+        this.type = "RgthreeLabelWidget";
         Object.assign(this.widgetOptions, widgetOptions);
     }
     draw(ctx, node, width, posY, height) {
