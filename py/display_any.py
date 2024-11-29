@@ -32,7 +32,11 @@ class RgthreeDisplayAny:
 
   def main(self, source=None):
     value = 'None'
-    if source is not None:
+    if isinstance(source, str):
+      value = source
+    elif isinstance(source, (int, float, bool)):
+      value = str(source)
+    elif source is not None:
       try:
         value = json.dumps(source)
       except Exception:
