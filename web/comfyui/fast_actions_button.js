@@ -103,6 +103,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
     handleLinkedNodesStabilization(linkedNodes) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
+        let changed = false;
         for (const [widget, data] of this.widgetToData.entries()) {
             if (!data.node) {
                 continue;
@@ -112,6 +113,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                 if (index > -1) {
                     this.widgetToData.delete(widget);
                     this.removeWidget(widget);
+                    changed = true;
                 }
                 else {
                     const [m, a] = this.logger.debugParts("Connected widget is not in widgets... weird.");
@@ -139,6 +141,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     if (((_g = (_f = this.widgetToData.get(this.widgets[i])) === null || _f === void 0 ? void 0 : _f.node) === null || _g === void 0 ? void 0 : _g.id) === node.id) {
                         widget = this.widgets.splice(i, 1)[0];
                         this.widgets.splice(index + indexOffset, 0, widget);
+                        changed = true;
                         break;
                     }
                 }
@@ -151,6 +154,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                         return widget === null || widget === void 0 ? void 0 : widget.value;
                     };
                     this.widgetToData.set(widget, { node });
+                    changed = true;
                 }
             }
         }
@@ -160,7 +164,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                 continue;
             }
             this.removeWidget(widgetAtSlot);
+            changed = true;
         }
+        return changed;
     }
     removeWidget(widgetOrSlot) {
         const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;

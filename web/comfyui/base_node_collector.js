@@ -12,6 +12,7 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
         return cloned;
     }
     handleLinkedNodesStabilization(linkedNodes) {
+        return false;
     }
     onConnectInput(inputIndex, outputType, outputSlot, outputNode, outputIndex) {
         var _a, _b, _c, _d;

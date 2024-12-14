@@ -29,8 +29,8 @@ export class BaseCollectorNode extends BaseAnyInputConnectedNode {
     return cloned;
   }
 
-  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]): void {
-    // No-op, no widgets.
+  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
+    return false; // No-op, no widgets.
   }
 
   /**

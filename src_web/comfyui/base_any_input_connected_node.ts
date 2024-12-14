@@ -46,20 +46,6 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     return super.onConstructed();
   }
 
-  /** Schedules a promise to run a stabilization. */
-  scheduleStabilizeWidgets(ms = 100) {
-    if (!this.schedulePromise) {
-      this.schedulePromise = new Promise((resolve) => {
-        setTimeout(() => {
-          this.schedulePromise = null;
-          this.doStablization();
-          resolve();
-        }, ms);
-      });
-    }
-    return this.schedulePromise;
-  }
-
   override clone() {
     const cloned = super.clone();
     // Copying to clipboard (and also, creating node templates) work by cloning nodes and, for some
@@ -76,18 +62,39 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     }
     return cloned;
   }
+
   /**
-   * Ensures we have at least one empty input at the end.
+   * Schedules a promise to run a stabilization, debouncing duplicate requests.
    */
-  stabilizeInputsOutputs() {
+  scheduleStabilizeWidgets(ms = 100) {
+    if (!this.schedulePromise) {
+      this.schedulePromise = new Promise((resolve) => {
+        setTimeout(() => {
+          this.schedulePromise = null;
+          this.doStablization();
+          resolve();
+        }, ms);
+      });
+    }
+    return this.schedulePromise;
+  }
+
+  /**
+   * Ensures we have at least one empty input at the end, returns true if changes were made, or false
+   * if no changes were needed.
+   */
+  private stabilizeInputsOutputs() : boolean {
+    let changed = false;
     const hasEmptyInput = !this.inputs[this.inputs.length - 1]?.link;
     if (!hasEmptyInput) {
       this.addInput("", "*");
+      changed = true;
     }
     for (let index = this.inputs.length - 2; index >= 0; index--) {
       const input = this.inputs[index]!;
       if (!input.link) {
         this.removeInput(index);
+        changed = true;
       } else {
         const node = getConnectedInputNodesAndFilterPassThroughs(
           this,
@@ -95,9 +102,14 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
           index,
           this.inputsPassThroughFollowing,
         )[0];
-        input.name = node?.title || "";
+        const newName = node?.title || "";
+        if (input.name !== newName) {
+          input.name = node?.title || "";
+          changed = true;
+        }
       }
     }
+    return changed;
   }
 
   /**
@@ -107,22 +119,30 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     if (!this.graph) {
       return;
     }
+    let dirty = false;
+
     // When we add/remove widgets, litegraph is going to mess up the size, so we
     // store it so we can retrieve it in computeSize. Hacky..
     (this as any)._tempWidth = this.size[0];
 
+    dirty = this.stabilizeInputsOutputs();
     const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
-    this.stabilizeInputsOutputs();
+    dirty = this.handleLinkedNodesStabilization(linkedNodes) || dirty;
 
-    this.handleLinkedNodesStabilization(linkedNodes);
-
-    app.graph.setDirtyCanvas(true, true);
+    // Only mark dirty if something's changed.
+    if (dirty) {
+      app.graph.setDirtyCanvas(true, true);
+    }
 
     // Schedule another stabilization in the future.
     this.scheduleStabilizeWidgets(500);
   }
 
-  handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
+  /**
+   * Handles stabilization of linked nodes. To be overridden. Should return true if changes were
+   * made, or false if no changes were needed.
+   */
+  handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) : boolean {
     linkedNodes; // No-op, but makes overridding in VSCode cleaner.
     throw new Error("handleLinkedNodesStabilization should be overridden.");
   }

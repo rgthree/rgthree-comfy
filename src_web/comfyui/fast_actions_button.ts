@@ -160,6 +160,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
+    let changed = false;
     // Remove any widgets and data for widgets that are no longer linked.
     for (const [widget, data] of this.widgetToData.entries()) {
       if (!data.node) {
@@ -170,6 +171,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         if (index > -1) {
           this.widgetToData.delete(widget);
           this.removeWidget(widget);
+          changed = true;
         } else {
           const [m, a] = this.logger.debugParts("Connected widget is not in widgets... weird.");
           console[m]?.(...a);
@@ -200,6 +202,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           if (this.widgetToData.get(this.widgets[i]!)?.node?.id === node.id) {
             widget = this.widgets.splice(i, 1)[0]!;
             this.widgets.splice(index + indexOffset, 0, widget);
+            changed = true;
             break;
           }
         }
@@ -213,6 +216,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
             return widget?.value;
           };
           this.widgetToData.set(widget, { node });
+          changed = true;
         }
       }
     }
@@ -224,7 +228,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         continue;
       }
       this.removeWidget(widgetAtSlot);
+      changed = true;
     }
+    return changed;
   }
 
   override removeWidget(widgetOrSlot?: number | IWidget): void {

@@ -80,8 +80,8 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
     }
   }
 
-  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]): void {
-    // No-op, no widgets.
+  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
+    return false; // No-op, no widgets.
   }
 
   override getHelp(): string {

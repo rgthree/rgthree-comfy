@@ -64,6 +64,7 @@ class RandomUnmuterNode extends BaseAnyInputConnectedNode {
         }
     }
     handleLinkedNodesStabilization(linkedNodes) {
+        return false;
     }
     getHelp() {
         return `

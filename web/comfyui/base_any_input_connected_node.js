@@ -14,18 +14,6 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         this.addInput("", "*");
         return super.onConstructed();
     }
-    scheduleStabilizeWidgets(ms = 100) {
-        if (!this.schedulePromise) {
-            this.schedulePromise = new Promise((resolve) => {
-                setTimeout(() => {
-                    this.schedulePromise = null;
-                    this.doStablization();
-                    resolve();
-                }, ms);
-            });
-        }
-        return this.schedulePromise;
-    }
     clone() {
         const cloned = super.clone();
         if (!rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes) {
@@ -38,32 +26,55 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         }
         return cloned;
     }
+    scheduleStabilizeWidgets(ms = 100) {
+        if (!this.schedulePromise) {
+            this.schedulePromise = new Promise((resolve) => {
+                setTimeout(() => {
+                    this.schedulePromise = null;
+                    this.doStablization();
+                    resolve();
+                }, ms);
+            });
+        }
+        return this.schedulePromise;
+    }
     stabilizeInputsOutputs() {
         var _a;
+        let changed = false;
         const hasEmptyInput = !((_a = this.inputs[this.inputs.length - 1]) === null || _a === void 0 ? void 0 : _a.link);
         if (!hasEmptyInput) {
             this.addInput("", "*");
+            changed = true;
         }
         for (let index = this.inputs.length - 2; index >= 0; index--) {
             const input = this.inputs[index];
             if (!input.link) {
                 this.removeInput(index);
+                changed = true;
             }
             else {
                 const node = getConnectedInputNodesAndFilterPassThroughs(this, this, index, this.inputsPassThroughFollowing)[0];
-                input.name = (node === null || node === void 0 ? void 0 : node.title) || "";
+                const newName = (node === null || node === void 0 ? void 0 : node.title) || "";
+                if (input.name !== newName) {
+                    input.name = (node === null || node === void 0 ? void 0 : node.title) || "";
+                    changed = true;
+                }
             }
         }
+        return changed;
     }
     doStablization() {
         if (!this.graph) {
             return;
         }
+        let dirty = false;
         this._tempWidth = this.size[0];
+        dirty = this.stabilizeInputsOutputs();
         const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
-        this.stabilizeInputsOutputs();
-        this.handleLinkedNodesStabilization(linkedNodes);
-        app.graph.setDirtyCanvas(true, true);
+        dirty = this.handleLinkedNodesStabilization(linkedNodes) || dirty;
+        if (dirty) {
+            app.graph.setDirtyCanvas(true, true);
+        }
         this.scheduleStabilizeWidgets(500);
     }
     handleLinkedNodesStabilization(linkedNodes) {
