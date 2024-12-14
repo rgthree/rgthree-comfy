@@ -22,12 +22,13 @@ class RgthreePowerLoraLoader:
       "hidden": {},
     }
 
-  RETURN_TYPES = ("MODEL", "CLIP")
-  RETURN_NAMES = ("MODEL", "CLIP")
+  RETURN_TYPES = ("MODEL", "CLIP", "STRING")
+  RETURN_NAMES = ("MODEL", "CLIP", "LORAS")
   FUNCTION = "load_loras"
 
   def load_loras(self, model, clip, **kwargs):
     """Loops over the provided loras in kwargs and applies valid ones."""
+    lora_list = []
     for key, value in kwargs.items():
       key = key.upper()
       if key.startswith('LORA_') and 'on' in value and 'lora' in value and 'strength' in value:
@@ -40,5 +41,6 @@ class RgthreePowerLoraLoader:
           lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
           if lora is not None:
             model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
+            lora_list.append(lora)
 
-    return (model, clip)
+    return (model, clip, lora_list)
