@@ -67,6 +67,14 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       min: 0.5,
       precision: 2,
     });
+    this.addWidget<INumberWidget>("number", "X-Offset", 16, (value: number) => {}, {
+      y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 2,
+      precision: 0,
+    });
+    this.addWidget<INumberWidget>("number", "Y-Offset", 40, (value: number) => {}, {
+      y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 3,
+      precision: 0,
+    });
     this.keypressBound = this.onKeypress.bind(this);
     this.title = "🔖";
     this.onConstructed();
@@ -127,9 +135,11 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     const canvas = app.canvas as LGraphCanvas;
     // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
     // https://github.com/rgthree/rgthree-comfy/issues/71
-    if (canvas?.ds?.offset) {
-      canvas.ds.offset[0] = -this.pos[0] + 16;
-      canvas.ds.offset[1] = -this.pos[1] + 40;
+    if (canvas?.ds?.offset) { 
+      const xOffset = Number(this.widgets[2]!.value || 16);
+      const yOffset = Number(this.widgets[3]!.value || 40);
+      canvas.ds.offset[0] = -this.pos[0] + xOffset;
+      canvas.ds.offset[1] = -this.pos[1] + yOffset;
     }
     if (canvas?.ds?.scale != null) {
       canvas.ds.scale = Number(this.widgets[1]!.value || 1);

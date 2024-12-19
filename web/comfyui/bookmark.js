@@ -33,6 +33,14 @@ export class Bookmark extends RgthreeBaseVirtualNode {
             min: 0.5,
             precision: 2,
         });
+        this.addWidget("number", "X-Offset", 16, (value) => { }, {
+            y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 2,
+            precision: 0,
+        });
+        this.addWidget("number", "Y-Offset", 40, (value) => { }, {
+            y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 3,
+            precision: 0,
+        });
         this.keypressBound = this.onKeypress.bind(this);
         this.title = "🔖";
         this.onConstructed();
@@ -75,8 +83,10 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         var _a, _b;
         const canvas = app.canvas;
         if ((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) {
-            canvas.ds.offset[0] = -this.pos[0] + 16;
-            canvas.ds.offset[1] = -this.pos[1] + 40;
+            const xOffset = Number(this.widgets[2].value || 16);
+            const yOffset = Number(this.widgets[3].value || 40);
+            canvas.ds.offset[0] = -this.pos[0] + xOffset;
+            canvas.ds.offset[1] = -this.pos[1] + yOffset;
         }
         if (((_b = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) != null) {
             canvas.ds.scale = Number(this.widgets[1].value || 1);
