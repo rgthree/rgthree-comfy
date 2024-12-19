@@ -11,11 +11,10 @@ class RgthreePowerPromptSimple(RgthreePowerPrompt):
 
     @classmethod
     def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
-        SAVED_PROMPTS_FILES=folder_paths.get_filename_list('saved_prompts')
+        # Removed Saved Prompts feature; No sure it worked any longer. UI should fail gracefully,
+        # TODO: Rip out saved prompt input data
+        SAVED_PROMPTS_FILES=[]
         SAVED_PROMPTS_CONTENT=[]
-        for filename in SAVED_PROMPTS_FILES:
-            with open(folder_paths.get_full_path('saved_prompts', filename), 'r') as f:
-                SAVED_PROMPTS_CONTENT.append(f.read())
         return {
             'required': {
                 'prompt': ('STRING', {'multiline': True}),
