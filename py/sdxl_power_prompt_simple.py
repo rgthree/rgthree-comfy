@@ -21,12 +21,10 @@ class RgthreeSDXLPowerPromptSimple(RgthreeSDXLPowerPromptPositive):
 
   @classmethod
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
-    saved_prompts_files = folder_paths.get_filename_list('saved_prompts')
-    saved_promptes_content = []
-    for fname in saved_prompts_files:
-      with open(folder_paths.get_full_path('saved_prompts', fname), 'r', encoding="utf-8") as file:
-        saved_promptes_content.append(file.read())
-
+    # Removed Saved Prompts feature; No sure it worked any longer. UI should fail gracefully,
+    # TODO: Rip out saved prompt input data
+    SAVED_PROMPTS_FILES=[]
+    SAVED_PROMPTS_CONTENT=[]
     return {
       'required': {
         'prompt_g': ('STRING', {
@@ -55,7 +53,7 @@ class RgthreeSDXLPowerPromptSimple(RgthreeSDXLPowerPromptPositive):
         ] + [os.path.splitext(x)[0] for x in folder_paths.get_filename_list('embeddings')],),
         'insert_saved': ([
           'CHOOSE',
-        ] + saved_prompts_files,),
+        ] + SAVED_PROMPTS_FILES,),
         # We'll hide these in the UI for now.
         "target_width": ("INT", {
           "default": -1,
@@ -79,7 +77,7 @@ class RgthreeSDXLPowerPromptSimple(RgthreeSDXLPowerPromptPositive):
         }),
       },
       'hidden': {
-        'values_insert_saved': (['CHOOSE'] + saved_promptes_content,),
+        'values_insert_saved': (['CHOOSE'] + SAVED_PROMPTS_CONTENT,),
       }
     }
 
