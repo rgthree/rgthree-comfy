@@ -3,6 +3,7 @@ class KeyEventService extends EventTarget {
         var _a, _b, _c;
         super();
         this.downKeys = {};
+        this.shiftDownKeys = {};
         this.ctrlKey = false;
         this.altKey = false;
         this.metaKey = false;
@@ -46,6 +47,9 @@ class KeyEventService extends EventTarget {
         if (e.type === "keydown") {
             this.downKeys[key] = true;
             this.dispatchCustomEvent("keydown", { originalEvent: e });
+            if (this.shiftKey && key !== 'SHIFT') {
+                this.shiftDownKeys[key] = true;
+            }
         }
         else if (e.type === "keyup") {
             if (key === "META" && this.isMac) {
@@ -53,6 +57,12 @@ class KeyEventService extends EventTarget {
             }
             else {
                 delete this.downKeys[key];
+            }
+            if (key === 'SHIFT') {
+                for (const key in this.shiftDownKeys) {
+                    delete this.downKeys[key];
+                    delete this.shiftDownKeys[key];
+                }
             }
             this.dispatchCustomEvent("keyup", { originalEvent: e });
         }
