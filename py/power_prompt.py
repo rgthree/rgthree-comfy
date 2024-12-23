@@ -24,7 +24,8 @@ class RgthreePowerPrompt:
     return {
       'required': {
         'prompt': ('STRING', {
-          'multiline': True
+          'multiline': True,
+          'dynamicPrompts': True
         }),
       },
       'optional': {
