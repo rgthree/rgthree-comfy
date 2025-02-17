@@ -135,9 +135,18 @@ app.registerExtension({
       if (options.scale == null) {
         options.scale = Math.max(app.canvas.ds?.scale || 1, 1);
       }
-      return existingContextMenu.call(this as any, values, options);
-    };
 
-    LiteGraph.ContextMenu.prototype = existingContextMenu.prototype;
+      const oldCtrResponse = existingContextMenu.call(this as any, values, options);
+      // For some reason, LiteGraph calls submenus with "this.constructor" which no longer allows
+      // us to continue building deep nesting, as well as skips many other extensions (even
+      // ComfyUI's core extensions like translations) from working on submenus. It also removes
+      // search, etc. While this is a recent-ish issue, I can't seem to find the culpit as it looks
+      // like old litegraph always did this. Perhaps changing it to a Class? Anyway, this fixes it;
+      // Hopefully without issues.
+      if ((oldCtrResponse as any)?.constructor) {
+        (oldCtrResponse as any).constructor = LiteGraph.ContextMenu;
+      }
+      return this;
+    };
   },
 });

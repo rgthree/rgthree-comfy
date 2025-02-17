@@ -103,8 +103,11 @@ app.registerExtension({
             if (options.scale == null) {
                 options.scale = Math.max(((_f = app.canvas.ds) === null || _f === void 0 ? void 0 : _f.scale) || 1, 1);
             }
-            return existingContextMenu.call(this, values, options);
+            const oldCtrResponse = existingContextMenu.call(this, values, options);
+            if (oldCtrResponse === null || oldCtrResponse === void 0 ? void 0 : oldCtrResponse.constructor) {
+                oldCtrResponse.constructor = LiteGraph.ContextMenu;
+            }
+            return this;
         };
-        LiteGraph.ContextMenu.prototype = existingContextMenu.prototype;
     },
 });
