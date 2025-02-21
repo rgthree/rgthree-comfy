@@ -24,14 +24,34 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         const nextShortcutChar = getNextShortcut();
         this.addWidget("text", "shortcut_key", nextShortcutChar, (value, ...args) => {
             value = value.trim()[0] || "1";
-        }, {
-            y: 8,
-        });
+        }, { y: 8 });
         this.addWidget("number", "zoom", 1, (value) => { }, {
             y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
             max: 2,
             min: 0.5,
             precision: 2,
+        });
+        const presets = [
+            "top left",
+            "top center",
+            "top right",
+            "center",
+            "bottom left",
+            "bottom center",
+            "bottom right",
+        ];
+        this.addWidget("combo", "Preset", "center", (value) => {
+        }, {
+            y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 2,
+            values: presets,
+        });
+        this.addWidget("number", "X-Offset", 16, (value) => { }, {
+            y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 3,
+            precision: 0,
+        });
+        this.addWidget("number", "Y-Offset", 40, (value) => { }, {
+            y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 4,
+            precision: 0,
         });
         this.keypressBound = this.onKeypress.bind(this);
         this.title = "🔖";
@@ -72,15 +92,32 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         }
     }
     canvasToBookmark() {
-        var _a, _b;
+        var _a, _b, _c, _d, _e;
         const canvas = app.canvas;
-        if ((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) {
-            canvas.ds.offset[0] = -this.pos[0] + 16;
-            canvas.ds.offset[1] = -this.pos[1] + 40;
+        if (!((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) || canvas.ds.scale == null) {
+            console.error("Canvas offset or scale is undefined.");
+            return;
         }
-        if (((_b = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) != null) {
-            canvas.ds.scale = Number(this.widgets[1].value || 1);
+        const presets = {
+            "top left": { x: 0, y: 0 },
+            "top center": { x: canvas.canvas.width / 2, y: 0 },
+            "top right": { x: canvas.canvas.width, y: 0 },
+            "center": { x: canvas.canvas.width / 2, y: canvas.canvas.height / 2 },
+            "bottom left": { x: 0, y: canvas.canvas.height },
+            "bottom center": { x: canvas.canvas.width / 2, y: canvas.canvas.height },
+            "bottom right": { x: canvas.canvas.width, y: canvas.canvas.height },
+        };
+        const presetName = String(((_b = this.widgets[2]) === null || _b === void 0 ? void 0 : _b.value) || "center");
+        const preset = presets[presetName];
+        if (!preset) {
+            console.error(`Invalid preset: ${presetName}`);
+            return;
         }
+        const xOffset = Number(((_c = this.widgets[3]) === null || _c === void 0 ? void 0 : _c.value) || 0);
+        const yOffset = Number(((_d = this.widgets[4]) === null || _d === void 0 ? void 0 : _d.value) || 0);
+        canvas.ds.offset[0] = -this.pos[0] + preset.x + xOffset;
+        canvas.ds.offset[1] = -this.pos[1] + preset.y + yOffset;
+        canvas.ds.scale = Number(((_e = this.widgets[1]) === null || _e === void 0 ? void 0 : _e.value) || 1);
         canvas.setDirty(true, true);
     }
 }
