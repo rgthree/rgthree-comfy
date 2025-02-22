@@ -1,6 +1,6 @@
 import type { SerializedGraph, BadLinksData } from "typings/index.js";
 import { fixBadLinks } from "../common/link_fixer.js";
-import { getPngMetadata } from "scripts/pnginfo.js";
+import { getPngMetadata } from "../common/comfyui_shim.js";
 
 function wait(ms = 16, value?: any) {
   return new Promise((resolve) => {

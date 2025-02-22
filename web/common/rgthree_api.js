@@ -6,6 +6,10 @@ class RgthreeApi {
         this.getLorasPromise = null;
         this.getWorkflowsPromise = null;
         this.baseUrl = baseUrl || "./rgthree/api";
+        const comfyBasePathname = location.pathname.includes("/rgthree/")
+            ? location.pathname.split("rgthree/")[0]
+            : location.pathname;
+        this.comfyBaseUrl = comfyBasePathname.split("/").slice(0, -1).join("/");
     }
     apiURL(route) {
         return `${this.baseUrl}${route}`;
@@ -71,6 +75,13 @@ class RgthreeApi {
         const body = new FormData();
         body.append("json", JSON.stringify(data));
         return await this.fetchApiJsonOrNull(`/${type}/info?file=${encodeURIComponent(file)}`, { cache: "no-store", method: "POST", body });
+    }
+    fetchComfyApi(route, options) {
+        const url = this.comfyBaseUrl + "/api" + route;
+        options = options || {};
+        options.headers = options.headers || {};
+        options.cache = options.cache || "no-cache";
+        return fetch(url, options);
     }
 }
 export const rgthreeApi = new RgthreeApi();

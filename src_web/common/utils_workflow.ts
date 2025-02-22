@@ -1,5 +1,5 @@
 import { getResolver } from "./shared_utils.js";
-import { getPngMetadata, getWebpMetadata } from "scripts/pnginfo.js";
+import { getPngMetadata, getWebpMetadata } from "./comfyui_shim.js";
 import type { SerializedGraph } from "typings/index.js";
 import type { ComfyApiFormat } from "typings/comfy.js";
 

@@ -7,7 +7,23 @@ declare global {
 	const LGraphNode: typeof TLGraphNode;
 	const LGraphCanvas: typeof TLGraphCanvas;
 	const LGraphGroup: typeof TLGraphGroup;
+	interface Window {
+		// Used in the common/comfyui_shim to determine if we're in the app or not.
+		comfyAPI: {
+			// So much more stuffed in here, add as needed.
+			[key: string]: any;
+		}
+	}
 }
+
+export type getPngMetadata = (file: File | Blob) => { workflow?: string; prompt?: string };
+export type getWebpMetadata = (file: File | Blob) => {
+  Workflow?: string;
+  workflow?: string;
+  Prompt?: string;
+  prompt?: string;
+};
+
 
 // @rgthree: Types on ComfyApp as needed.
 export interface ComfyApp {
