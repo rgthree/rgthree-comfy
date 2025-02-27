@@ -457,6 +457,10 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     _link_info: LLink,
     _ioSlot: INodeOutputSlot | INodeInputSlot,
   ) {
+    if (app.configuringGraph) {
+      return
+    }
+
     // Prevent multiple connections to different types when we have no input
     if (connected && type === LiteGraph.OUTPUT) {
       // Ignore wildcard nodes as these will be updated to real types
