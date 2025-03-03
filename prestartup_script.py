@@ -1,4 +1,4 @@
-import folder_paths
+from comfy.cmd import folder_paths
 
 # Removed Saved Prompts feature; No sure it worked any longer. UI should fail gracefully.
 # TODO: See if anyone actually used this.

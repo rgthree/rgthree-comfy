@@ -1,7 +1,7 @@
 import json
 from aiohttp import web
 
-from server import PromptServer
+from comfy.cmd.server import PromptServer
 
 from .utils_server import is_param_truthy
 from ..config import get_config, set_user_config, refresh_config

@@ -4,7 +4,7 @@ Sets up the inputs and outputs for the Context going forward, with additional fu
 creating and exporting context objects.
 """
 import comfy.samplers
-import folder_paths
+from comfy.cmd import folder_paths
 
 _all_context_input_output_data = {
   "base_ctx": ("base_ctx", "RGTHREE_CONTEXT", "CONTEXT"),

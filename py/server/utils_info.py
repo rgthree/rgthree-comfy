@@ -5,7 +5,7 @@ import re
 import os
 from datetime import datetime
 
-from server import PromptServer
+from comfy.cmd.server import PromptServer
 import folder_paths
 
 from ..utils import get_dict_value, load_json_file, path_exists, save_json_file

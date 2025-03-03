@@ -2,8 +2,8 @@ import os
 import json
 from aiohttp import web
 
-from server import PromptServer
-import folder_paths
+from comfy.cmd.server import PromptServer
+from comfy.cmd import folder_paths
 
 from ..utils import path_exists
 from .utils_server import get_param, is_param_falsy

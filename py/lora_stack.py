@@ -1,6 +1,6 @@
 from .constants import get_category, get_name
-from nodes import LoraLoader
-import folder_paths
+from comfy.nodes.base_nodes import LoraLoader
+from comfy.cmd import folder_paths
 
 
 class RgthreeLoraLoaderStack:

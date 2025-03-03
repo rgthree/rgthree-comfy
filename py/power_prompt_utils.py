@@ -1,7 +1,7 @@
 """Utilities for Power Prompt nodes."""
 import re
 import os
-import folder_paths
+from comfy.cmd import folder_paths
 
 from .log import log_node_warn, log_node_info
 

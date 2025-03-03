@@ -1,6 +1,6 @@
 import os
-import folder_paths
-from nodes import CLIPTextEncode
+from comfy.cmd import folder_paths
+from comfy.nodes.base_nodes import CLIPTextEncode
 from .constants import get_category, get_name
 from .power_prompt import RgthreePowerPrompt
 
