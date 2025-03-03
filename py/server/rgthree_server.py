@@ -1,6 +1,6 @@
 import os
 from aiohttp import web
-from server import PromptServer
+from comfy.cmd.server import PromptServer
 
 from .utils_server import set_default_page_resources, set_default_page_routes
 from .routes_config import *
