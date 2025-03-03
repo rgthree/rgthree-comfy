@@ -1,4 +1,4 @@
-from nodes import EmptyLatentImage
+from comfy.nodes.base_nodes import EmptyLatentImage
 from .constants import get_category, get_name
 
 

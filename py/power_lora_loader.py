@@ -1,4 +1,4 @@
-from nodes import LoraLoader
+from comfy.nodes.base_nodes import LoraLoader
 from .constants import get_category, get_name
 from .power_prompt_utils import get_lora_by_filename
 from .utils import FlexibleOptionalInputType, any_type
