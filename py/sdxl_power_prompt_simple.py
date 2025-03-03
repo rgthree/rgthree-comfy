@@ -4,7 +4,7 @@ import re
 from comfy.cmd import folder_paths
 from comfy.nodes.base_nodes import LoraLoader
 from comfy.nodes.common import MAX_RESOLUTION
-from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL
+from comfy_extras.nodes.nodes_clip_sdxl import CLIPTextEncodeSDXL
 from .sdxl_power_prompt_postive import RgthreeSDXLPowerPromptPositive
 
 from .log import log_node_warn, log_node_info, log_node_success

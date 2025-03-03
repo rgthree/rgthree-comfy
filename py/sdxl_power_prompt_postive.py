@@ -1,7 +1,7 @@
 import os
 import re
 from comfy.nodes.common import MAX_RESOLUTION
-from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL
+from comfy_extras.nodes.nodes_clip_sdxl import CLIPTextEncodeSDXL
 
 from .log import log_node_warn, log_node_info, log_node_success
 from .constants import get_category, get_name
