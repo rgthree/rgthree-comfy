@@ -12,7 +12,7 @@ import shutil
 import re
 import random
 
-import execution
+from comfy.cmd import execution
 
 from .py.log import log
 from .py.config import get_config_value
