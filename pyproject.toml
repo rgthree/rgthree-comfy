@@ -3,7 +3,7 @@ name = "rgthree-comfy"
 description = "Making ComfyUI more comfortable."
 version = "1.0.0"
 license = { file = "LICENSE" }
-dynamic = [ dependencies ]
+dynamic = [ "dependencies" ]
 
 [project.urls]
 Repository = "https://github.com/rgthree/rgthree-comfy"
