@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 from comfy.cmd.server import PromptServer
-import folder_paths
+from comfy.cmd import folder_paths
 
 from ..utils import get_dict_value, load_json_file, path_exists, save_json_file
 from ..utils_userdata import read_userdata_json, save_userdata_json, delete_userdata_file
