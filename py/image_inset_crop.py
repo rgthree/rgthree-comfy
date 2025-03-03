@@ -1,7 +1,7 @@
 """Image Inset Crop, with percentages."""
 from .log import log_node_info
 from .constants import get_category, get_name
-from nodes import MAX_RESOLUTION
+from comfy.nodes.common import MAX_RESOLUTION
 
 
 def get_new_bounds(width, height, left, right, top, bottom):

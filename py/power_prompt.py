@@ -4,7 +4,8 @@ from .log import log_node_warn, log_node_info, log_node_success
 
 from .constants import get_category, get_name
 from .power_prompt_utils import get_and_strip_loras
-from nodes import LoraLoader, CLIPTextEncode
+from comfy.nodes.base_nodes import LoraLoader
+from comfy.nodes.base_nodes import CLIPTextEncode
 from comfy.cmd import folder_paths
 
 NODE_NAME = get_name('Power Prompt')

@@ -1,6 +1,6 @@
 import os
 import re
-from nodes import MAX_RESOLUTION
+from comfy.nodes.common import MAX_RESOLUTION
 from comfy_extras.nodes_clip_sdxl import CLIPTextEncodeSDXL
 
 from .log import log_node_warn, log_node_info, log_node_success

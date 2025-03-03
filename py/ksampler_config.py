@@ -1,7 +1,7 @@
 """Some basic config stuff I use for SDXL."""
 
 from .constants import get_category, get_name
-from nodes import MAX_RESOLUTION
+from comfy.nodes.common import MAX_RESOLUTION
 import comfy.samplers
 
 

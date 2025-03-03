@@ -1,4 +1,4 @@
-from nodes import PreviewImage
+from comfy.nodes.base_nodes import PreviewImage
 
 from .constants import get_category, get_name
 
