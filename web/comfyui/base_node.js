@@ -193,11 +193,6 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     getWidgets() {
         return ComfyWidgets;
     }
-    computeSize(out) {
-        const v = super.computeSize(out);
-        console.log('comuteSize', v);
-        return v;
-    }
     async setupFromServerNodeData() {
         var _a, _b, _c, _d, _e;
         const nodeData = this.constructor.nodeData;

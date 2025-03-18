@@ -7,7 +7,6 @@ import type {
   ContextMenuItem,
   INodeOutputSlot,
   INodeInputSlot,
-  Vector2,
 } from "typings/litegraph.js";
 import type { RgthreeBaseServerNodeConstructor, RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
@@ -316,12 +315,6 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
   getWidgets() {
     return ComfyWidgets;
-  }
-
-  override computeSize(out?: Vector2): [number, number] {
-    const v = super.computeSize(out);
-    console.log('comuteSize', v);
-    return v;
   }
 
   /**
