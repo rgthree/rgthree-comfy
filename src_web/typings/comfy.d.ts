@@ -46,6 +46,7 @@ export interface ComfyApp {
 	}
 	// Just marking as any for now.
 	menu?: any;
+	configuringGraph: boolean;
 }
 
 export interface ComfyWidget extends IWidget {
