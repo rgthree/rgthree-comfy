@@ -147,6 +147,12 @@ export function addConnectionLayoutSupport(node, app, options = [
     node.prototype.getConnectionPos = function (isInput, slotNumber, out) {
         return getConnectionPosForLayout(this, isInput, slotNumber, out);
     };
+    node.prototype.getInputPos = function (slotNumber) {
+        return getConnectionPosForLayout(this, true, slotNumber, [0, 0]);
+    };
+    node.prototype.getOutputPos = function (slotNumber) {
+        return getConnectionPosForLayout(this, false, slotNumber, [0, 0]);
+    };
 }
 export function setConnectionsLayout(node, newLayout) {
     var _a;

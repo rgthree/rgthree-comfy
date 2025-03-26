@@ -225,12 +225,20 @@ export function addConnectionLayoutSupport(
     },
   });
 
-  // const oldGetConnectionPos = node.prototype.getConnectionPos;
+  // [🤮] This is deprecated in a https://github.com/Comfy-Org/litegraph.js/pull/716 @v0.9.9 and
+  // replaced by getInputPos and getOutputPos conveniently added below.
   node.prototype.getConnectionPos = function (isInput: boolean, slotNumber: number, out: Vector2) {
     // Purposefully do not need to call the old one.
-    // oldGetConnectionPos && oldGetConnectionPos.apply(this, [isInput, slotNumber, out]);
     return getConnectionPosForLayout(this, isInput, slotNumber, out);
   };
+  node.prototype.getInputPos = function(slotNumber: number) : Vector2 {
+    // Purposefully do not need to call the existing one because we're overriding.
+    return getConnectionPosForLayout(this, true, slotNumber, [0,0]);
+  }
+  node.prototype.getOutputPos = function(slotNumber: number) : Vector2 {
+    // Purposefully do not need to call the existing one because we're overriding.
+    return getConnectionPosForLayout(this, false, slotNumber, [0,0]);
+  }
 }
 
 export function setConnectionsLayout(node: LGraphNode, newLayout: [string, string]) {
