@@ -461,7 +461,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     if (connected && type === LiteGraph.OUTPUT) {
       // Ignore wildcard nodes as these will be updated to real types
       const types = new Set(
-        this.outputs[0]!.links!.map((l) => app.graph.links[l]!.type).filter((t) => t !== "*"),
+        this.outputs[0]!.links!.map((l) => app.graph.links[l]?.type).filter((t) => t && t !== "*"),
       );
       if (types.size > 1) {
         const linksToDisconnect = [];

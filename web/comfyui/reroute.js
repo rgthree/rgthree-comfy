@@ -298,7 +298,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     }
     onConnectionsChange(type, _slotIndex, connected, _link_info, _ioSlot) {
         if (connected && type === LiteGraph.OUTPUT) {
-            const types = new Set(this.outputs[0].links.map((l) => app.graph.links[l].type).filter((t) => t !== "*"));
+            const types = new Set(this.outputs[0].links.map((l) => { var _a; return (_a = app.graph.links[l]) === null || _a === void 0 ? void 0 : _a.type; }).filter((t) => t && t !== "*"));
             if (types.size > 1) {
                 const linksToDisconnect = [];
                 for (let i = 0; i < this.outputs[0].links.length - 1; i++) {
