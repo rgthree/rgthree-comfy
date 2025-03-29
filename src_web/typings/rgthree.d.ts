@@ -1,8 +1,9 @@
-import type { AdjustedMouseEvent, LGraphNode, Vector2 } from "./litegraph.js";
+import type { LGraphNode, Vector2 } from "@litegraph/litegraph.js";
+import type { CanvasMouseEvent } from "@litegraph/types/events.js";
 import type {Constructor} from "./index.js";
 import type {RgthreeBaseVirtualNode} from '../comfyui/base_node.js'
 
-export type AdjustedMouseCustomEvent = CustomEvent<{ originalEvent: AdjustedMouseEvent }>;
+export type AdjustedMouseCustomEvent = CustomEvent<{ originalEvent: CanvasMouseEvent }>;
 
 
 export interface RgthreeBaseNodeConstructor extends Constructor<RgthreeBaseNode> {

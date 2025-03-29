@@ -1,4 +1,4 @@
-import type { LGraphNode } from "typings/litegraph.js";
+import type { LGraphNode } from "@litegraph/litegraph.js";
 import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 
 import { app } from "scripts/app.js";

@@ -1,22 +1,22 @@
-import { app } from "scripts/app.js";
-import { BaseCollectorNode } from "./base_node_collector.js";
-import { NodeTypesString, stripRgthree } from "./constants.js";
-
 import type {
   INodeInputSlot,
   INodeOutputSlot,
+  LGraphEventMode,
   LGraphGroup,
   LGraphNode,
   LLink,
-  SerializedLGraphNode,
-} from "typings/litegraph.js";
+} from "@litegraph/litegraph.js";
+
+import { app } from "scripts/app.js";
+import { BaseCollectorNode } from "./base_node_collector.js";
+import { NodeTypesString, stripRgthree } from "./constants.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import { NodeMode } from "typings/comfy.js";
+import { ISerialisedNode } from "@litegraph/types/serialisation.js";
 
 class NodeModeRepeater extends BaseCollectorNode {
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
@@ -42,7 +42,7 @@ class NodeModeRepeater extends BaseCollectorNode {
     return super.onConstructed();
   }
 
-  override configure(info: SerializedLGraphNode<LGraphNode>): void {
+  override configure(info: ISerialisedNode): void {
     // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
     // https://github.com/rgthree/rgthree-comfy/issues/206
     // TODO: This can probably be removed within a few weeks.
@@ -159,7 +159,7 @@ class NodeModeRepeater extends BaseCollectorNode {
   }
 
   /** When a mode change, we want all connected nodes to match except for connected relays. */
-  override onModeChange(from: NodeMode, to: NodeMode) {
+  override onModeChange(from: LGraphEventMode | undefined, to: LGraphEventMode) {
     super.onModeChange(from, to);
     const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter(
       (node) => node.type !== NodeTypesString.NODE_MODE_RELAY,

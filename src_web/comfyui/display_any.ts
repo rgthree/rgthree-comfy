@@ -1,9 +1,10 @@
-import { app } from "scripts/app.js";
-import { ComfyWidgets } from "scripts/widgets.js";
-import type { LGraphNode as TLGraphNode } from "typings/litegraph.js";
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { addConnectionLayoutSupport } from "./utils.js";
-import { rgthree } from "./rgthree.js";
+import type {LGraphNode as TLGraphNode} from "@litegraph/litegraph.js";
+import type {ComfyApp, ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
+
+import {app} from "scripts/app.js";
+import {ComfyWidgets} from "scripts/widgets.js";
+import {addConnectionLayoutSupport} from "./utils.js";
+import {rgthree} from "./rgthree.js";
 
 let hasShownAlertForUpdatingInt = false;
 
@@ -22,7 +23,7 @@ app.registerExtension({
         (this as any).showValueWidget = ComfyWidgets["STRING"](
           this,
           "output",
-          ["STRING", { multiline: true }],
+          ["STRING", {multiline: true}],
           app,
         ).widget;
         (this as any).showValueWidget.inputEl!.readOnly = true;

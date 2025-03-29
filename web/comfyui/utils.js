@@ -130,7 +130,7 @@ export function addConnectionLayoutSupport(node, app, options = [
         subMenuOptions: options.map((option) => option[0] + (option[1] ? " -> " + option[1] : "")),
         prepareValue: (value, node) => {
             var _a;
-            const values = value.split(" -> ");
+            const values = String(value).split(" -> ");
             if (!values[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
                 values[1] = LAYOUT_LABEL_OPPOSITES[values[0]];
             }
@@ -209,8 +209,9 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
                 return count;
             }, 0);
     cxn.dir = data[0];
-    if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
-        cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1];
+    const connections_dir = node.properties["connections_dir"];
+    if ((node.size[0] == 10 || node.size[1] == 10) && connections_dir) {
+        cxn.dir = connections_dir[isInput ? 0 : 1];
     }
     if (side === "Left") {
         if (node.flags.collapsed) {

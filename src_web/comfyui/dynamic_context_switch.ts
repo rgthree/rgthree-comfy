@@ -1,5 +1,5 @@
 import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
-import type {INodeSlot, LGraphNode, LLink, LGraphCanvas} from "typings/litegraph.js";
+import type {INodeSlot, LGraphNode, LLink, LGraphCanvas, INodeInputSlot, INodeOutputSlot, ISlotType} from "@litegraph/litegraph.js";
 
 import {app} from "scripts/app.js";
 import {DynamicContextNodeBase, InputLike} from "./dynamic_context_base.js";
@@ -65,14 +65,8 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
     this.scheduleHardRefresh();
   }
 
-  override onConnectionsChange(
-    type: number,
-    slotIndex: number,
-    isConnected: boolean,
-    link: LLink,
-    ioSlot: INodeSlot,
-  ): void {
-    super.onConnectionsChange?.call(this, type, slotIndex, isConnected, link, ioSlot);
+  override onConnectionsChange(type: ISlotType, slotIndex: number, isConnected: boolean, link: LLink | null | undefined, inputOrOutput: INodeInputSlot | INodeOutputSlot): void {
+    super.onConnectionsChange?.call(this, type, slotIndex, isConnected, link, inputOrOutput);
     if (this.configuring) {
       return;
     }

@@ -135,6 +135,8 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                 this.tempSize = [...this.size];
                 widget = this.addCustomWidget({
                     name: "RGTHREE_TOGGLE_AND_NAV",
+                    type: 'toggle',
+                    y: 0,
                     label: "",
                     value: false,
                     disabled: false,

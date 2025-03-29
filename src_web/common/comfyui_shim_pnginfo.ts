@@ -250,15 +250,15 @@ export async function importA1111(graph: lazyComfyAny, parameters: lazyComfyAny)
       let positive = parameters.substr(0, p2).trim()
       let negative = parameters.substring(p2 + 18, p).trim()
 
-      const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')
-      const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')
-      const positiveNode = LiteGraph.createNode('CLIPTextEncode')
-      const negativeNode = LiteGraph.createNode('CLIPTextEncode')
-      const samplerNode = LiteGraph.createNode('KSampler')
-      const imageNode = LiteGraph.createNode('EmptyLatentImage')
-      const vaeNode = LiteGraph.createNode('VAEDecode')
-      const vaeLoaderNode = LiteGraph.createNode('VAELoader')
-      const saveNode = LiteGraph.createNode('SaveImage')
+      const ckptNode = LiteGraph.createNode('CheckpointLoaderSimple')!
+      const clipSkipNode = LiteGraph.createNode('CLIPSetLastLayer')!
+      const positiveNode = LiteGraph.createNode('CLIPTextEncode')!
+      const negativeNode = LiteGraph.createNode('CLIPTextEncode')!
+      const samplerNode = LiteGraph.createNode('KSampler')!
+      const imageNode = LiteGraph.createNode('EmptyLatentImage')!
+      const vaeNode = LiteGraph.createNode('VAEDecode')!
+      const vaeLoaderNode = LiteGraph.createNode('VAELoader')!
+      const saveNode = LiteGraph.createNode('SaveImage')!
       let hrSamplerNode = null as lazyComfyAny
       let hrSteps = null
 
@@ -416,7 +416,7 @@ export async function importA1111(graph: lazyComfyAny, parameters: lazyComfyAny)
             let latentNode
 
             if (hrMethod.startsWith('Latent')) {
-              latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')
+              latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')!
               graph.add(upscaleNode)
               samplerNode.connect(0, upscaleNode, 0)
 
@@ -427,29 +427,28 @@ export async function importA1111(graph: lazyComfyAny, parameters: lazyComfyAny)
               }
               setWidgetValue(upscaleNode, 'upscale_method', hrMethod, true)
             } else {
-              const decode = LiteGraph.createNode('VAEDecodeTiled')
+              const decode = LiteGraph.createNode('VAEDecodeTiled')!
               graph.add(decode)
               samplerNode.connect(0, decode, 0)
               vaeLoaderNode.connect(0, decode, 1)
 
-              const upscaleLoaderNode =
-                LiteGraph.createNode('UpscaleModelLoader')
+              const upscaleLoaderNode = LiteGraph.createNode('UpscaleModelLoader')!
               graph.add(upscaleLoaderNode)
               setWidgetValue(upscaleLoaderNode, 'model_name', hrMethod, true)
 
               const modelUpscaleNode = LiteGraph.createNode(
                 'ImageUpscaleWithModel'
-              )
+              )!
               graph.add(modelUpscaleNode)
               decode.connect(0, modelUpscaleNode, 1)
               upscaleLoaderNode.connect(0, modelUpscaleNode, 0)
 
-              upscaleNode = LiteGraph.createNode('ImageScale')
+              upscaleNode = LiteGraph.createNode('ImageScale')!
               graph.add(upscaleNode)
               modelUpscaleNode.connect(0, upscaleNode, 0)
 
               const vaeEncodeNode = (latentNode =
-                LiteGraph.createNode('VAEEncodeTiled'))
+                LiteGraph.createNode('VAEEncodeTiled')!)!
               graph.add(vaeEncodeNode)
               upscaleNode.connect(0, vaeEncodeNode, 0)
               vaeLoaderNode.connect(0, vaeEncodeNode, 1)
@@ -458,7 +457,7 @@ export async function importA1111(graph: lazyComfyAny, parameters: lazyComfyAny)
             setWidgetValue(upscaleNode, 'width', ceil64(uw))
             setWidgetValue(upscaleNode, 'height', ceil64(uh))
 
-            hrSamplerNode = LiteGraph.createNode('KSampler')
+            hrSamplerNode = LiteGraph.createNode('KSampler')!
             graph.add(hrSamplerNode)
             ckptNode.connect(0, hrSamplerNode, 0)
             positiveNode.connect(0, hrSamplerNode, 1)

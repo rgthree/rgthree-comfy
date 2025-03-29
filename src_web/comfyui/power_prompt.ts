@@ -1,5 +1,5 @@
 import { app } from "scripts/app.js";
-import type { LGraphNode as TLGraphNode } from "typings/litegraph.js";
+import type { LGraphNode as TLGraphNode } from "@litegraph/litegraph.js";
 import type {
   ComfyApp,
   ComfyObjectInfo,

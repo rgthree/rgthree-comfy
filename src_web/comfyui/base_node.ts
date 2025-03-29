@@ -1,26 +1,25 @@
-import type { ComfyNodeConstructor, ComfyObjectInfo, NodeMode } from "typings/comfy.js";
+import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
 import type {
   IWidget,
-  SerializedLGraphNode,
-  LGraphNode as TLGraphNode,
   LGraphCanvas,
-  ContextMenuItem,
-  INodeOutputSlot,
-  INodeInputSlot,
-} from "typings/litegraph.js";
-import type { RgthreeBaseServerNodeConstructor, RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+  IContextMenuValue,
+  IFoundSlot,
+  LGraphEventMode,
+} from "@litegraph/litegraph.js";
+import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
+import type {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
 
-import { ComfyWidgets } from "scripts/widgets.js";
-import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { app } from "scripts/app.js";
-import { LogLevel, rgthree } from "./rgthree.js";
-import { addHelpMenuItem } from "./utils.js";
-import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
+import {ComfyWidgets} from "scripts/widgets.js";
+import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
+import {app} from "scripts/app.js";
+import {LogLevel, rgthree} from "./rgthree.js";
+import {addHelpMenuItem} from "./utils.js";
+import {RgthreeHelpDialog} from "rgthree/common/dialog.js";
 import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
-import { defineProperty } from "rgthree/common/shared_utils.js";
+import {defineProperty} from "rgthree/common/shared_utils.js";
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -33,8 +32,11 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   static exposedActions: string[] = [];
 
   static override title: string = "__NEED_CLASS_TITLE__";
-  static category = "rgthree";
+  static override category = "rgthree";
   static _category = "rgthree"; // `category` seems to get reset by comfy, so reset to this after.
+
+  /** Our constructor ensures there's a widget array, so we get rid of the nullability. */
+  override widgets!: IWidget[];
 
   /**
    * The comfyClass is property ComfyUI and extensions may care about, even through it is only for
@@ -58,7 +60,8 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   _tempWidth = 0;
 
   /** Private Mode member so we can override the setter/getter and call an `onModeChange`. */
-  private rgthree_mode: NodeMode;
+  private rgthree_mode?: LGraphEventMode;
+
   /** An internal bool set when `onConstructed` is run. */
   private __constructed__ = false;
   /** The help dialog. */
@@ -84,11 +87,11 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       this.checkAndRunOnConstructed();
     });
 
-    defineProperty(this, 'mode', {
+    defineProperty(this, "mode", {
       get: () => {
         return this.rgthree_mode;
       },
-      set: (mode: NodeMode) => {
+      set: (mode: LGraphEventMode) => {
         if (this.rgthree_mode != mode) {
           const oldMode = this.rgthree_mode;
           this.rgthree_mode = mode;
@@ -134,7 +137,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     return this.__constructed__;
   }
 
-  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+  override configure(info: ISerialisedNode): void {
     this.configuring = true;
     super.configure(info);
     // Fix https://github.com/comfyanonymous/ComfyUI/issues/1448 locally.
@@ -149,17 +152,17 @@ export abstract class RgthreeBaseNode extends LGraphNode {
    * Override clone for, at the least, deep-copying properties.
    */
   override clone() {
-    const cloned = super.clone();
-    // This is whild, but LiteGraph clone doesn't deep clone data, so we will. We'll use structured
-    // clone, which most browsers in 2022 support, but but we'll check.
-    if (cloned.properties && !!window.structuredClone) {
+    const cloned = super.clone()!;
+    // This is wild, but LiteGraph doesn't deep clone data, so we will. We'll use structured clone,
+    // which most browsers in 2022 support, but but we'll check.
+    if (cloned?.properties && !!window.structuredClone) {
       cloned.properties = structuredClone(cloned.properties);
     }
     return cloned;
   }
 
   /** When a mode change, we want all connected nodes to match. */
-  onModeChange(from: NodeMode, to: NodeMode) {
+  onModeChange(from: LGraphEventMode | undefined, to: LGraphEventMode) {
     // Override
   }
 
@@ -175,6 +178,9 @@ export abstract class RgthreeBaseNode extends LGraphNode {
    * Guess this doesn't exist in Litegraph...
    */
   removeWidget(widgetOrSlot?: IWidget | number) {
+    if (!this.widgets) {
+      return;
+    }
     if (typeof widgetOrSlot === "number") {
       this.widgets.splice(widgetOrSlot, 1);
     } else if (widgetOrSlot) {
@@ -191,23 +197,20 @@ export abstract class RgthreeBaseNode extends LGraphNode {
    * it's default logic. This bakes it so child nodes can call this instead (and this doesn't set
    * getSlotMenuOptions for all child nodes in case it doesn't exist).
    */
-  defaultGetSlotMenuOptions(slot: {
-    input?: INodeInputSlot;
-    output?: INodeOutputSlot;
-  }): ContextMenuItem[] | null {
-    const menu_info: ContextMenuItem[] = [];
+  defaultGetSlotMenuOptions(slot: IFoundSlot): IContextMenuValue[] {
+    const menu_info: IContextMenuValue[] = [];
     if (slot?.output?.links?.length) {
-      menu_info.push({ content: "Disconnect Links", slot: slot });
+      menu_info.push({content: "Disconnect Links", slot});
     }
     let inputOrOutput = slot.input || slot.output;
     if (inputOrOutput) {
       if (inputOrOutput.removable) {
         menu_info.push(
-          inputOrOutput.locked ? { content: "Cannot remove" } : { content: "Remove Slot", slot },
+          inputOrOutput.locked ? {content: "Cannot remove"} : {content: "Remove Slot", slot},
         );
       }
       if (!inputOrOutput.nameLocked) {
-        menu_info.push({ content: "Rename Slot", slot });
+        menu_info.push({content: "Rename Slot", slot});
       }
     }
     return menu_info;
@@ -250,7 +253,10 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     KEY_EVENT_SERVICE.handleKeyDownOrUp(event);
   }
 
-  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
+  override getExtraMenuOptions(
+    canvas: LGraphCanvas,
+    options: (IContextMenuValue<unknown> | null)[],
+  ): (IContextMenuValue<unknown> | null)[] {
     // Some other extensions override getExtraMenuOptions on the nodeType as it comes through from
     // the server, so we can call out to that if we don't have our own.
     if (super.getExtraMenuOptions) {
@@ -266,6 +272,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (help) {
       addHelpMenuItem(this, help, options);
     }
+    return options;
   }
 }
 
@@ -339,7 +346,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
     const WIDGETS = this.getWidgets();
 
-    const config: { minWidth: number; minHeight: number; widget?: null | { options: any } } = {
+    const config: {minWidth: number; minHeight: number; widget?: null | {options: any}} = {
       minWidth: 1,
       minHeight: 1,
       widget: null,
@@ -392,7 +399,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
       const outputShape = nodeData["output_is_list"][o]
         ? LiteGraph.GRID_SHAPE
         : LiteGraph.CIRCLE_SHAPE;
-      this.addOutput(outputName, output, { shape: outputShape });
+      this.addOutput(outputName, output, {shape: outputShape});
     }
 
     const s = this.computeSize();

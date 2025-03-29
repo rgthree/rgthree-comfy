@@ -4,9 +4,11 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode as TLGraphNode,
   LLink,
-} from "typings/litegraph.js";
-import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { app } from "scripts/app.js";
+  ISlotType,
+} from "@litegraph/litegraph.js";
+import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
+
+import {app} from "scripts/app.js";
 import {
   IoDirection,
   addConnectionLayoutSupport,
@@ -14,12 +16,13 @@ import {
   matchLocalSlotsToServer,
   replaceNode,
 } from "./utils.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
-import { debounce, wait } from "rgthree/common/shared_utils.js";
-import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
-import { NodeTypesString } from "./constants.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
+import {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
+import {debounce, wait} from "rgthree/common/shared_utils.js";
+import {removeUnusedInputsFromEnd} from "./utils_inputs_outputs.js";
+import {NodeTypesString} from "./constants.js";
+import {ConnectByTypeOptions} from "@litegraph/LGraphNode.js";
 
 /**
  * Takes a non-context node and determins for its input or output slot, if there is a valid
@@ -109,21 +112,19 @@ export class BaseContextNode extends RgthreeBaseServerNode {
     ctx.font = oldFont;
   }
 
-  override connectByType<T = any>(
-    slot: string | number,
-    sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string,
-  ): T | null {
-    let canConnect =
-      super.connectByType &&
-      super.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
+  override connectByType(
+    slot: number | string,
+    targetNode: TLGraphNode,
+    targetSlotType: ISlotType,
+    optsIn?: ConnectByTypeOptions,
+  ): LLink | null {
+    let canConnect = super.connectByType?.call(this, slot, targetNode, targetSlotType, optsIn);
     if (!super.connectByType) {
       canConnect = LGraphNode.prototype.connectByType.call(
         this,
         slot,
-        sourceNode,
-        sourceSlotType,
+        targetNode,
+        targetSlotType,
         optsIn,
       );
     }
@@ -132,28 +133,32 @@ export class BaseContextNode extends RgthreeBaseServerNode {
       // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
       // Unfortunately, we don't know which are null now, so we'll just connect any that are
       // not already connected.
-      for (const [index, input] of (sourceNode.inputs || []).entries()) {
+      for (const [index, input] of (targetNode.inputs || []).entries()) {
         if (input.link && !ctrlKey) {
           continue;
         }
-        const thisOutputSlot = findMatchingIndexByTypeOrName(sourceNode, input, this.outputs);
+        const thisOutputSlot = findMatchingIndexByTypeOrName(targetNode, input, this.outputs);
         if (thisOutputSlot > -1) {
-          this.connect(thisOutputSlot, sourceNode, index);
+          this.connect(thisOutputSlot, targetNode, index);
         }
       }
     }
     return null;
   }
 
-  override connectByTypeOutput<T = any>(
-    slot: string | number,
+  override connectByTypeOutput(
+    slot: number | string,
     sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string,
-  ): T | null {
-    let canConnect =
-      super.connectByTypeOutput &&
-      super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+    sourceSlotType: ISlotType,
+    optsIn?: ConnectByTypeOptions,
+  ): LLink | null {
+    let canConnect = super.connectByTypeOutput?.call(
+      this,
+      slot,
+      sourceNode,
+      sourceSlotType,
+      optsIn,
+    );
     if (!super.connectByType) {
       canConnect = LGraphNode.prototype.connectByTypeOutput.call(
         this,
@@ -426,7 +431,7 @@ const contextNodes = [
   ContextMergeNode,
   ContextMergeBigNode,
 ];
-const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
+const contextTypeToServerDef: {[type: string]: ComfyObjectInfo} = {};
 
 function fixBadConfigs(node: ContextNode) {
   // Dumb mistake, but let's fix our mispelling. This will probably need to stay in perpetuity to

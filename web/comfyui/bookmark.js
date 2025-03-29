@@ -70,6 +70,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
                 input.value = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" + ");
             });
         }
+        return false;
     }
     canvasToBookmark() {
         var _a, _b;

@@ -1,5 +1,6 @@
+import type { LGraphCanvas as TLGraphCanvas, Vector2 } from "@litegraph/litegraph.js";
+
 import { app } from "scripts/app.js";
-import type { LGraphCanvas as TLGraphCanvas, Vector2 } from "../typings/litegraph.js";
 
 function binarySearch(max: number, getValue: (n: number) => number, match: number) {
   let min = 0;

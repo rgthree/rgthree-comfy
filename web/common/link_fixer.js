@@ -8,7 +8,7 @@ function getNodeById(graph, id) {
         return graph.getNodeById(id);
     }
     graph = graph;
-    return graph.nodes.find((n) => n.id === id);
+    return graph.nodes.find((node) => Number(node.id) === id);
 }
 function extendLink(link) {
     return {

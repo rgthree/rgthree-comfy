@@ -1,20 +1,6 @@
-import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph } from "./litegraph.js";
+import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph, INodeSlot } from "@litegraph/litegraph.js";
 import type {Constructor, SerializedGraph} from './index.js';
 
-declare global {
-  const LiteGraph: typeof TLiteGraph;
-	const LGraph: typeof TLGraph;
-	const LGraphNode: typeof TLGraphNode;
-	const LGraphCanvas: typeof TLGraphCanvas;
-	const LGraphGroup: typeof TLGraphGroup;
-	interface Window {
-		// Used in the common/comfyui_shim to determine if we're in the app or not.
-		comfyAPI: {
-			// So much more stuffed in here, add as needed.
-			[key: string]: any;
-		}
-	}
-}
 
 export type getPngMetadata = (file: File | Blob) => { workflow?: string; prompt?: string };
 export type getWebpMetadata = (file: File | Blob) => {
@@ -58,7 +44,7 @@ export interface ComfyWidget extends IWidget {
 }
 
 export interface ComfyGraphNode extends TLGraphNode {
-	getExtraMenuOptions: (node: TLGraphNode, options: ContextMenuItem[]) => void;
+	// getExtraMenuOptions: (node: TLGraphNode, options: ContextMenuItem[]) => void;
 	onExecuted(message: any): void;
 }
 
@@ -73,7 +59,7 @@ export interface ComfyNodeConstructor extends Constructor<ComfyNode> {
 	static comfyClass: string;
 }
 
-export type NodeMode = 0|1|2|3|4|undefined;
+// export type NodeMode = 0|1|2|3|4|undefined;
 
 
 export interface ComfyExtension {

@@ -123,7 +123,7 @@ class NodeModeRelay extends BaseCollectorNode {
                 mode = MODE_ALWAYS;
             }
             else {
-                mode = null;
+                mode = undefined;
             }
         }
         this.dispatchModeToRepeater(mode);

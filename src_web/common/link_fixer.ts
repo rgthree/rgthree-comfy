@@ -1,17 +1,23 @@
 import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index.js";
-import type { LGraph, LGraphNode, LLink, serializedLGraph } from "typings/litegraph.js";
+import type { LGraph, LGraphNode, LLink} from "@litegraph/litegraph.js";
+import type { NodeId } from "@litegraph/LGraphNode";
+
+// TODO: Fix comyui types.
+type serializedLGraph = any;
+type serializedLGraphNode = any;
 
 enum IoDirection {
   INPUT,
   OUTPUT,
 }
 
-function getNodeById(graph: SerializedGraph | LGraph | serializedLGraph, id: number) {
+
+function getNodeById(graph: SerializedGraph | LGraph | serializedLGraph, id: NodeId) {
   if ((graph as LGraph).getNodeById) {
     return (graph as LGraph).getNodeById(id);
   }
   graph = graph as SerializedGraph;
-  return graph.nodes.find((n) => n.id === id)!;
+  return graph.nodes.find((node: serializedLGraphNode) => Number(node.id) === id)!;
 }
 
 function extendLink(link: SerializedLink) {

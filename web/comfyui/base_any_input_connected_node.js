@@ -191,16 +191,16 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     }
 }
 const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
-LGraphNode.prototype.connectByType = function connectByType(slot, sourceNode, sourceSlotType, optsIn) {
-    if (sourceNode.inputs) {
-        for (const [index, input] of sourceNode.inputs.entries()) {
+LGraphNode.prototype.connectByType = function connectByType(slot, targetNode, targetSlotType, optsIn) {
+    if (targetNode.inputs) {
+        for (const [index, input] of targetNode.inputs.entries()) {
             if (!input.link && input.type === "*") {
-                this.connect(slot, sourceNode, index);
+                this.connect(slot, targetNode, index);
                 return null;
             }
         }
     }
     return ((oldLGraphNodeConnectByType &&
-        oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn)) ||
+        oldLGraphNodeConnectByType.call(this, slot, targetNode, targetSlotType, optsIn)) ||
         null);
 };

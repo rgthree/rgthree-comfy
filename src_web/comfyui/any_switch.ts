@@ -1,4 +1,4 @@
-import type { INodeInputSlot, INodeOutputSlot, LLink } from "typings/litegraph.js";
+import type { INodeInputSlot, INodeOutputSlot, LLink } from "@litegraph/litegraph.js";
 import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 
 import { app } from "scripts/app.js";

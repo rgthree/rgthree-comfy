@@ -1,4 +1,4 @@
-import type {INodeInputSlot} from "typings/litegraph.js";
+import type {INodeInputSlot} from "@litegraph/litegraph.js";
 
 import {BaseContextNode} from "./context.js";
 import {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
@@ -19,7 +19,7 @@ const REGEX_EMPTY_INPUT = /^\+\s*$/;
 
 export type InputLike = {
   name: string;
-  type: string | -1;
+  type: number | string;
   label?: string;
   link: number | null;
   removable?: boolean;
@@ -96,7 +96,7 @@ export class DynamicContextNodeBase extends BaseContextNode {
     }
   }
   override clone() {
-    const cloned = super.clone();
+    const cloned = super.clone()! as DynamicContextNodeBase;
     while (cloned.inputs.length > 1) {
       cloned.removeInput(cloned.inputs.length - 1);
     }

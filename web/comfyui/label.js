@@ -120,7 +120,7 @@ Label["@padding"] = { type: "number" };
 Label["@borderRadius"] = { type: "number" };
 const oldDrawNode = LGraphCanvas.prototype.drawNode;
 LGraphCanvas.prototype.drawNode = function (node, ctx) {
-    if (node.constructor === Label) {
+    if (node.constructor === Label.prototype.constructor) {
         node.bgcolor = "transparent";
         node.color = "transparent";
         const v = oldDrawNode.apply(this, arguments);
@@ -131,18 +131,18 @@ LGraphCanvas.prototype.drawNode = function (node, ctx) {
     return v;
 };
 const oldGetNodeOnPos = LGraph.prototype.getNodeOnPos;
-LGraph.prototype.getNodeOnPos = function (x, y, nodes_list, margin) {
+LGraph.prototype.getNodeOnPos = function (x, y, nodes_list) {
     var _a, _b;
     if (nodes_list &&
         rgthree.processingMouseDown &&
-        ((_a = rgthree.lastAdjustedMouseEvent) === null || _a === void 0 ? void 0 : _a.type.includes("down")) &&
-        ((_b = rgthree.lastAdjustedMouseEvent) === null || _b === void 0 ? void 0 : _b.which) === 1) {
+        ((_a = rgthree.lastCanvasMouseEvent) === null || _a === void 0 ? void 0 : _a.type.includes("down")) &&
+        ((_b = rgthree.lastCanvasMouseEvent) === null || _b === void 0 ? void 0 : _b.which) === 1) {
         let isDoubleClick = LiteGraph.getTime() - LGraphCanvas.active_canvas.last_mouseclick < 300;
         if (!isDoubleClick) {
             nodes_list = [...nodes_list].filter((n) => { var _a; return !(n instanceof Label) || !((_a = n.flags) === null || _a === void 0 ? void 0 : _a.pinned); });
         }
     }
-    return oldGetNodeOnPos.apply(this, [x, y, nodes_list, margin]);
+    return oldGetNodeOnPos.apply(this, [x, y, nodes_list]);
 };
 app.registerExtension({
     name: "rgthree.Label",

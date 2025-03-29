@@ -44,7 +44,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         }
     }
     onNodeCreated() {
-        var _a;
+        var _a, _b, _c;
         (_a = super.onNodeCreated) === null || _a === void 0 ? void 0 : _a.call(this);
         for (const [i, w] of this.widgets.entries()) {
             if (w.name === "seed") {
@@ -56,17 +56,17 @@ class RgthreeSeed extends RgthreeBaseServerNode {
             }
         }
         let step = this.seedWidget.options.step || 1;
-        this.randMax = Math.min(1125899906842624, this.seedWidget.options.max);
-        this.randMin = Math.max(0, this.seedWidget.options.min);
+        this.randMax = Math.min(1125899906842624, (_b = this.seedWidget.options.max) !== null && _b !== void 0 ? _b : 0);
+        this.randMin = Math.max(0, (_c = this.seedWidget.options.min) !== null && _c !== void 0 ? _c : 0);
         this.randomRange = (this.randMax - Math.max(0, this.randMin)) / (step / 10);
-        this.addWidget("button", "🎲 Randomize Each Time", null, () => {
+        this.addWidget("button", "🎲 Randomize Each Time", '', () => {
             this.seedWidget.value = SPECIAL_SEED_RANDOM;
         }, { serialize: false });
-        this.addWidget("button", "🎲 New Fixed Random", null, () => {
+        this.addWidget("button", "🎲 New Fixed Random", '', () => {
             this.seedWidget.value =
                 Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
         }, { serialize: false });
-        this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, null, () => {
+        this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, '', () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
             this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
@@ -88,6 +88,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
                 }
             },
         });
+        return options;
     }
     addLastSeedValue() {
         if (this.lastSeedValue)
@@ -141,7 +142,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         }
     }
     getSeedToUse() {
-        const inputSeed = this.seedWidget.value;
+        const inputSeed = Number(this.seedWidget.value);
         let seedToUse = null;
         if (SPECIAL_SEEDS.includes(inputSeed)) {
             if (typeof this.lastSeed === "number" && !SPECIAL_SEEDS.includes(this.lastSeed)) {

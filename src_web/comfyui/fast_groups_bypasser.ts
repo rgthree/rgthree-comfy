@@ -1,4 +1,5 @@
-import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import type { Size } from "@litegraph/litegraph.js";
+
 import { app } from "scripts/app.js";
 import { NodeTypesString } from "./constants.js";
 import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
@@ -31,7 +32,7 @@ app.registerExtension({
   },
   loadedGraphNode(node: FastGroupsBypasser) {
     if (node.type == FastGroupsBypasser.title) {
-      node.tempSize = [...node.size];
+      node.tempSize = [...node.size] as Size;
     }
   },
 });

@@ -21,9 +21,9 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
     handleUpstreamMutation(mutation) {
         this.scheduleHardRefresh();
     }
-    onConnectionsChange(type, slotIndex, isConnected, link, ioSlot) {
+    onConnectionsChange(type, slotIndex, isConnected, link, inputOrOutput) {
         var _a;
-        (_a = super.onConnectionsChange) === null || _a === void 0 ? void 0 : _a.call(this, type, slotIndex, isConnected, link, ioSlot);
+        (_a = super.onConnectionsChange) === null || _a === void 0 ? void 0 : _a.call(this, type, slotIndex, isConnected, link, inputOrOutput);
         if (this.configuring) {
             return;
         }

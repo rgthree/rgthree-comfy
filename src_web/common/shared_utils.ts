@@ -144,7 +144,7 @@ export function setObjectValue(obj: any, objKey: string, value: any, createMissi
 /**
  * Moves an item in an array (by item or its index) to another index.
  */
-export function moveArrayItem<T>(arr: T[], itemOrFrom: T | number, to: number) {
+export function moveArrayItem(arr: any[], itemOrFrom: any, to: number) {
   const from = typeof itemOrFrom === "number" ? itemOrFrom : arr.indexOf(itemOrFrom);
   arr.splice(to, 0, arr.splice(from, 1)[0]!);
 }

@@ -29,7 +29,7 @@ export class RgthreeBaseNode extends LGraphNode {
             }
             this.checkAndRunOnConstructed();
         });
-        defineProperty(this, 'mode', {
+        defineProperty(this, "mode", {
             get: () => {
                 return this.rgthree_mode;
             },
@@ -80,7 +80,7 @@ export class RgthreeBaseNode extends LGraphNode {
     }
     clone() {
         const cloned = super.clone();
-        if (cloned.properties && !!window.structuredClone) {
+        if ((cloned === null || cloned === void 0 ? void 0 : cloned.properties) && !!window.structuredClone) {
             cloned.properties = structuredClone(cloned.properties);
         }
         return cloned;
@@ -91,6 +91,9 @@ export class RgthreeBaseNode extends LGraphNode {
         action;
     }
     removeWidget(widgetOrSlot) {
+        if (!this.widgets) {
+            return;
+        }
         if (typeof widgetOrSlot === "number") {
             this.widgets.splice(widgetOrSlot, 1);
         }
@@ -105,7 +108,7 @@ export class RgthreeBaseNode extends LGraphNode {
         var _a, _b;
         const menu_info = [];
         if ((_b = (_a = slot === null || slot === void 0 ? void 0 : slot.output) === null || _a === void 0 ? void 0 : _a.links) === null || _b === void 0 ? void 0 : _b.length) {
-            menu_info.push({ content: "Disconnect Links", slot: slot });
+            menu_info.push({ content: "Disconnect Links", slot });
         }
         let inputOrOutput = slot.input || slot.output;
         if (inputOrOutput) {
@@ -161,6 +164,7 @@ export class RgthreeBaseNode extends LGraphNode {
         if (help) {
             addHelpMenuItem(this, help, options);
         }
+        return options;
     }
 }
 RgthreeBaseNode.exposedActions = [];

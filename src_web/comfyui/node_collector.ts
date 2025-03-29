@@ -1,19 +1,22 @@
-import { app } from "scripts/app.js";
 import type {
   LLink,
   LGraph,
-  ContextMenuItem,
   LGraphCanvas,
-  SerializedLGraphNode,
   LGraphNode as TLGraphNode,
   IContextMenuOptions,
   ContextMenu,
-} from "typings/litegraph.js";
-import { addConnectionLayoutSupport } from "./utils.js";
-import { wait } from "rgthree/common/shared_utils.js";
-import { ComfyWidgets } from "scripts/widgets.js";
-import { BaseCollectorNode } from "./base_node_collector.js";
-import { NodeTypesString } from "./constants.js";
+  IContextMenuValue,
+  Size,
+} from "@litegraph/litegraph.js";
+import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
+import type {Point} from "@litegraph/interfaces";
+
+import {app} from "scripts/app.js";
+import {addConnectionLayoutSupport} from "./utils.js";
+import {wait} from "rgthree/common/shared_utils.js";
+import {ComfyWidgets} from "scripts/widgets.js";
+import {BaseCollectorNode} from "./base_node_collector.js";
+import {NodeTypesString} from "./constants.js";
 
 /**
  * The Collector Node. Takes any number of inputs as connections for nodes and collects them into
@@ -36,7 +39,7 @@ class CollectorNode extends BaseCollectorNode {
     return super.onConstructed();
   }
 
-  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+  override configure(info: ISerialisedNode) {
     // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
     // https://github.com/rgthree/rgthree-comfy/issues/206
     // TODO: This can probably be removed within a few weeks.
@@ -58,7 +61,7 @@ class CombinerNode extends CollectorNode {
     const note = ComfyWidgets["STRING"](
       this,
       "last_seed",
-      ["STRING", { multiline: true }],
+      ["STRING", {multiline: true}],
       app,
     ).widget;
     note.inputEl!.value =
@@ -69,11 +72,14 @@ class CombinerNode extends CollectorNode {
     note.inputEl!.style.fontStyle = "italic";
     note.inputEl!.style.opacity = "0.8";
 
-    this.getExtraMenuOptions = (_: LGraphCanvas, options: ContextMenuItem[]) => {
+    this.getExtraMenuOptions = (
+      canvas: LGraphCanvas,
+      options: (IContextMenuValue<unknown> | null)[],
+    ): (IContextMenuValue<unknown> | null)[] => {
       options.splice(options.length - 1, 0, {
         content: "‼️ Update to Node Collector",
         callback: (
-          _value: ContextMenuItem,
+          _value: IContextMenuValue,
           _options: IContextMenuOptions,
           _event: MouseEvent,
           _parentMenu: ContextMenu | undefined,
@@ -82,10 +88,11 @@ class CombinerNode extends CollectorNode {
           updateCombinerToCollector(this);
         },
       });
+      return options;
     };
   }
 
-  override configure(info: SerializedLGraphNode) {
+  override configure(info: ISerialisedNode) {
     super.configure(info);
     if (this.title != CombinerNode.title && !this.title.startsWith("‼️")) {
       this.title = "‼️ " + this.title;
@@ -104,9 +111,9 @@ async function updateCombinerToCollector(node: TLGraphNode) {
       newNode.title = node.title.replace("‼️ ", "");
     }
     // Port the position, size, and properties from the old node.
-    newNode.pos = [...node.pos];
-    newNode.size = [...node.size];
-    newNode.properties = { ...node.properties };
+    newNode.pos = [...node.pos] as Point;
+    newNode.size = [...node.size] as Size;
+    newNode.properties = {...node.properties};
     // We now collect the links data, inputs and outputs, of the old node since these will be
     // lost when we remove it.
     const links: any[] = [];
@@ -115,7 +122,7 @@ async function updateCombinerToCollector(node: TLGraphNode) {
         const link: LLink = (app.graph as LGraph).links[linkId]!;
         if (!link) continue;
         const targetNode = app.graph.getNodeById(link.target_id);
-        links.push({ node: newNode, slot: index, targetNode, targetSlot: link.target_slot });
+        links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
       }
     }
     for (const [index, input] of node.inputs.entries()) {

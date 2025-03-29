@@ -2,7 +2,6 @@ import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/co
 import type {
   Vector2,
   LGraphCanvas,
-  ContextMenuItem,
   LLink,
   LGraph,
   IContextMenuOptions,
@@ -11,12 +10,18 @@ import type {
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
-} from "typings/litegraph.js";
+  IContextMenuValue,
+  ISlotType,
+} from "@litegraph/litegraph.js";
 import type { Constructor } from "typings/index.js";
+
 import { app } from "scripts/app.js";
 import { api } from "scripts/api.js";
 import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
 import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
+import { NodeProperty } from "@litegraph/LGraphNode";
+import { LinkDirection } from "@litegraph/types/globalEnums";
+import { Point } from "@litegraph/interfaces";
 
 /**
  * Override the api.getNodeDefs call to add a hook for refreshing node defs.
@@ -59,7 +64,7 @@ export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 interface MenuConfig {
   name: string | ((node: LGraphNode) => string);
   property?: string;
-  prepareValue?: (value: string, node: LGraphNode) => any;
+  prepareValue?: (value: NodeProperty | undefined, node: LGraphNode) => any;
   callback?: (node: LGraphNode, value?: string) => void;
   subMenuOptions?: (string | null)[] | ((node: LGraphNode) => (string | null)[]);
 }
@@ -73,7 +78,7 @@ export function addMenuItem(
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function (
     canvas: LGraphCanvas,
-    menuOptions: ContextMenuItem[],
+    menuOptions: IContextMenuValue[],
   ) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
     addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
@@ -125,7 +130,7 @@ export function waitForGraph() {
 export function addMenuItemOnExtraMenuOptions(
   node: LGraphNode,
   config: MenuConfig,
-  menuOptions: ContextMenuItem[],
+  menuOptions: (IContextMenuValue | null)[],
   after = "Shape",
 ) {
   let idx = menuOptions
@@ -154,7 +159,7 @@ export function addMenuItemOnExtraMenuOptions(
     has_submenu: !!subMenuOptions?.length,
     isRgthree: true, // Mark it, so we can find it.
     callback: (
-      value: ContextMenuItem,
+      value: IContextMenuValue,
       _options: IContextMenuOptions,
       event: MouseEvent,
       parentMenu: ContextMenu | undefined,
@@ -167,7 +172,7 @@ export function addMenuItemOnExtraMenuOptions(
             event,
             parentMenu,
             callback: (
-              subValue: ContextMenuItem,
+              subValue: IContextMenuValue,
               _options: IContextMenuOptions,
               _event: MouseEvent,
               _parentMenu: ContextMenu | undefined,
@@ -193,7 +198,7 @@ export function addMenuItemOnExtraMenuOptions(
       }
       config.callback && config.callback(node, value?.content);
     },
-  } as ContextMenuItem);
+  } as IContextMenuValue);
 }
 
 export function addConnectionLayoutSupport(
@@ -210,7 +215,7 @@ export function addConnectionLayoutSupport(
     property: "connections_layout",
     subMenuOptions: options.map((option) => option[0] + (option[1] ? " -> " + option[1] : "")),
     prepareValue: (value, node) => {
-      const values = value.split(" -> ");
+      const values = String(value).split(" -> ");
       if (!values[1] && !node.outputs?.length) {
         values[1] = LAYOUT_LABEL_OPPOSITES[values[0]!]!;
       }
@@ -276,7 +281,7 @@ export function getConnectionPosForLayout(
   node.properties = node.properties || {};
   const layout = node.properties["connections_layout"] ||
     (node as any).defaultConnectionsLayout || ["Left", "Right"];
-  const collapseConnections = node.properties["collapse_connections"] || false;
+  const collapseConnections = (node.properties["collapse_connections"] as boolean) || false;
   const offset = (node.constructor as any).layout_slot_offset ?? LiteGraph.NODE_SLOT_HEIGHT * 0.5;
   let side = isInput ? layout[0] : layout[1];
   const otherSide = isInput ? layout[1] : layout[0];
@@ -317,8 +322,9 @@ export function getConnectionPosForLayout(
   cxn.dir = data[0];
 
   // If we are only 10px tall or wide, then look at connections_dir for the direction.
-  if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
-    cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1]!;
+  const connections_dir = node.properties["connections_dir"] as [LinkDirection, LinkDirection];
+  if ((node.size[0] == 10 || node.size[1] == 10) && connections_dir) {
+    cxn.dir = connections_dir[isInput ? 0 : 1]!;
   }
 
   if (side === "Left") {
@@ -397,7 +403,7 @@ function toggleConnectionLabel(cxn: any, hide = true) {
   return cxn;
 }
 
-export function addHelpMenuItem(node: LGraphNode, content: string, menuOptions: ContextMenuItem[]) {
+export function addHelpMenuItem(node: LGraphNode, content: string, menuOptions: (IContextMenuValue | null)[]) {
   addMenuItemOnExtraMenuOptions(
     node,
     {
@@ -675,12 +681,12 @@ export async function replaceNode(
   const existingCtor = existingNode.constructor as typeof LGraphNode;
 
   const newNode =
-    typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
+    typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode)! : typeOrNewNode;
   // Port title (maybe) the position, size, and properties from the old node.
   if (existingNode.title != existingCtor.title) {
     newNode.title = existingNode.title;
   }
-  newNode.pos = [...existingNode.pos];
+  newNode.pos = [...existingNode.pos] as Point;
   newNode.properties = { ...existingNode.properties };
   const oldComputeSize = [...existingNode.computeSize()];
   // oldSize to use. If we match the smallest size (computeSize) then don't record and we'll use
@@ -875,7 +881,7 @@ export async function matchLocalSlotsToServer(
             //  doesn't exist).
             if (
               nextNode &&
-              (nextNode.constructor as ComfyNodeConstructor)?.type!.includes("Reroute")
+              (nextNode.constructor as any)?.type!.includes("Reroute")
             ) {
               (nextNode as any).stabilize && (nextNode as any).stabilize();
             }
@@ -916,7 +922,7 @@ export function isValidConnection(ioA?: INodeSlot | null, ioB?: INodeSlot | null
  * lists (without users needing to go through and re-create all their nodes one by one).
  */
 const oldIsValidConnection = LiteGraph.isValidConnection;
-LiteGraph.isValidConnection = function (typeA: string | string[], typeB: string | string[]) {
+LiteGraph.isValidConnection = function (typeA: ISlotType, typeB: ISlotType): boolean {
   let isValid = oldIsValidConnection.call(LiteGraph, typeA, typeB);
   if (!isValid) {
     typeA = String(typeA);

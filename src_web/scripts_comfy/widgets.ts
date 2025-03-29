@@ -1,4 +1,4 @@
-import type { LGraphNode } from "typings/litegraph.js";
+import type { LGraphNode } from "@litegraph/litegraph.js";
 import type { ComfyApp, ComfyWidget } from "../typings/comfy.js";
 
 type ComfyWidgetFn = (

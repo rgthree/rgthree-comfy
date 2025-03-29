@@ -13,17 +13,17 @@ class BypasserNode extends BaseNodeModeChanger {
     }
     async handleAction(action) {
         if (action === "Bypass all") {
-            for (const widget of this.widgets) {
+            for (const widget of this.widgets || []) {
                 this.forceWidgetOff(widget, true);
             }
         }
         else if (action === "Enable all") {
-            for (const widget of this.widgets) {
+            for (const widget of this.widgets || []) {
                 this.forceWidgetOn(widget, true);
             }
         }
         else if (action === "Toggle all") {
-            for (const widget of this.widgets) {
+            for (const widget of this.widgets || []) {
                 this.forceWidgetToggle(widget, true);
             }
         }

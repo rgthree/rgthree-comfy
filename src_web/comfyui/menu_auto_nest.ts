@@ -1,10 +1,11 @@
-import { app } from "scripts/app.js";
 import type {
-  ContextMenuItem,
   LGraphNode,
   ContextMenu,
   IContextMenuOptions,
-} from "typings/litegraph.js";
+  IContextMenuValue,
+} from "@litegraph/litegraph.js";
+
+import { app } from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 
@@ -22,7 +23,7 @@ app.registerExtension({
     const existingContextMenu = LiteGraph.ContextMenu;
 
     // @ts-ignore: TypeScript doesn't like this override.
-    LiteGraph.ContextMenu = function (values: ContextMenuItem[], options: IContextMenuOptions) {
+    LiteGraph.ContextMenu = function (values: IContextMenuValue[], options: IContextMenuOptions<string, {rgthree_doNotNest: boolean}>) {
       const threshold = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.threshold", 20);
       const enabled = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.subdirs", false);
 
@@ -34,7 +35,7 @@ app.registerExtension({
         }
         // If there's a rgthree_originalCallback, then we're nested and don't need to check things
         // we only expect on the first nesting.
-        if (!options.parentMenu?.options.rgthree_originalCallback) {
+        if (!(options.parentMenu?.options as any)?.rgthree_originalCallback) {
           // On first context menu, we require a callback and a flat list of options as strings.
           if (!options?.callback) {
             incompatible = `Skipping context menu auto nesting b/c a callback was expected.`;
@@ -53,16 +54,16 @@ app.registerExtension({
         return existingContextMenu.apply(this as any, [...arguments] as any);
       }
 
-      const folders: { [key: string]: ContextMenuItem[] } = {};
-      const specialOps: ContextMenuItem[] = [];
-      const folderless: ContextMenuItem[] = [];
+      const folders: { [key: string]: IContextMenuValue[] } = {};
+      const specialOps: IContextMenuValue[] = [];
+      const folderless: IContextMenuValue[] = [];
       for (const value of values) {
         if (!value) {
           folderless.push(value);
           continue;
         }
         const newValue = typeof value === "string" ? { content: value } : Object.assign({}, value);
-        newValue.rgthree_originalValue = value.rgthree_originalValue || value;
+        (newValue as any).rgthree_originalValue = (value as any).rgthree_originalValue || value;
         const valueContent = newValue.content || '';
         const splitBy = valueContent.indexOf("/") > -1 ? "/" : "\\";
         const valueSplit = valueContent.split(splitBy);
@@ -81,24 +82,24 @@ app.registerExtension({
       const foldersCount = Object.values(folders).length;
       if (foldersCount > 0) {
         // Propogate the original callback down through the options.
-        options.rgthree_originalCallback =
-          options.rgthree_originalCallback ||
-          options.parentMenu?.options.rgthree_originalCallback ||
+        (options as any).rgthree_originalCallback =
+        (options as any).rgthree_originalCallback ||
+          (options.parentMenu?.options as any)?.rgthree_originalCallback ||
           options.callback;
-        const oldCallback = options.rgthree_originalCallback;
+        const oldCallback = (options as any)?.rgthree_originalCallback;
         options.callback = undefined;
         const newCallback = (
-          item: ContextMenuItem,
+          item: IContextMenuValue,
           options: IContextMenuOptions,
           event: MouseEvent,
           parentMenu: ContextMenu | undefined,
           node: LGraphNode,
         ) => {
-          oldCallback?.(item?.rgthree_originalValue!, options, event, undefined, node);
+          oldCallback?.((item as any)?.rgthree_originalValue!, options, event, undefined, node);
         };
         const [n, v] = logger.infoParts(`Nested folders found (${foldersCount}).`);
         console[n]?.(...v);
-        const newValues: ContextMenuItem[] = [];
+        const newValues: IContextMenuValue[] = [];
         for (const [folderName, folderValues] of Object.entries(folders)) {
           newValues.push({
             content: `📁 ${folderName}`,
@@ -114,7 +115,7 @@ app.registerExtension({
             },
           });
         }
-        values = ([] as ContextMenuItem[]).concat(
+        values = ([] as IContextMenuValue[]).concat(
           specialOps.map((f) => {
             if (typeof f === "string") {
               f = { content: f };
@@ -136,7 +137,7 @@ app.registerExtension({
         options.scale = Math.max(app.canvas.ds?.scale || 1, 1);
       }
 
-      const oldCtrResponse = existingContextMenu.call(this as any, values, options);
+      const oldCtrResponse = existingContextMenu.call(this as any, values, options as any);
       // For some reason, LiteGraph calls submenus with "this.constructor" which no longer allows
       // us to continue building deep nesting, as well as skips many other extensions (even
       // ComfyUI's core extensions like translations) from working on submenus. It also removes

@@ -35,13 +35,14 @@ class CombinerNode extends CollectorNode {
         note.inputEl.style.fontWeight = "bold";
         note.inputEl.style.fontStyle = "italic";
         note.inputEl.style.opacity = "0.8";
-        this.getExtraMenuOptions = (_, options) => {
+        this.getExtraMenuOptions = (canvas, options) => {
             options.splice(options.length - 1, 0, {
                 content: "‼️ Update to Node Collector",
                 callback: (_value, _options, _event, _parentMenu, _node) => {
                     updateCombinerToCollector(this);
                 },
             });
+            return options;
         };
     }
     configure(info) {

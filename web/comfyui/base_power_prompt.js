@@ -59,10 +59,11 @@ export class PowerPrompt {
         };
         const onPropertyChanged = this.node.onPropertyChanged;
         this.node.onPropertyChanged = (property, value, prevValue) => {
-            onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
+            const v = onPropertyChanged && onPropertyChanged.call(this.node, property, value, prevValue);
             if (property === "combos_filter") {
                 this.refreshCombos(this.nodeData);
             }
+            return v !== null && v !== void 0 ? v : true;
         };
         for (let i = this.node.widgets.length - 1; i >= 0; i--) {
             if (this.shouldRemoveServerWidget(this.node.widgets[i])) {

@@ -24,8 +24,8 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions) {
     if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
         return;
     }
-    const group = rgthree.lastAdjustedMouseEvent &&
-        app.graph.getGroupOnPos(rgthree.lastAdjustedMouseEvent.canvasX, rgthree.lastAdjustedMouseEvent.canvasY);
+    const group = rgthree.lastCanvasMouseEvent &&
+        app.graph.getGroupOnPos(rgthree.lastCanvasMouseEvent.canvasX, rgthree.lastCanvasMouseEvent.canvasY);
     const outputNodes = group && getOutputNodes(group._nodes);
     const menuItem = {
         content: `Queue Group Output Nodes (rgthree) &nbsp;`,
@@ -46,9 +46,11 @@ app.registerExtension({
     async beforeRegisterNodeDef(nodeType, nodeData) {
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
-            getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
+            var _a;
+            options = (_a = getExtraMenuOptions === null || getExtraMenuOptions === void 0 ? void 0 : getExtraMenuOptions.call(this, canvas, options)) !== null && _a !== void 0 ? _a : options;
             showQueueNodesMenuIfOutputNodesAreSelected(options);
             showQueueGroupNodesMenuIfGroupIsSelected(options);
+            return options;
         };
     },
     async setup() {

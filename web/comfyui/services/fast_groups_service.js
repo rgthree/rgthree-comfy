@@ -63,7 +63,7 @@ class FastGroupsService {
         if (!this.cachedNodeBoundings) {
             this.cachedNodeBoundings = {};
             for (const node of app.graph._nodes) {
-                this.cachedNodeBoundings[node.id] = node.getBounding();
+                this.cachedNodeBoundings[Number(node.id)] = node.getBounding();
             }
             setTimeout(() => {
                 this.cachedNodeBoundings = null;
@@ -76,7 +76,7 @@ class FastGroupsService {
         const nodes = group.graph._nodes;
         group._nodes.length = 0;
         for (const node of nodes) {
-            const node_bounding = cachedBoundings[node.id];
+            const node_bounding = cachedBoundings[Number(node.id)];
             if (!node_bounding || !LiteGraph.overlapBounding(group._bounding, node_bounding)) {
                 continue;
             }

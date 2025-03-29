@@ -86,13 +86,13 @@ app.registerExtension({
         LGraphCanvas.prototype.drawGroups = function (canvasEl, ctx) {
             drawGroups.apply(this, [...arguments]);
             if (!CONFIG_SERVICE.getFeatureValue("group_header_fast_toggle.enabled") ||
-                !rgthree.lastAdjustedMouseEvent) {
+                !rgthree.lastCanvasMouseEvent) {
                 return;
             }
             const graph = app.graph;
             let groups;
             if (CONFIG_SERVICE.getFeatureValue("group_header_fast_toggle.show") !== "always") {
-                const hoverGroup = graph.getGroupOnPos(rgthree.lastAdjustedMouseEvent.canvasX, rgthree.lastAdjustedMouseEvent.canvasY);
+                const hoverGroup = graph.getGroupOnPos(rgthree.lastCanvasMouseEvent.canvasX, rgthree.lastCanvasMouseEvent.canvasY);
                 groups = hoverGroup ? [hoverGroup] : [];
             }
             else {

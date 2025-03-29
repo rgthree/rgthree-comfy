@@ -135,7 +135,7 @@ class Rgthree extends EventTarget {
         this.processingMouseDown = false;
         this.processingMouseUp = false;
         this.processingMouseMove = false;
-        this.lastAdjustedMouseEvent = null;
+        this.lastCanvasMouseEvent = null;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
@@ -181,11 +181,11 @@ class Rgthree extends EventTarget {
                     LiteGraph.closeAllContextMenus();
                     if (e.button == 2) {
                         const canvas = await waitForCanvas();
-                        new LiteGraph.ContextMenu(this.getRgthreeContextMenuItems(), {
+                        new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
                             title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
                             left: e.clientX,
                             top: 5,
-                        }, canvas.getCanvasWindow());
+                        });
                         return;
                     }
                     if (e.button == 0) {
@@ -246,7 +246,7 @@ class Rgthree extends EventTarget {
         const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
         LGraphCanvas.prototype.adjustMouseEvent = function (e) {
             adjustMouseEvent.apply(this, [...arguments]);
-            rgthree.lastAdjustedMouseEvent = e;
+            rgthree.lastCanvasMouseEvent = e;
         };
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
         LGraphCanvas.prototype.copyToClipboard = function (nodes) {
@@ -311,7 +311,7 @@ class Rgthree extends EventTarget {
                     content: logoRgthree + `rgthree-comfy`,
                     className: "rgthree-contextmenu-item rgthree-contextmenu-main-item-rgthree-comfy",
                     submenu: {
-                        options: that.getRgthreeContextMenuItems(),
+                        options: that.getRgthreeIContextMenuValues(),
                     },
                 });
                 options.push(null);
@@ -334,7 +334,7 @@ class Rgthree extends EventTarget {
             };
         }, 1016);
     }
-    getRgthreeContextMenuItems() {
+    getRgthreeIContextMenuValues() {
         const [canvas, graph] = [app.canvas, app.graph];
         const selectedNodes = Object.values(canvas.selected_nodes || {});
         let rerouteNodes = [];
@@ -361,13 +361,15 @@ class Rgthree extends EventTarget {
                     options: getNodeTypeStrings(),
                     callback: (value, options, event) => {
                         const node = LiteGraph.createNode(addRgthree(value));
-                        node.pos = [
-                            rgthree.lastAdjustedMouseEvent.canvasX,
-                            rgthree.lastAdjustedMouseEvent.canvasY,
-                        ];
-                        canvas.graph.add(node);
-                        canvas.selectNode(node);
-                        app.graph.setDirtyCanvas(true, true);
+                        if (node) {
+                            node.pos = [
+                                rgthree.lastCanvasMouseEvent.canvasX,
+                                rgthree.lastCanvasMouseEvent.canvasY,
+                            ];
+                            canvas.graph.add(node);
+                            canvas.selectNode(node);
+                            app.graph.setDirtyCanvas(true, true);
+                        }
                     },
                     extra: { rgthree_doNotNest: true },
                 },

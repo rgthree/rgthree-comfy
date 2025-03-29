@@ -1,3 +1,13 @@
+import type {
+  IContextMenuValue,
+  IFoundSlot,
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISlotType,
+  LGraphNode,
+  LLink,
+} from "@litegraph/litegraph.js";
+
 import {app} from "scripts/app.js";
 import {
   IoDirection,
@@ -12,7 +22,6 @@ import {
 } from "./services/context_service.js";
 import {NodeTypesString} from "./constants.js";
 import {removeUnusedInputsFromEnd} from "./utils_inputs_outputs.js";
-import {INodeInputSlot, INodeOutputSlot, INodeSlot, LGraphNode, LLink} from "typings/litegraph.js";
 import {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
 import {DynamicContextNodeBase} from "./dynamic_context_base.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
@@ -40,11 +49,11 @@ export class DynamicContextNode extends DynamicContextNodeBase {
   }
 
   override onConnectionsChange(
-    type: number,
+    type: ISlotType,
     slotIndex: number,
     isConnected: boolean,
-    link: LLink,
-    ioSlot: INodeSlot,
+    link: LLink | null | undefined,
+    ioSlot: INodeInputSlot | INodeOutputSlot,
   ): void {
     super.onConnectionsChange?.call(this, type, slotIndex, isConnected, link, ioSlot);
     if (this.configuring) {
@@ -225,11 +234,7 @@ export class DynamicContextNode extends DynamicContextNodeBase {
     }
   }
 
-  override getSlotMenuOptions(slot: {
-    slot: number;
-    input?: INodeInputSlot | undefined;
-    output?: INodeOutputSlot | undefined;
-  }) {
+  override getSlotMenuOptions(slot: IFoundSlot): IContextMenuValue[] {
     const editable = this.isOwnedInput(slot.input!.name) && this.type !== "*";
     return [
       {
