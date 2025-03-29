@@ -5,9 +5,9 @@ import type {
   LGraphGroup,
   LGraphNode,
   LLink,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import {
@@ -16,7 +16,7 @@ import {
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import { ISerialisedNode } from "@litegraph/types/serialisation.js";
+import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 class NodeModeRepeater extends BaseCollectorNode {
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
@@ -40,16 +40,6 @@ class NodeModeRepeater extends BaseCollectorNode {
     });
 
     return super.onConstructed();
-  }
-
-  override configure(info: ISerialisedNode): void {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
   }
 
   override onConnectOutput(

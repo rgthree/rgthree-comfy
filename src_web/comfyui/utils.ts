@@ -1,4 +1,3 @@
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import type {
   Vector2,
   LGraphCanvas,
@@ -12,16 +11,19 @@ import type {
   INodeOutputSlot,
   IContextMenuValue,
   ISlotType,
-} from "@litegraph/litegraph.js";
-import type { Constructor } from "typings/index.js";
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ComfyApp} from "@comfyorg/frontend";
+import type {ComfyNodeDef} from "typings/comfy.js";
+import type {Constructor} from "typings/rgthree";
 
-import { app } from "scripts/app.js";
-import { api } from "scripts/api.js";
-import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
-import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
-import { NodeProperty } from "@litegraph/LGraphNode";
-import { LinkDirection } from "@litegraph/types/globalEnums";
-import { Point } from "@litegraph/interfaces";
+import {app} from "scripts/app.js";
+import {api} from "scripts/api.js";
+import {Resolver, getResolver, wait} from "rgthree/common/shared_utils.js";
+import {RgthreeHelpDialog} from "rgthree/common/dialog.js";
+import {NodeProperty} from "@comfyorg/litegraph/dist/LGraphNode";
+import {LinkDirection} from "@comfyorg/litegraph/dist/types/globalEnums";
+import {Point} from "@comfyorg/litegraph/dist/interfaces";
 
 /**
  * Override the api.getNodeDefs call to add a hook for refreshing node defs.
@@ -31,7 +33,7 @@ import { Point } from "@litegraph/interfaces";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
   const defs = await oldApiGetNodeDefs.call(api);
-  this.dispatchEvent(new CustomEvent("fresh-node-defs", { detail: defs }));
+  this.dispatchEvent(new CustomEvent("fresh-node-defs", {detail: defs}));
   return defs;
 };
 
@@ -47,13 +49,13 @@ type LiteGraphDir =
   | typeof LiteGraph.RIGHT
   | typeof LiteGraph.UP
   | typeof LiteGraph.DOWN;
-export const LAYOUT_LABEL_TO_DATA: { [label: string]: [LiteGraphDir, Vector2, Vector2] } = {
+export const LAYOUT_LABEL_TO_DATA: {[label: string]: [LiteGraphDir, Vector2, Vector2]} = {
   Left: [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
   Right: [LiteGraph.RIGHT, [1, 0.5], [-PADDING, 0]],
   Top: [LiteGraph.UP, [0.5, 0], [0, PADDING]],
   Bottom: [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
 };
-export const LAYOUT_LABEL_OPPOSITES: { [label: string]: string } = {
+export const LAYOUT_LABEL_OPPOSITES: {[label: string]: string} = {
   Left: "Right",
   Right: "Left",
   Top: "Bottom",
@@ -70,7 +72,7 @@ interface MenuConfig {
 }
 
 export function addMenuItem(
-  node: Constructor<LGraphNode>,
+  node: LGraphNodeConstructor,
   _app: ComfyApp,
   config: MenuConfig,
   after = "Shape",
@@ -167,7 +169,7 @@ export function addMenuItemOnExtraMenuOptions(
     ) => {
       if (!!subMenuOptions?.length) {
         new LiteGraph.ContextMenu(
-          subMenuOptions.map((option) => (option ? { content: option } : null)),
+          subMenuOptions.map((option) => (option ? {content: option} : null)),
           {
             event,
             parentMenu,
@@ -181,8 +183,8 @@ export function addMenuItemOnExtraMenuOptions(
               if (config.property) {
                 node.properties = node.properties || {};
                 node.properties[config.property] = config.prepareValue
-                  ? config.prepareValue(subValue!.content || '', node)
-                  : subValue!.content || '';
+                  ? config.prepareValue(subValue!.content || "", node)
+                  : subValue!.content || "";
               }
               config.callback && config.callback(node, subValue?.content);
             },
@@ -202,7 +204,7 @@ export function addMenuItemOnExtraMenuOptions(
 }
 
 export function addConnectionLayoutSupport(
-  node: Constructor<LGraphNode>,
+  node: LGraphNodeConstructor,
   app: ComfyApp,
   options = [
     ["Left", "Right"],
@@ -236,14 +238,14 @@ export function addConnectionLayoutSupport(
     // Purposefully do not need to call the old one.
     return getConnectionPosForLayout(this, isInput, slotNumber, out);
   };
-  node.prototype.getInputPos = function(slotNumber: number) : Vector2 {
+  node.prototype.getInputPos = function (slotNumber: number): Vector2 {
     // Purposefully do not need to call the existing one because we're overriding.
-    return getConnectionPosForLayout(this, true, slotNumber, [0,0]);
-  }
-  node.prototype.getOutputPos = function(slotNumber: number) : Vector2 {
+    return getConnectionPosForLayout(this, true, slotNumber, [0, 0]);
+  };
+  node.prototype.getOutputPos = function (slotNumber: number): Vector2 {
     // Purposefully do not need to call the existing one because we're overriding.
-    return getConnectionPosForLayout(this, false, slotNumber, [0,0]);
-  }
+    return getConnectionPosForLayout(this, false, slotNumber, [0, 0]);
+  };
 }
 
 export function setConnectionsLayout(node: LGraphNode, newLayout: [string, string]) {
@@ -403,7 +405,11 @@ function toggleConnectionLabel(cxn: any, hide = true) {
   return cxn;
 }
 
-export function addHelpMenuItem(node: LGraphNode, content: string, menuOptions: (IContextMenuValue | null)[]) {
+export function addHelpMenuItem(
+  node: LGraphNode,
+  content: string,
+  menuOptions: (IContextMenuValue | null)[],
+) {
   addMenuItemOnExtraMenuOptions(
     node,
     {
@@ -447,7 +453,6 @@ export function shouldPassThrough(
   );
 }
 
-
 function filterOutPassthroughNodes(
   infos: ConnectedNodeInfo[],
   passThroughFollowing = PassThroughFollowing.ALL,
@@ -477,10 +482,12 @@ export function getConnectedInputInfosAndFilterPassThroughs(
   startNode: LGraphNode,
   currentNode?: LGraphNode,
   slot?: number,
-  passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(
-      getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing),
-      passThroughFollowing);
+  passThroughFollowing = PassThroughFollowing.ALL,
+) {
+  return filterOutPassthroughNodes(
+    getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing),
+    passThroughFollowing,
+  );
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
   startNode: LGraphNode,
@@ -488,7 +495,12 @@ export function getConnectedInputNodesAndFilterPassThroughs(
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
-  return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
+  return getConnectedInputInfosAndFilterPassThroughs(
+    startNode,
+    currentNode,
+    slot,
+    passThroughFollowing,
+  ).map((n) => n.node);
 }
 
 export function getConnectedOutputNodes(
@@ -515,7 +527,7 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
   return filterOutPassthroughNodes(
     getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
-  ).map(n => n.node);
+  ).map((n) => n.node);
 }
 
 export type ConnectedNodeInfo = {
@@ -578,7 +590,7 @@ export function getConnectedNodesInfo(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push({ node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot });
+        rootNodes.push({node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot});
         if (shouldPassThrough(originNode, passThroughFollowing)) {
           for (const foundNode of getConnectedNodesInfo(
             startNode,
@@ -648,7 +660,7 @@ function getTypeFromSlot(
   let graph = app.graph as LGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
-    return { type: type as string, label: slot?.label, name: slot?.name };
+    return {type: type as string, label: slot?.label, name: slot?.name};
   }
   const links = getSlotLinks(slot);
   for (const link of links) {
@@ -687,7 +699,7 @@ export async function replaceNode(
     newNode.title = existingNode.title;
   }
   newNode.pos = [...existingNode.pos] as Point;
-  newNode.properties = { ...existingNode.properties };
+  newNode.properties = {...existingNode.properties};
   const oldComputeSize = [...existingNode.computeSize()];
   // oldSize to use. If we match the smallest size (computeSize) then don't record and we'll use
   // the smalles side after conversion.
@@ -723,7 +735,7 @@ export async function replaceNode(
       const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (!link) continue;
       const targetNode = app.graph.getNodeById(link.target_id)!;
-      links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
+      links.push({node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot});
     }
   }
   for (const [index, input] of existingNode.inputs.entries()) {
@@ -782,7 +794,7 @@ export function applyMixins(original: Constructor<LGraphNode>, constructors: any
  * Obviously, for an input, this will be a max of one.
  */
 export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | null) {
-  const links: { id: number; link: LLink }[] = [];
+  const links: {id: number; link: LLink}[] = [];
   if (!inputOrOutput) {
     return links;
   }
@@ -791,7 +803,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
     for (const linkId of output.links || []) {
       const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (link) {
-        links.push({ id: linkId, link: link });
+        links.push({id: linkId, link: link});
       }
     }
   }
@@ -799,7 +811,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
     const input = inputOrOutput as INodeInputSlot;
     const link: LLink = (app.graph as LGraph).links[input.link!]!;
     if (link) {
-      links.push({ id: input.link!, link: link });
+      links.push({id: input.link!, link: link});
     }
   }
   return links;
@@ -812,7 +824,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
 export async function matchLocalSlotsToServer(
   node: LGraphNode,
   direction: IoDirection,
-  serverNodeData: ComfyObjectInfo,
+  serverNodeData: ComfyNodeDef,
 ) {
   const serverSlotNames =
     direction == IoDirection.INPUT
@@ -828,7 +840,7 @@ export async function matchLocalSlotsToServer(
   let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
   if (firstIndex > -1) {
     // Have mismatches. First, let's go through and save all our links by name.
-    const links: { [key: string]: { id: number; link: LLink }[] } = {};
+    const links: {[key: string]: {id: number; link: LLink}[]} = {};
     slots.map((slot) => {
       // There's a chance we have duplicate names on an upgrade, so we'll collect all links to one
       // name so we don't ovewrite our list per name.
@@ -879,10 +891,7 @@ export async function matchLocalSlotsToServer(
             const nextNode = app.graph.getNodeById(linkData.link.target_id);
             // (Check nextNode, as sometimes graphs seem to have very stale data and that node id
             //  doesn't exist).
-            if (
-              nextNode &&
-              (nextNode.constructor as any)?.type!.includes("Reroute")
-            ) {
+            if (nextNode && (nextNode.constructor as any)?.type!.includes("Reroute")) {
               (nextNode as any).stabilize && (nextNode as any).stabilize();
             }
           }
@@ -947,8 +956,7 @@ export function getOutputNodes(nodes: LGraphNode[]) {
   return (
     nodes?.filter((n) => {
       return (
-        n.mode != LiteGraph.NEVER &&
-        ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
+        n.mode != LiteGraph.NEVER && ((n.constructor as any).nodeData as ComfyNodeDef)?.output_node
       );
     }) || []
   );

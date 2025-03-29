@@ -7,9 +7,9 @@ import type {
   ContextMenu,
   IContextMenuValue,
   Size,
-} from "@litegraph/litegraph.js";
-import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
-import type {Point} from "@litegraph/interfaces";
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {Point} from "@comfyorg/litegraph/dist/interfaces";
 
 import {app} from "scripts/app.js";
 import {addConnectionLayoutSupport} from "./utils.js";
@@ -37,16 +37,6 @@ class CollectorNode extends BaseCollectorNode {
   override onConstructed(): boolean {
     this.addOutput("Output", "*");
     return super.onConstructed();
-  }
-
-  override configure(info: ISerialisedNode) {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
   }
 }
 

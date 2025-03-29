@@ -1,7 +1,9 @@
-import { tryToGetWorkflowDataFromEvent } from "rgthree/common/utils_workflow.js";
-import { app } from "scripts/app.js";
-import type { ComfyNode, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import type {LGraphNode, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {ComfyNodeDef} from "typings/comfy.js";
+
+import {app} from "scripts/app.js";
+import {tryToGetWorkflowDataFromEvent} from "rgthree/common/utils_workflow.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
 /**
  * Registers the GroupHeaderToggles which places a mute and/or bypass icons in groups headers for
@@ -9,7 +11,7 @@ import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
  */
 app.registerExtension({
   name: "rgthree.ImportIndividualNodes",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     const onDragOver = nodeType.prototype.onDragOver;
     nodeType.prototype.onDragOver = function (e: DragEvent) {
       let handled = onDragOver?.apply?.(this, [...arguments] as any);
@@ -30,20 +32,20 @@ app.registerExtension({
   },
 });
 
-export function importIndividualNodesInnerOnDragOver(node: ComfyNode, e: DragEvent): boolean {
+export function importIndividualNodesInnerOnDragOver(node: LGraphNode, e: DragEvent): boolean {
   return (
     (node.widgets?.length && !!CONFIG_SERVICE.getFeatureValue("import_individual_nodes.enabled")) ||
     false
   );
 }
 
-export async function importIndividualNodesInnerOnDragDrop(node: ComfyNode, e: DragEvent) {
+export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: DragEvent) {
   if (!node.widgets?.length || !CONFIG_SERVICE.getFeatureValue("import_individual_nodes.enabled")) {
     return false;
   }
 
   let handled = false;
-  const { workflow, prompt } = await tryToGetWorkflowDataFromEvent(e);
+  const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
   if (!handled && workflow) {
     const exact = (workflow.nodes || []).find((n) => n.id === node.id && n.type === node.type);
     if (
@@ -55,7 +57,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: ComfyNode, e: D
       node.configure({
         // Title is overridden if it's not supplied; set it to the current then.
         title: node.title,
-        widgets_values: [...(exact?.widgets_values || [])]
+        widgets_values: [...(exact?.widgets_values || [])],
       } as any);
       handled = true;
     }

@@ -58,13 +58,6 @@ class NodeModeRelay extends BaseCollectorNode {
             this.dispatchModeToRepeater(to);
         }
     }
-    configure(info) {
-        var _a;
-        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
-            info.outputs.length = 1;
-        }
-        super.configure(info);
-    }
     onDrawForeground(ctx, canvas) {
         var _a;
         if ((_a = this.flags) === null || _a === void 0 ? void 0 : _a.collapsed) {

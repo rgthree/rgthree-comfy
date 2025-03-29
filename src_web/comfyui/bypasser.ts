@@ -1,4 +1,4 @@
-import type {LGraphNode} from "@litegraph/litegraph.js";
+import type {LGraphNode} from "@comfyorg/litegraph";
 
 import {app} from "scripts/app.js";
 import {BaseNodeModeChanger} from "./base_node_mode_changer.js";

@@ -1,14 +1,10 @@
-import type {
-  LGraphCanvas as TLGraphCanvas,
-  LGraphNode,
-  Vector2,
-} from "@litegraph/litegraph.js";
-import type { CanvasMouseEvent } from "@litegraph/types/events.js";
+import type {LGraphCanvas as TLGraphCanvas, LGraphNode, Vector2} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
 
-import { app } from "scripts/app.js";
-import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { rgthree } from "./rgthree.js";
+import {app} from "scripts/app.js";
+import {RgthreeBaseVirtualNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {rgthree} from "./rgthree.js";
 
 /**
  * A label node that allows you to put floating text anywhere on the graph. The text is the `Title`
@@ -24,13 +20,13 @@ export class Label extends RgthreeBaseVirtualNode {
   static readonly title_mode = LiteGraph.NO_TITLE;
   static collapsable = false;
 
-  static "@fontSize" = { type: "number" };
-  static "@fontFamily" = { type: "string" };
-  static "@fontColor" = { type: "string" };
-  static "@textAlign" = { type: "combo", values: ["left", "center", "right"] };
-  static "@backgroundColor" = { type: "string" };
-  static "@padding" = { type: "number" };
-  static "@borderRadius" = { type: "number" };
+  static "@fontSize" = {type: "number"};
+  static "@fontFamily" = {type: "string"};
+  static "@fontColor" = {type: "string"};
+  static "@textAlign" = {type: "combo", values: ["left", "center", "right"]};
+  static "@backgroundColor" = {type: "string"};
+  static "@padding" = {type: "number"};
+  static "@borderRadius" = {type: "number"};
 
   override properties!: RgthreeBaseVirtualNode["properties"] & {
     fontSize: number;
@@ -185,7 +181,7 @@ LGraphCanvas.prototype.drawNode = function (node: LGraphNode, ctx: CanvasRenderi
  * click).
  */
 const oldGetNodeOnPos = LGraph.prototype.getNodeOnPos;
-LGraph.prototype.getNodeOnPos = function(x: number, y: number, nodes_list?: LGraphNode[]) {
+LGraph.prototype.getNodeOnPos = function (x: number, y: number, nodes_list?: LGraphNode[]) {
   if (
     // processMouseDown always passes in the nodes_list
     nodes_list &&

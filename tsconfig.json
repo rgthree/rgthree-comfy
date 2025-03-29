@@ -7,7 +7,13 @@
     // ],
     "baseUrl": "./",
     "paths": {
-      "@litegraph/*": ["node_modules/@comfyorg/litegraph/dist/*"],
+      // `@comfyorg/litegraph` is how ComfyUi-Frontend augments litegraph.d.ts, so we should match.
+      "@comfyorg/litegraph": ["node_modules/@comfyorg/litegraph/dist/litegraph.d.ts"],
+      // ComfyUi-Frontend also augments one other module with the dist/ so we must keep it.
+      "@comfyorg/litegraph/dist/*": ["node_modules/@comfyorg/litegraph/dist/*"],
+      // Theser are just vanity. Currently nothing else augments it but, if a dependency were to we
+      // may need to change these.
+      "@comfyorg/frontend": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
       "typings/*": ["src_web/typings/*"],
       "rgthree/common/*": ["src_web/common/*"],
       "node_modules": ["node_modules/*"],

@@ -1,4 +1,4 @@
-import type { ComfyApp } from "typings/comfy.js";
+import {ComfyApp} from "@comfyorg/frontend";
 
 type ComfyButtonProps = {
   icon?: string;
@@ -9,9 +9,9 @@ type ComfyButtonProps = {
   enabled?: boolean;
   action?: (e: Event, btn: ComfyButton) => void;
   classList?: string;
-  visibilitySetting?: { id: string, showValue: any };
+  visibilitySetting?: {id: string; showValue: any};
   app?: ComfyApp;
-}
+};
 
 export declare class ComfyButton {
   element: HTMLElement;
@@ -19,5 +19,5 @@ export declare class ComfyButton {
   contentElement: HTMLElement;
   constructor(props: ComfyButtonProps);
   updateIcon(): void;
-  withPopup(popup: any, mode: "click"|"hover"): this;
-};
+  withPopup(popup: any, mode: "click" | "hover"): this;
+}

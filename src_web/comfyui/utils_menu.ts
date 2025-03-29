@@ -5,10 +5,10 @@ import type {
   ContextMenuEventListener,
   ContextMenu,
   IContextMenuItem,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
-import { rgthreeApi } from "rgthree/common/rgthree_api.js";
+import {app} from "scripts/app.js";
+import {rgthreeApi} from "rgthree/common/rgthree_api.js";
 
 const PASS_THROUGH = function <T extends any, I extends any>(item: T) {
   return item as T;
@@ -29,7 +29,7 @@ export async function showLoraChooser(
   }
   new LiteGraph.ContextMenu(loras, {
     event: event,
-    parentMenu: parentMenu != null ? parentMenu :  undefined,
+    parentMenu: parentMenu != null ? parentMenu : undefined,
     title: "Choose a lora",
     scale: Math.max(1, canvas.ds?.scale ?? 1),
     className: "dark",

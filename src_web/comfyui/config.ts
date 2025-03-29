@@ -1,4 +1,4 @@
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { RgthreeDialog, RgthreeDialogOptions } from "rgthree/common/dialog.js";
 import { createElement as $el, query as $$ } from "rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "rgthree/common/media/svgs.js";
@@ -383,6 +383,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
 
 app.ui.settings.addSetting({
   id: "rgthree.config",
+  defaultValue: null,
   name: "Open rgthree-comfy config",
   type: () => {
     // Adds a row to open the dialog from the ComfyUI settings.

@@ -1,12 +1,11 @@
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { app } from "../../scripts/app.js";
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
 import { defineProperty } from "../../rgthree/common/shared_utils.js";
-export class RgthreeBaseNode extends LGraphNode {
+class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
         this.comfyClass = "__NEED_COMFY_CLASS__";
@@ -26,6 +25,9 @@ export class RgthreeBaseNode extends LGraphNode {
         setTimeout(() => {
             if (this.comfyClass == "__NEED_COMFY_CLASS__") {
                 throw new Error("RgthreeBaseNode needs a comfy class override.");
+            }
+            if (this.constructor.type == "__NEED_CLASS_TYPE__") {
+                throw new Error("RgthreeBaseNode needs overrides.");
             }
             this.checkAndRunOnConstructed();
         });
@@ -169,6 +171,7 @@ export class RgthreeBaseNode extends LGraphNode {
 }
 RgthreeBaseNode.exposedActions = [];
 RgthreeBaseNode.title = "__NEED_CLASS_TITLE__";
+RgthreeBaseNode.type = "__NEED_CLASS_TYPE__";
 RgthreeBaseNode.category = "rgthree";
 RgthreeBaseNode._category = "rgthree";
 export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
@@ -278,8 +281,8 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     static onRegisteredForOverride(comfyClass, rgthreeClass) {
     }
 }
-RgthreeBaseServerNode.nodeData = null;
 RgthreeBaseServerNode.nodeType = null;
+RgthreeBaseServerNode.nodeData = null;
 RgthreeBaseServerNode.__registeredForOverride__ = false;
 const OVERRIDDEN_SERVER_NODES = new Map();
 const oldregisterNodeType = LiteGraph.registerNodeType;

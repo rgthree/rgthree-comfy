@@ -4,12 +4,13 @@ import type {
   Vector2,
   IContextMenuValue,
   IFoundSlot,
-} from "@litegraph/litegraph.js";
-import type {CanvasMouseEvent} from "@litegraph/types/events.js";
-import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
-import type {ICustomWidget} from "@litegraph/types/widgets";
+  LGraphNodeConstructor
+} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {ICustomWidget} from "@comfyorg/litegraph/dist/types/widgets";
 import type {RgthreeModelInfo} from "typings/rgthree.js";
-import type {ComfyObjectInfo, ComfyNodeConstructor} from "typings/comfy.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -276,7 +277,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
   /**
    * When `refreshComboInNode` is called from ComfyUI, then we'll kick off a fresh loras fetch.
    */
-  refreshComboInNode(defs: any) {
+  override refreshComboInNode(defs: any) {
     rgthreeApi.getLoras(true);
   }
 
@@ -320,7 +321,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     }
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
   }
 
@@ -796,7 +797,7 @@ const NODE_CLASS = RgthreePowerLoraLoader;
 /** Register the node. */
 app.registerExtension({
   name: "rgthree.PowerLoraLoader",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (nodeData.name === NODE_CLASS.type) {
       NODE_CLASS.setUp(nodeType, nodeData);
     }

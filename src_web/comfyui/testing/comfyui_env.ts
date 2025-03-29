@@ -1,7 +1,8 @@
-import { app } from "scripts/app.js";
-import { NodeTypesString } from "../constants.js";
-import { wait } from "rgthree/common/shared_utils.js";
-import type { LGraphNode } from "@litegraph/litegraph.js";
+import type {LGraphNode} from "@comfyorg/litegraph";
+
+import {app} from "scripts/app.js";
+import {wait} from "rgthree/common/shared_utils.js";
+import {NodeTypesString} from "../constants.js";
 
 type addNodeOptions = {
   placement?: string;
@@ -62,7 +63,7 @@ export class ComfyUITestEnvironment {
   }
 
   async queuePrompt() {
-    await app.queuePrompt();
+    await app.queuePrompt(0);
     await wait(150);
   }
 }

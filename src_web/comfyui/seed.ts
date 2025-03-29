@@ -5,21 +5,17 @@ import type {
   IWidget,
   LGraphCanvas,
   IContextMenuValue,
-} from "@litegraph/litegraph.js";
-import type {
-  ComfyObjectInfo,
-  ComfyNodeConstructor,
-  ComfyApiPrompt,
-} from "typings/comfy.js";
-import type { SerializedNode } from "typings/index.js";
+  LGraphNodeConstructor
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation";
+import type {ComfyNodeDef, ComfyApiPrompt} from "typings/comfy.js";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { ComfyWidgets } from "scripts/widgets.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
-import { ISerialisedNode } from "@litegraph/types/serialisation.js";
 
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 
@@ -209,7 +205,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     const workflow = e.detail.workflow;
     const output = e.detail.output;
 
-    let workflowNode = workflow?.nodes?.find((n: SerializedNode) => n.id === this.id) ?? null;
+    let workflowNode = workflow?.nodes?.find((n: ISerialisedNode) => n.id === this.id) ?? null;
     let outputInputs = output?.[this.id]?.inputs;
 
     if (
@@ -276,7 +272,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     return seedToUse ?? inputSeed;
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeSeed);
   }
 
@@ -293,7 +289,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
 app.registerExtension({
   name: "rgthree.Seed",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeSeed.type) {
       RgthreeSeed.setUp(nodeType, nodeData);
     }

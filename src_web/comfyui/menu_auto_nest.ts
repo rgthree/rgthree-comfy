@@ -3,9 +3,9 @@ import type {
   ContextMenu,
   IContextMenuOptions,
   IContextMenuValue,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 

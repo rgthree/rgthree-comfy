@@ -3,9 +3,9 @@ import type {
   LGraphGroup as TLGraphGroup,
   LGraph as TLGraph,
   Vector2,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 import type {AdjustedMouseCustomEvent} from "typings/rgthree.js";
-import type { CanvasMouseEvent } from "@litegraph/types/events.js";
+import type { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";

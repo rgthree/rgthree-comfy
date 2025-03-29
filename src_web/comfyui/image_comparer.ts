@@ -1,27 +1,19 @@
-import {
-  LGraphCanvas,
-  LGraphNode,
-  Vector2,
-} from "@litegraph/litegraph.js";
-import type { CanvasMouseEvent } from "@litegraph/types/events.js";
-import type { ISerialisedNode } from "@litegraph/types/serialisation.js";
-import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
+import {LGraphCanvas, LGraphNode, Vector2, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
-import { app } from "scripts/app.js";
-import { api } from "scripts/api.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { addConnectionLayoutSupport } from "./utils.js";
-import {
-  RgthreeBaseHitAreas,
-  RgthreeBaseWidget,
-  RgthreeBaseWidgetBounds,
-} from "./utils_widgets.js";
-import { measureText } from "./utils_canvas.js";
-import { Point, Size } from "@litegraph/interfaces.js";
+import {app} from "scripts/app.js";
+import {api} from "scripts/api.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {addConnectionLayoutSupport} from "./utils.js";
+import {RgthreeBaseHitAreas, RgthreeBaseWidget, RgthreeBaseWidgetBounds} from "./utils_widgets.js";
+import {measureText} from "./utils_canvas.js";
+import {Point, Size} from "@comfyorg/litegraph/dist/interfaces.js";
 
-type ComfyImageServerData = { filename: string; type: string; subfolder: string };
-type ComfyImageData = { name: string; selected: boolean; url: string; img?: HTMLImageElement };
+type ComfyImageServerData = {filename: string; type: string; subfolder: string};
+type ComfyImageData = {name: string; selected: boolean; url: string; img?: HTMLImageElement};
 type OldExecutedPayload = {
   images: ComfyImageServerData[];
 };
@@ -49,8 +41,8 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
   // These is what the core preview image node uses to show the context menu. May not be that helpful
   // since it likely will always be "0" when a context menu is invoked without manually changing
   // something.
-  imageIndex: number = 0;
-  imgs: InstanceType<typeof Image>[] = [];
+  override imageIndex: number = 0;
+  override imgs: InstanceType<typeof Image>[] = [];
 
   override serialize_widgets = true;
 
@@ -101,7 +93,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
           url: imageDataToUrl(d),
         });
       }
-      this.canvasWidget!.value = { images: imagesToChoose };
+      this.canvasWidget!.value = {images: imagesToChoose};
     }
   }
 
@@ -112,7 +104,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         serialised.widgets_values![index] = (
           this.widgets[index] as unknown as RgthreeImageComparerWidget
         ).value.images.map((d) => {
-          d = { ...d };
+          d = {...d};
           delete d.img;
           return d;
         });
@@ -225,7 +217,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
       </ul>`;
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeImageComparer);
   }
 
@@ -258,7 +250,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     this.node = node;
   }
 
-  private _value: RgthreeImageComparerWidgetValue = { images: [] };
+  private _value: RgthreeImageComparerWidgetValue = {images: []};
 
   set value(v: RgthreeImageComparerWidgetValue) {
     // Despite `v` typed as RgthreeImageComparerWidgetValue, we may have gotten an array of strings
@@ -268,7 +260,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
       cleanedVal = v.map((d, i) => {
         if (!d || typeof d === "string") {
           // We usually only have two here, so they're selected.
-          d = { url: d, name: i == 0 ? "A" : "B", selected: true };
+          d = {url: d, name: i == 0 ? "A" : "B", selected: true};
         }
         return d;
       });
@@ -455,21 +447,24 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     return [width, 20];
   }
 
-  override serializeValue(node: LGraphNode, index: number): RgthreeImageComparerWidgetValue | Promise<RgthreeImageComparerWidgetValue> {
+  override serializeValue(
+    node: LGraphNode,
+    index: number,
+  ): RgthreeImageComparerWidgetValue | Promise<RgthreeImageComparerWidgetValue> {
     const v = [];
     for (const data of this._value.images) {
       // Remove the img since it can't serialize.
-      const d = { ...data };
+      const d = {...data};
       delete d.img;
       v.push(d);
     }
-    return { images: v };
+    return {images: v};
   }
 }
 
 app.registerExtension({
   name: "rgthree.ImageComparer",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeImageComparer.type) {
       RgthreeImageComparer.setUp(nodeType, nodeData);
     }

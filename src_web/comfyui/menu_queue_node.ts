@@ -1,5 +1,5 @@
-import type {IContextMenuValue, LGraphCanvas as TLGraphCanvas} from "@litegraph/litegraph.js";
-import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
+import type {IContextMenuValue, LGraphCanvas as TLGraphCanvas, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";
@@ -64,7 +64,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(
  */
 app.registerExtension({
   name: "rgthree.QueueNode",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
     nodeType.prototype.getExtraMenuOptions = function (
       canvas: TLGraphCanvas,

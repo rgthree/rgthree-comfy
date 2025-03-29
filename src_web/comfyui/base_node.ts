@@ -1,17 +1,17 @@
-import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
 import type {
   IWidget,
   LGraphCanvas,
   IContextMenuValue,
   IFoundSlot,
   LGraphEventMode,
-} from "@litegraph/litegraph.js";
-import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 import type {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
 
 import {ComfyWidgets} from "scripts/widgets.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
-import {app} from "scripts/app.js";
 import {LogLevel, rgthree} from "./rgthree.js";
 import {addHelpMenuItem} from "./utils.js";
 import {RgthreeHelpDialog} from "rgthree/common/dialog.js";
@@ -25,13 +25,14 @@ import {defineProperty} from "rgthree/common/shared_utils.js";
  * A base node with standard methods, directly extending the LGraphNode.
  * This can be used for ui-nodes and a further base for server nodes.
  */
-export abstract class RgthreeBaseNode extends LGraphNode {
+abstract class RgthreeBaseNode extends LGraphNode {
   /**
    * Action strings that can be exposed and triggered from other nodes, like Fast Actions Button.
    */
   static exposedActions: string[] = [];
 
   static override title: string = "__NEED_CLASS_TITLE__";
+  static override type: string = "__NEED_CLASS_TYPE__";
   static override category = "rgthree";
   static _category = "rgthree"; // `category` seems to get reset by comfy, so reset to this after.
 
@@ -44,12 +45,12 @@ export abstract class RgthreeBaseNode extends LGraphNode {
    * set it here so extensions that are none the wiser don't break on some unchecked string method
    * call on an undefined calue.
    */
-  comfyClass: string = "__NEED_COMFY_CLASS__";
+  override comfyClass: string = "__NEED_COMFY_CLASS__";
 
   /** Used by the ComfyUI-Manager badge. */
   readonly nickname = "rgthree";
   /** Are we a virtual node? */
-  readonly isVirtualNode: boolean = false;
+  override readonly isVirtualNode: boolean = false;
   /** Are we able to be dropped on (if config is enabled too). */
   isDropEnabled = false;
   /** A state member determining if we're currently removed. */
@@ -83,6 +84,9 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       if (this.comfyClass == "__NEED_COMFY_CLASS__") {
         throw new Error("RgthreeBaseNode needs a comfy class override.");
       }
+      if (this.constructor.type == "__NEED_CLASS_TYPE__") {
+        throw new Error("RgthreeBaseNode needs overrides.");
+      }
       // Ensure we've called onConstructed before we got here.
       this.checkAndRunOnConstructed();
     });
@@ -113,12 +117,12 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     return this.__constructed__;
   }
 
-  onDragOver(e: DragEvent): boolean {
+  override onDragOver(e: DragEvent): boolean {
     if (!this.isDropEnabled) return false;
     return importIndividualNodesInnerOnDragOver(this, e);
   }
 
-  async onDragDrop(e: DragEvent): Promise<boolean> {
+  override async onDragDrop(e: DragEvent): Promise<boolean> {
     if (!this.isDropEnabled) return false;
     return importIndividualNodesInnerOnDragDrop(this, e);
   }
@@ -279,9 +283,6 @@ export abstract class RgthreeBaseNode extends LGraphNode {
 /**
  * A virtual node. Right now, this is just a wrapper for RgthreeBaseNode (which was the initial
  * base virtual node).
- *
- * TODO: Make RgthreeBaseNode private and move all virtual nodes to this class; cleanup
- * RgthreeBaseNode assumptions that its virtual.
  */
 export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
   override isVirtualNode = true;
@@ -307,8 +308,8 @@ export class RgthreeBaseVirtualNode extends RgthreeBaseNode {
  * seems safer than NOT overriding.
  */
 export class RgthreeBaseServerNode extends RgthreeBaseNode {
-  static nodeData: ComfyObjectInfo | null = null;
-  static nodeType: ComfyNodeConstructor | null = null;
+  static nodeType: LGraphNodeConstructor | null = null;
+  static nodeData: ComfyNodeDef | null = null;
 
   // Drop is enabled by default for server nodes.
   override isDropEnabled = true;
@@ -415,8 +416,8 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
   static __registeredForOverride__: boolean = false;
   static registerForOverride(
-    comfyClass: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
+    comfyClass: LGraphNodeConstructor,
+    nodeData: ComfyNodeDef,
     rgthreeClass: RgthreeBaseServerNodeConstructor,
   ) {
     if (OVERRIDDEN_SERVER_NODES.has(comfyClass)) {

@@ -430,7 +430,7 @@ class Rgthree extends EventTarget {
         var _a;
         try {
             this.queueNodeIds = nodeIds;
-            await app.queuePrompt();
+            await app.queuePrompt(0);
         }
         catch (e) {
             const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing nodes ${nodeIds}`, e);
@@ -456,11 +456,11 @@ class Rgthree extends EventTarget {
     initializeComfyUIHooks() {
         const rgthree = this;
         const queuePrompt = app.queuePrompt;
-        app.queuePrompt = async function () {
+        app.queuePrompt = async function (number, batchCount) {
             rgthree.processingQueue = true;
             rgthree.dispatchCustomEvent("queue");
             try {
-                await queuePrompt.apply(app, [...arguments]);
+                return await queuePrompt.apply(app, [...arguments]);
             }
             finally {
                 rgthree.processingQueue = false;

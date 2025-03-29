@@ -201,8 +201,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     node.mode = MODE_ALWAYS;
                 }
                 if (node.handleAction) {
-                    if (typeof action !== 'string') {
-                        throw new Error('Fast Actions Button action should be a string: ' + action);
+                    if (typeof action !== "string") {
+                        throw new Error("Fast Actions Button action should be a string: " + action);
                     }
                     await node.handleAction(action);
                 }

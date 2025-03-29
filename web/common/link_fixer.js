@@ -149,7 +149,7 @@ export function fixBadLinks(graph, fix = false, silent = false, logger = console
     }
     let links = [];
     if (!Array.isArray(graph.links)) {
-        Object.values(graph.links).reduce((acc, v) => {
+        links = Object.values(graph.links).reduce((acc, v) => {
             acc[v.id] = v;
             return acc;
         }, links);

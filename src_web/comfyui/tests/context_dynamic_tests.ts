@@ -2,7 +2,7 @@ import type {
   LiteGraph as TLiteGraph,
   LGraphNode as TLGraphNode,
   LGraphNode,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
 import {NodeTypesString} from "../constants.js";
 import {wait} from "rgthree/common/shared_utils.js";

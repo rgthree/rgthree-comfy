@@ -1,7 +1,8 @@
+import type { ISerialisedGraph } from "@comfyorg/litegraph/dist/types/serialisation";
+import type { ComfyApiFormat } from "typings/comfy.js";
+
 import { getResolver } from "./shared_utils.js";
 import { getPngMetadata, getWebpMetadata } from "./comfyui_shim.js";
-import type { SerializedGraph } from "typings/index.js";
-import type { ComfyApiFormat } from "typings/comfy.js";
 
 /**
  * Parses the workflow JSON and do any necessary cleanup.
@@ -17,7 +18,7 @@ function parseWorkflowJson(stringJson?: string) {
 
 export async function tryToGetWorkflowDataFromEvent(
   e: DragEvent,
-): Promise<{ workflow: SerializedGraph | null; prompt: ComfyApiFormat | null }> {
+): Promise<{ workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null }> {
   let work;
   for (const file of e.dataTransfer?.files || []) {
     const data = await tryToGetWorkflowDataFromFile(file);
@@ -38,7 +39,7 @@ export async function tryToGetWorkflowDataFromEvent(
 
 export async function tryToGetWorkflowDataFromFile(
   file: File | Blob,
-): Promise<{ workflow: SerializedGraph | null; prompt: ComfyApiFormat | null }> {
+): Promise<{ workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null }> {
   if (file.type === "image/png") {
     const pngInfo = await getPngMetadata(file);
     return {

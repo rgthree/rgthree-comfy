@@ -1,5 +1,5 @@
-import type { LGraphNode, IWidget} from "@litegraph/litegraph.js";
-import type { ISerialisedNode } from "@litegraph/types/serialisation.js";
+import type { LGraphNode, IWidget} from "@comfyorg/litegraph";
+import type { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { PassThroughFollowing } from "./utils.js";
@@ -33,16 +33,6 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     });
     this.addOutput("OPT_CONNECTION", "*");
     return super.onConstructed();
-  }
-
-  override configure(info: ISerialisedNode): void {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
   }
 
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {

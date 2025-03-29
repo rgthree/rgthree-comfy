@@ -51,7 +51,7 @@ ImageInsetCrop.exposedActions = ["Reset Crop"];
 ImageInsetCrop.maxResolution = 8192;
 app.registerExtension({
     name: "rgthree.ImageInsetCrop",
-    async beforeRegisterNodeDef(nodeType, nodeData, _app) {
+    async beforeRegisterNodeDef(nodeType, nodeData) {
         if (nodeData.name === NodeTypesString.IMAGE_INSET_CROP) {
             ImageInsetCrop.setUp(nodeType, nodeData);
         }

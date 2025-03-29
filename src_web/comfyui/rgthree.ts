@@ -4,11 +4,16 @@ import type {
   IContextMenuValue,
   LGraph as TLGraph,
   IContextMenuOptions,
-} from "@litegraph/litegraph.js";
-import type {CanvasMouseEvent, CanvasPointerExtensions} from "@litegraph/types/events.js";
-import type {NodeId} from "@litegraph/LGraphNode.js";
-import type {ComfyApiFormat, ComfyApiPrompt, ComfyApp} from "typings/comfy.js";
+  ISerialisedGraph,
+} from "@comfyorg/litegraph";
+import type {
+  CanvasMouseEvent,
+  CanvasPointerExtensions,
+} from "@comfyorg/litegraph/dist/types/events.js";
+import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import type {ComfyApiFormat, ComfyApiPrompt} from "typings/comfy.js";
 import type {Bookmark} from "./bookmark.js";
+import type {ComfyApp} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
@@ -28,6 +33,7 @@ import {
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
 import {createElement, query, queryOne} from "rgthree/common/utils_dom.js";
+import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -411,13 +417,12 @@ class Rgthree extends EventTarget {
       const graph = app.graph as TLGraph;
       onGroupAdd.apply(this, [...args] as any);
       // [🤮] Bad typing here.. especially the last arg; it is LGraphNode but can really be anything
-      // with pos or size... pity.
+      // with pos or size... pity. See more in our litegraph.d.ts.
       LGraphCanvas.onShowPropertyEditor(
         {} as any,
         null as any,
         null as any,
         null as any,
-        //
         graph._groups[graph._groups.length - 1]! as unknown as LGraphNode,
       );
     };
@@ -638,7 +643,7 @@ class Rgthree extends EventTarget {
   async queueOutputNodes(nodeIds: NodeId[]) {
     try {
       this.queueNodeIds = nodeIds;
-      await app.queuePrompt();
+      await app.queuePrompt(0);
     } catch (e) {
       const [n, v] = this.logParts(
         LogLevel.ERROR,
@@ -680,11 +685,11 @@ class Rgthree extends EventTarget {
     // understand if we're serializing because we're queueing (and return the random seed to use) or
     // for saving the workflow (and keep -1, etc.).
     const queuePrompt = app.queuePrompt as Function;
-    app.queuePrompt = async function () {
+    app.queuePrompt = async function (number: number, batchCount?: number) {
       rgthree.processingQueue = true;
       rgthree.dispatchCustomEvent("queue");
       try {
-        await queuePrompt.apply(app, [...arguments]);
+        return await queuePrompt.apply(app, [...arguments]);
       } finally {
         rgthree.processingQueue = false;
         rgthree.dispatchCustomEvent("queue-end");
@@ -744,16 +749,17 @@ class Rgthree extends EventTarget {
     // Hook into a data load, like from an image or JSON drop-in. This is (currently) used to
     // monitor for bad linking data.
     const loadGraphData = app.loadGraphData;
-    // TODO: Pull in real ComfyUI Types.
-    app.loadGraphData = function (graph: any) {
+    // NOTE: This was "serializedLGraph" in pre-litegraph types, which maps to `ISerialisedGraph`
+    // now; though, @comfyorg/comfyui-frontend-types have the signature as `ComfyWorkflowJSON` which
+    // is not exported and a zod type. Looks like there's mostly an overlap with ISerialisedGraph.
+    app.loadGraphData = function (graph: ISerialisedGraph) {
       if (rgthree.monitorLinkTimeout) {
         clearTimeout(rgthree.monitorLinkTimeout);
         rgthree.monitorLinkTimeout = null;
       }
       rgthree.clearAllMessages();
       // Try to make a copy to use, because ComfyUI's loadGraphData will modify it.
-      // TODO: Pull in real ComfyUI Types.
-      let graphCopy: any | null;
+      let graphCopy: ISerialisedGraph | null;
       try {
         graphCopy = JSON.parse(JSON.stringify(graph));
       } catch (e) {
@@ -846,12 +852,10 @@ class Rgthree extends EventTarget {
    */
   getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(
     node: LGraphNode,
-  // TODO: Pull in real ComfyUI Types.
-  ): any | null {
+  ): ISerialisedNode  | null {
     return (
       this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff?.nodes?.find(
-        // TODO: Pull in real ComfyUI Types.
-        (n: any) => n.id === node.id,
+        (n: ISerialisedNode) => n.id === node.id,
       ) ?? null
     );
   }

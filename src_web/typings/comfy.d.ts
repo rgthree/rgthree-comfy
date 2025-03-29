@@ -1,6 +1,9 @@
-import type { LGraphGroup as TLGraphGroup, LGraphNode as TLGraphNode, IWidget, SerializedLGraphNode, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas, LiteGraph as TLiteGraph, INodeSlot } from "@litegraph/litegraph.js";
-import type {Constructor, SerializedGraph} from './index.js';
-
+/**
+ * These contain types from ComfyUI (or LiteGraph) that are either copied or manually determined
+ * added here mostly because @comfyorg/comfyui-frontend-types hasn't exported them oir they weren't
+ * available.
+ */
+import type {SerializedGraph} from './index.js';
 
 export type getPngMetadata = (file: File | Blob) => { workflow?: string; prompt?: string };
 export type getWebpMetadata = (file: File | Blob) => {
@@ -10,128 +13,63 @@ export type getWebpMetadata = (file: File | Blob) => {
   prompt?: string;
 };
 
+// Below are types derived from the Serialized version of a workflow.
 
-// @rgthree: Types on ComfyApp as needed.
-export interface ComfyApp {
-	extensions: ComfyExtension[];
-	async queuePrompt(number?: number, batchCount = 1): Promise<void>;
-	graph: TLGraph;
-	canvas: TLGraphCanvas;
-	clean() : void;
- 	registerExtension(extension: ComfyExtension): void;
-	getPreviewFormatParam(): string;
-	getRandParam(): string;
-	loadApiJson(apiData: {}, fileName: string): void;
-	async graphToPrompt(graph?: TLGraph, clean?: boolean): Promise<void>;
-	// workflow: ComfyWorkflowInstance ???
-	async loadGraphData(graphData: {}, clean?: boolean, restore_view?: boolean, workflow?: any|null): Promise<void>
-	ui: {
-		settings: {
-			addSetting(config: {id: string, name: string, type: () => HTMLElement}) : void;
-		}
-	}
-	// Just marking as any for now.
-	menu?: any;
-}
+// export type SerializedLink = [
+//   number, // this.id,
+//   number, // this.origin_id,
+//   number, // this.origin_slot,
+//   number, // this.target_id,
+//   number, // this.target_slot,
+//   string, // this.type
+// ];
 
-export interface ComfyWidget extends IWidget {
-	// https://github.com/comfyanonymous/ComfyUI/issues/2193 Changes from SerializedLGraphNode to
-	// LGraphNode...
-	serializeValue(nodeType: TLGraphNode, index: number): Promise<TValue>;
-	afterQueued(): void;
-	inputEl?: HTMLTextAreaElement;
-	width: number;
-}
+// interface SerializedNodeInput {
+//   name: string;
+//   type: string;
+//   link: number;
+// }
+// interface SerializedNodeOutput extends SerializedNodeInput {
+//   slot_index: number;
+//   links: number[];
+// }
 
-export interface ComfyGraphNode extends TLGraphNode {
-	// getExtraMenuOptions: (node: TLGraphNode, options: ContextMenuItem[]) => void;
-	onExecuted(message: any): void;
-}
+// export interface SerializedNode {
+//   // id: number;
+//   // inputs: SerializedNodeInput[];
+//   // outputs: SerializedNodeOutput[];
+//   mode: number;
+//   order: number;
+//   pos: [number, number];
+//   properties: any;
+//   size: [number, number];
+//   type: string;
+//   widgets_values: Array<number | string>;
+// }
 
-export interface ComfyNode extends TLGraphNode {
-	comfyClass: string;
-}
-
-// @rgthree
-export interface ComfyNodeConstructor extends Constructor<ComfyNode> {
-	static title: string;
-	static type?: string;
-	static comfyClass: string;
-}
-
-// export type NodeMode = 0|1|2|3|4|undefined;
+// export interface SerializedGraph {
+  // config: any;
+  // extra: any;
+  // groups: any;
+  // last_link_id: number;
+  // last_node_id: number;
+  // links: SerializedLink[];
+  // nodes: SerializedNode[];
+// }
 
 
-export interface ComfyExtension {
-	/**
-	 * The name of the extension
-	 */
-	name: string;
-	/**
-	 * Allows any initialisation, e.g. loading resources. Called after the canvas is created but before nodes are added
-	 * @param app The ComfyUI app instance
-	 */
-	init?(app: ComfyApp): Promise<void>;
-	/**
-	 * Allows any additonal setup, called after the application is fully set up and running
-	 * @param app The ComfyUI app instance
-	 */
-	setup?(app: ComfyApp): Promise<void>;
-	/**
-	 * Called before nodes are registered with the graph
-	 * @param defs The collection of node definitions, add custom ones or edit existing ones
-	 * @param app The ComfyUI app instance
-	 */
-	addCustomNodeDefs?(defs: Record<string, ComfyObjectInfo>, app: ComfyApp): Promise<void>;
-	/**
-	 * Allows the extension to add custom widgets
-	 * @param app The ComfyUI app instance
-	 * @returns An array of {[widget name]: widget data}
-	 */
-	getCustomWidgets?(
-		app: ComfyApp
-	): Promise<
-		Record<string, (node, inputName, inputData, app) => { widget?: IWidget; minWidth?: number; minHeight?: number }>
-	>;
-	/**
-	 * Allows the extension to add additional handling to the node before it is registered with LGraph
-	 * @rgthree changed nodeType from `typeof LGraphNode` to `ComfyNodeConstructor`
-	 * @param nodeType The node class (not an instance)
-	 * @param nodeData The original node object info config object
-	 * @param app The ComfyUI app instance
-	 */
-	beforeRegisterNodeDef?(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo, app: ComfyApp): Promise<void>;
-	/**
-	 * Allows the extension to register additional nodes with LGraph after standard nodes are added
-	 * @param app The ComfyUI app instance
-	 */
-	// @rgthree - add void for non async
-	registerCustomNodes?(app: ComfyApp): void|Promise<void>;
-	/**
-	 * Allows the extension to modify a node that has been reloaded onto the graph.
-	 * If you break something in the backend and want to patch workflows in the frontend
-	 * This is the place to do this
-	 * @param node The node that has been loaded
-	 * @param app The ComfyUI app instance
-	 */
-	loadedGraphNode?(node: TLGraphNode, app: ComfyApp);
-	/**
-	 * Allows the extension to run code after the constructor of the node
-	 * @param node The node that has been created
-	 * @param app The ComfyUI app instance
-	 */
-	nodeCreated?(node: TLGraphNode, app: ComfyApp);
-}
-
-export type ComfyObjectInfo = {
+/**
+ * ComfyUI-Frontend defines a ComfyNodeDef from Zod, but doesn't expose it. This is a shim.
+ */
+export type ComfyNodeDef = {
 	name: string;
 	display_name?: string;
 	description?: string;
 	category: string;
 	input?: {
-		required?: Record<string, ComfyObjectInfoConfig>;
-		optional?: Record<string, ComfyObjectInfoConfig>;
-		hidden?: Record<string, ComfyObjectInfoConfig>;
+		required?: Record<string, [string | any[]] | [string | any[], any]>;
+		optional?: Record<string, [string | any[]] | [string | any[], any]>;
+		hidden?: Record<string, [string | any[]] | [string | any[], any]>;
 	};
 	output?: string[];
 	output_name: string[];
@@ -139,7 +77,9 @@ export type ComfyObjectInfo = {
 	output_node?: boolean;
 };
 
-export type ComfyObjectInfoConfig = [string | any[]] | [string | any[], any];
+
+
+// Below are types derived from the formats for the ComfyAPI.
 
 // @rgthree
 type ComfyApiInputLink = [
@@ -149,8 +89,8 @@ type ComfyApiInputLink = [
   number,
 ]
 
-// @rgthree
-export type ComfyApiFormatNode = {
+
+type ComfyApiFormatNode = {
   "inputs": {
     [input_name: string]: string|number|boolean|ComfyApiInputLink,
   },
@@ -160,33 +100,27 @@ export type ComfyApiFormatNode = {
   }
 }
 
-// @rgthree
 export type ComfyApiFormat = {
   [node_id: string]: ComfyApiFormatNode
 }
 
-// @rgthree
 export type ComfyApiPrompt = {
   workflow: SerializedGraph,
   output: ComfyApiFormat,
 }
 
-// @rgthree
 export type ComfyApiEventDetailStatus = {
   exec_info: {
     queue_remaining: number;
   };
 };
 
-// @rgthree
 export type ComfyApiEventDetailExecutionStart = {
   prompt_id: string;
 };
 
-// @rgthree
 export type ComfyApiEventDetailExecuting = null | string;
 
-// @rgthree
 export type ComfyApiEventDetailProgress = {
   node: string;
   prompt_id: string;
@@ -194,27 +128,17 @@ export type ComfyApiEventDetailProgress = {
   value: number;
 };
 
-// @rgthree
 export type ComfyApiEventDetailExecuted = {
   node: string;
   prompt_id: string;
   output: any;
 };
 
-// @rgthree
 export type ComfyApiEventDetailCached = {
   nodes: string[];
   prompt_id: string;
 };
 
-// @rgthree
-export type ComfyApiEventDetailExecuted = {
-  prompt_id: string;
-  node: string;
-  output: any;
-};
-
-// @rgthree
 export type ComfyApiEventDetailError = {
   prompt_id: string;
   exception_type: string;

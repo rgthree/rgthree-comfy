@@ -1,5 +1,6 @@
-import type {LGraphNode as TLGraphNode} from "@litegraph/litegraph.js";
-import type {ComfyApp, ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
+import type {LGraphNodeConstructor, LGraphNode as TLGraphNode} from "@comfyorg/litegraph";
+import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyApp} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {ComfyWidgets} from "scripts/widgets.js";
@@ -11,8 +12,8 @@ let hasShownAlertForUpdatingInt = false;
 app.registerExtension({
   name: "rgthree.DisplayAny",
   async beforeRegisterNodeDef(
-    nodeType: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
+    nodeType: LGraphNodeConstructor,
+    nodeData: ComfyNodeDef,
     app: ComfyApp,
   ) {
     if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {

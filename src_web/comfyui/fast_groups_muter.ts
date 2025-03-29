@@ -5,17 +5,17 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   Size,
-} from "@litegraph/litegraph.js";
-import type { ISerialisedNode } from "@litegraph/types/serialisation.js";
-import type { IBooleanWidget } from "@litegraph/types/widgets";
-import type { Point } from "@litegraph/interfaces.js";
+} from "@comfyorg/litegraph";
+import type { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type { IBooleanWidget } from "@comfyorg/litegraph/dist/types/widgets";
+import type { Point } from "@comfyorg/litegraph/dist/interfaces.js";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
-import { CanvasMouseEvent } from "@litegraph/types/events.js";
+import { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
 
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
@@ -80,16 +80,6 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   override onConstructed(): boolean {
     this.addOutput("OPT_CONNECTION", "*");
     return super.onConstructed();
-  }
-
-  override configure(info: ISerialisedNode): void {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
   }
 
   override onAdded(graph: TLGraph): void {
@@ -286,7 +276,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
               }
             }
           },
-          serializeValue(serializedNode: ISerialisedNode, widgetIndex: number) {
+          serializeValue(...args: any[]) {
             return this.value;
           },
           mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {

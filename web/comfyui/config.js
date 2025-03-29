@@ -346,6 +346,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
 }
 app.ui.settings.addSetting({
     id: "rgthree.config",
+    defaultValue: null,
     name: "Open rgthree-comfy config",
     type: () => {
         return $el("tr.rgthree-comfyui-settings-row", {

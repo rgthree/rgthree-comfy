@@ -1,14 +1,14 @@
-import type {LGraph, LGraphNode} from "@litegraph/litegraph.js";
-import type {IButtonWidget, IComboWidget, IWidget} from "@litegraph/types/widgets.js";
-import type {ComfyApp} from "typings/comfy.js";
-import type {RgthreeBaseNode} from "./base_node.js";
+import type {LGraph, LGraphNode} from "@comfyorg/litegraph";
+import type {IButtonWidget, IComboWidget, IWidget} from "@comfyorg/litegraph/dist/types/widgets.js";
+import type {ComfyApp} from "@comfyorg/frontend";
+import type { RgthreeBaseVirtualNode } from "./base_node.js";
 
 import {app} from "scripts/app.js";
 import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
 import {NodeTypesString} from "./constants.js";
 import {addMenuItem} from "./utils.js";
 import {rgthree} from "./rgthree.js";
-import {ISerialisedNode} from "@litegraph/types/serialisation.js";
+import {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
@@ -273,11 +273,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           node.mode = MODE_ALWAYS;
         }
         // If there's a handleAction, always call it.
-        if ((node as RgthreeBaseNode).handleAction) {
-          if (typeof action !== 'string') {
-            throw new Error('Fast Actions Button action should be a string: ' + action);
+        if ((node as RgthreeBaseVirtualNode).handleAction) {
+          if (typeof action !== "string") {
+            throw new Error("Fast Actions Button action should be a string: " + action);
           }
-          await (node as RgthreeBaseNode).handleAction(action);
+          await (node as RgthreeBaseVirtualNode).handleAction(action);
         }
         app.graph.change();
         continue;

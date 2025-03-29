@@ -3,9 +3,9 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   Vector4,
-} from "@litegraph/litegraph.js";
-import type {CanvasMouseEvent} from "@litegraph/types/events.js";
-import type {IBaseWidget, IWidgetOptions} from "@litegraph/types/widgets.js";
+} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {IBaseWidget, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
 
 import {app} from "scripts/app.js";
 import {drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality} from "./utils_canvas.js";

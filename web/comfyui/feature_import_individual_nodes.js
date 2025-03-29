@@ -1,5 +1,5 @@
-import { tryToGetWorkflowDataFromEvent } from "../../rgthree/common/utils_workflow.js";
 import { app } from "../../scripts/app.js";
+import { tryToGetWorkflowDataFromEvent } from "../../rgthree/common/utils_workflow.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 app.registerExtension({
     name: "rgthree.ImportIndividualNodes",
@@ -42,7 +42,7 @@ export async function importIndividualNodesInnerOnDragDrop(node, e) {
             confirm("Found a node match from embedded workflow (same id & type) in this workflow. Would you like to set the widget values?")) {
             node.configure({
                 title: node.title,
-                widgets_values: [...((exact === null || exact === void 0 ? void 0 : exact.widgets_values) || [])]
+                widgets_values: [...((exact === null || exact === void 0 ? void 0 : exact.widgets_values) || [])],
             });
             handled = true;
         }

@@ -6,12 +6,11 @@ import type {
   LGraphNode as TLGraphNode,
   IWidget,
   ISlotType,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
 import {rgthree} from "./rgthree.js";
-
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
@@ -21,8 +20,8 @@ import {
   getConnectedOutputNodes,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import {ConnectByTypeOptions} from "@litegraph/LGraphNode.js";
-import {TWidgetType, IWidgetOptions} from "@litegraph/types/widgets.js";
+import {ConnectByTypeOptions} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import {TWidgetType, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
 
 /**
  * A Virtual Node that allows any node's output to connect to it.

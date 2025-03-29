@@ -4,10 +4,10 @@ import type {
   INodeOutputSlot,
   INodeInputSlot,
   IWidget,
-} from "@litegraph/litegraph.js";
-import type {ISerialisedNode} from "@litegraph/types/serialisation.js";
-import type {IComboWidget} from "@litegraph/types/widgets.js";
-import type {ComfyObjectInfo, ComfyGraphNode} from "typings/comfy.js";
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {IComboWidget} from "@comfyorg/litegraph/dist/types/widgets.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {api} from "scripts/api.js";
 import {wait} from "rgthree/common/shared_utils.js";
@@ -16,16 +16,16 @@ import {rgthree} from "./rgthree.js";
 /** Wraps a node instance keeping closure without mucking the finicky types. */
 export class PowerPrompt {
   readonly isSimple: boolean;
-  readonly node: ComfyGraphNode;
+  readonly node: LGraphNode;
   readonly promptEl: HTMLTextAreaElement;
-  nodeData: ComfyObjectInfo;
+  nodeData: ComfyNodeDef;
   readonly combos: {[key: string]: IComboWidget} = {};
   readonly combosValues: {[key: string]: string[]} = {};
   boundOnFreshNodeDefs!: (event: CustomEvent) => void;
 
   private configuring = false;
 
-  constructor(node: ComfyGraphNode, nodeData: ComfyObjectInfo) {
+  constructor(node: LGraphNode, nodeData: ComfyNodeDef) {
     this.node = node;
     this.node.properties = this.node.properties || {};
 
@@ -186,7 +186,7 @@ export class PowerPrompt {
     );
   }
 
-  refreshCombos(nodeData: ComfyObjectInfo) {
+  refreshCombos(nodeData: ComfyNodeDef) {
     this.nodeData = nodeData;
     let filter: RegExp | null = null;
     if ((this.node.properties["combos_filter"] as string)?.trim()) {

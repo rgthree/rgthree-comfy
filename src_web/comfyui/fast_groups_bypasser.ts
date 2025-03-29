@@ -1,6 +1,6 @@
-import type { Size } from "@litegraph/litegraph.js";
+import type { Size } from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { NodeTypesString } from "./constants.js";
 import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
 

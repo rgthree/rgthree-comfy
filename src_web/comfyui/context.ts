@@ -5,8 +5,10 @@ import type {
   LGraphNode as TLGraphNode,
   LLink,
   ISlotType,
-} from "@litegraph/litegraph.js";
-import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ConnectByTypeOptions} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {
@@ -22,7 +24,6 @@ import {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
 import {debounce, wait} from "rgthree/common/shared_utils.js";
 import {removeUnusedInputsFromEnd} from "./utils_inputs_outputs.js";
 import {NodeTypesString} from "./constants.js";
-import {ConnectByTypeOptions} from "@litegraph/LGraphNode.js";
 
 /**
  * Takes a non-context node and determins for its input or output slot, if there is a valid
@@ -187,8 +188,8 @@ export class BaseContextNode extends RgthreeBaseServerNode {
   }
 
   static override setUp(
-    comfyClass: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
+    comfyClass: LGraphNodeConstructor,
+    nodeData: ComfyNodeDef,
     ctxClass: RgthreeBaseServerNodeConstructor,
   ) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
@@ -227,7 +228,7 @@ class ContextNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextNode);
   }
 
@@ -254,7 +255,7 @@ class ContextBigNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextBigNode);
   }
 
@@ -327,7 +328,7 @@ class ContextSwitchNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchNode);
   }
 
@@ -354,7 +355,7 @@ class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchBigNode);
   }
 
@@ -381,7 +382,7 @@ class ContextMergeNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextMergeNode);
   }
 
@@ -408,7 +409,7 @@ class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextMergeBigNode);
   }
 
@@ -431,7 +432,7 @@ const contextNodes = [
   ContextMergeNode,
   ContextMergeBigNode,
 ];
-const contextTypeToServerDef: {[type: string]: ComfyObjectInfo} = {};
+const contextTypeToServerDef: {[type: string]: ComfyNodeDef} = {};
 
 function fixBadConfigs(node: ContextNode) {
   // Dumb mistake, but let's fix our mispelling. This will probably need to stay in perpetuity to
@@ -444,7 +445,7 @@ function fixBadConfigs(node: ContextNode) {
 
 app.registerExtension({
   name: "rgthree.Context",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     // Loop over out context nodes and see if any match the server data.
     for (const ctxClass of contextNodes) {
       if (nodeData.name === ctxClass.type) {

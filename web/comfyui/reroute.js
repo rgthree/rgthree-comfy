@@ -281,16 +281,13 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         return super.onConstructed();
     }
     configure(info) {
-        var _a, _b, _c;
-        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
-            info.outputs.length = 1;
-        }
-        if ((_b = info.inputs) === null || _b === void 0 ? void 0 : _b.length) {
+        var _a, _b;
+        if ((_a = info.inputs) === null || _a === void 0 ? void 0 : _a.length) {
             info.inputs.length = 1;
         }
         super.configure(info);
         this.configuring = true;
-        this.setResizable(!!((_c = this.properties["resizable"]) !== null && _c !== void 0 ? _c : configResizable));
+        this.setResizable(!!((_b = this.properties["resizable"]) !== null && _b !== void 0 ? _b : configResizable));
         this.applyNodeSize();
         this.configuring = false;
     }

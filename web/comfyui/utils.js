@@ -102,8 +102,8 @@ export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after =
                         if (config.property) {
                             node.properties = node.properties || {};
                             node.properties[config.property] = config.prepareValue
-                                ? config.prepareValue(subValue.content || '', node)
-                                : subValue.content || '';
+                                ? config.prepareValue(subValue.content || "", node)
+                                : subValue.content || "";
                         }
                         config.callback && config.callback(node, subValue === null || subValue === void 0 ? void 0 : subValue.content);
                     },
@@ -328,13 +328,13 @@ export function getConnectedInputInfosAndFilterPassThroughs(startNode, currentNo
     return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing), passThroughFollowing);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map(n => n.node);
+    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
     var _a, _b, _c, _d, _e, _f;
@@ -597,8 +597,7 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
                     else {
                         linkData.link.origin_slot = currentNodeSlot;
                         const nextNode = app.graph.getNodeById(linkData.link.target_id);
-                        if (nextNode &&
-                            ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
+                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
                             nextNode.stabilize && nextNode.stabilize();
                         }
                     }
@@ -638,7 +637,6 @@ LiteGraph.isValidConnection = function (typeA, typeB) {
 export function getOutputNodes(nodes) {
     return ((nodes === null || nodes === void 0 ? void 0 : nodes.filter((n) => {
         var _a;
-        return (n.mode != LiteGraph.NEVER &&
-            ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
+        return (n.mode != LiteGraph.NEVER && ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
     })) || []);
 }

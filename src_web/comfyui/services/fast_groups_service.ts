@@ -1,12 +1,12 @@
-import type { BaseFastGroupsModeChanger } from "../fast_groups_muter.js";
+import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 import type {
   LGraph as TLGraph,
   LGraphCanvas as TLGraphCanvas,
   LGraphGroup,
   Vector4,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 
 /**
  * A service that keeps global state that can be shared by multiple FastGroupsMuter or
@@ -28,7 +28,7 @@ class FastGroupsService {
   private runScheduleTimeout: number | null = null;
   private runScheduleAnimation: number | null = null;
 
-  private cachedNodeBoundings: { [key: number]: Vector4 } | null = null;
+  private cachedNodeBoundings: {[key: number]: Vector4} | null = null;
 
   constructor() {
     // Don't need to do anything, wait until a signal.

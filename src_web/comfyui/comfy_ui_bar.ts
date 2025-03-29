@@ -1,4 +1,4 @@
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { ComfyButtonGroup } from "scripts/ui/components/buttonGroup.js";
 import { ComfyButton } from "scripts/ui/components/button.js";
 import { iconGear, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";

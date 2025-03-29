@@ -6,9 +6,9 @@ import type {
   LGraphNode,
   LLink,
   Vector2,
-} from "@litegraph/litegraph.js";
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
@@ -20,7 +20,7 @@ import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";
 import { rgthree } from "./rgthree.js";
-import { ISerialisedNode } from "@litegraph/types/serialisation.js";
+import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
@@ -107,16 +107,6 @@ class NodeModeRelay extends BaseCollectorNode {
       // Pass "to" since there may be other getters in the way to access this.mode directly.
       this.dispatchModeToRepeater(to);
     }
-  }
-
-  override configure(info: ISerialisedNode): void {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
   }
 
   override onDrawForeground(ctx: CanvasRenderingContext2D, canvas: LGraphCanvas): void {

@@ -1,4 +1,6 @@
-import type { SerializedGraph, BadLinksData } from "typings/index.js";
+import type { ISerialisedGraph } from "@comfyorg/litegraph/dist/types/serialisation";
+import type { BadLinksData } from "../common/link_fixer.js";
+
 import { fixBadLinks } from "../common/link_fixer.js";
 import { getPngMetadata } from "../common/comfyui_shim.js";
 
@@ -34,7 +36,7 @@ export class LinkPage {
   private outputImageEl: HTMLImageElement;
 
   private file?: File | Blob;
-  private graph?: SerializedGraph;
+  private graph?: ISerialisedGraph;
   private graphResults?: BadLinksData;
   private graphFinalResults?: BadLinksData;
 
@@ -196,7 +198,7 @@ export class LinkPage {
     }
   }
 
-  private async loadGraphData(graphData: SerializedGraph) {
+  private async loadGraphData(graphData: ISerialisedGraph) {
     this.graphResults = await fixBadLinks(graphData);
     this.updateUi();
   }
