@@ -6,7 +6,7 @@ import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {NodeTypesString} from "./constants.js";
-import {getClosestOrSelf, queryOne} from "rgthree/common/utils_dom.js";
+import {getClosestOrSelf, query} from "rgthree/common/utils_dom.js";
 
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
@@ -108,7 +108,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
    * keys down for the user. Note, blocks drag if the return is truthy.
    */
   override onMouseDown(event: CanvasMouseEvent, pos: Point, graphCanvas: LGraphCanvas): boolean {
-    const input = queryOne<HTMLInputElement>(".graphdialog > input.value");
+    const input = query<HTMLInputElement>(".graphdialog > input.value");
     if (input && input.value === this.widgets[0]?.value) {
       input.addEventListener("keydown", (e) => {
         // ComfyUI swallows keydown on inputs, so we need to call out to rgthree to use downkeys.

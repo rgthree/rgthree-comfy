@@ -25,7 +25,7 @@ import {defineProperty} from "rgthree/common/shared_utils.js";
  * A base node with standard methods, directly extending the LGraphNode.
  * This can be used for ui-nodes and a further base for server nodes.
  */
-abstract class RgthreeBaseNode extends LGraphNode {
+export abstract class RgthreeBaseNode extends LGraphNode {
   /**
    * Action strings that can be exposed and triggered from other nodes, like Fast Actions Button.
    */

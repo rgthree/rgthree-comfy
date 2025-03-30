@@ -1,6 +1,6 @@
 import type {
   Vector2,
-  LGraphCanvas,
+  LGraphCanvas as TLGraphCanvas,
   LLink,
   LGraph,
   IContextMenuOptions,
@@ -79,7 +79,7 @@ export function addMenuItem(
 ) {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function (
-    canvas: LGraphCanvas,
+    canvas: TLGraphCanvas,
     menuOptions: IContextMenuValue[],
   ) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
@@ -90,10 +90,10 @@ export function addMenuItem(
 /**
  * Waits for the canvas to be available on app using a single promise.
  */
-let canvasResolver: Resolver<LGraphCanvas> | null = null;
+let canvasResolver: Resolver<TLGraphCanvas> | null = null;
 export function waitForCanvas() {
   if (canvasResolver === null) {
-    canvasResolver = getResolver<LGraphCanvas>();
+    canvasResolver = getResolver<TLGraphCanvas>();
     function _waitForCanvas() {
       if (!canvasResolver!.completed) {
         if (app?.canvas) {
@@ -960,4 +960,21 @@ export function getOutputNodes(nodes: LGraphNode[]) {
       );
     }) || []
   );
+}
+
+/**
+ * Gets a full color string, including parsing from the LGraphCanvas data.
+ */
+export function getFullColor(color?: string, liteGraphKey: 'groupcolor'|'color'|'bgcolor' = 'color') {
+  if (!color) {
+    return '';
+  }
+  if (LGraphCanvas.node_colors[color]) {
+    color = LGraphCanvas.node_colors[color]![liteGraphKey];
+  }
+  color = color.replace("#", "").toLocaleLowerCase();
+  if (color.length === 3) {
+    color = color.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
+  }
+  return `#${color}`;
 }

@@ -114,6 +114,7 @@ export function drawRoundedRectangle(
 ) {
   const lowQuality = isLowQuality();
   options = {...options};
+  ctx.save();
   ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
   ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
   ctx.beginPath();
@@ -126,6 +127,7 @@ export function drawRoundedRectangle(
   );
   ctx.fill();
   !lowQuality && ctx.stroke();
+  ctx.restore();
 }
 
 type DrawNumberWidgetPartOptions = {

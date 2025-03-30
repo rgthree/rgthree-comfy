@@ -32,7 +32,7 @@ import {
   iconStarFilled,
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
-import {createElement, query, queryOne} from "rgthree/common/utils_dom.js";
+import {createElement, queryAll, query} from "rgthree/common/utils_dom.js";
 import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 export enum LogLevel {
@@ -333,15 +333,15 @@ class Rgthree extends EventTarget {
       }
       // Handle both cases in case someone hasn't updated. Can probably just assume
       // `isUpdatedComfyBodyClasses` is true in the near future.
-      const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+      const isUpdatedComfyBodyClasses = !!query(".comfyui-body-top");
       const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
       this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
       // If ComfyUI is updated with the body segments, then use that.
       if (isUpdatedComfyBodyClasses) {
         if (position === "bottom") {
-          queryOne(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
+          query(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
         } else {
-          queryOne(".comfyui-body-top")!.appendChild(this.progressBarEl);
+          query(".comfyui-body-top")!.appendChild(this.progressBarEl);
         }
       } else {
         document.body.appendChild(this.progressBarEl);
@@ -872,7 +872,7 @@ class Rgthree extends EventTarget {
     }
     // If we have a dialog open then we want to append the message to the dialog so they show over
     // the modal.
-    const dialogs = query<HTMLDialogElement>("dialog[open]");
+    const dialogs = queryAll<HTMLDialogElement>("dialog[open]");
     if (dialogs.length) {
       let dialog = dialogs[dialogs.length - 1]!;
       dialog.appendChild(container);

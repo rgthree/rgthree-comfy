@@ -1,5 +1,5 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
-import { createElement as $el, empty, appendChildren, getClosestOrSelf, queryOne, query, setAttributes, } from "../../rgthree/common/utils_dom.js";
+import { createElement as $el, empty, appendChildren, getClosestOrSelf, query, queryAll, setAttributes, } from "../../rgthree/common/utils_dom.js";
 import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
 import { LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
@@ -57,7 +57,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
             this.setTitle(((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a["name"]) || ((_b = this.modelInfo) === null || _b === void 0 ? void 0 : _b["file"]) || "Unknown");
         }
         else if (action === "copy-trained-words") {
-            const selected = query(".-rgthree-is-selected", target.closest("tr"));
+            const selected = queryAll(".-rgthree-is-selected", target.closest("tr"));
             const text = selected.map((el) => el.getAttribute("data-word")).join(", ");
             await navigator.clipboard.writeText(text);
             rgthree.showMessage({
@@ -71,12 +71,12 @@ class RgthreeInfoDialog extends RgthreeDialog {
             target === null || target === void 0 ? void 0 : target.classList.toggle("-rgthree-is-selected");
             const tr = target.closest("tr");
             if (tr) {
-                const span = queryOne("td:first-child > *", tr);
-                let small = queryOne("small", span);
+                const span = query("td:first-child > *", tr);
+                let small = query("small", span);
                 if (!small) {
                     small = $el("small", { parent: span });
                 }
-                const num = query(".-rgthree-is-selected", tr).length;
+                const num = queryAll(".-rgthree-is-selected", tr).length;
                 small.innerHTML = num
                     ? `${num} selected | <span role="button" data-action="copy-trained-words">Copy</span>`
                     : "";
@@ -84,7 +84,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
         }
         else if (action === "edit-row") {
             const tr = target.closest("tr");
-            const td = queryOne("td:nth-child(2)", tr);
+            const td = query("td:nth-child(2)", tr);
             const input = td.querySelector("input,textarea");
             if (!input) {
                 const fieldName = tr.dataset["fieldName"];
@@ -185,7 +185,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
     `;
         const div = $el("div", { html });
         if (rgthree.isDevMode()) {
-            setAttributes(queryOne('[stub="menu"]', div), {
+            setAttributes(query('[stub="menu"]', div), {
                 children: [
                     new MenuButton({
                         icon: dotdotdot,
@@ -255,7 +255,7 @@ function getTrainedWordsMarkup(words) {
 function saveEditableRow(info, tr, saving = true) {
     var _a;
     const fieldName = tr.dataset["fieldName"];
-    const input = queryOne("input,textarea", tr);
+    const input = query("input,textarea", tr);
     let newValue = (_a = info[fieldName]) !== null && _a !== void 0 ? _a : "";
     let modified = false;
     if (saving) {
@@ -271,7 +271,7 @@ function saveEditableRow(info, tr, saving = true) {
         modified = true;
     }
     tr.classList.remove("-rgthree-editing");
-    const td = queryOne("td:nth-child(2)", tr);
+    const td = query("td:nth-child(2)", tr);
     appendChildren(empty(td), [$el("span", { text: newValue })]);
     return modified;
 }

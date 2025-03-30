@@ -9,7 +9,7 @@ import { NodeTypesString, addRgthree, getNodeTypeStrings } from "./constants.js"
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
-import { createElement, query, queryOne } from "../../rgthree/common/utils_dom.js";
+import { createElement, queryAll, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -203,15 +203,15 @@ class Rgthree extends EventTarget {
                     }
                 });
             }
-            const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+            const isUpdatedComfyBodyClasses = !!query(".comfyui-body-top");
             const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
             this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
             if (isUpdatedComfyBodyClasses) {
                 if (position === "bottom") {
-                    queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
+                    query(".comfyui-body-bottom").appendChild(this.progressBarEl);
                 }
                 else {
-                    queryOne(".comfyui-body-top").appendChild(this.progressBarEl);
+                    query(".comfyui-body-top").appendChild(this.progressBarEl);
                 }
             }
             else {
@@ -596,7 +596,7 @@ class Rgthree extends EventTarget {
             container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
         }
-        const dialogs = query("dialog[open]");
+        const dialogs = queryAll("dialog[open]");
         if (dialogs.length) {
             let dialog = dialogs[dialogs.length - 1];
             dialog.appendChild(container);

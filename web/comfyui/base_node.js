@@ -5,7 +5,7 @@ import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
 import { defineProperty } from "../../rgthree/common/shared_utils.js";
-class RgthreeBaseNode extends LGraphNode {
+export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
         this.comfyClass = "__NEED_COMFY_CLASS__";

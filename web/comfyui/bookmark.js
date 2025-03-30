@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { NodeTypesString } from "./constants.js";
-import { getClosestOrSelf, queryOne } from "../../rgthree/common/utils_dom.js";
+import { getClosestOrSelf, query } from "../../rgthree/common/utils_dom.js";
 export class Bookmark extends RgthreeBaseVirtualNode {
     get _collapsed_width() {
         return this.___collapsed_width;
@@ -61,7 +61,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     onMouseDown(event, pos, graphCanvas) {
         var _a;
-        const input = queryOne(".graphdialog > input.value");
+        const input = query(".graphdialog > input.value");
         if (input && input.value === ((_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value)) {
             input.addEventListener("keydown", (e) => {
                 KEY_EVENT_SERVICE.handleKeyDownOrUp(e);

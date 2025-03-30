@@ -640,3 +640,16 @@ export function getOutputNodes(nodes) {
         return (n.mode != LiteGraph.NEVER && ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
     })) || []);
 }
+export function getFullColor(color, liteGraphKey = 'color') {
+    if (!color) {
+        return '';
+    }
+    if (LGraphCanvas.node_colors[color]) {
+        color = LGraphCanvas.node_colors[color][liteGraphKey];
+    }
+    color = color.replace("#", "").toLocaleLowerCase();
+    if (color.length === 3) {
+        color = color.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
+    }
+    return `#${color}`;
+}
