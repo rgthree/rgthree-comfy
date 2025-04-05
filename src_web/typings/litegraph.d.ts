@@ -32,6 +32,11 @@ declare module "@comfyorg/litegraph" {
     // getSlotMenuOptions?(this: LGraphNode, slot: IFoundSlot): IContextMenuValue[] | void;
   }
 
+  interface LGraphGroup {
+    // @rgthree: Track whether a group has any active node from the fast group mode changers.
+    rgthree_hasAnyActiveNode?: boolean;
+  }
+
   interface LGraphCanvas {
     // @rgthree (Fix): At one point this was in ComfyUI's app.js. I don't see it now... perhaps it's
     // been removed? We were using it in rgthree-comfy.

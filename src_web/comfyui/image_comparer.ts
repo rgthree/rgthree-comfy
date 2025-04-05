@@ -237,6 +237,8 @@ type RgthreeImageComparerWidgetValue = {
 };
 
 class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerWidgetValue> {
+  override readonly type = 'custom';
+
   private node: RgthreeImageComparer;
 
   protected override hitAreas: RgthreeBaseHitAreas<any> = {

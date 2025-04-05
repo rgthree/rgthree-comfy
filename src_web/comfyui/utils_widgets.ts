@@ -83,8 +83,8 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
   // array at all.
   abstract value: NotArray<V>;
 
+  type: IBaseWidget['type'] = 'custom';
   name: string;
-  type: "custom" = "custom";
   options: IWidgetOptions = {};
   y: number = 0;
   last_y: number = 0;
@@ -208,19 +208,23 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
  * A better implementation of the LiteGraph button widget.
  */
 export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
-  value: string = "";
-  mouseUpCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  override readonly type = 'custom';
 
+  value: string = "";
+  label: string = "";
+  mouseUpCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
   constructor(
     name: string,
     mouseUpCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void,
+    label?: string
   ) {
     super(name);
     this.mouseUpCallback = mouseUpCallback;
+    this.label = label || name;
   }
 
   draw(ctx: CanvasRenderingContext2D, node: LGraphNode, width: number, y: number, height: number) {
-    drawWidgetButton({ctx, node, width, height, y}, this.name, this.isMouseDownedAndOver);
+    drawWidgetButton({ctx, node, width, height, y}, this.label, this.isMouseDownedAndOver);
   }
 
   override onMouseUp(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
@@ -274,9 +278,10 @@ type RgthreeDividerWidgetOptions = {
 /**
  * A divider widget; can also be used as a spacer if fed a 0 thickness.
  */
-export class RgthreeDividerWidget extends RgthreeBaseWidget<string> {
+export class RgthreeDividerWidget extends RgthreeBaseWidget<{}> {
+  override value = {};
   override options = {serialize: false};
-  value = '';
+  override readonly type = 'custom';
 
   private readonly widgetOptions: RgthreeDividerWidgetOptions = {
     marginTop: 7,
@@ -318,6 +323,7 @@ export type RgthreeLabelWidgetOptions = {
   color?: string;
   italic?: boolean;
   size?: number;
+  text?: string | (() => string); // Text, or fall back to the name.
 
   /** A label to put on the right side. */
   actionLabel?: "__PLUS_ICON__" | string;
@@ -328,6 +334,7 @@ export type RgthreeLabelWidgetOptions = {
  * A simple label widget, drawn with no background.
  */
 export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
+  override readonly type = 'custom';
   override options = {serialize: false};
   value = '';
 
@@ -336,6 +343,10 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
 
   constructor(name: string, widgetOptions?: RgthreeLabelWidgetOptions) {
     super(name);
+    Object.assign(this.widgetOptions, widgetOptions);
+  }
+
+  update(widgetOptions: RgthreeLabelWidgetOptions) {
     Object.assign(this.widgetOptions, widgetOptions);
   }
 
@@ -348,6 +359,11 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
   ) {
     this.posY = posY;
     ctx.save();
+
+    let text = this.widgetOptions.text ?? this.name;
+    if (typeof text === 'function') {
+      text = text();
+    }
 
     ctx.textAlign = this.widgetOptions.align || "left";
     ctx.fillStyle = this.widgetOptions.color || LiteGraph.WIDGET_TEXT_COLOR;
@@ -363,9 +379,9 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
     ctx.textBaseline = "middle";
 
     if (this.widgetOptions.align === "center") {
-      ctx.fillText(this.name, node.size[0] / 2, midY);
+      ctx.fillText(text, node.size[0] / 2, midY);
     } else {
-      ctx.fillText(this.name, 15, midY);
+      ctx.fillText(text, 15, midY);
     } // TODO(right);
 
     ctx.font = oldFont;
@@ -406,6 +422,8 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
 
 /** An invisible widget. */
 export class RgthreeInvisibleWidget<T extends IBaseWidget["value"]> extends RgthreeBaseWidget<T> {
+  override readonly type = 'custom';
+
   value: NotArray<T>;
   private serializeValueFn?: (node: LGraphNode, index: number) => Promise<T> | T;
 
@@ -452,6 +470,7 @@ export function drawWidgetButton(
   isMouseDownedAndOver: boolean = false,
 ) {
   // First, add a shadow if we're not down or lowquality.
+  drawCtx.ctx.save();
   if (!isLowQuality() && !isMouseDownedAndOver) {
     drawRoundedRectangle(drawCtx.ctx, {
       width: drawCtx.width - 30 - 2,
@@ -483,4 +502,5 @@ export function drawWidgetButton(
       drawCtx.y + drawCtx.height / 2 + (isMouseDownedAndOver ? 1 : 0),
     );
   }
+  drawCtx.ctx.restore();
 }

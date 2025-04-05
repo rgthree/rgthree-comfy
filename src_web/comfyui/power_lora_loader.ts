@@ -373,13 +373,14 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
  * (more necessary for the double model & clip strengths to label them).
  */
 class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
-  private showModelAndClip: boolean | null = null;
-
-  value = {type: "PowerLoraLoaderHeaderWidget"};
+  override value = {type: "PowerLoraLoaderHeaderWidget"};
+  override readonly type = 'custom';
 
   protected override hitAreas: RgthreeBaseHitAreas<"toggle"> = {
     toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
   };
+
+  private showModelAndClip: boolean | null = null;
 
   constructor(name: string = "PowerLoraLoaderHeaderWidget") {
     super(name);
@@ -463,6 +464,8 @@ type PowerLoraLoaderWidgetValue = {
  * The PowerLoaderWidget that combines several custom drawing and functionality in a single row.
  */
 class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue> {
+  override readonly type = 'custom';
+
   /** Whether the strength has changed with mouse move (to cancel mouse up). */
   private haveMouseMovedStrength = false;
   private loraInfoPromise: Promise<RgthreeModelInfo | null> | null = null;

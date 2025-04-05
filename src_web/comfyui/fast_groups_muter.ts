@@ -1,21 +1,20 @@
-
 import type {
   LGraphNode,
   LGraph as TLGraph,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   Size,
+  LGraphGroup,
 } from "@comfyorg/litegraph";
-import type { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
-import type { IBooleanWidget } from "@comfyorg/litegraph/dist/types/widgets";
-import type { Point } from "@comfyorg/litegraph/dist/interfaces.js";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {Point} from "@comfyorg/litegraph/dist/interfaces.js";
 
 import {app} from "scripts/app.js";
-import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";
-import { drawNodeWidget, fitString } from "./utils_canvas.js";
-import { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
+import {RgthreeBaseVirtualNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {SERVICE as FAST_GROUPS_SERVICE} from "./services/fast_groups_service.js";
+import {drawNodeWidget, fitString} from "./utils_canvas.js";
+import {RgthreeBaseWidget} from "./utils_widgets.js";
 
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
@@ -44,14 +43,14 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
 
   protected helpActions = "mute and unmute";
 
-  static "@matchColors" = { type: "string" };
-  static "@matchTitle" = { type: "string" };
-  static "@showNav" = { type: "boolean" };
+  static "@matchColors" = {type: "string"};
+  static "@matchTitle" = {type: "string"};
+  static "@showNav" = {type: "boolean"};
   static "@sort" = {
     type: "combo",
     values: ["position", "alphanumeric", "custom alphabet"],
   };
-  static "@customSortAlphabet" = { type: "string" };
+  static "@customSortAlphabet" = {type: "string"};
 
   override properties!: RgthreeBaseVirtualNode["properties"] & {
     [PROPERTY_MATCH_COLORS]: string;
@@ -185,168 +184,34 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
           continue;
         }
       }
-      const widgetName = `Enable ${group.title}`;
-      let widget = this.widgets.find((w) => w.name === widgetName);
+      let isDirty = false;
+      const widgetLabel = `Enable ${group.title}`;
+      let widget = this.widgets.find((w) => w.label === widgetLabel) as FastGroupsToggleRowWidget;
       if (!widget) {
         // When we add a widget, litegraph is going to mess up the size, so we
         // store it so we can retrieve it in computeSize. Hacky..
         this.tempSize = [...this.size] as Size;
-        widget = this.addCustomWidget<IBooleanWidget>({
-          name: "RGTHREE_TOGGLE_AND_NAV",
-          type: 'toggle',
-          y: 0,
-          label: "",
-          value: false,
-          disabled: false,
-          options: { on: "yes", off: "no" },
-          draw: function (
-            ctx: CanvasRenderingContext2D,
-            node: LGraphNode,
-            width: number,
-            posY: number,
-            height: number,
-          ) {
-            const widgetData = drawNodeWidget(ctx, {
-              width,
-              height,
-              posY,
-            });
-
-            const showNav = node.properties?.[PROPERTY_SHOW_NAV] !== false;
-
-            // Render from right to left, since the text on left will take available space.
-            // `currentX` markes the current x position moving backwards.
-            let currentX = widgetData.width - widgetData.margin;
-
-            // The nav arrow
-            if (!widgetData.lowQuality && showNav) {
-              currentX -= 7; // Arrow space margin
-              const midY = widgetData.posY + widgetData.height * 0.5;
-              ctx.fillStyle = ctx.strokeStyle = "#89A";
-              ctx.lineJoin = "round";
-              ctx.lineCap = "round";
-              const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
-              ctx.fill(arrow);
-              ctx.stroke(arrow);
-              currentX -= 14;
-
-              currentX -= 7;
-              ctx.strokeStyle = widgetData.colorOutline;
-              ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
-            } else if (widgetData.lowQuality && showNav) {
-              currentX -= 28;
-            }
-
-            // The toggle itself.
-            currentX -= 7;
-            ctx.fillStyle = this.value ? "#89A" : "#333";
-            ctx.beginPath();
-            const toggleRadius = height * 0.36;
-            ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
-            ctx.fill();
-            currentX -= toggleRadius * 2;
-
-            if (!widgetData.lowQuality) {
-              currentX -= 4;
-              ctx.textAlign = "right";
-              ctx.fillStyle = this.value ? widgetData.colorText : widgetData.colorTextSecondary;
-              const label = this.label || this.name;
-              const toggleLabelOn = this.options.on || "true";
-              const toggleLabelOff = this.options.off || "false";
-              ctx.fillText(
-                this.value ? toggleLabelOn : toggleLabelOff,
-                currentX,
-                posY + height * 0.7,
-              );
-              currentX -= Math.max(
-                ctx.measureText(toggleLabelOn).width,
-                ctx.measureText(toggleLabelOff).width,
-              );
-
-              currentX -= 7;
-              ctx.textAlign = "left";
-              let maxLabelWidth =
-                widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
-              if (label != null) {
-                ctx.fillText(
-                  fitString(ctx, label, maxLabelWidth),
-                  widgetData.margin + 10,
-                  posY + height * 0.7,
-                );
-              }
-            }
-          },
-          serializeValue(...args: any[]) {
-            return this.value;
-          },
-          mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
-            if (event.type == "pointerdown") {
-              if (
-                node.properties?.[PROPERTY_SHOW_NAV] !== false &&
-                pos[0] >= node.size[0] - 15 - 28 - 1
-              ) {
-                const canvas = app.canvas as TLGraphCanvas;
-                const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
-                if (!lowQuality) {
-                  // Clicked on right half with nav arrow, go to the group, center on group and set
-                  // zoom to see it all.
-                  canvas.centerOnNode(group);
-                  const zoomCurrent = canvas.ds?.scale || 1;
-                  const zoomX = canvas.canvas.width / group._size[0] - 0.02;
-                  const zoomY = canvas.canvas.height / group._size[1] - 0.02;
-                  canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
-                    canvas.canvas.width / 2,
-                    canvas.canvas.height / 2,
-                  ]);
-                  canvas.setDirty(true, true);
-                }
-              } else {
-                this.value = !this.value;
-                setTimeout(() => {
-                  this.callback?.(this.value, app.canvas, node, pos, event);
-                }, 20);
-              }
-            }
-            return true;
-          },
-        });
-        (widget as any).doModeChange = (force?: boolean, skipOtherNodeCheck?: boolean) => {
-          group.recomputeInsideNodes();
-          const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
-          let newValue = force != null ? force : !hasAnyActiveNodes;
-          if (skipOtherNodeCheck !== true) {
-            if (newValue && this.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
-              for (const widget of this.widgets) {
-                (widget as any).doModeChange(false, true);
-              }
-            } else if (!newValue && this.properties?.[PROPERTY_RESTRICTION] === "always one") {
-              newValue = this.widgets.every((w) => !w.value || w === widget);
-            }
-          }
-          for (const node of group._nodes) {
-            node.mode = (newValue ? this.modeOn : this.modeOff) as 1 | 2 | 3 | 4;
-          }
-          (group as any)._rgthreeHasAnyActiveNode = newValue;
-          widget!.value = newValue;
-          app.graph.setDirtyCanvas(true, false);
-        };
-        widget.callback = () => {
-          (widget as any).doModeChange();
-        };
-
+        widget = this.addCustomWidget(new FastGroupsToggleRowWidget(group, this));
         this.setSize(this.computeSize());
+        isDirty = true;
       }
-      if (widget.name != widgetName) {
-        widget.name = widgetName;
-        this.setDirtyCanvas(true, false);
+      if (widget.label != widgetLabel) {
+        widget.label = widgetLabel;
+        isDirty = true;
       }
-      if (widget.value != (group as any)._rgthreeHasAnyActiveNode) {
-        widget.value = (group as any)._rgthreeHasAnyActiveNode;
-        this.setDirtyCanvas(true, false);
+      if (
+        group.rgthree_hasAnyActiveNode != null &&
+        widget.toggled != group.rgthree_hasAnyActiveNode
+      ) {
+        widget.toggled = group.rgthree_hasAnyActiveNode;
+        isDirty = true;
       }
       if (this.widgets[index] !== widget) {
         const oldIndex = this.widgets.findIndex((w) => w === widget);
         this.widgets.splice(index, 0, this.widgets.splice(oldIndex, 1)[0]!);
+        isDirty = true;
+      }
+      if (isDirty) {
         this.setDirtyCanvas(true, false);
       }
       index++;
@@ -491,6 +356,162 @@ export class FastGroupsMuter extends BaseFastGroupsModeChanger {
   constructor(title = FastGroupsMuter.title) {
     super(title);
     this.onConstructed();
+  }
+}
+
+/**
+ * The PowerLoraLoaderHeaderWidget that renders a toggle all switch, as well as some title info
+ * (more necessary for the double model & clip strengths to label them).
+ */
+class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
+  override value = {toggled: false};
+  override options = {on: "yes", off: "no"};
+  override readonly type = "custom";
+
+  label: string = "";
+  group: LGraphGroup;
+  node: BaseFastGroupsModeChanger;
+
+  constructor(group: LGraphGroup, node: BaseFastGroupsModeChanger) {
+    super("RGTHREE_TOGGLE_AND_NAV");
+    this.group = group;
+    this.node = node;
+  }
+
+  doModeChange(force?: boolean, skipOtherNodeCheck?: boolean) {
+    this.group.recomputeInsideNodes();
+    const hasAnyActiveNodes = this.group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+    let newValue = force != null ? force : !hasAnyActiveNodes;
+    if (skipOtherNodeCheck !== true) {
+      // TODO: This work should probably live in BaseFastGroupsModeChanger instead of the widgets.
+      if (newValue && this.node.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
+        for (const widget of this.node.widgets) {
+          if (widget instanceof FastGroupsToggleRowWidget) {
+            widget.doModeChange(false, true);
+          }
+        }
+      } else if (!newValue && this.node.properties?.[PROPERTY_RESTRICTION] === "always one") {
+        newValue = this.node.widgets.every((w) => !w.value || w === this);
+      }
+    }
+    for (const node of this.group._nodes) {
+      node.mode = (newValue ? this.node.modeOn : this.node.modeOff) as 1 | 2 | 3 | 4;
+    }
+    this.group.rgthree_hasAnyActiveNode = newValue;
+    this.toggled = newValue;
+    app.graph.setDirtyCanvas(true, false);
+  }
+
+  get toggled() {
+    return this.value.toggled;
+  }
+  set toggled(value: boolean) {
+    this.value.toggled = value;
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    node: FastGroupsMuter,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    const widgetData = drawNodeWidget(ctx, {
+      width,
+      height,
+      posY,
+    });
+
+    const showNav = node.properties?.[PROPERTY_SHOW_NAV] !== false;
+
+    // Render from right to left, since the text on left will take available space.
+    // `currentX` markes the current x position moving backwards.
+    let currentX = widgetData.width - widgetData.margin;
+
+    // The nav arrow
+    if (!widgetData.lowQuality && showNav) {
+      currentX -= 7; // Arrow space margin
+      const midY = widgetData.posY + widgetData.height * 0.5;
+      ctx.fillStyle = ctx.strokeStyle = "#89A";
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      const arrow = new Path2D(`M${currentX} ${midY} l -7 6 v -3 h -7 v -6 h 7 v -3 z`);
+      ctx.fill(arrow);
+      ctx.stroke(arrow);
+      currentX -= 14;
+
+      currentX -= 7;
+      ctx.strokeStyle = widgetData.colorOutline;
+      ctx.stroke(new Path2D(`M ${currentX} ${widgetData.posY} v ${widgetData.height}`));
+    } else if (widgetData.lowQuality && showNav) {
+      currentX -= 28;
+    }
+
+    // The toggle itself.
+    currentX -= 7;
+    ctx.fillStyle = this.toggled ? "#89A" : "#333";
+    ctx.beginPath();
+    const toggleRadius = height * 0.36;
+    ctx.arc(currentX - toggleRadius, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
+    ctx.fill();
+    currentX -= toggleRadius * 2;
+
+    if (!widgetData.lowQuality) {
+      currentX -= 4;
+      ctx.textAlign = "right";
+      ctx.fillStyle = this.toggled ? widgetData.colorText : widgetData.colorTextSecondary;
+      const label = this.label;
+      const toggleLabelOn = this.options.on || "true";
+      const toggleLabelOff = this.options.off || "false";
+      ctx.fillText(this.toggled ? toggleLabelOn : toggleLabelOff, currentX, posY + height * 0.7);
+      currentX -= Math.max(
+        ctx.measureText(toggleLabelOn).width,
+        ctx.measureText(toggleLabelOff).width,
+      );
+
+      currentX -= 7;
+      ctx.textAlign = "left";
+      let maxLabelWidth = widgetData.width - widgetData.margin - 10 - (widgetData.width - currentX);
+      if (label != null) {
+        ctx.fillText(
+          fitString(ctx, label, maxLabelWidth),
+          widgetData.margin + 10,
+          posY + height * 0.7,
+        );
+      }
+    }
+  }
+
+  override serializeValue(node: LGraphNode, index: number) {
+    return this.value;
+  }
+
+  override mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean {
+    if (event.type == "pointerdown") {
+      if (node.properties?.[PROPERTY_SHOW_NAV] !== false && pos[0] >= node.size[0] - 15 - 28 - 1) {
+        const canvas = app.canvas as TLGraphCanvas;
+        const lowQuality = (canvas.ds?.scale || 1) <= 0.5;
+        if (!lowQuality) {
+          // Clicked on right half with nav arrow, go to the group, center on group and set
+          // zoom to see it all.
+          canvas.centerOnNode(this.group);
+          const zoomCurrent = canvas.ds?.scale || 1;
+          const zoomX = canvas.canvas.width / this.group._size[0] - 0.02;
+          const zoomY = canvas.canvas.height / this.group._size[1] - 0.02;
+          canvas.setZoom(Math.min(zoomCurrent, zoomX, zoomY), [
+            canvas.canvas.width / 2,
+            canvas.canvas.height / 2,
+          ]);
+          canvas.setDirty(true, true);
+        }
+      } else {
+        this.toggled = !this.value;
+        setTimeout(() => {
+          this.doModeChange();
+        }, 20);
+      }
+    }
+    return true;
   }
 }
 

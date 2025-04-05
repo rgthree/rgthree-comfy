@@ -91,7 +91,7 @@ class FastGroupsService {
             this.groupsUnsorted = [...graph._groups];
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
-                group._rgthreeHasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                group.rgthree_hasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
             }
             this.msLastUnsorted = now;
         }

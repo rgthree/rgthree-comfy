@@ -142,7 +142,7 @@ class FastGroupsService {
       this.groupsUnsorted = [...graph._groups];
       for (const group of this.groupsUnsorted) {
         this.recomputeInsideNodesForGroup(group);
-        (group as any)._rgthreeHasAnyActiveNode = group._nodes.some(
+        group.rgthree_hasAnyActiveNode = group._nodes.some(
           (n) => n.mode === LiteGraph.ALWAYS,
         );
       }
