@@ -166,7 +166,7 @@ export class RgthreeBaseNode extends LGraphNode {
         if (help) {
             addHelpMenuItem(this, help, options);
         }
-        return options;
+        return [];
     }
 }
 RgthreeBaseNode.exposedActions = [];

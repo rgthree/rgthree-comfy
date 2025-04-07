@@ -50,7 +50,7 @@ app.registerExtension({
             options = (_a = getExtraMenuOptions === null || getExtraMenuOptions === void 0 ? void 0 : getExtraMenuOptions.call(this, canvas, options)) !== null && _a !== void 0 ? _a : options;
             showQueueNodesMenuIfOutputNodesAreSelected(options);
             showQueueGroupNodesMenuIfGroupIsSelected(options);
-            return options;
+            return [];
         };
     },
     async setup() {

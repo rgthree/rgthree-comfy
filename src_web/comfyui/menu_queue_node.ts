@@ -73,7 +73,7 @@ app.registerExtension({
       options = getExtraMenuOptions?.call(this, canvas, options) ?? options;
       showQueueNodesMenuIfOutputNodesAreSelected(options);
       showQueueGroupNodesMenuIfGroupIsSelected(options);
-      return options;
+      return [];
     };
   },
 

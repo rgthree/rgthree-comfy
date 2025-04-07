@@ -30,6 +30,14 @@ declare module "@comfyorg/litegraph" {
     // NOTE: [🤮] We can't actually augment this because it's a return.. but keeping here because
     // this is how it's actually implemented.
     // getSlotMenuOptions?(this: LGraphNode, slot: IFoundSlot): IContextMenuValue[] | void;
+
+    // @rgthree (Fix): Implementation allows a falsy value to be returned and it will not add items.
+    // NOTE: [🤮] We can't actually augment this because it's a return.. but keeping here because
+    // this is how it's actually implemented.
+    // getExtraMenuOptions?(
+    //   canvas: LGraphCanvas,
+    //   options: (IContextMenuValue<unknown> | null)[],
+    // ): (IContextMenuValue<unknown> | null)[] | void;
   }
 
   interface LGraphGroup {
@@ -65,6 +73,9 @@ declare module "@comfyorg/litegraph" {
     // @rgthree (Fix): Fixes ComfyUI-Frontend which marks this as required, even through even though
     // elsewhere it defines it as optional (like for the actual for LGraphNode).
     comfyClass?: string;
+
+    // @rgthree: reference the original nodeType data as sometimes extensions clobber it.
+    nodeType?: LGraphNodeConstructor | null;
   }
 }
 

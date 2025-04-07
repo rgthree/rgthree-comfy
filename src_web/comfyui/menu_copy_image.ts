@@ -67,7 +67,7 @@ app.registerExtension({
               }
             }
           }
-          return options;
+          return [];
         };
       }
     }
