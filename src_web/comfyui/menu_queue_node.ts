@@ -1,16 +1,14 @@
-import { app } from "scripts/app.js";
-import type {
-  LGraphCanvas as TLGraphCanvas,
-  ContextMenuItem,
-  LGraphNode,
-} from "typings/litegraph.js";
-import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { rgthree } from "./rgthree.js";
-import { getOutputNodes } from "./utils.js";
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import type {IContextMenuValue, LGraphCanvas as TLGraphCanvas, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
+import {app} from "scripts/app.js";
+import {rgthree} from "./rgthree.js";
+import {getOutputNodes} from "./utils.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
-function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions: ContextMenuItem[]) {
+function showQueueNodesMenuIfOutputNodesAreSelected(
+  existingOptions: (IContextMenuValue<unknown> | null)[],
+) {
   if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
     return;
   }
@@ -30,15 +28,17 @@ function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions: ContextMenu
   existingOptions.splice(idx, 0, menuItem);
 }
 
-function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions: ContextMenuItem[]) {
+function showQueueGroupNodesMenuIfGroupIsSelected(
+  existingOptions: (IContextMenuValue<unknown> | null)[],
+) {
   if (CONFIG_SERVICE.getConfigValue("features.menu_queue_selected_nodes") === false) {
     return;
   }
   const group =
-    rgthree.lastAdjustedMouseEvent &&
+    rgthree.lastCanvasMouseEvent &&
     app.graph.getGroupOnPos(
-      rgthree.lastAdjustedMouseEvent.canvasX,
-      rgthree.lastAdjustedMouseEvent.canvasY,
+      rgthree.lastCanvasMouseEvent.canvasX,
+      rgthree.lastCanvasMouseEvent.canvasY,
     );
 
   const outputNodes = group && getOutputNodes(group._nodes);
@@ -64,15 +64,16 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions: ContextMenuIt
  */
 app.registerExtension({
   name: "rgthree.QueueNode",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
     nodeType.prototype.getExtraMenuOptions = function (
       canvas: TLGraphCanvas,
-      options: ContextMenuItem[],
-    ) {
-      getExtraMenuOptions ? getExtraMenuOptions.apply(this, arguments) : undefined;
+      options: (IContextMenuValue<unknown> | null)[],
+    ): (IContextMenuValue<unknown> | null)[] {
+      options = getExtraMenuOptions?.call(this, canvas, options) ?? options;
       showQueueNodesMenuIfOutputNodesAreSelected(options);
       showQueueGroupNodesMenuIfGroupIsSelected(options);
+      return [];
     };
   },
 

@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
-import { createElement as $el, query as $$ } from "../../rgthree/common/utils_dom.js";
+import { createElement as $el, queryAll as $$ } from "../../rgthree/common/utils_dom.js";
 import { checkmark, logoRgthree } from "../../rgthree/common/media/svgs.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
@@ -346,6 +346,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
 }
 app.ui.settings.addSetting({
     id: "rgthree.config",
+    defaultValue: null,
     name: "Open rgthree-comfy config",
     type: () => {
         return $el("tr.rgthree-comfyui-settings-row", {

@@ -4,9 +4,13 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode as TLGraphNode,
   LLink,
-} from "typings/litegraph.js";
-import type { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import { app } from "scripts/app.js";
+  ISlotType,
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ConnectByTypeOptions} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
+
+import {app} from "scripts/app.js";
 import {
   IoDirection,
   addConnectionLayoutSupport,
@@ -14,12 +18,12 @@ import {
   matchLocalSlotsToServer,
   replaceNode,
 } from "./utils.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { RgthreeBaseServerNodeConstructor } from "typings/rgthree.js";
-import { debounce, wait } from "rgthree/common/shared_utils.js";
-import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
-import { NodeTypesString } from "./constants.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
+import {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
+import {debounce, wait} from "rgthree/common/shared_utils.js";
+import {removeUnusedInputsFromEnd} from "./utils_inputs_outputs.js";
+import {NodeTypesString} from "./constants.js";
 
 /**
  * Takes a non-context node and determins for its input or output slot, if there is a valid
@@ -109,21 +113,19 @@ export class BaseContextNode extends RgthreeBaseServerNode {
     ctx.font = oldFont;
   }
 
-  override connectByType<T = any>(
-    slot: string | number,
-    sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string,
-  ): T | null {
-    let canConnect =
-      super.connectByType &&
-      super.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
+  override connectByType(
+    slot: number | string,
+    targetNode: TLGraphNode,
+    targetSlotType: ISlotType,
+    optsIn?: ConnectByTypeOptions,
+  ): LLink | null {
+    let canConnect = super.connectByType?.call(this, slot, targetNode, targetSlotType, optsIn);
     if (!super.connectByType) {
       canConnect = LGraphNode.prototype.connectByType.call(
         this,
         slot,
-        sourceNode,
-        sourceSlotType,
+        targetNode,
+        targetSlotType,
         optsIn,
       );
     }
@@ -132,28 +134,32 @@ export class BaseContextNode extends RgthreeBaseServerNode {
       // Okay, we've dragged a context and it can't connect.. let's connect all the other nodes.
       // Unfortunately, we don't know which are null now, so we'll just connect any that are
       // not already connected.
-      for (const [index, input] of (sourceNode.inputs || []).entries()) {
+      for (const [index, input] of (targetNode.inputs || []).entries()) {
         if (input.link && !ctrlKey) {
           continue;
         }
-        const thisOutputSlot = findMatchingIndexByTypeOrName(sourceNode, input, this.outputs);
+        const thisOutputSlot = findMatchingIndexByTypeOrName(targetNode, input, this.outputs);
         if (thisOutputSlot > -1) {
-          this.connect(thisOutputSlot, sourceNode, index);
+          this.connect(thisOutputSlot, targetNode, index);
         }
       }
     }
     return null;
   }
 
-  override connectByTypeOutput<T = any>(
-    slot: string | number,
+  override connectByTypeOutput(
+    slot: number | string,
     sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string,
-  ): T | null {
-    let canConnect =
-      super.connectByTypeOutput &&
-      super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+    sourceSlotType: ISlotType,
+    optsIn?: ConnectByTypeOptions,
+  ): LLink | null {
+    let canConnect = super.connectByTypeOutput?.call(
+      this,
+      slot,
+      sourceNode,
+      sourceSlotType,
+      optsIn,
+    );
     if (!super.connectByType) {
       canConnect = LGraphNode.prototype.connectByTypeOutput.call(
         this,
@@ -182,8 +188,8 @@ export class BaseContextNode extends RgthreeBaseServerNode {
   }
 
   static override setUp(
-    comfyClass: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
+    comfyClass: LGraphNodeConstructor,
+    nodeData: ComfyNodeDef,
     ctxClass: RgthreeBaseServerNodeConstructor,
   ) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ctxClass);
@@ -222,7 +228,7 @@ class ContextNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextNode);
   }
 
@@ -249,7 +255,7 @@ class ContextBigNode extends BaseContextNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextBigNode);
   }
 
@@ -322,7 +328,7 @@ class ContextSwitchNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchNode);
   }
 
@@ -349,7 +355,7 @@ class ContextSwitchBigNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextSwitchBigNode);
   }
 
@@ -376,7 +382,7 @@ class ContextMergeNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextMergeNode);
   }
 
@@ -403,7 +409,7 @@ class ContextMergeBigNode extends BaseContextMultiCtxInputNode {
     super(title);
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     BaseContextNode.setUp(comfyClass, nodeData, ContextMergeBigNode);
   }
 
@@ -426,7 +432,7 @@ const contextNodes = [
   ContextMergeNode,
   ContextMergeBigNode,
 ];
-const contextTypeToServerDef: { [type: string]: ComfyObjectInfo } = {};
+const contextTypeToServerDef: {[type: string]: ComfyNodeDef} = {};
 
 function fixBadConfigs(node: ContextNode) {
   // Dumb mistake, but let's fix our mispelling. This will probably need to stay in perpetuity to
@@ -439,7 +445,7 @@ function fixBadConfigs(node: ContextNode) {
 
 app.registerExtension({
   name: "rgthree.Context",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     // Loop over out context nodes and see if any match the server data.
     for (const ctxClass of contextNodes) {
       if (nodeData.name === ctxClass.type) {

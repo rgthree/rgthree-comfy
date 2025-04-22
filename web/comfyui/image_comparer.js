@@ -3,7 +3,7 @@ import { api } from "../../scripts/api.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addConnectionLayoutSupport } from "./utils.js";
-import { RgthreeBaseWidget, } from "./utils_widgets.js";
+import { RgthreeBaseWidget } from "./utils_widgets.js";
 import { measureText } from "./utils_canvas.js";
 function imageDataToUrl(data) {
     return api.apiURL(`/view?filename=${encodeURIComponent(data.filename)}&type=${data.type}&subfolder=${data.subfolder}${app.getPreviewFormatParam()}${app.getRandParam()}`);
@@ -56,12 +56,12 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             this.canvasWidget.value = { images: imagesToChoose };
         }
     }
-    onSerialize(o) {
+    onSerialize(serialised) {
         var _a;
-        super.onSerialize && super.onSerialize(o);
-        for (let [index, widget_value] of (o.widgets_values || []).entries()) {
+        super.onSerialize && super.onSerialize(serialised);
+        for (let [index, widget_value] of (serialised.widgets_values || []).entries()) {
             if (((_a = this.widgets[index]) === null || _a === void 0 ? void 0 : _a.name) === "rgthree_comparer") {
-                o.widgets_values[index] = this.widgets[index].value.images.map((d) => {
+                serialised.widgets_values[index] = this.widgets[index].value.images.map((d) => {
                     d = { ...d };
                     delete d.img;
                     return d;
@@ -87,26 +87,27 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             });
         }
     }
-    onMouseDown(event, pos, graphCanvas) {
+    onMouseDown(event, pos, canvas) {
         var _a;
-        (_a = super.onMouseDown) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
+        (_a = super.onMouseDown) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, canvas);
         this.setIsPointerDown(true);
+        return false;
     }
-    onMouseEnter(event, pos, graphCanvas) {
+    onMouseEnter(event) {
         var _a;
-        (_a = super.onMouseEnter) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
+        (_a = super.onMouseEnter) === null || _a === void 0 ? void 0 : _a.call(this, event);
         this.setIsPointerDown(!!app.canvas.pointer_is_down);
         this.isPointerOver = true;
     }
-    onMouseLeave(event, pos, graphCanvas) {
+    onMouseLeave(event) {
         var _a;
-        (_a = super.onMouseLeave) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
+        (_a = super.onMouseLeave) === null || _a === void 0 ? void 0 : _a.call(this, event);
         this.setIsPointerDown(false);
         this.isPointerOver = false;
     }
-    onMouseMove(event, pos, graphCanvas) {
+    onMouseMove(event, pos, canvas) {
         var _a;
-        (_a = super.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, graphCanvas);
+        (_a = super.onMouseMove) === null || _a === void 0 ? void 0 : _a.call(this, event, pos, canvas);
         this.pointerOverPos = [...pos];
         this.imageIndex = this.pointerOverPos[0] > this.size[0] / 2 ? 1 : 0;
     }
@@ -186,6 +187,7 @@ RgthreeImageComparer["@comparer_mode"] = {
 class RgthreeImageComparerWidget extends RgthreeBaseWidget {
     constructor(name, node) {
         super(name);
+        this.type = 'custom';
         this.hitAreas = {};
         this.selected = [];
         this._value = { images: [] };
@@ -343,7 +345,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
     computeSize(width) {
         return [width, 20];
     }
-    serializeValue(serializedNode, widgetIndex) {
+    serializeValue(node, index) {
         const v = [];
         for (const data of this._value.images) {
             const d = { ...data };

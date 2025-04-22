@@ -8,7 +8,7 @@ function getNodeById(graph, id) {
         return graph.getNodeById(id);
     }
     graph = graph;
-    return graph.nodes.find((n) => n.id === id);
+    return graph.nodes.find((node) => Number(node.id) === id);
 }
 function extendLink(link) {
     return {
@@ -149,7 +149,7 @@ export function fixBadLinks(graph, fix = false, silent = false, logger = console
     }
     let links = [];
     if (!Array.isArray(graph.links)) {
-        Object.values(graph.links).reduce((acc, v) => {
+        links = Object.values(graph.links).reduce((acc, v) => {
             acc[v.id] = v;
             return acc;
         }, links);

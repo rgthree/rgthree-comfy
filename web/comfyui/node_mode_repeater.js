@@ -18,13 +18,6 @@ class NodeModeRepeater extends BaseCollectorNode {
         });
         return super.onConstructed();
     }
-    configure(info) {
-        var _a;
-        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
-            info.outputs.length = 1;
-        }
-        super.configure(info);
-    }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
         let canConnect = !this.hasRelayInput;
         canConnect =

@@ -9,7 +9,7 @@ import { NodeTypesString, addRgthree, getNodeTypeStrings } from "./constants.js"
 import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
 import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
-import { createElement, query, queryOne } from "../../rgthree/common/utils_dom.js";
+import { createElement, queryAll, query } from "../../rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";
@@ -135,7 +135,7 @@ class Rgthree extends EventTarget {
         this.processingMouseDown = false;
         this.processingMouseUp = false;
         this.processingMouseMove = false;
-        this.lastAdjustedMouseEvent = null;
+        this.lastCanvasMouseEvent = null;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
@@ -181,11 +181,11 @@ class Rgthree extends EventTarget {
                     LiteGraph.closeAllContextMenus();
                     if (e.button == 2) {
                         const canvas = await waitForCanvas();
-                        new LiteGraph.ContextMenu(this.getRgthreeContextMenuItems(), {
+                        new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
                             title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
                             left: e.clientX,
                             top: 5,
-                        }, canvas.getCanvasWindow());
+                        });
                         return;
                     }
                     if (e.button == 0) {
@@ -203,15 +203,15 @@ class Rgthree extends EventTarget {
                     }
                 });
             }
-            const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+            const isUpdatedComfyBodyClasses = !!query(".comfyui-body-top");
             const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
             this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
             if (isUpdatedComfyBodyClasses) {
                 if (position === "bottom") {
-                    queryOne(".comfyui-body-bottom").appendChild(this.progressBarEl);
+                    query(".comfyui-body-bottom").appendChild(this.progressBarEl);
                 }
                 else {
-                    queryOne(".comfyui-body-top").appendChild(this.progressBarEl);
+                    query(".comfyui-body-top").appendChild(this.progressBarEl);
                 }
             }
             else {
@@ -246,7 +246,7 @@ class Rgthree extends EventTarget {
         const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
         LGraphCanvas.prototype.adjustMouseEvent = function (e) {
             adjustMouseEvent.apply(this, [...arguments]);
-            rgthree.lastAdjustedMouseEvent = e;
+            rgthree.lastCanvasMouseEvent = e;
         };
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
         LGraphCanvas.prototype.copyToClipboard = function (nodes) {
@@ -311,7 +311,7 @@ class Rgthree extends EventTarget {
                     content: logoRgthree + `rgthree-comfy`,
                     className: "rgthree-contextmenu-item rgthree-contextmenu-main-item-rgthree-comfy",
                     submenu: {
-                        options: that.getRgthreeContextMenuItems(),
+                        options: that.getRgthreeIContextMenuValues(),
                     },
                 });
                 options.push(null);
@@ -334,7 +334,7 @@ class Rgthree extends EventTarget {
             };
         }, 1016);
     }
-    getRgthreeContextMenuItems() {
+    getRgthreeIContextMenuValues() {
         const [canvas, graph] = [app.canvas, app.graph];
         const selectedNodes = Object.values(canvas.selected_nodes || {});
         let rerouteNodes = [];
@@ -361,13 +361,15 @@ class Rgthree extends EventTarget {
                     options: getNodeTypeStrings(),
                     callback: (value, options, event) => {
                         const node = LiteGraph.createNode(addRgthree(value));
-                        node.pos = [
-                            rgthree.lastAdjustedMouseEvent.canvasX,
-                            rgthree.lastAdjustedMouseEvent.canvasY,
-                        ];
-                        canvas.graph.add(node);
-                        canvas.selectNode(node);
-                        app.graph.setDirtyCanvas(true, true);
+                        if (node) {
+                            node.pos = [
+                                rgthree.lastCanvasMouseEvent.canvasX,
+                                rgthree.lastCanvasMouseEvent.canvasY,
+                            ];
+                            canvas.graph.add(node);
+                            canvas.selectNode(node);
+                            app.graph.setDirtyCanvas(true, true);
+                        }
                     },
                     extra: { rgthree_doNotNest: true },
                 },
@@ -428,7 +430,7 @@ class Rgthree extends EventTarget {
         var _a;
         try {
             this.queueNodeIds = nodeIds;
-            await app.queuePrompt();
+            await app.queuePrompt(0);
         }
         catch (e) {
             const [n, v] = this.logParts(LogLevel.ERROR, `There was an error queuing nodes ${nodeIds}`, e);
@@ -454,11 +456,11 @@ class Rgthree extends EventTarget {
     initializeComfyUIHooks() {
         const rgthree = this;
         const queuePrompt = app.queuePrompt;
-        app.queuePrompt = async function () {
+        app.queuePrompt = async function (number, batchCount) {
             rgthree.processingQueue = true;
             rgthree.dispatchCustomEvent("queue");
             try {
-                await queuePrompt.apply(app, [...arguments]);
+                return await queuePrompt.apply(app, [...arguments]);
             }
             finally {
                 rgthree.processingQueue = false;
@@ -594,7 +596,7 @@ class Rgthree extends EventTarget {
             container.classList.add("rgthree-top-messages-container");
             document.body.appendChild(container);
         }
-        const dialogs = query("dialog[open]");
+        const dialogs = queryAll("dialog[open]");
         if (dialogs.length) {
             let dialog = dialogs[dialogs.length - 1];
             dialog.appendChild(container);

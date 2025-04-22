@@ -1,7 +1,8 @@
-import { app } from "scripts/app.js";
-import { NodeTypesString } from "../constants.js";
-import { wait } from "rgthree/common/shared_utils.js";
-import type { LGraphNode } from "typings/litegraph.js";
+import type {LGraphNode} from "@comfyorg/litegraph";
+
+import {app} from "scripts/app.js";
+import {wait} from "rgthree/common/shared_utils.js";
+import {NodeTypesString} from "../constants.js";
 
 type addNodeOptions = {
   placement?: string;
@@ -19,7 +20,7 @@ export class ComfyUITestEnvironment {
 
   async addNode(nodeString: string, options: addNodeOptions = {}) {
     const [canvas, graph] = [app.canvas, app.graph];
-    const node = LiteGraph.createNode(nodeString);
+    const node = LiteGraph.createNode(nodeString)!;
     let x = 0;
     let y = 30;
     if (this.lastNode) {
@@ -35,7 +36,7 @@ export class ComfyUITestEnvironment {
         y = this.maxY + 50;
       }
     }
-    canvas.graph.add(node);
+    canvas.graph!.add(node);
     node.pos = [x, y];
     canvas.selectNode(node);
     app.graph.setDirtyCanvas(true, true);
@@ -50,6 +51,7 @@ export class ComfyUITestEnvironment {
     app.graph.clear();
     const nodeConfig = await this.addNode(NodeTypesString.KSAMPLER_CONFIG);
     const displayAny = await this.addNode(NodeTypesString.DISPLAY_ANY);
+    nodeConfig.widgets = nodeConfig.widgets || [];
     nodeConfig.widgets[0]!.value = Math.round(Math.random() * 100);
     nodeConfig.connect(0, displayAny, 0);
     await this.queuePrompt();
@@ -61,7 +63,7 @@ export class ComfyUITestEnvironment {
   }
 
   async queuePrompt() {
-    await app.queuePrompt();
+    await app.queuePrompt(0);
     await wait(150);
   }
 }

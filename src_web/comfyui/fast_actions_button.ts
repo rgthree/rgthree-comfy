@@ -1,13 +1,14 @@
-import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import type { ComfyApp, ComfyWidget } from "typings/comfy.js";
-import type { IWidget, LGraph, LGraphNode, SerializedLGraphNode } from "typings/litegraph.js";
-import type { RgthreeBaseNode } from "./base_node.js";
+import type {LGraph, LGraphNode} from "@comfyorg/litegraph";
+import type {IButtonWidget, IComboWidget, IWidget} from "@comfyorg/litegraph/dist/types/widgets.js";
+import type {ComfyApp} from "@comfyorg/frontend";
+import type { RgthreeBaseVirtualNode } from "./base_node.js";
 
-import { app } from "scripts/app.js";
-import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { NodeTypesString } from "./constants.js";
-import { addMenuItem } from "./utils.js";
-import { rgthree } from "./rgthree.js";
+import {app} from "scripts/app.js";
+import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
+import {NodeTypesString} from "./constants.js";
+import {addMenuItem} from "./utils.js";
+import {rgthree} from "./rgthree.js";
+import {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
@@ -27,12 +28,12 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   readonly logger = rgthree.newLogSession("[FastActionsButton]");
 
-  static "@buttonText" = { type: "string" };
+  static "@buttonText" = {type: "string"};
   static "@shortcutModifier" = {
     type: "combo",
     values: ["ctrl", "alt", "shift"],
   };
-  static "@shortcutKey" = { type: "string" };
+  static "@shortcutKey" = {type: "string"};
 
   static collapsible = false;
 
@@ -40,15 +41,21 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   override serialize_widgets = true;
 
-  readonly buttonWidget: IWidget;
+  readonly buttonWidget: IButtonWidget;
 
-  readonly widgetToData = new Map<IWidget, { comfy?: ComfyApp; node?: LGraphNode }>();
+  readonly widgetToData = new Map<IWidget, {comfy?: ComfyApp; node?: LGraphNode}>();
   readonly nodeIdtoFunctionCache = new Map<number, string>();
 
   readonly keypressBound;
   readonly keyupBound;
 
   private executingFromShortcut = false;
+
+  override properties!: BaseAnyInputConnectedNode["properties"] & {
+    buttonText: string;
+    shortcutModifier: string;
+    shortcutKey: string;
+  };
 
   constructor(title?: string) {
     super(title);
@@ -58,12 +65,12 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     this.buttonWidget = this.addWidget(
       "button",
       this.properties["buttonText"],
-      null,
+      "",
       () => {
         this.executeConnectedNodes();
       },
-      { serialize: false },
-    );
+      {serialize: false},
+    ) as IButtonWidget;
 
     this.keypressBound = this.onKeypress.bind(this);
     this.keyupBound = this.onKeyup.bind(this);
@@ -71,7 +78,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
   /** When we're given data to configure, like from a PNG or JSON. */
-  override configure(info: SerializedLGraphNode<LGraphNode>): void {
+  override configure(info: ISerialisedNode): void {
     super.configure(info);
     // Since we add the widgets dynamically, we need to wait to set their values
     // with a short timeout.
@@ -79,7 +86,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       if (info.widgets_values) {
         for (let [index, value] of info.widgets_values.entries()) {
           if (index > 0) {
-            if (value.startsWith("comfy_action:")) {
+            if (typeof value === "string" && value.startsWith("comfy_action:")) {
               value = value.replace("comfy_action:", "");
               this.addComfyActionWidget(index, value);
             }
@@ -93,7 +100,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
   }
 
   override clone() {
-    const cloned = super.clone();
+    const cloned = super.clone()!;
     cloned.properties["buttonText"] = "🎬 Action!";
     cloned.properties["shortcutKey"] = "";
     return cloned;
@@ -149,14 +156,14 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     this.executingFromShortcut = false;
   }
 
-  override onPropertyChanged(property: string, value: any, _prevValue: any): boolean | void {
-    if (property == "buttonText") {
+  override onPropertyChanged(property: string, value: unknown, prevValue?: unknown) {
+    if (property == "buttonText" && typeof value === "string") {
       this.buttonWidget.name = value;
     }
-    if (property == "shortcutKey") {
-      value = value.trim();
-      this.properties["shortcutKey"] = (value && value[0].toLowerCase()) || "";
+    if (property == "shortcutKey" && typeof value === "string") {
+      this.properties["shortcutKey"] = value.trim()[0]?.toLowerCase() ?? "";
     }
+    return true;
   }
 
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
@@ -212,10 +219,10 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           widget = this.addWidget("combo", node.title, "None", "", {
             values: ["None", "Mute", "Bypass", "Enable", ...exposedActions],
           });
-          (widget as ComfyWidget).serializeValue = async (_node: LGraphNode, _index: number) => {
+          widget.serializeValue = async (_node: LGraphNode, _index: number) => {
             return widget?.value;
           };
-          this.widgetToData.set(widget, { node });
+          this.widgetToData.set(widget, {node});
           changed = true;
         }
       }
@@ -250,7 +257,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         continue;
       }
       const action = widget.value;
-      const { comfy, node } = this.widgetToData.get(widget) ?? {};
+      const {comfy, node} = this.widgetToData.get(widget) ?? {};
       if (comfy) {
         if (action === "Queue Prompt") {
           await comfy.queuePrompt(0);
@@ -266,8 +273,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           node.mode = MODE_ALWAYS;
         }
         // If there's a handleAction, always call it.
-        if ((node as RgthreeBaseNode).handleAction) {
-          await (node as RgthreeBaseNode).handleAction(action);
+        if ((node as RgthreeBaseVirtualNode).handleAction) {
+          if (typeof action !== "string") {
+            throw new Error("Fast Actions Button action should be a string: " + action);
+          }
+          await (node as RgthreeBaseVirtualNode).handleAction(action);
         }
         app.graph.change();
         continue;
@@ -285,24 +295,24 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       "Comfy Action",
       "None",
       () => {
-        if (widget.value.startsWith("MOVE ")) {
+        if (String(widget.value).startsWith("MOVE ")) {
           this.widgets.push(this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
-          widget.value = (widget as any)["lastValue_"];
-        } else if (widget.value.startsWith("REMOVE ")) {
+          widget.value = String(widget.rgthree_lastValue);
+        } else if (String(widget.value).startsWith("REMOVE ")) {
           this.removeWidget(widget);
         }
-        (widget as any)["lastValue_"] = widget.value;
+        widget.rgthree_lastValue = widget.value;
       },
       {
         values: ["None", "Queue Prompt", "REMOVE Comfy Action", "MOVE to end"],
       },
-    );
-    (widget as any)["lastValue_"] = value;
+    ) as IComboWidget;
+    widget.rgthree_lastValue = value;
 
-    (widget as ComfyWidget).serializeValue = async (_node: LGraphNode, _index: number) => {
+    widget.serializeValue = async (_node: LGraphNode, _index: number) => {
       return `comfy_app:${widget?.value}`;
     };
-    this.widgetToData.set(widget, { comfy: app });
+    this.widgetToData.set(widget, {comfy: app});
 
     if (slot != null) {
       this.widgets.splice(slot, 0, this.widgets.splice(this.widgets.indexOf(widget), 1)[0]!);
@@ -310,11 +320,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     return widget;
   }
 
-  override onSerialize(o: SerializedLGraphNode) {
-    super.onSerialize && super.onSerialize(o);
-    for (let [index, value] of (o.widgets_values || []).entries()) {
+  override onSerialize(serialised: ISerialisedNode) {
+    super.onSerialize?.(serialised);
+    for (let [index, value] of (serialised.widgets_values || []).entries()) {
       if (this.widgets[index]?.name === "Comfy Action") {
-        o.widgets_values![index] = `comfy_action:${value}`;
+        serialised.widgets_values![index] = `comfy_action:${value}`;
       }
     }
   }

@@ -2,10 +2,10 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphGroup as TLGraphGroup,
   LGraph as TLGraph,
-  AdjustedMouseEvent,
   Vector2,
-} from "typings/litegraph.js";
+} from "@comfyorg/litegraph";
 import type {AdjustedMouseCustomEvent} from "typings/rgthree.js";
+import type { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";
@@ -29,7 +29,7 @@ function getToggles() {
 /**
  * Determines if the user clicked on an fast header icon.
  */
-function clickedOnToggleButton(e: AdjustedMouseEvent, group: TLGraphGroup): string | null {
+function clickedOnToggleButton(e: CanvasMouseEvent, group: TLGraphGroup): string | null {
   const toggles = getToggles();
   const pos = group.pos;
   const size = group.size;
@@ -139,7 +139,7 @@ app.registerExtension({
 
       if (
         !CONFIG_SERVICE.getFeatureValue("group_header_fast_toggle.enabled") ||
-        !rgthree.lastAdjustedMouseEvent
+        !rgthree.lastCanvasMouseEvent
       ) {
         return;
       }
@@ -150,8 +150,8 @@ app.registerExtension({
       // Default to hover if not always.
       if (CONFIG_SERVICE.getFeatureValue("group_header_fast_toggle.show") !== "always") {
         const hoverGroup = graph.getGroupOnPos(
-          rgthree.lastAdjustedMouseEvent.canvasX,
-          rgthree.lastAdjustedMouseEvent.canvasY,
+          rgthree.lastCanvasMouseEvent.canvasX,
+          rgthree.lastCanvasMouseEvent.canvasY,
         );
         groups = hoverGroup ? [hoverGroup] : [];
       } else {

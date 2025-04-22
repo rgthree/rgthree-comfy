@@ -1,9 +1,10 @@
 /**
- * A service responsible for captruing keys within LiteGraph's canvas, and outside of it, allowing
+ * A service responsible for capturing keys within LiteGraph's canvas, and outside of it, allowing
  * nodes and other services to confidently determine what's going on.
  */
 class KeyEventService extends EventTarget {
   readonly downKeys: { [key: string]: boolean } = {};
+  readonly shiftDownKeys: { [key: string]: boolean } = {};
 
   ctrlKey = false;
   altKey = false;
@@ -73,6 +74,12 @@ class KeyEventService extends EventTarget {
     if (e.type === "keydown") {
       this.downKeys[key] = true;
       this.dispatchCustomEvent("keydown", { originalEvent: e });
+
+      // If SHIFT is pressed down as well, then we need to keep track of this separetly to "release"
+      // it once SHIFT is also released.
+      if (this.shiftKey && key !== 'SHIFT') {
+        this.shiftDownKeys[key] = true;
+      }
     } else if (e.type === "keyup") {
       // See https://github.com/rgthree/rgthree-comfy/issues/238
       // A little bit of a hack, but Mac reportedly does something odd with copy/paste. ComfyUI
@@ -83,7 +90,15 @@ class KeyEventService extends EventTarget {
         this.clearKeydowns();
       } else {
         delete this.downKeys[key];
-        // this.debugRenderKeys();
+      }
+
+      // If we're releasing the SHIFT key, then we may also be releasing all other keys we pressed
+      // during the SHIFT key as well. We should get an additional keydown for them after.
+      if (key === 'SHIFT') {
+        for (const key in this.shiftDownKeys) {
+          delete this.downKeys[key];
+          delete this.shiftDownKeys[key];
+        }
       }
       this.dispatchCustomEvent("keyup", { originalEvent: e });
     }

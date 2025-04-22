@@ -102,8 +102,8 @@ export function addMenuItemOnExtraMenuOptions(node, config, menuOptions, after =
                         if (config.property) {
                             node.properties = node.properties || {};
                             node.properties[config.property] = config.prepareValue
-                                ? config.prepareValue(subValue.content || '', node)
-                                : subValue.content || '';
+                                ? config.prepareValue(subValue.content || "", node)
+                                : subValue.content || "";
                         }
                         config.callback && config.callback(node, subValue === null || subValue === void 0 ? void 0 : subValue.content);
                     },
@@ -130,7 +130,7 @@ export function addConnectionLayoutSupport(node, app, options = [
         subMenuOptions: options.map((option) => option[0] + (option[1] ? " -> " + option[1] : "")),
         prepareValue: (value, node) => {
             var _a;
-            const values = value.split(" -> ");
+            const values = String(value).split(" -> ");
             if (!values[1] && !((_a = node.outputs) === null || _a === void 0 ? void 0 : _a.length)) {
                 values[1] = LAYOUT_LABEL_OPPOSITES[values[0]];
             }
@@ -146,6 +146,12 @@ export function addConnectionLayoutSupport(node, app, options = [
     });
     node.prototype.getConnectionPos = function (isInput, slotNumber, out) {
         return getConnectionPosForLayout(this, isInput, slotNumber, out);
+    };
+    node.prototype.getInputPos = function (slotNumber) {
+        return getConnectionPosForLayout(this, true, slotNumber, [0, 0]);
+    };
+    node.prototype.getOutputPos = function (slotNumber) {
+        return getConnectionPosForLayout(this, false, slotNumber, [0, 0]);
     };
 }
 export function setConnectionsLayout(node, newLayout) {
@@ -203,8 +209,9 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
                 return count;
             }, 0);
     cxn.dir = data[0];
-    if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
-        cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1];
+    const connections_dir = node.properties["connections_dir"];
+    if ((node.size[0] == 10 || node.size[1] == 10) && connections_dir) {
+        cxn.dir = connections_dir[isInput ? 0 : 1];
     }
     if (side === "Left") {
         if (node.flags.collapsed) {
@@ -321,13 +328,13 @@ export function getConnectedInputInfosAndFilterPassThroughs(startNode, currentNo
     return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing), passThroughFollowing);
 }
 export function getConnectedInputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
+    return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodes(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
     return getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map(n => n.node);
+    return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
     var _a, _b, _c, _d, _e, _f;
@@ -590,8 +597,7 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
                     else {
                         linkData.link.origin_slot = currentNodeSlot;
                         const nextNode = app.graph.getNodeById(linkData.link.target_id);
-                        if (nextNode &&
-                            ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
+                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
                             nextNode.stabilize && nextNode.stabilize();
                         }
                     }
@@ -631,7 +637,19 @@ LiteGraph.isValidConnection = function (typeA, typeB) {
 export function getOutputNodes(nodes) {
     return ((nodes === null || nodes === void 0 ? void 0 : nodes.filter((n) => {
         var _a;
-        return (n.mode != LiteGraph.NEVER &&
-            ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
+        return (n.mode != LiteGraph.NEVER && ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
     })) || []);
+}
+export function getFullColor(color, liteGraphKey = 'color') {
+    if (!color) {
+        return '';
+    }
+    if (LGraphCanvas.node_colors[color]) {
+        color = LGraphCanvas.node_colors[color][liteGraphKey];
+    }
+    color = color.replace("#", "").toLocaleLowerCase();
+    if (color.length === 3) {
+        color = color.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
+    }
+    return `#${color}`;
 }

@@ -67,37 +67,36 @@ export class BaseContextNode extends RgthreeBaseServerNode {
         this.___collapsed_width = 30 + (title ? 10 + ctx.measureText(title).width : 0);
         ctx.font = oldFont;
     }
-    connectByType(slot, sourceNode, sourceSlotType, optsIn) {
-        let canConnect = super.connectByType &&
-            super.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
+    connectByType(slot, targetNode, targetSlotType, optsIn) {
+        var _a;
+        let canConnect = (_a = super.connectByType) === null || _a === void 0 ? void 0 : _a.call(this, slot, targetNode, targetSlotType, optsIn);
         if (!super.connectByType) {
-            canConnect = LGraphNode.prototype.connectByType.call(this, slot, sourceNode, sourceSlotType, optsIn);
+            canConnect = LGraphNode.prototype.connectByType.call(this, slot, targetNode, targetSlotType, optsIn);
         }
         if (!canConnect && slot === 0) {
             const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
-            for (const [index, input] of (sourceNode.inputs || []).entries()) {
+            for (const [index, input] of (targetNode.inputs || []).entries()) {
                 if (input.link && !ctrlKey) {
                     continue;
                 }
-                const thisOutputSlot = findMatchingIndexByTypeOrName(sourceNode, input, this.outputs);
+                const thisOutputSlot = findMatchingIndexByTypeOrName(targetNode, input, this.outputs);
                 if (thisOutputSlot > -1) {
-                    this.connect(thisOutputSlot, sourceNode, index);
+                    this.connect(thisOutputSlot, targetNode, index);
                 }
             }
         }
         return null;
     }
     connectByTypeOutput(slot, sourceNode, sourceSlotType, optsIn) {
-        var _a;
-        let canConnect = super.connectByTypeOutput &&
-            super.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
+        var _a, _b;
+        let canConnect = (_a = super.connectByTypeOutput) === null || _a === void 0 ? void 0 : _a.call(this, slot, sourceNode, sourceSlotType, optsIn);
         if (!super.connectByType) {
             canConnect = LGraphNode.prototype.connectByTypeOutput.call(this, slot, sourceNode, sourceSlotType, optsIn);
         }
         if (!canConnect && slot === 0) {
             const ctrlKey = KEY_EVENT_SERVICE.ctrlKey;
             for (const [index, output] of (sourceNode.outputs || []).entries()) {
-                if (((_a = output.links) === null || _a === void 0 ? void 0 : _a.length) && !ctrlKey) {
+                if (((_b = output.links) === null || _b === void 0 ? void 0 : _b.length) && !ctrlKey) {
                     continue;
                 }
                 const thisInputSlot = findMatchingIndexByTypeOrName(sourceNode, output, this.inputs);

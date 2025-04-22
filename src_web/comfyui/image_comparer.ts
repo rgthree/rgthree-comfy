@@ -1,25 +1,19 @@
-import { app } from "scripts/app.js";
-import { api } from "scripts/api.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
-import {
-  AdjustedMouseEvent,
-  LGraphCanvas,
-  LGraphNode,
-  SerializedLGraphNode,
-  Vector2,
-} from "typings/litegraph.js";
-import { addConnectionLayoutSupport } from "./utils.js";
-import {
-  RgthreeBaseHitAreas,
-  RgthreeBaseWidget,
-  RgthreeBaseWidgetBounds,
-} from "./utils_widgets.js";
-import { measureText } from "./utils_canvas.js";
+import {LGraphCanvas, LGraphNode, Vector2, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
-type ComfyImageServerData = { filename: string; type: string; subfolder: string };
-type ComfyImageData = { name: string; selected: boolean; url: string; img?: HTMLImageElement };
+import {app} from "scripts/app.js";
+import {api} from "scripts/api.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {addConnectionLayoutSupport} from "./utils.js";
+import {RgthreeBaseHitAreas, RgthreeBaseWidget, RgthreeBaseWidgetBounds} from "./utils_widgets.js";
+import {measureText} from "./utils_canvas.js";
+import {Point, Size} from "@comfyorg/litegraph/dist/interfaces.js";
+
+type ComfyImageServerData = {filename: string; type: string; subfolder: string};
+type ComfyImageData = {name: string; selected: boolean; url: string; img?: HTMLImageElement};
 type OldExecutedPayload = {
   images: ComfyImageServerData[];
 };
@@ -47,8 +41,8 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
   // These is what the core preview image node uses to show the context menu. May not be that helpful
   // since it likely will always be "0" when a context menu is invoked without manually changing
   // something.
-  imageIndex: number = 0;
-  imgs: InstanceType<typeof Image>[] = [];
+  override imageIndex: number = 0;
+  override imgs: InstanceType<typeof Image>[] = [];
 
   override serialize_widgets = true;
 
@@ -99,18 +93,18 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
           url: imageDataToUrl(d),
         });
       }
-      this.canvasWidget!.value = { images: imagesToChoose };
+      this.canvasWidget!.value = {images: imagesToChoose};
     }
   }
 
-  override onSerialize(o: SerializedLGraphNode) {
-    super.onSerialize && super.onSerialize(o);
-    for (let [index, widget_value] of (o.widgets_values || []).entries()) {
+  override onSerialize(serialised: ISerialisedNode) {
+    super.onSerialize && super.onSerialize(serialised);
+    for (let [index, widget_value] of (serialised.widgets_values || []).entries()) {
       if (this.widgets[index]?.name === "rgthree_comparer") {
-        o.widgets_values![index] = (
-          this.widgets[index] as RgthreeImageComparerWidget
+        serialised.widgets_values![index] = (
+          this.widgets[index] as unknown as RgthreeImageComparerWidget
         ).value.images.map((d) => {
-          d = { ...d };
+          d = {...d};
           delete d.img;
           return d;
         });
@@ -145,26 +139,27 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     }
   }
 
-  override onMouseDown(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
-    super.onMouseDown?.(event, pos, graphCanvas);
+  override onMouseDown(event: CanvasMouseEvent, pos: Point, canvas: LGraphCanvas): boolean {
+    super.onMouseDown?.(event, pos, canvas);
     this.setIsPointerDown(true);
+    return false;
   }
 
-  override onMouseEnter(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
-    super.onMouseEnter?.(event, pos, graphCanvas);
+  override onMouseEnter(event: CanvasMouseEvent): void {
+    super.onMouseEnter?.(event);
     this.setIsPointerDown(!!app.canvas.pointer_is_down);
     this.isPointerOver = true;
   }
 
-  override onMouseLeave(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
-    super.onMouseLeave?.(event, pos, graphCanvas);
+  override onMouseLeave(event: CanvasMouseEvent): void {
+    super.onMouseLeave?.(event);
     this.setIsPointerDown(false);
     this.isPointerOver = false;
   }
 
-  override onMouseMove(event: MouseEvent, pos: Vector2, graphCanvas: LGraphCanvas): void {
-    super.onMouseMove?.(event, pos, graphCanvas);
-    this.pointerOverPos = [...pos];
+  override onMouseMove(event: MouseEvent, pos: Point, canvas: LGraphCanvas): void {
+    super.onMouseMove?.(event, pos, canvas);
+    this.pointerOverPos = [...pos] as Point;
     this.imageIndex = this.pointerOverPos[0] > this.size[0] / 2 ? 1 : 0;
   }
 
@@ -222,7 +217,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
       </ul>`;
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeImageComparer);
   }
 
@@ -242,6 +237,8 @@ type RgthreeImageComparerWidgetValue = {
 };
 
 class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerWidgetValue> {
+  override readonly type = 'custom';
+
   private node: RgthreeImageComparer;
 
   protected override hitAreas: RgthreeBaseHitAreas<any> = {
@@ -255,7 +252,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     this.node = node;
   }
 
-  private _value: RgthreeImageComparerWidgetValue = { images: [] };
+  private _value: RgthreeImageComparerWidgetValue = {images: []};
 
   set value(v: RgthreeImageComparerWidgetValue) {
     // Despite `v` typed as RgthreeImageComparerWidgetValue, we may have gotten an array of strings
@@ -265,7 +262,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
       cleanedVal = v.map((d, i) => {
         if (!d || typeof d === "string") {
           // We usually only have two here, so they're selected.
-          d = { url: d, name: i == 0 ? "A" : "B", selected: true };
+          d = {url: d, name: i == 0 ? "A" : "B", selected: true};
         }
         return d;
       });
@@ -364,7 +361,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
   }
 
   private onSelectionDown(
-    event: AdjustedMouseEvent,
+    event: CanvasMouseEvent,
     pos: Vector2,
     node: LGraphNode,
     bounds?: RgthreeBaseWidgetBounds,
@@ -387,7 +384,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     if (!image?.img?.naturalWidth || !image?.img?.naturalHeight) {
       return;
     }
-    let [nodeWidth, nodeHeight] = this.node.size;
+    let [nodeWidth, nodeHeight] = this.node.size as [number, number];
     const imageAspect = image?.img.naturalWidth / image?.img.naturalHeight;
     let height = nodeHeight - y;
     const widgetAspect = nodeWidth / height;
@@ -452,21 +449,24 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     return [width, 20];
   }
 
-  serializeValue(serializedNode: SerializedLGraphNode, widgetIndex: number) {
+  override serializeValue(
+    node: LGraphNode,
+    index: number,
+  ): RgthreeImageComparerWidgetValue | Promise<RgthreeImageComparerWidgetValue> {
     const v = [];
     for (const data of this._value.images) {
       // Remove the img since it can't serialize.
-      const d = { ...data };
+      const d = {...data};
       delete d.img;
       v.push(d);
     }
-    return { images: v };
+    return {images: v};
   }
 }
 
 app.registerExtension({
   name: "rgthree.ImageComparer",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeImageComparer.type) {
       RgthreeImageComparer.setUp(nodeType, nodeData);
     }

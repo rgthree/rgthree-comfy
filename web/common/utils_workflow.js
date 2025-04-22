@@ -1,5 +1,5 @@
 import { getResolver } from "./shared_utils.js";
-import { getPngMetadata, getWebpMetadata } from "../../scripts/pnginfo.js";
+import { getPngMetadata, getWebpMetadata } from "./comfyui_shim.js";
 function parseWorkflowJson(stringJson) {
     stringJson = stringJson || "null";
     stringJson = stringJson.replace(/:\s*NaN/g, ": null");

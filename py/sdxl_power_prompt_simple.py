@@ -28,10 +28,12 @@ class RgthreeSDXLPowerPromptSimple(RgthreeSDXLPowerPromptPositive):
     return {
       'required': {
         'prompt_g': ('STRING', {
-          'multiline': True
+          'multiline': True,
+          'dynamicPrompts': True
         }),
         'prompt_l': ('STRING', {
-          'multiline': True
+          'multiline': True,
+          'dynamicPrompts': True
         }),
       },
       'optional': {

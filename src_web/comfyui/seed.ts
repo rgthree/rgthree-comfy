@@ -1,25 +1,21 @@
-import { app } from "scripts/app.js";
-import { ComfyWidgets } from "scripts/widgets.js";
 import type {
-  ContextMenuItem,
   IContextMenuOptions,
   ContextMenu,
   LGraphNode as TLGraphNode,
   IWidget,
   LGraphCanvas,
-  SerializedLGraphNode,
-} from "typings/litegraph.js";
-import type {
-  ComfyObjectInfo,
-  ComfyWidget,
-  ComfyNodeConstructor,
-  ComfyApiPrompt,
-} from "typings/comfy.js";
+  IContextMenuValue,
+  LGraphNodeConstructor
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation";
+import type {ComfyNodeDef, ComfyApiPrompt} from "typings/comfy.js";
+
+import {app} from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
-import { SerializedNode } from "typings/index.js";
 
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 
@@ -48,7 +44,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
   serializedCtx: SeedSerializedCtx = {};
   seedWidget!: IWidget;
   lastSeedButton!: IWidget;
-  lastSeedValue: ComfyWidget | null = null;
+  lastSeedValue: IWidget | null = null;
 
   randMax = 1125899906842624;
   // We can have a full range of seeds, including negative. But, for the randomRange we'll
@@ -75,7 +71,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     );
   }
 
-  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
+  override configure(info: ISerialisedNode): void {
     super.configure(info);
     if (this.properties?.["showLastSeed"]) {
       this.addLastSeedValue();
@@ -106,26 +102,26 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
     // Update random values in case seed comes down with different options.
     let step = this.seedWidget.options.step || 1;
-    this.randMax = Math.min(1125899906842624, this.seedWidget.options.max);
+    this.randMax = Math.min(1125899906842624, this.seedWidget.options.max ?? 0);
     // We can have a full range of seeds, including negative. But, for the randomRange we'll
     // only generate positives, since that's what folks assume.
-    this.randMin = Math.max(0, this.seedWidget.options.min);
+    this.randMin = Math.max(0, this.seedWidget.options.min ?? 0);
     this.randomRange = (this.randMax - Math.max(0, this.randMin)) / (step / 10);
 
     this.addWidget(
       "button",
       "🎲 Randomize Each Time",
-      null,
+      '',
       () => {
         this.seedWidget.value = SPECIAL_SEED_RANDOM;
       },
       { serialize: false },
-    ) as ComfyWidget;
+    );
 
     this.addWidget(
       "button",
       "🎲 New Fixed Random",
-      null,
+      '',
       () => {
         this.seedWidget.value =
           Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
@@ -136,7 +132,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     this.lastSeedButton = this.addWidget(
       "button",
       LAST_SEED_BUTTON_LABEL,
-      null,
+      '',
       () => {
         this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
         this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
@@ -147,12 +143,12 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     this.lastSeedButton.disabled = true;
   }
 
-  override getExtraMenuOptions(canvas: LGraphCanvas, options: ContextMenuItem[]): void {
+  override getExtraMenuOptions(canvas: LGraphCanvas, options: IContextMenuValue[]) {
     super.getExtraMenuOptions?.apply(this, [...arguments] as any);
     options.splice(options.length - 1, 0, {
       content: "Show/Hide Last Seed Value",
       callback: (
-        _value: ContextMenuItem,
+        _value: IContextMenuValue,
         _options: IContextMenuOptions,
         _event: MouseEvent,
         _parentMenu: ContextMenu | undefined,
@@ -166,6 +162,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         }
       },
     });
+    return [];
   }
 
   addLastSeedValue() {
@@ -175,7 +172,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       "last_seed",
       ["STRING", { multiline: true }],
       app,
-    ).widget;
+    ).widget as unknown as IWidget;
     this.lastSeedValue!.inputEl!.readOnly = true;
     this.lastSeedValue!.inputEl!.style.fontSize = "0.75rem";
     this.lastSeedValue!.inputEl!.style.textAlign = "center";
@@ -185,7 +182,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
   removeLastSeedValue() {
     if (!this.lastSeedValue) return;
     this.lastSeedValue!.inputEl!.remove();
-    this.widgets.splice(this.widgets.indexOf(this.lastSeedValue as IWidget), 1);
+    this.widgets.splice(this.widgets.indexOf(this.lastSeedValue), 1);
     this.lastSeedValue = null;
     this.computeSize();
   }
@@ -208,7 +205,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     const workflow = e.detail.workflow;
     const output = e.detail.output;
 
-    let workflowNode = workflow?.nodes?.find((n: SerializedNode) => n.id === this.id) ?? null;
+    let workflowNode = workflow?.nodes?.find((n: ISerialisedNode) => n.id === this.id) ?? null;
     let outputInputs = output?.[this.id]?.inputs;
 
     if (
@@ -248,7 +245,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
    * There are no sideffects to calling this method.
    */
   private getSeedToUse() {
-    const inputSeed: number = this.seedWidget.value;
+    const inputSeed = Number(this.seedWidget.value);
     let seedToUse: number | null = null;
 
     // If our input seed was a special seed, then handle it.
@@ -275,7 +272,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     return seedToUse ?? inputSeed;
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeSeed);
   }
 
@@ -292,7 +289,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
 app.registerExtension({
   name: "rgthree.Seed",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeSeed.type) {
       RgthreeSeed.setUp(nodeType, nodeData);
     }

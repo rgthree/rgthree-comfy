@@ -4,6 +4,7 @@ type ModelInfoType = "loras";
 
 class RgthreeApi {
   private baseUrl: string;
+  private comfyBaseUrl: string;
   getCheckpointsPromise: Promise<string[]> | null = null;
   getSamplersPromise: Promise<string[]> | null = null;
   getSchedulersPromise: Promise<string[]> | null = null;
@@ -12,6 +13,14 @@ class RgthreeApi {
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || "./rgthree/api";
+
+    // Calculate the comfyUI api base path by checkin gif we're on an rgthree independant page (as
+    // we'll always use '/rgthree/' prefix) and, if so, assume the path before `/rgthree/` is the
+    // base path. If we're not, then just use the same pathname logic as the ComfyUI api.js uses.
+    const comfyBasePathname = location.pathname.includes("/rgthree/")
+      ? location.pathname.split("rgthree/")[0]!
+      : location.pathname;
+    this.comfyBaseUrl = comfyBasePathname.split("/").slice(0, -1).join("/");
   }
 
   apiURL(route: string) {
@@ -114,6 +123,20 @@ class RgthreeApi {
       `/${type}/info?file=${encodeURIComponent(file)}`,
       {cache: "no-store", method: "POST", body},
     );
+  }
+
+  /**
+   * [🤮] Fetches from the ComfyUI given a similar functionality to the real ComfyUI API
+   * implementation, but can be available on independant pages outside of the ComfyUI UI. This is
+   * because ComfyUI frontend stopped serving its modules independantly and opted for a giant bundle
+   * instead which no longer allows us to load its `api.js` file separately.
+   */
+  fetchComfyApi(route: string, options?: any): Promise<any> {
+    const url = this.comfyBaseUrl + "/api" + route;
+    options = options || {};
+    options.headers = options.headers || {};
+    options.cache = options.cache || "no-cache";
+    return fetch(url, options);
   }
 }
 

@@ -29,10 +29,10 @@ const RGX_ATTR_CLASS = new RegExp(`(^|\\S)\\.([a-z0-9_\\-\\.]+)`, 'gi');
 const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
-export function query(selectors, parent = document) {
+export function queryAll(selectors, parent = document) {
     return Array.from(parent.querySelectorAll(selectors)).filter(n => !!n);
 }
-export function queryOne(selectors, parent = document) {
+export function query(selectors, parent = document) {
     var _a;
     return (_a = parent.querySelector(selectors)) !== null && _a !== void 0 ? _a : null;
 }
@@ -56,8 +56,13 @@ export function createElement(selectorOrMarkup, attrs) {
         const tag = getSelectorTag(selector) || "div";
         element = document.createElement(tag);
         selector = selector.replace(RGX_TAG, "$2");
+        const brackets = selector.match(/(\[[^\]]+\])/g) || [];
+        for (const bracket of brackets) {
+            selector = selector.replace(bracket, '');
+        }
         selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
         selector = selector.replace(RGX_ATTR_CLASS, (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, " ")}"]`);
+        selector += brackets.join('');
     }
     const selectorAttrs = getSelectorAttributes(selector);
     if (selectorAttrs) {
@@ -272,7 +277,7 @@ function setStyles(element, styles = null) {
     }
     return element;
 }
-function setStyle(element, name, value) {
+export function setStyle(element, name, value) {
     name = (name.indexOf('float') > -1 ? 'cssFloat' : name);
     if (name.indexOf('-') != -1) {
         name = name.replace(/-\D/g, (match) => {

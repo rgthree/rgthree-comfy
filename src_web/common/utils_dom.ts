@@ -38,19 +38,21 @@ const RGX_STRING_CONTENT_TO_SQUARES = '(.*?)(\\[|\\])';
 const RGX_ATTRS_MAYBE_OPEN = new RegExp(`\\[${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 const RGX_ATTRS_FOLLOW_OPEN = new RegExp(`^${RGX_STRING_CONTENT_TO_SQUARES}`, 'gi');
 
-export function query<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<HTMLElementTagNameMap[K]>;
-export function query<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<SVGElementTagNameMap[K]>;
-export function query<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): Array<MathMLElementTagNameMap[K]>;
-export function query<T extends HTMLElement>(selectors: string, parent?: HTMLElement|Document): Array<T>;
-export function query(selectors: string, parent: HTMLElement|Document = document) {
+type QueryParent = HTMLElement|Document|DocumentFragment;
+
+export function queryAll<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: QueryParent): Array<HTMLElementTagNameMap[K]>;
+export function queryAll<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: QueryParent): Array<SVGElementTagNameMap[K]>;
+export function queryAll<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: QueryParent): Array<MathMLElementTagNameMap[K]>;
+export function queryAll<T extends HTMLElement>(selectors: string, parent?: QueryParent): Array<T>;
+export function queryAll(selectors: string, parent: QueryParent = document) {
   return Array.from(parent.querySelectorAll(selectors)).filter(n => !!n);
 }
 
-export function queryOne<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): HTMLElementTagNameMap[K] | null;
-export function queryOne<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): SVGElementTagNameMap[K] | null;
-export function queryOne<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: HTMLElement|Document): MathMLElementTagNameMap[K] | null;
-export function queryOne<T extends HTMLElement>(selectors: string, parent?: HTMLElement|Document): T | null;
-export function queryOne(selectors: string, parent: HTMLElement|Document = document)  {
+export function query<K extends keyof HTMLElementTagNameMap>(selectors: K, parent?: QueryParent): HTMLElementTagNameMap[K] | null;
+export function query<K extends keyof SVGElementTagNameMap>(selectors: K, parent?: QueryParent): SVGElementTagNameMap[K] | null;
+export function query<K extends keyof MathMLElementTagNameMap>(selectors: K, parent?: QueryParent): MathMLElementTagNameMap[K] | null;
+export function query<T extends HTMLElement>(selectors: string, parent?: QueryParent): T | null;
+export function query(selectors: string, parent: QueryParent = document)  {
   return parent.querySelector(selectors) ?? null;
 }
 
@@ -80,12 +82,17 @@ export function createElement<T extends HTMLElement>(selectorOrMarkup: string, a
     const tag = getSelectorTag(selector) || "div";
     element = document.createElement(tag);
     selector = selector.replace(RGX_TAG, "$2");
+    const brackets = selector.match(/(\[[^\]]+\])/g) || [];
+    for (const bracket of brackets) {
+      selector = selector.replace(bracket, '');
+    }
     // Turn id and classname into [attr]s that can be nested
     selector = selector.replace(RGX_ATTR_ID, '[id="$1"]');
     selector = selector.replace(
       RGX_ATTR_CLASS,
       (match, p1, p2) => `${p1}[class="${p2.replace(/\./g, " ")}"]`,
     );
+    selector += brackets.join('');
   }
 
   const selectorAttrs = getSelectorAttributes(selector);
@@ -313,7 +320,7 @@ function setStyles(element: HTMLElement, styles: {[name: string]: string|number}
   return element;
 }
 
-function setStyle(element: HTMLElement, name: string, value: string|number|null) {
+export function setStyle(element: HTMLElement, name: string, value: string|number|null) {
   // Note: Old IE uses 'styleFloat'
   name = (name.indexOf('float') > -1 ? 'cssFloat' : name);
   // Camelcase

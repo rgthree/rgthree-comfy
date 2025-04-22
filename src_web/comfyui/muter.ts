@@ -1,7 +1,8 @@
-import { app } from "scripts/app.js";
+import type { LGraphNode } from "@comfyorg/litegraph";
+
+import {app} from "scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
 import { NodeTypesString } from "./constants.js";
-import type { LGraphNode } from "typings/litegraph.js";
 
 const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;

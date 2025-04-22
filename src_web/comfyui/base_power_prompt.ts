@@ -1,30 +1,31 @@
-import { api } from "scripts/api.js";
 import type {
   LLink,
-  IComboWidget,
   LGraphNode,
   INodeOutputSlot,
   INodeInputSlot,
   IWidget,
-  SerializedLGraphNode,
-} from "typings/litegraph.js";
-import type { ComfyObjectInfo, ComfyGraphNode } from "typings/comfy.js";
-import { wait } from "rgthree/common/shared_utils.js";
-import { rgthree } from "./rgthree.js";
+} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {IComboWidget} from "@comfyorg/litegraph/dist/types/widgets.js";
+import type {ComfyNodeDef} from "typings/comfy.js";
+
+import {api} from "scripts/api.js";
+import {wait} from "rgthree/common/shared_utils.js";
+import {rgthree} from "./rgthree.js";
 
 /** Wraps a node instance keeping closure without mucking the finicky types. */
 export class PowerPrompt {
   readonly isSimple: boolean;
-  readonly node: ComfyGraphNode;
+  readonly node: LGraphNode;
   readonly promptEl: HTMLTextAreaElement;
-  nodeData: ComfyObjectInfo;
-  readonly combos: { [key: string]: IComboWidget } = {};
-  readonly combosValues: { [key: string]: string[] } = {};
+  nodeData: ComfyNodeDef;
+  readonly combos: {[key: string]: IComboWidget} = {};
+  readonly combosValues: {[key: string]: string[]} = {};
   boundOnFreshNodeDefs!: (event: CustomEvent) => void;
 
   private configuring = false;
 
-  constructor(node: ComfyGraphNode, nodeData: ComfyObjectInfo) {
+  constructor(node: LGraphNode, nodeData: ComfyNodeDef) {
     this.node = node;
     this.node.properties = this.node.properties || {};
 
@@ -33,13 +34,13 @@ export class PowerPrompt {
     this.nodeData = nodeData;
     this.isSimple = this.nodeData.name.includes("Simple");
 
-    this.promptEl = (node.widgets[0]! as any).inputEl;
+    this.promptEl = (node.widgets![0]! as any).inputEl;
     this.addAndHandleKeyboardLoraEditWeight();
 
     this.patchNodeRefresh();
 
     const oldConfigure = this.node.configure;
-    this.node.configure = (info: SerializedLGraphNode) => {
+    this.node.configure = (info: ISerialisedNode) => {
       this.configuring = true;
       oldConfigure?.apply(this.node, [info]);
       this.configuring = false;
@@ -109,17 +110,18 @@ export class PowerPrompt {
 
     const onPropertyChanged = this.node.onPropertyChanged;
     this.node.onPropertyChanged = (property: string, value: any, prevValue: any) => {
-      onPropertyChanged && onPropertyChanged.call(this, property, value, prevValue);
+      const v = onPropertyChanged && onPropertyChanged.call(this.node, property, value, prevValue);
       if (property === "combos_filter") {
         this.refreshCombos(this.nodeData);
       }
+      return v ?? true;
     };
 
     // Strip all widgets but prompt (we'll re-add them in refreshCombos)
     // this.node.widgets.splice(1);
-    for (let i = this.node.widgets.length - 1; i >= 0; i--) {
-      if (this.shouldRemoveServerWidget(this.node.widgets[i]!)) {
-        this.node.widgets.splice(i, 1);
+    for (let i = this.node.widgets!.length - 1; i >= 0; i--) {
+      if (this.shouldRemoveServerWidget(this.node.widgets![i]!)) {
+        this.node.widgets!.splice(i, 1);
       }
     }
 
@@ -184,12 +186,12 @@ export class PowerPrompt {
     );
   }
 
-  refreshCombos(nodeData: ComfyObjectInfo) {
+  refreshCombos(nodeData: ComfyNodeDef) {
     this.nodeData = nodeData;
     let filter: RegExp | null = null;
-    if (this.node.properties["combos_filter"]?.trim()) {
+    if ((this.node.properties["combos_filter"] as string)?.trim()) {
       try {
-        filter = new RegExp(this.node.properties["combos_filter"].trim(), "i");
+        filter = new RegExp((this.node.properties["combos_filter"] as string).trim(), "i");
       } catch (e) {
         console.error(`Could not parse "${filter}" for Regular Expression`, e);
         filter = null;
@@ -235,7 +237,7 @@ export class PowerPrompt {
                       } else if (key.includes("lora")) {
                         this.insertSelectionText(`<lora:${selected}:1.0>`);
                       }
-                      this.combos[key]!.value = values[0];
+                      this.combos[key]!.value = values[0]!;
                     });
                   }
                 },
@@ -243,7 +245,7 @@ export class PowerPrompt {
                   values,
                   serialize: true, // Don't include this in prompt.
                 },
-              );
+              ) as IComboWidget;
               (this.combos[key]! as any).oldComputeSize = this.combos[key]!.computeSize;
               let node = this.node;
               this.combos[key]!.computeSize = function (width: number) {
@@ -251,16 +253,16 @@ export class PowerPrompt {
                   width,
                   LiteGraph.NODE_WIDGET_HEIGHT,
                 ];
-                if (this === node.widgets[node.widgets.length - 1]) {
+                if (this === node.widgets![node.widgets!.length - 1]) {
                   size[1] += 10;
                 }
                 return size;
               };
             }
             this.combos[key]!.options!.values = values;
-            this.combos[key]!.value = values[0];
+            this.combos[key]!.value = values[0]!;
           } else if (!shouldShow && this.combos[key]) {
-            this.node.widgets.splice(this.node.widgets.indexOf(this.combos[key]!), 1);
+            this.node.widgets!.splice(this.node.widgets!.indexOf(this.combos[key]!), 1);
             delete this.combos[key];
           }
         } else if (key.startsWith("values")) {

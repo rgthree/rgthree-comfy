@@ -5,7 +5,7 @@ import { NodeTypesString } from "./constants.js";
 let nodeData = null;
 app.registerExtension({
     name: "rgthree.PowerPrompt",
-    async beforeRegisterNodeDef(nodeType, passedNodeData, _app) {
+    async beforeRegisterNodeDef(nodeType, passedNodeData) {
         if (passedNodeData.name.includes("Power Prompt") && passedNodeData.name.includes("rgthree")) {
             nodeData = passedNodeData;
             const onNodeCreated = nodeType.prototype.onNodeCreated;

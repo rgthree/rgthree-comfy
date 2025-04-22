@@ -19,7 +19,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         this.properties["buttonText"] = "🎬 Action!";
         this.properties["shortcutModifier"] = "alt";
         this.properties["shortcutKey"] = "";
-        this.buttonWidget = this.addWidget("button", this.properties["buttonText"], null, () => {
+        this.buttonWidget = this.addWidget("button", this.properties["buttonText"], "", () => {
             this.executeConnectedNodes();
         }, { serialize: false });
         this.keypressBound = this.onKeypress.bind(this);
@@ -32,7 +32,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
             if (info.widgets_values) {
                 for (let [index, value] of info.widgets_values.entries()) {
                     if (index > 0) {
-                        if (value.startsWith("comfy_action:")) {
+                        if (typeof value === "string" && value.startsWith("comfy_action:")) {
                             value = value.replace("comfy_action:", "");
                             this.addComfyActionWidget(index, value);
                         }
@@ -92,14 +92,15 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
         this.executingFromShortcut = false;
     }
-    onPropertyChanged(property, value, _prevValue) {
-        if (property == "buttonText") {
+    onPropertyChanged(property, value, prevValue) {
+        var _a, _b;
+        if (property == "buttonText" && typeof value === "string") {
             this.buttonWidget.name = value;
         }
-        if (property == "shortcutKey") {
-            value = value.trim();
-            this.properties["shortcutKey"] = (value && value[0].toLowerCase()) || "";
+        if (property == "shortcutKey" && typeof value === "string") {
+            this.properties["shortcutKey"] = (_b = (_a = value.trim()[0]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : "";
         }
+        return true;
     }
     handleLinkedNodesStabilization(linkedNodes) {
         var _a, _b, _c, _d, _e, _f, _g, _h;
@@ -200,6 +201,9 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     node.mode = MODE_ALWAYS;
                 }
                 if (node.handleAction) {
+                    if (typeof action !== "string") {
+                        throw new Error("Fast Actions Button action should be a string: " + action);
+                    }
                     await node.handleAction(action);
                 }
                 app.graph.change();
@@ -210,18 +214,18 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
     }
     addComfyActionWidget(slot, value) {
         let widget = this.addWidget("combo", "Comfy Action", "None", () => {
-            if (widget.value.startsWith("MOVE ")) {
+            if (String(widget.value).startsWith("MOVE ")) {
                 this.widgets.push(this.widgets.splice(this.widgets.indexOf(widget), 1)[0]);
-                widget.value = widget["lastValue_"];
+                widget.value = String(widget.rgthree_lastValue);
             }
-            else if (widget.value.startsWith("REMOVE ")) {
+            else if (String(widget.value).startsWith("REMOVE ")) {
                 this.removeWidget(widget);
             }
-            widget["lastValue_"] = widget.value;
+            widget.rgthree_lastValue = widget.value;
         }, {
             values: ["None", "Queue Prompt", "REMOVE Comfy Action", "MOVE to end"],
         });
-        widget["lastValue_"] = value;
+        widget.rgthree_lastValue = value;
         widget.serializeValue = async (_node, _index) => {
             return `comfy_app:${widget === null || widget === void 0 ? void 0 : widget.value}`;
         };
@@ -231,12 +235,12 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
         return widget;
     }
-    onSerialize(o) {
-        var _a;
-        super.onSerialize && super.onSerialize(o);
-        for (let [index, value] of (o.widgets_values || []).entries()) {
-            if (((_a = this.widgets[index]) === null || _a === void 0 ? void 0 : _a.name) === "Comfy Action") {
-                o.widgets_values[index] = `comfy_action:${value}`;
+    onSerialize(serialised) {
+        var _a, _b;
+        (_a = super.onSerialize) === null || _a === void 0 ? void 0 : _a.call(this, serialised);
+        for (let [index, value] of (serialised.widgets_values || []).entries()) {
+            if (((_b = this.widgets[index]) === null || _b === void 0 ? void 0 : _b.name) === "Comfy Action") {
+                serialised.widgets_values[index] = `comfy_action:${value}`;
             }
         }
     }

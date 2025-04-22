@@ -1,11 +1,12 @@
-import { app } from "scripts/app.js";
-import type { BaseFastGroupsModeChanger } from "../fast_groups_muter.js";
-import {
-  type LGraph as TLGraph,
-  type LGraphCanvas as TLGraphCanvas,
+import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
+import type {
+  LGraph as TLGraph,
+  LGraphCanvas as TLGraphCanvas,
   LGraphGroup,
   Vector4,
-} from "typings/litegraph.js";
+} from "@comfyorg/litegraph";
+
+import {app} from "scripts/app.js";
 
 /**
  * A service that keeps global state that can be shared by multiple FastGroupsMuter or
@@ -27,7 +28,7 @@ class FastGroupsService {
   private runScheduleTimeout: number | null = null;
   private runScheduleAnimation: number | null = null;
 
-  private cachedNodeBoundings: { [key: number]: Vector4 } | null = null;
+  private cachedNodeBoundings: {[key: number]: Vector4} | null = null;
 
   constructor() {
     // Don't need to do anything, wait until a signal.
@@ -96,7 +97,7 @@ class FastGroupsService {
     if (!this.cachedNodeBoundings) {
       this.cachedNodeBoundings = {};
       for (const node of app.graph._nodes) {
-        this.cachedNodeBoundings[node.id] = node.getBounding();
+        this.cachedNodeBoundings[Number(node.id)] = node.getBounding() as Vector4;
       }
       setTimeout(() => {
         this.cachedNodeBoundings = null;
@@ -111,11 +112,11 @@ class FastGroupsService {
    */
   recomputeInsideNodesForGroup(group: LGraphGroup) {
     const cachedBoundings = this.getBoundingsForAllNodes();
-    const nodes = group.graph._nodes;
+    const nodes = group.graph!._nodes;
     group._nodes.length = 0;
 
     for (const node of nodes) {
-      const node_bounding = cachedBoundings[node.id];
+      const node_bounding = cachedBoundings[Number(node.id)];
       if (!node_bounding || !LiteGraph.overlapBounding(group._bounding, node_bounding)) {
         continue;
       }
@@ -134,13 +135,14 @@ class FastGroupsService {
 
     if (
       // Don't recalculate nodes if we're moving a group (added by ComfyUI in app.js)
+      // TODO: This doesn't look available anymore... ?
       !canvas.selected_group_moving &&
       (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)
     ) {
       this.groupsUnsorted = [...graph._groups];
       for (const group of this.groupsUnsorted) {
         this.recomputeInsideNodesForGroup(group);
-        (group as any)._rgthreeHasAnyActiveNode = group._nodes.some(
+        group.rgthree_hasAnyActiveNode = group._nodes.some(
           (n) => n.mode === LiteGraph.ALWAYS,
         );
       }

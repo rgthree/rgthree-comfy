@@ -57,12 +57,14 @@ export function drawNodeWidget(ctx, options) {
 export function drawRoundedRectangle(ctx, options) {
     const lowQuality = isLowQuality();
     options = { ...options };
+    ctx.save();
     ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
     ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
     ctx.beginPath();
     ctx.roundRect(options.posX, options.posY, options.width, options.height, lowQuality ? [0] : options.borderRadius ? [options.borderRadius] : [options.height * 0.5]);
     ctx.fill();
     !lowQuality && ctx.stroke();
+    ctx.restore();
 }
 export function drawNumberWidgetPart(ctx, options) {
     const arrowWidth = 9;

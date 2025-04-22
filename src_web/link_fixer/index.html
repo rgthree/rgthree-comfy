@@ -53,6 +53,12 @@
         text-align: left;
         line-height: 1.25;
       }
+      .box > small {
+        margin: 0 0 .6em;
+        text-align: left;
+        line-height: 1.25;
+        opacity: 0.75;
+      }
 
       picture > img {
         display: block;
@@ -102,8 +108,16 @@
 
     <div class="box">
       <h1>rgthree's Workflow Link Fixer</h1>
-      <p>Early versions of the reroute node would occasionally leave behind stale node-linking data in the graph, which could sometimes cause erratic workflow loading. This tool will look at the metadata and attempt to fix these errors.</p>
-      <p>Drag and drop a comfy-generated image or workflow json into this window to check its serialized links and fix.</p>
+      <p>
+        Drag and drop a comfy-generated image or workflow json into this window to check its
+        serialized links and attempt to fix.
+      </p>
+      <small>
+        Sometimes as you have complex workflows the internal data can become corrupt, and the
+        ComfyUI doesn't always understand or display correctly. Maybe links disappear, or reconnect
+        to another node when changing something. Load it here to detect and, if possible, attempt
+        to fix it (sometimes, however, fixing it just isn't feasible, so fingers crossed).
+      </small>
 
       <figure>
         <picture>

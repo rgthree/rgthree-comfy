@@ -1,12 +1,9 @@
 import type {
   LiteGraph as TLiteGraph,
-  LGraphCanvas as TLGraphCanvas,
-  LGraph as TLGraph,
   LGraphNode as TLGraphNode,
-  Vector2,
   LGraphNode,
-} from "typings/litegraph.js";
-import {rgthree} from "../rgthree.js";
+} from "@comfyorg/litegraph";
+
 import {NodeTypesString} from "../constants.js";
 import {wait} from "rgthree/common/shared_utils.js";
 import {describe, should, beforeEach, expect, describeRun} from "../testing/runner.js";
@@ -107,6 +104,7 @@ function vertifyInputsStructure(node: LGraphNode, expectedLength: number) {
 
     await beforeEach(async () => {
       nodeConfig2 = await env.addNode(NodeTypesString.KSAMPLER_CONFIG, {placement: "start"});
+      nodeConfig2.widgets = nodeConfig2.widgets || [];
       nodeConfig2.widgets[0]!.value = 111;
       nodeConfig2.widgets[2]!.value = 11.1;
       nodeCtx2 = await env.addNode(NodeTypesString.DYNAMIC_CONTEXT, {placement: "right"});

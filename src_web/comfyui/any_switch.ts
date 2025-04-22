@@ -1,5 +1,6 @@
-import type { INodeInputSlot, INodeOutputSlot, LLink } from "typings/litegraph.js";
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
+import type { INodeInputSlot, INodeOutputSlot, LGraphNodeConstructor, LLink } from "@comfyorg/litegraph";
+import type { ComfyApp } from "@comfyorg/frontend";
+import type { ComfyNodeDef } from "typings/comfy.js";
 
 import { app } from "scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
@@ -78,7 +79,7 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
     }
   }
 
-  static override setUp(comfyClass: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeAnySwitch);
     addConnectionLayoutSupport(RgthreeAnySwitch, app, [
       ["Left", "Right"],
@@ -89,11 +90,7 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
 
 app.registerExtension({
   name: "rgthree.AnySwitch",
-  async beforeRegisterNodeDef(
-    nodeType: ComfyNodeConstructor,
-    nodeData: ComfyObjectInfo,
-    app: ComfyApp,
-  ) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: any, app: ComfyApp) {
     if (nodeData.name === "Any Switch (rgthree)") {
       RgthreeAnySwitch.setUp(nodeType, nodeData);
     }

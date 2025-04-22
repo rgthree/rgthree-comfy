@@ -1,20 +1,30 @@
-import type { BadLinksData, SerializedGraph, SerializedLink, SerializedNode } from "typings/index.js";
-import type { LGraph, LGraphNode, LLink, serializedLGraph } from "typings/litegraph.js";
+import type {LGraph, LGraphNode, LLink} from "@comfyorg/litegraph";
+import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode";
+import type {ISerialisedNode, ISerialisedGraph} from "@comfyorg/litegraph/dist/types/serialisation";
+import type {SerialisedLLinkArray} from "@comfyorg/litegraph/dist/LLink";
+
+export interface BadLinksData<T = ISerialisedGraph | LGraph> {
+  hasBadLinks: boolean;
+  fixed: boolean;
+  graph: T;
+  patched: number;
+  deleted: number;
+}
 
 enum IoDirection {
   INPUT,
   OUTPUT,
 }
 
-function getNodeById(graph: SerializedGraph | LGraph | serializedLGraph, id: number) {
+function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
   if ((graph as LGraph).getNodeById) {
     return (graph as LGraph).getNodeById(id);
   }
-  graph = graph as SerializedGraph;
-  return graph.nodes.find((n) => n.id === id)!;
+  graph = graph as ISerialisedGraph;
+  return graph.nodes.find((node: ISerialisedNode) => Number(node.id) === id)!;
 }
 
-function extendLink(link: SerializedLink) {
+function extendLink(link: SerialisedLLinkArray) {
   return {
     link: link,
     id: link[0],
@@ -27,7 +37,7 @@ function extendLink(link: SerializedLink) {
 }
 
 /**
- * Takes a SerializedGraph or live LGraph and inspects the links and nodes to ensure the linking
+ * Takes a ISerialisedGraph or live LGraph and inspects the links and nodes to ensure the linking
  * makes logical sense. Can apply fixes when passed the `fix` argument as true.
  *
  * Note that fixes are a best-effort attempt. Seems to get it correct in most cases, but there is a
@@ -36,24 +46,24 @@ function extendLink(link: SerializedLink) {
  * result.
  */
 export function fixBadLinks(
-  graph: SerializedGraph | LGraph,
+  graph: ISerialisedGraph | LGraph,
   fix = false,
   silent = false,
-  logger: { log: (...args: any[]) => void } = console,
+  logger: {log: (...args: any[]) => void} = console,
 ): BadLinksData {
   const patchedNodeSlots: {
     [nodeId: string]: {
-      inputs?: { [slot: number]: number | null };
+      inputs?: {[slot: number]: number | null};
       outputs?: {
         [slots: number]: {
           links: number[];
-          changes: { [linkId: number]: "ADD" | "REMOVE" };
+          changes: {[linkId: number]: "ADD" | "REMOVE"};
         };
       };
     };
   } = {};
   // const logger = this.newLogSession("[findBadLinks]");
-  const data: { patchedNodes: Array<SerializedNode | LGraphNode>; deletedLinks: number[] } = {
+  const data: {patchedNodes: Array<ISerialisedNode | LGraphNode>; deletedLinks: number[]} = {
     patchedNodes: [],
     deletedLinks: [],
   };
@@ -62,7 +72,7 @@ export function fixBadLinks(
    * Internal patch node. We keep track of changes in patchedNodeSlots in case we're in a dry run.
    */
   async function patchNodeSlot(
-    node: SerializedNode | LGraphNode,
+    node: ISerialisedNode | LGraphNode,
     ioDir: IoDirection,
     slot: number,
     linkId: number,
@@ -136,7 +146,7 @@ export function fixBadLinks(
    * Internal to check if a node (or patched data) has a linkId.
    */
   function nodeHasLinkId(
-    node: SerializedNode | LGraphNode,
+    node: ISerialisedNode | LGraphNode,
     ioDir: IoDirection,
     slot: number,
     linkId: number,
@@ -174,7 +184,7 @@ export function fixBadLinks(
   /**
    * Internal to check if a node (or patched data) has a linkId.
    */
-  function nodeHasAnyLink(node: SerializedNode | LGraphNode, ioDir: IoDirection, slot: number) {
+  function nodeHasAnyLink(node: ISerialisedNode | LGraphNode, ioDir: IoDirection, slot: number) {
     // Patched data should be canonical. We can double check if fixing too.
     let hasAny = false;
     if (ioDir === IoDirection.INPUT) {
@@ -205,9 +215,9 @@ export function fixBadLinks(
     return hasAny;
   }
 
-  let links: Array<SerializedLink | LLink> = [];
+  let links: Array<SerialisedLLinkArray | LLink> = [];
   if (!Array.isArray(graph.links)) {
-    Object.values(graph.links).reduce((acc, v) => {
+    links = Object.values(graph.links).reduce((acc, v) => {
       acc[v.id] = v;
       return acc;
     }, links);
@@ -219,7 +229,8 @@ export function fixBadLinks(
   linksReverse.reverse();
   for (let l of linksReverse) {
     if (!l) continue;
-    const link = (l as LLink).origin_slot != null ? (l as LLink) : extendLink(l as SerializedLink);
+    const link =
+      (l as LLink).origin_slot != null ? (l as LLink) : extendLink(l as SerialisedLLinkArray);
 
     const originNode = getNodeById(graph, link.origin_id);
     const originHasLink = () =>
@@ -284,9 +295,9 @@ export function fixBadLinks(
       } else if (!targetHasLink()) {
         !silent &&
           logger.log(
-            `${link.id} is funky... ${targetLog} is NOT correct (is ${targetNode.inputs?.[
-              link.target_slot
-            ]?.link}), but ${originLog} contains it`,
+            `${link.id} is funky... ${targetLog} is NOT correct (is ${
+              targetNode.inputs?.[link.target_slot]?.link
+            }), but ${originLog} contains it`,
           );
         if (!targetHasAnyLink()) {
           !silent && logger.log(` > [PATCH] ${targetLog} is not defined, will set to ${link.id}.`);
@@ -312,7 +323,8 @@ export function fixBadLinks(
   // Now that we've cleaned up the inputs, outputs, run through it looking for dangling links.,
   for (let l of linksReverse) {
     if (!l) continue;
-    const link = (l as LLink).origin_slot != null ? (l as LLink) : extendLink(l as SerializedLink);
+    const link =
+      (l as LLink).origin_slot != null ? (l as LLink) : extendLink(l as SerialisedLLinkArray);
     const originNode = getNodeById(graph, link.origin_id);
     const targetNode = getNodeById(graph, link.target_id);
     // Now that we've manipulated the linking, check again if they both exist.
@@ -341,7 +353,7 @@ export function fixBadLinks(
       if ((graph as LGraph).getNodeById) {
         delete graph.links[data.deletedLinks[i]!];
       } else {
-        graph = graph as SerializedGraph;
+        graph = graph as ISerialisedGraph;
         // Sometimes we got objects for links if passed after ComfyUI's loadGraphData modifies the
         // data. We make a copy now, but can handle the bastardized objects just in case.
         const idx = graph.links.findIndex(
@@ -356,7 +368,7 @@ export function fixBadLinks(
     }
     // If we're a serialized graph, we can filter out the links because it's just an array.
     if (!(graph as LGraph).getNodeById) {
-      graph.links = (graph as SerializedGraph).links.filter((l) => !!l);
+      graph.links = (graph as ISerialisedGraph).links.filter((l) => !!l);
     }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {

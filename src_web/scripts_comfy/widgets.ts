@@ -1,12 +1,12 @@
-import type { LGraphNode } from "typings/litegraph.js";
-import type { ComfyApp, ComfyWidget } from "../typings/comfy.js";
+import type {ComfyApp} from "@comfyorg/frontend";
+import type {IWidget, LGraphNode} from "@comfyorg/litegraph";
 
 type ComfyWidgetFn = (
   node: LGraphNode,
   inputName: string,
   inputData: any,
   app: ComfyApp,
-) => { widget: ComfyWidget };
+) => {widget: IWidget};
 
 /**
  * A dummy ComfyWidgets that we can import from our code, which we'll rewrite later to the comfyui

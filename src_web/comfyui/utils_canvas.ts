@@ -1,5 +1,6 @@
-import { app } from "scripts/app.js";
-import type { LGraphCanvas as TLGraphCanvas, Vector2 } from "../typings/litegraph.js";
+import type {LGraphCanvas as TLGraphCanvas, Vector2} from "@comfyorg/litegraph";
+
+import {app} from "scripts/app.js";
 
 function binarySearch(max: number, getValue: (n: number) => number, match: number) {
   let min = 0;
@@ -112,7 +113,8 @@ export function drawRoundedRectangle(
   options: WidgetRenderingOptions,
 ) {
   const lowQuality = isLowQuality();
-  options = { ...options };
+  options = {...options};
+  ctx.save();
   ctx.strokeStyle = options.colorStroke || LiteGraph.WIDGET_OUTLINE_COLOR;
   ctx.fillStyle = options.colorBackground || LiteGraph.WIDGET_BGCOLOR;
   ctx.beginPath();
@@ -125,6 +127,7 @@ export function drawRoundedRectangle(
   );
   ctx.fill();
   !lowQuality && ctx.stroke();
+  ctx.restore();
 }
 
 type DrawNumberWidgetPartOptions = {
@@ -158,7 +161,7 @@ export function drawNumberWidgetPart(
   ctx.save();
 
   let posX = options.posX;
-  const { posY, height, value, textColor } = options;
+  const {posY, height, value, textColor} = options;
   const midY = posY + height / 2;
 
   // If we're drawing parts from right to left (usually when something in the middle will be
@@ -230,7 +233,7 @@ export function drawTogglePart(
   const lowQuality = isLowQuality();
   ctx.save();
 
-  const { posX, posY, height, value } = options;
+  const {posX, posY, height, value} = options;
 
   const toggleRadius = height * 0.36; // This is the standard toggle height calc.
   const toggleBgWidth = height * 1.5; // We don't draw a separate bg, but this would be it.
@@ -251,8 +254,8 @@ export function drawTogglePart(
     lowQuality || value === false
       ? posX + height * 0.5
       : value === true
-      ? posX + height
-      : posX + height * 0.75;
+        ? posX + height
+        : posX + height * 0.75;
   ctx.beginPath();
   ctx.arc(toggleX, posY + height * 0.5, toggleRadius, 0, Math.PI * 2);
   ctx.fill();

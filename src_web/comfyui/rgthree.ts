@@ -1,14 +1,20 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
-  SerializedLGraphNode,
-  serializedLGraph,
-  ContextMenuItem,
+  IContextMenuValue,
   LGraph as TLGraph,
-  AdjustedMouseEvent,
   IContextMenuOptions,
-} from "typings/litegraph.js";
-import type {ComfyApiFormat, ComfyApiPrompt, ComfyApp} from "typings/comfy.js";
+  ISerialisedGraph,
+} from "@comfyorg/litegraph";
+import type {
+  CanvasMouseEvent,
+  CanvasPointerExtensions,
+} from "@comfyorg/litegraph/dist/types/events.js";
+import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import type {ComfyApiFormat, ComfyApiPrompt} from "typings/comfy.js";
+import type {Bookmark} from "./bookmark.js";
+import type {ComfyApp} from "@comfyorg/frontend";
+
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
@@ -26,8 +32,8 @@ import {
   iconStarFilled,
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
-import type {Bookmark} from "./bookmark.js";
-import {createElement, query, queryOne} from "rgthree/common/utils_dom.js";
+import {createElement, queryAll, query} from "rgthree/common/utils_dom.js";
+import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -223,7 +229,7 @@ class Rgthree extends EventTarget {
   private rgthreeCssPromise: Promise<void>;
 
   /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
-  private queueNodeIds: number[] | null = null;
+  private queueNodeIds: NodeId[] | null = null;
 
   logger = new LogSession("[rgthree]");
 
@@ -232,11 +238,11 @@ class Rgthree extends EventTarget {
 
   processingQueue = false;
   loadingApiJson = false;
-  replacingReroute: number | null = null;
+  replacingReroute: NodeId | null = null;
   processingMouseDown = false;
   processingMouseUp = false;
   processingMouseMove = false;
-  lastAdjustedMouseEvent: AdjustedMouseEvent | null = null;
+  lastCanvasMouseEvent: CanvasMouseEvent | null = null;
 
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
@@ -275,7 +281,7 @@ class Rgthree extends EventTarget {
       });
       const updateDebugKeyDown = () => {
         elDebugKeydowns.innerText = Object.keys(KEY_EVENT_SERVICE.downKeys).join(" ");
-      }
+      };
       KEY_EVENT_SERVICE.addEventListener("keydown", updateDebugKeyDown);
       KEY_EVENT_SERVICE.addEventListener("keyup", updateDebugKeyDown);
     }
@@ -303,15 +309,11 @@ class Rgthree extends EventTarget {
           LiteGraph.closeAllContextMenus();
           if (e.button == 2) {
             const canvas = await waitForCanvas();
-            new LiteGraph.ContextMenu(
-              this.getRgthreeContextMenuItems(),
-              {
-                title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
-                left: e.clientX,
-                top: 5,
-              },
-              canvas.getCanvasWindow(),
-            );
+            new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
+              title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
+              left: e.clientX,
+              top: 5,
+            });
             return;
           }
           if (e.button == 0) {
@@ -331,15 +333,15 @@ class Rgthree extends EventTarget {
       }
       // Handle both cases in case someone hasn't updated. Can probably just assume
       // `isUpdatedComfyBodyClasses` is true in the near future.
-      const isUpdatedComfyBodyClasses = !!queryOne(".comfyui-body-top");
+      const isUpdatedComfyBodyClasses = !!query(".comfyui-body-top");
       const position = CONFIG_SERVICE.getConfigValue("features.progress_bar.position");
       this.progressBarEl.classList.toggle("rgthree-pos-bottom", position === "bottom");
       // If ComfyUI is updated with the body segments, then use that.
       if (isUpdatedComfyBodyClasses) {
         if (position === "bottom") {
-          queryOne(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
+          query(".comfyui-body-bottom")!.appendChild(this.progressBarEl);
         } else {
-          queryOne(".comfyui-body-top")!.appendChild(this.progressBarEl);
+          query(".comfyui-body-top")!.appendChild(this.progressBarEl);
         }
       } else {
         document.body.appendChild(this.progressBarEl);
@@ -376,7 +378,7 @@ class Rgthree extends EventTarget {
 
     // Overrides LiteGraphs' processMouseDown to both keep state as well as dispatch a custom event.
     const processMouseDown = LGraphCanvas.prototype.processMouseDown;
-    LGraphCanvas.prototype.processMouseDown = function (e: AdjustedMouseEvent) {
+    LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
       rgthree.processingMouseDown = true;
       const returnVal = processMouseDown.apply(this, [...arguments] as any);
       rgthree.dispatchCustomEvent("on-process-mouse-down", {originalEvent: e});
@@ -388,9 +390,11 @@ class Rgthree extends EventTarget {
     // to capture the last `canvasX` and `canvasY` properties, which are not the same as LiteGraph's
     // `canvas.last_mouse_position`, unfortunately.
     const adjustMouseEvent = LGraphCanvas.prototype.adjustMouseEvent;
-    LGraphCanvas.prototype.adjustMouseEvent = function (e: PointerEvent) {
+    LGraphCanvas.prototype.adjustMouseEvent = function <T extends MouseEvent>(
+      e: T & Partial<CanvasPointerExtensions>,
+    ): asserts e is T & CanvasMouseEvent {
       adjustMouseEvent.apply(this, [...arguments] as any);
-      rgthree.lastAdjustedMouseEvent = e as AdjustedMouseEvent;
+      rgthree.lastCanvasMouseEvent = e as CanvasMouseEvent;
     };
 
     // [🤮] Copying to clipboard clones nodes and then manipulats the linking data manually which
@@ -412,12 +416,14 @@ class Rgthree extends EventTarget {
     LGraphCanvas.onGroupAdd = function (...args: any[]) {
       const graph = app.graph as TLGraph;
       onGroupAdd.apply(this, [...args] as any);
+      // [🤮] Bad typing here.. especially the last arg; it is LGraphNode but can really be anything
+      // with pos or size... pity. See more in our litegraph.d.ts.
       LGraphCanvas.onShowPropertyEditor(
-        {},
-        null,
-        null,
-        null,
-        graph._groups[graph._groups.length - 1],
+        {} as any,
+        null as any,
+        null as any,
+        null as any,
+        graph._groups[graph._groups.length - 1]! as unknown as LGraphNode,
       );
     };
   }
@@ -491,7 +497,7 @@ class Rgthree extends EventTarget {
       LGraphCanvas.prototype.getCanvasMenuOptions = function (...args: any[]) {
         let existingOptions = getCanvasMenuOptions.apply(this, [...args] as any);
 
-        const options = [];
+        const options: (IContextMenuValue | null)[] = [];
         options.push(null); // Divider
         options.push(null); // Divider
         options.push(null); // Divider
@@ -499,7 +505,7 @@ class Rgthree extends EventTarget {
           content: logoRgthree + `rgthree-comfy`,
           className: "rgthree-contextmenu-item rgthree-contextmenu-main-item-rgthree-comfy",
           submenu: {
-            options: that.getRgthreeContextMenuItems(),
+            options: that.getRgthreeIContextMenuValues(),
           },
         });
         options.push(null); // Divider
@@ -513,7 +519,9 @@ class Rgthree extends EventTarget {
         idx = idx || existingOptions.findIndex((o) => o?.content?.startsWith?.("Arrange ("));
         idx = idx || existingOptions.findIndex((o) => !o) + 1;
         idx = idx || 3;
-        existingOptions.splice(idx, 0, ...options);
+        // [🤮] existingOptions is typed as IContextMenuValue<string> even though it need not be
+        // a string due to the crazy typing from the original litegraph. oh well.
+        (existingOptions as (IContextMenuValue | null)[]).splice(idx, 0, ...options);
         for (let i = existingOptions.length; i > 0; i--) {
           if (existingOptions[i] === null && existingOptions[i + 1] === null) {
             existingOptions.splice(i, 1);
@@ -528,7 +536,7 @@ class Rgthree extends EventTarget {
   /**
    * Returns the standard menu items for an rgthree-comfy context menu.
    */
-  private getRgthreeContextMenuItems(): ContextMenuItem[] {
+  private getRgthreeIContextMenuValues(): IContextMenuValue[] {
     const [canvas, graph] = [app.canvas as TLGraphCanvas, app.graph as TLGraph];
     const selectedNodes = Object.values(canvas.selected_nodes || {});
     let rerouteNodes: LGraphNode[] = [];
@@ -553,20 +561,22 @@ class Rgthree extends EventTarget {
         className: "rgthree-contextmenu-item",
         has_submenu: true,
         submenu: {
-          options: getNodeTypeStrings() as unknown as ContextMenuItem[],
+          options: getNodeTypeStrings() as unknown as IContextMenuValue[],
           callback: (
-            value: string | ContextMenuItem,
+            value: string | IContextMenuValue,
             options: IContextMenuOptions,
             event: MouseEvent,
           ) => {
             const node = LiteGraph.createNode(addRgthree(value as string));
-            node.pos = [
-              rgthree.lastAdjustedMouseEvent!.canvasX,
-              rgthree.lastAdjustedMouseEvent!.canvasY,
-            ];
-            canvas.graph.add(node);
-            canvas.selectNode(node);
-            app.graph.setDirtyCanvas(true, true);
+            if (node) {
+              node.pos = [
+                rgthree.lastCanvasMouseEvent!.canvasX,
+                rgthree.lastCanvasMouseEvent!.canvasY,
+              ];
+              canvas.graph!.add(node);
+              canvas.selectNode(node);
+              app.graph.setDirtyCanvas(true, true);
+            }
           },
           extra: {rgthree_doNotNest: true},
         },
@@ -630,10 +640,10 @@ class Rgthree extends EventTarget {
    * Wraps an `app.queuePrompt` call setting a specific node id that we will inspect and change the
    * serialized graph right before being sent (below, in our `api.queuePrompt` override).
    */
-  async queueOutputNodes(nodeIds: number[]) {
+  async queueOutputNodes(nodeIds: NodeId[]) {
     try {
       this.queueNodeIds = nodeIds;
-      await app.queuePrompt();
+      await app.queuePrompt(0);
     } catch (e) {
       const [n, v] = this.logParts(
         LogLevel.ERROR,
@@ -675,11 +685,11 @@ class Rgthree extends EventTarget {
     // understand if we're serializing because we're queueing (and return the random seed to use) or
     // for saving the workflow (and keep -1, etc.).
     const queuePrompt = app.queuePrompt as Function;
-    app.queuePrompt = async function () {
+    app.queuePrompt = async function (number: number, batchCount?: number) {
       rgthree.processingQueue = true;
       rgthree.dispatchCustomEvent("queue");
       try {
-        await queuePrompt.apply(app, [...arguments]);
+        return await queuePrompt.apply(app, [...arguments]);
       } finally {
         rgthree.processingQueue = false;
         rgthree.dispatchCustomEvent("queue-end");
@@ -739,14 +749,17 @@ class Rgthree extends EventTarget {
     // Hook into a data load, like from an image or JSON drop-in. This is (currently) used to
     // monitor for bad linking data.
     const loadGraphData = app.loadGraphData;
-    app.loadGraphData = function (graph: serializedLGraph) {
+    // NOTE: This was "serializedLGraph" in pre-litegraph types, which maps to `ISerialisedGraph`
+    // now; though, @comfyorg/comfyui-frontend-types have the signature as `ComfyWorkflowJSON` which
+    // is not exported and a zod type. Looks like there's mostly an overlap with ISerialisedGraph.
+    app.loadGraphData = function (graph: ISerialisedGraph) {
       if (rgthree.monitorLinkTimeout) {
         clearTimeout(rgthree.monitorLinkTimeout);
         rgthree.monitorLinkTimeout = null;
       }
       rgthree.clearAllMessages();
       // Try to make a copy to use, because ComfyUI's loadGraphData will modify it.
-      let graphCopy: serializedLGraph | null;
+      let graphCopy: ISerialisedGraph | null;
       try {
         graphCopy = JSON.parse(JSON.stringify(graph));
       } catch (e) {
@@ -839,10 +852,10 @@ class Rgthree extends EventTarget {
    */
   getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(
     node: LGraphNode,
-  ): SerializedLGraphNode | null {
+  ): ISerialisedNode  | null {
     return (
       this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff?.nodes?.find(
-        (n: SerializedLGraphNode) => n.id === node.id,
+        (n: ISerialisedNode) => n.id === node.id,
       ) ?? null
     );
   }
@@ -859,7 +872,7 @@ class Rgthree extends EventTarget {
     }
     // If we have a dialog open then we want to append the message to the dialog so they show over
     // the modal.
-    const dialogs = query<HTMLDialogElement>("dialog[open]");
+    const dialogs = queryAll<HTMLDialogElement>("dialog[open]");
     if (dialogs.length) {
       let dialog = dialogs[dialogs.length - 1]!;
       dialog.appendChild(container);
@@ -986,7 +999,7 @@ class Rgthree extends EventTarget {
   }
 }
 
-function getBookmarks(): ContextMenuItem[] {
+function getBookmarks(): IContextMenuValue[] {
   const graph: TLGraph = app.graph;
 
   // Sorts by Title.

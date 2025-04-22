@@ -17,7 +17,7 @@ class RgthreePowerPromptSimple(RgthreePowerPrompt):
         SAVED_PROMPTS_CONTENT=[]
         return {
             'required': {
-                'prompt': ('STRING', {'multiline': True}),
+                'prompt': ('STRING', {'multiline': True, 'dynamicPrompts': True}),
             },
             'optional': {
                 "opt_clip": ("CLIP", ),

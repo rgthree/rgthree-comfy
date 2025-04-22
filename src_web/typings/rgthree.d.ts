@@ -1,9 +1,13 @@
-import type { AdjustedMouseEvent, LGraphNode, Vector2 } from "./litegraph.js";
-import type {Constructor} from "./index.js";
-import type {RgthreeBaseVirtualNode} from '../comfyui/base_node.js'
+/**
+ * Typings specific to rgthree-comfy.
+ */
+import type { LGraphNode, Vector2 } from "@comfyorg/litegraph";
+import type { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
+import type { RgthreeBaseNode, RgthreeBaseVirtualNode } from '../comfyui/base_node.js'
 
-export type AdjustedMouseCustomEvent = CustomEvent<{ originalEvent: AdjustedMouseEvent }>;
+export type AdjustedMouseCustomEvent = CustomEvent<{ originalEvent: CanvasMouseEvent }>;
 
+export type Constructor<T> = new(...args: any[]) => T;
 
 export interface RgthreeBaseNodeConstructor extends Constructor<RgthreeBaseNode> {
 	static type: string;
@@ -18,7 +22,6 @@ export interface RgthreeBaseVirtualNodeConstructor extends Constructor<RgthreeBa
 	static _category: string;
 }
 
-
 export interface RgthreeBaseServerNodeConstructor extends Constructor<RgthreeBaseServerNode> {
 	static nodeType: ComfyNodeConstructor;
 	static nodeData: ComfyObjectInfo;
@@ -26,9 +29,14 @@ export interface RgthreeBaseServerNodeConstructor extends Constructor<RgthreeBas
   onRegisteredForOverride(comfyClass: any, rgthreeClass: any) : void;
 }
 
-
-export type RgthreeModelInfo = {
+export type RgthreeModelInfoDetails = {
   file?: string;
+  path?: string;
+  hasInfoFile?: boolean;
+  image?: string;
+}
+
+export type RgthreeModelInfo = RgthreeModelInfoDetails & {
   name?: string;
   type?: string;
   baseModel?: string;

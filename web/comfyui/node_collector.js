@@ -14,13 +14,6 @@ class CollectorNode extends BaseCollectorNode {
         this.addOutput("Output", "*");
         return super.onConstructed();
     }
-    configure(info) {
-        var _a;
-        if ((_a = info.outputs) === null || _a === void 0 ? void 0 : _a.length) {
-            info.outputs.length = 1;
-        }
-        super.configure(info);
-    }
 }
 CollectorNode.type = NodeTypesString.NODE_COLLECTOR;
 CollectorNode.title = NodeTypesString.NODE_COLLECTOR;
@@ -35,13 +28,14 @@ class CombinerNode extends CollectorNode {
         note.inputEl.style.fontWeight = "bold";
         note.inputEl.style.fontStyle = "italic";
         note.inputEl.style.opacity = "0.8";
-        this.getExtraMenuOptions = (_, options) => {
+        this.getExtraMenuOptions = (canvas, options) => {
             options.splice(options.length - 1, 0, {
                 content: "‼️ Update to Node Collector",
                 callback: (_value, _options, _event, _parentMenu, _node) => {
                     updateCombinerToCollector(this);
                 },
             });
+            return [];
         };
     }
     configure(info) {

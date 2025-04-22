@@ -1,4 +1,4 @@
-import type { LGraphNode } from "typings/litegraph.js";
+import type { LGraphNode } from "@comfyorg/litegraph";
 
 /** Removes all inputs from the end. */
 export function removeUnusedInputsFromEnd(node: LGraphNode, minNumber = 1, nameMatch?: RegExp) {

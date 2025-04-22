@@ -1,8 +1,6 @@
-import type { ComfyApp, ComfyNodeConstructor, ComfyObjectInfo } from "typings/comfy.js";
 import type {
   Vector2,
-  LGraphCanvas,
-  ContextMenuItem,
+  LGraphCanvas as TLGraphCanvas,
   LLink,
   LGraph,
   IContextMenuOptions,
@@ -11,12 +9,21 @@ import type {
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
-} from "typings/litegraph.js";
-import type { Constructor } from "typings/index.js";
-import { app } from "scripts/app.js";
-import { api } from "scripts/api.js";
-import { Resolver, getResolver, wait } from "rgthree/common/shared_utils.js";
-import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
+  IContextMenuValue,
+  ISlotType,
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ComfyApp} from "@comfyorg/frontend";
+import type {ComfyNodeDef} from "typings/comfy.js";
+import type {Constructor} from "typings/rgthree";
+
+import {app} from "scripts/app.js";
+import {api} from "scripts/api.js";
+import {Resolver, getResolver, wait} from "rgthree/common/shared_utils.js";
+import {RgthreeHelpDialog} from "rgthree/common/dialog.js";
+import {NodeProperty} from "@comfyorg/litegraph/dist/LGraphNode";
+import {LinkDirection} from "@comfyorg/litegraph/dist/types/globalEnums";
+import {Point} from "@comfyorg/litegraph/dist/interfaces";
 
 /**
  * Override the api.getNodeDefs call to add a hook for refreshing node defs.
@@ -26,7 +33,7 @@ import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
   const defs = await oldApiGetNodeDefs.call(api);
-  this.dispatchEvent(new CustomEvent("fresh-node-defs", { detail: defs }));
+  this.dispatchEvent(new CustomEvent("fresh-node-defs", {detail: defs}));
   return defs;
 };
 
@@ -42,13 +49,13 @@ type LiteGraphDir =
   | typeof LiteGraph.RIGHT
   | typeof LiteGraph.UP
   | typeof LiteGraph.DOWN;
-export const LAYOUT_LABEL_TO_DATA: { [label: string]: [LiteGraphDir, Vector2, Vector2] } = {
+export const LAYOUT_LABEL_TO_DATA: {[label: string]: [LiteGraphDir, Vector2, Vector2]} = {
   Left: [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
   Right: [LiteGraph.RIGHT, [1, 0.5], [-PADDING, 0]],
   Top: [LiteGraph.UP, [0.5, 0], [0, PADDING]],
   Bottom: [LiteGraph.DOWN, [0.5, 1], [0, -PADDING]],
 };
-export const LAYOUT_LABEL_OPPOSITES: { [label: string]: string } = {
+export const LAYOUT_LABEL_OPPOSITES: {[label: string]: string} = {
   Left: "Right",
   Right: "Left",
   Top: "Bottom",
@@ -59,21 +66,21 @@ export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 interface MenuConfig {
   name: string | ((node: LGraphNode) => string);
   property?: string;
-  prepareValue?: (value: string, node: LGraphNode) => any;
+  prepareValue?: (value: NodeProperty | undefined, node: LGraphNode) => any;
   callback?: (node: LGraphNode, value?: string) => void;
   subMenuOptions?: (string | null)[] | ((node: LGraphNode) => (string | null)[]);
 }
 
 export function addMenuItem(
-  node: Constructor<LGraphNode>,
+  node: LGraphNodeConstructor,
   _app: ComfyApp,
   config: MenuConfig,
   after = "Shape",
 ) {
   const oldGetExtraMenuOptions = node.prototype.getExtraMenuOptions;
   node.prototype.getExtraMenuOptions = function (
-    canvas: LGraphCanvas,
-    menuOptions: ContextMenuItem[],
+    canvas: TLGraphCanvas,
+    menuOptions: IContextMenuValue[],
   ) {
     oldGetExtraMenuOptions && oldGetExtraMenuOptions.apply(this, [canvas, menuOptions]);
     addMenuItemOnExtraMenuOptions(this, config, menuOptions, after);
@@ -83,10 +90,10 @@ export function addMenuItem(
 /**
  * Waits for the canvas to be available on app using a single promise.
  */
-let canvasResolver: Resolver<LGraphCanvas> | null = null;
+let canvasResolver: Resolver<TLGraphCanvas> | null = null;
 export function waitForCanvas() {
   if (canvasResolver === null) {
-    canvasResolver = getResolver<LGraphCanvas>();
+    canvasResolver = getResolver<TLGraphCanvas>();
     function _waitForCanvas() {
       if (!canvasResolver!.completed) {
         if (app?.canvas) {
@@ -125,7 +132,7 @@ export function waitForGraph() {
 export function addMenuItemOnExtraMenuOptions(
   node: LGraphNode,
   config: MenuConfig,
-  menuOptions: ContextMenuItem[],
+  menuOptions: (IContextMenuValue | null)[],
   after = "Shape",
 ) {
   let idx = menuOptions
@@ -154,7 +161,7 @@ export function addMenuItemOnExtraMenuOptions(
     has_submenu: !!subMenuOptions?.length,
     isRgthree: true, // Mark it, so we can find it.
     callback: (
-      value: ContextMenuItem,
+      value: IContextMenuValue,
       _options: IContextMenuOptions,
       event: MouseEvent,
       parentMenu: ContextMenu | undefined,
@@ -162,12 +169,12 @@ export function addMenuItemOnExtraMenuOptions(
     ) => {
       if (!!subMenuOptions?.length) {
         new LiteGraph.ContextMenu(
-          subMenuOptions.map((option) => (option ? { content: option } : null)),
+          subMenuOptions.map((option) => (option ? {content: option} : null)),
           {
             event,
             parentMenu,
             callback: (
-              subValue: ContextMenuItem,
+              subValue: IContextMenuValue,
               _options: IContextMenuOptions,
               _event: MouseEvent,
               _parentMenu: ContextMenu | undefined,
@@ -176,8 +183,8 @@ export function addMenuItemOnExtraMenuOptions(
               if (config.property) {
                 node.properties = node.properties || {};
                 node.properties[config.property] = config.prepareValue
-                  ? config.prepareValue(subValue!.content || '', node)
-                  : subValue!.content || '';
+                  ? config.prepareValue(subValue!.content || "", node)
+                  : subValue!.content || "";
               }
               config.callback && config.callback(node, subValue?.content);
             },
@@ -193,11 +200,11 @@ export function addMenuItemOnExtraMenuOptions(
       }
       config.callback && config.callback(node, value?.content);
     },
-  } as ContextMenuItem);
+  } as IContextMenuValue);
 }
 
 export function addConnectionLayoutSupport(
-  node: Constructor<LGraphNode>,
+  node: LGraphNodeConstructor,
   app: ComfyApp,
   options = [
     ["Left", "Right"],
@@ -210,7 +217,7 @@ export function addConnectionLayoutSupport(
     property: "connections_layout",
     subMenuOptions: options.map((option) => option[0] + (option[1] ? " -> " + option[1] : "")),
     prepareValue: (value, node) => {
-      const values = value.split(" -> ");
+      const values = String(value).split(" -> ");
       if (!values[1] && !node.outputs?.length) {
         values[1] = LAYOUT_LABEL_OPPOSITES[values[0]!]!;
       }
@@ -225,11 +232,19 @@ export function addConnectionLayoutSupport(
     },
   });
 
-  // const oldGetConnectionPos = node.prototype.getConnectionPos;
+  // [🤮] This is deprecated in a https://github.com/Comfy-Org/litegraph.js/pull/716 @v0.9.9 and
+  // replaced by getInputPos and getOutputPos conveniently added below.
   node.prototype.getConnectionPos = function (isInput: boolean, slotNumber: number, out: Vector2) {
     // Purposefully do not need to call the old one.
-    // oldGetConnectionPos && oldGetConnectionPos.apply(this, [isInput, slotNumber, out]);
     return getConnectionPosForLayout(this, isInput, slotNumber, out);
+  };
+  node.prototype.getInputPos = function (slotNumber: number): Vector2 {
+    // Purposefully do not need to call the existing one because we're overriding.
+    return getConnectionPosForLayout(this, true, slotNumber, [0, 0]);
+  };
+  node.prototype.getOutputPos = function (slotNumber: number): Vector2 {
+    // Purposefully do not need to call the existing one because we're overriding.
+    return getConnectionPosForLayout(this, false, slotNumber, [0, 0]);
   };
 }
 
@@ -268,7 +283,7 @@ export function getConnectionPosForLayout(
   node.properties = node.properties || {};
   const layout = node.properties["connections_layout"] ||
     (node as any).defaultConnectionsLayout || ["Left", "Right"];
-  const collapseConnections = node.properties["collapse_connections"] || false;
+  const collapseConnections = (node.properties["collapse_connections"] as boolean) || false;
   const offset = (node.constructor as any).layout_slot_offset ?? LiteGraph.NODE_SLOT_HEIGHT * 0.5;
   let side = isInput ? layout[0] : layout[1];
   const otherSide = isInput ? layout[1] : layout[0];
@@ -309,8 +324,9 @@ export function getConnectionPosForLayout(
   cxn.dir = data[0];
 
   // If we are only 10px tall or wide, then look at connections_dir for the direction.
-  if ((node.size[0] == 10 || node.size[1] == 10) && node.properties["connections_dir"]) {
-    cxn.dir = node.properties["connections_dir"][isInput ? 0 : 1]!;
+  const connections_dir = node.properties["connections_dir"] as [LinkDirection, LinkDirection];
+  if ((node.size[0] == 10 || node.size[1] == 10) && connections_dir) {
+    cxn.dir = connections_dir[isInput ? 0 : 1]!;
   }
 
   if (side === "Left") {
@@ -389,7 +405,11 @@ function toggleConnectionLabel(cxn: any, hide = true) {
   return cxn;
 }
 
-export function addHelpMenuItem(node: LGraphNode, content: string, menuOptions: ContextMenuItem[]) {
+export function addHelpMenuItem(
+  node: LGraphNode,
+  content: string,
+  menuOptions: (IContextMenuValue | null)[],
+) {
   addMenuItemOnExtraMenuOptions(
     node,
     {
@@ -433,7 +453,6 @@ export function shouldPassThrough(
   );
 }
 
-
 function filterOutPassthroughNodes(
   infos: ConnectedNodeInfo[],
   passThroughFollowing = PassThroughFollowing.ALL,
@@ -463,10 +482,12 @@ export function getConnectedInputInfosAndFilterPassThroughs(
   startNode: LGraphNode,
   currentNode?: LGraphNode,
   slot?: number,
-  passThroughFollowing = PassThroughFollowing.ALL) {
-    return filterOutPassthroughNodes(
-      getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing),
-      passThroughFollowing);
+  passThroughFollowing = PassThroughFollowing.ALL,
+) {
+  return filterOutPassthroughNodes(
+    getConnectedNodesInfo(startNode, IoDirection.INPUT, currentNode, slot, passThroughFollowing),
+    passThroughFollowing,
+  );
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
   startNode: LGraphNode,
@@ -474,7 +495,12 @@ export function getConnectedInputNodesAndFilterPassThroughs(
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ): LGraphNode[] {
-  return getConnectedInputInfosAndFilterPassThroughs(startNode, currentNode, slot, passThroughFollowing).map(n => n.node);
+  return getConnectedInputInfosAndFilterPassThroughs(
+    startNode,
+    currentNode,
+    slot,
+    passThroughFollowing,
+  ).map((n) => n.node);
 }
 
 export function getConnectedOutputNodes(
@@ -501,7 +527,7 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
   return filterOutPassthroughNodes(
     getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
-  ).map(n => n.node);
+  ).map((n) => n.node);
 }
 
 export type ConnectedNodeInfo = {
@@ -564,7 +590,7 @@ export function getConnectedNodesInfo(
         );
       } else {
         // Add the node and, if it's a pass through, let's collect all its nodes as well.
-        rootNodes.push({ node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot });
+        rootNodes.push({node: originNode, travelFromSlot, travelToSlot, originTravelFromSlot});
         if (shouldPassThrough(originNode, passThroughFollowing)) {
           for (const foundNode of getConnectedNodesInfo(
             startNode,
@@ -634,7 +660,7 @@ function getTypeFromSlot(
   let graph = app.graph as LGraph;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
-    return { type: type as string, label: slot?.label, name: slot?.name };
+    return {type: type as string, label: slot?.label, name: slot?.name};
   }
   const links = getSlotLinks(slot);
   for (const link of links) {
@@ -667,13 +693,13 @@ export async function replaceNode(
   const existingCtor = existingNode.constructor as typeof LGraphNode;
 
   const newNode =
-    typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode) : typeOrNewNode;
+    typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode)! : typeOrNewNode;
   // Port title (maybe) the position, size, and properties from the old node.
   if (existingNode.title != existingCtor.title) {
     newNode.title = existingNode.title;
   }
-  newNode.pos = [...existingNode.pos];
-  newNode.properties = { ...existingNode.properties };
+  newNode.pos = [...existingNode.pos] as Point;
+  newNode.properties = {...existingNode.properties};
   const oldComputeSize = [...existingNode.computeSize()];
   // oldSize to use. If we match the smallest size (computeSize) then don't record and we'll use
   // the smalles side after conversion.
@@ -709,7 +735,7 @@ export async function replaceNode(
       const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (!link) continue;
       const targetNode = app.graph.getNodeById(link.target_id)!;
-      links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
+      links.push({node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot});
     }
   }
   for (const [index, input] of existingNode.inputs.entries()) {
@@ -768,7 +794,7 @@ export function applyMixins(original: Constructor<LGraphNode>, constructors: any
  * Obviously, for an input, this will be a max of one.
  */
 export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | null) {
-  const links: { id: number; link: LLink }[] = [];
+  const links: {id: number; link: LLink}[] = [];
   if (!inputOrOutput) {
     return links;
   }
@@ -777,7 +803,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
     for (const linkId of output.links || []) {
       const link: LLink = (app.graph as LGraph).links[linkId]!;
       if (link) {
-        links.push({ id: linkId, link: link });
+        links.push({id: linkId, link: link});
       }
     }
   }
@@ -785,7 +811,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
     const input = inputOrOutput as INodeInputSlot;
     const link: LLink = (app.graph as LGraph).links[input.link!]!;
     if (link) {
-      links.push({ id: input.link!, link: link });
+      links.push({id: input.link!, link: link});
     }
   }
   return links;
@@ -798,7 +824,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
 export async function matchLocalSlotsToServer(
   node: LGraphNode,
   direction: IoDirection,
-  serverNodeData: ComfyObjectInfo,
+  serverNodeData: ComfyNodeDef,
 ) {
   const serverSlotNames =
     direction == IoDirection.INPUT
@@ -814,7 +840,7 @@ export async function matchLocalSlotsToServer(
   let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
   if (firstIndex > -1) {
     // Have mismatches. First, let's go through and save all our links by name.
-    const links: { [key: string]: { id: number; link: LLink }[] } = {};
+    const links: {[key: string]: {id: number; link: LLink}[]} = {};
     slots.map((slot) => {
       // There's a chance we have duplicate names on an upgrade, so we'll collect all links to one
       // name so we don't ovewrite our list per name.
@@ -865,10 +891,7 @@ export async function matchLocalSlotsToServer(
             const nextNode = app.graph.getNodeById(linkData.link.target_id);
             // (Check nextNode, as sometimes graphs seem to have very stale data and that node id
             //  doesn't exist).
-            if (
-              nextNode &&
-              (nextNode.constructor as ComfyNodeConstructor)?.type!.includes("Reroute")
-            ) {
+            if (nextNode && (nextNode.constructor as any)?.type!.includes("Reroute")) {
               (nextNode as any).stabilize && (nextNode as any).stabilize();
             }
           }
@@ -908,7 +931,7 @@ export function isValidConnection(ioA?: INodeSlot | null, ioB?: INodeSlot | null
  * lists (without users needing to go through and re-create all their nodes one by one).
  */
 const oldIsValidConnection = LiteGraph.isValidConnection;
-LiteGraph.isValidConnection = function (typeA: string | string[], typeB: string | string[]) {
+LiteGraph.isValidConnection = function (typeA: ISlotType, typeB: ISlotType): boolean {
   let isValid = oldIsValidConnection.call(LiteGraph, typeA, typeB);
   if (!isValid) {
     typeA = String(typeA);
@@ -933,9 +956,25 @@ export function getOutputNodes(nodes: LGraphNode[]) {
   return (
     nodes?.filter((n) => {
       return (
-        n.mode != LiteGraph.NEVER &&
-        ((n.constructor as any).nodeData as ComfyObjectInfo)?.output_node
+        n.mode != LiteGraph.NEVER && ((n.constructor as any).nodeData as ComfyNodeDef)?.output_node
       );
     }) || []
   );
+}
+
+/**
+ * Gets a full color string, including parsing from the LGraphCanvas data.
+ */
+export function getFullColor(color?: string, liteGraphKey: 'groupcolor'|'color'|'bgcolor' = 'color') {
+  if (!color) {
+    return '';
+  }
+  if (LGraphCanvas.node_colors[color]) {
+    color = LGraphCanvas.node_colors[color]![liteGraphKey];
+  }
+  color = color.replace("#", "").toLocaleLowerCase();
+  if (color.length === 3) {
+    color = color.replace(/(.)(.)(.)/, "$1$1$2$2$3$3");
+  }
+  return `#${color}`;
 }

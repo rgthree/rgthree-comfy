@@ -1,4 +1,3 @@
-import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
 import type {
   Vector2,
   LLink,
@@ -6,12 +5,12 @@ import type {
   INodeOutputSlot,
   LGraphNode as TLGraphNode,
   IWidget,
-} from "typings/litegraph.js";
+  ISlotType,
+} from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
-import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
-
+import {app} from "scripts/app.js";
+import {RgthreeBaseVirtualNode} from "./base_node.js";
+import {rgthree} from "./rgthree.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
@@ -21,6 +20,8 @@ import {
   getConnectedOutputNodes,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
+import {ConnectByTypeOptions} from "@comfyorg/litegraph/dist/LGraphNode.js";
+import {TWidgetType, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
 
 /**
  * A Virtual Node that allows any node's output to connect to it.
@@ -47,7 +48,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
   }
 
   override clone() {
-    const cloned = super.clone();
+    const cloned = super.clone()!;
     // Copying to clipboard (and also, creating node templates) work by cloning nodes and, for some
     // reason, it manually manipulates the cloned data. So, we want to keep the present input slots
     // so if it's pasted/templatized the data is correct. Otherwise, clear the inputs and so the new
@@ -83,7 +84,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
    * Ensures we have at least one empty input at the end, returns true if changes were made, or false
    * if no changes were needed.
    */
-  private stabilizeInputsOutputs() : boolean {
+  private stabilizeInputsOutputs(): boolean {
     let changed = false;
     const hasEmptyInput = !this.inputs[this.inputs.length - 1]?.link;
     if (!hasEmptyInput) {
@@ -142,7 +143,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
    * Handles stabilization of linked nodes. To be overridden. Should return true if changes were
    * made, or false if no changes were needed.
    */
-  handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) : boolean {
+  handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]): boolean {
     linkedNodes; // No-op, but makes overridding in VSCode cleaner.
     throw new Error("handleLinkedNodesStabilization should be overridden.");
   }
@@ -181,13 +182,13 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     return super.addInput(name, type, extra_info);
   }
 
-  override addWidget<T extends IWidget>(
-    type: T["type"],
+  override addWidget(
+    type: TWidgetType,
     name: string,
-    value: T["value"],
-    callback?: T["callback"] | string,
-    options?: T["options"],
-  ) {
+    value: string | number | boolean | object,
+    callback: IWidget["callback"] | string | null,
+    options?: IWidgetOptions | string,
+  ): IWidget {
     (this as any)._tempWidth = this.size[0];
     return super.addWidget(type, name, value, callback, options);
   }
@@ -286,12 +287,12 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
    * If something is dropped on us, just add it to the bottom. onConnectInput should already cancel
    * if it's disallowed.
    */
-  override connectByTypeOutput<T = any>(
-    slot: string | number,
+  override connectByTypeOutput(
+    slot: number | string,
     sourceNode: TLGraphNode,
-    sourceSlotType: string,
-    optsIn: string,
-  ): T | null {
+    sourceSlotType: ISlotType,
+    optsIn?: ConnectByTypeOptions,
+  ): LLink | null {
     const lastInput = this.inputs[this.inputs.length - 1];
     if (!lastInput?.link && lastInput?.type === "*") {
       var sourceSlot = sourceNode.findOutputSlotByType(sourceSlotType, false, true);
@@ -323,23 +324,25 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
 // that and instead take the next free one. If that doesn't work, then we'll give it to the old
 // method.
 const oldLGraphNodeConnectByType = LGraphNode.prototype.connectByType;
-LGraphNode.prototype.connectByType = function connectByType<T = any>(
-  slot: string | number,
-  sourceNode: TLGraphNode,
-  sourceSlotType: string,
-  optsIn: string,
-): T | null {
-  // If we're droppiong on a node, and the last input is free and an "*" type, then connect there
+LGraphNode.prototype.connectByType = function connectByType(
+  slot: number | string,
+  targetNode: TLGraphNode,
+  targetSlotType: ISlotType,
+  optsIn?: ConnectByTypeOptions,
+): LLink | null {
+  // If we're dropping on a node, and the last input is free and an "*" type, then connect there
   // first...
-  if (sourceNode.inputs) {
-    for (const [index, input] of sourceNode.inputs.entries()) {
+  if (targetNode.inputs) {
+    for (const [index, input] of targetNode.inputs.entries()) {
       if (!input.link && input.type === "*") {
-        this.connect(slot, sourceNode, index);
+        this.connect(slot, targetNode, index);
         return null;
       }
     }
   }
-  return ((oldLGraphNodeConnectByType &&
-    oldLGraphNodeConnectByType.call(this, slot, sourceNode, sourceSlotType, optsIn)) ||
-    null) as T;
+  return (
+    (oldLGraphNodeConnectByType &&
+      oldLGraphNodeConnectByType.call(this, slot, targetNode, targetSlotType, optsIn)) ||
+    null
+  );
 };

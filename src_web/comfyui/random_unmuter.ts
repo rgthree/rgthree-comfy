@@ -1,7 +1,6 @@
-import type { LGraphNode } from "typings/litegraph.js";
-import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
+import type { LGraphNode } from "@comfyorg/litegraph";
 
-import { app } from "scripts/app.js";
+import {app} from "scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { rgthree } from "./rgthree.js";

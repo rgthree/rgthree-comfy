@@ -1,9 +1,6 @@
-import type { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import type {
-  LGraphNode as TLGraphNode,
-  IWidget,
-  SerializedLGraphNode,
-} from "typings/litegraph.js";
+import type { LGraphNode, IWidget} from "@comfyorg/litegraph";
+import type { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
+
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { PassThroughFollowing } from "./utils.js";
 import { wait } from "rgthree/common/shared_utils.js";
@@ -38,17 +35,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     return super.onConstructed();
   }
 
-  override configure(info: SerializedLGraphNode<TLGraphNode>): void {
-    // Patch a small issue (~14h) where multiple OPT_CONNECTIONS may have been created.
-    // https://github.com/rgthree/rgthree-comfy/issues/206
-    // TODO: This can probably be removed within a few weeks.
-    if (info.outputs?.length) {
-      info.outputs.length = 1;
-    }
-    super.configure(info);
-  }
-
-  override handleLinkedNodesStabilization(linkedNodes: TLGraphNode[]) {
+  override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
     let changed = false;
     for (const [index, node] of linkedNodes.entries()) {
       let widget = this.widgets && this.widgets[index];
@@ -70,7 +57,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     return changed;
   }
 
-  private setWidget(widget: IWidget, linkedNode: TLGraphNode, forceValue?: boolean) {
+  private setWidget(widget: IWidget, linkedNode: LGraphNode, forceValue?: boolean) {
     let changed = false;
     const value = forceValue == null ? linkedNode.mode === this.modeOn : forceValue;
     let name =  `Enable ${linkedNode.title}`;
@@ -82,7 +69,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
       (widget as any).doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
         let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;
         if (skipOtherNodeCheck !== true) {
-          if (newValue && this.properties?.["toggleRestriction"]?.includes(" one")) {
+          if (newValue && (this.properties?.["toggleRestriction"] as string)?.includes(" one")) {
             for (const widget of this.widgets) {
               (widget as any).doModeChange(false, true);
             }

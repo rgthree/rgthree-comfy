@@ -1,14 +1,10 @@
-import { app } from "scripts/app.js";
-import { RgthreeBaseVirtualNodeConstructor } from "typings/rgthree.js";
-import { RgthreeBaseVirtualNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import type {
-  LGraphCanvas as TLGraphCanvas,
-  LGraphNode,
-  AdjustedMouseEvent,
-  Vector2,
-} from "typings/litegraph.js";
-import { rgthree } from "./rgthree.js";
+import type {LGraphCanvas as TLGraphCanvas, LGraphNode, Vector2} from "@comfyorg/litegraph";
+import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+
+import {app} from "scripts/app.js";
+import {RgthreeBaseVirtualNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {rgthree} from "./rgthree.js";
 
 /**
  * A label node that allows you to put floating text anywhere on the graph. The text is the `Title`
@@ -24,13 +20,23 @@ export class Label extends RgthreeBaseVirtualNode {
   static readonly title_mode = LiteGraph.NO_TITLE;
   static collapsable = false;
 
-  static "@fontSize" = { type: "number" };
-  static "@fontFamily" = { type: "string" };
-  static "@fontColor" = { type: "string" };
-  static "@textAlign" = { type: "combo", values: ["left", "center", "right"] };
-  static "@backgroundColor" = { type: "string" };
-  static "@padding" = { type: "number" };
-  static "@borderRadius" = { type: "number" };
+  static "@fontSize" = {type: "number"};
+  static "@fontFamily" = {type: "string"};
+  static "@fontColor" = {type: "string"};
+  static "@textAlign" = {type: "combo", values: ["left", "center", "right"]};
+  static "@backgroundColor" = {type: "string"};
+  static "@padding" = {type: "number"};
+  static "@borderRadius" = {type: "number"};
+
+  override properties!: RgthreeBaseVirtualNode["properties"] & {
+    fontSize: number;
+    fontFamily: string;
+    fontColor: string;
+    textAlign: string;
+    backgroundColor: string;
+    padding: number;
+    borderRadius: number;
+  };
 
   override resizable = false;
 
@@ -92,7 +98,7 @@ export class Label extends RgthreeBaseVirtualNode {
     ctx.restore();
   }
 
-  override onDblClick(event: AdjustedMouseEvent, pos: Vector2, canvas: TLGraphCanvas) {
+  override onDblClick(event: CanvasMouseEvent, pos: Vector2, canvas: TLGraphCanvas) {
     // Since everything we can do here is in the properties, let's pop open the properties panel.
     LGraphCanvas.active_canvas.showShowNodePanel(this);
   }
@@ -153,7 +159,7 @@ export class Label extends RgthreeBaseVirtualNode {
  */
 const oldDrawNode = LGraphCanvas.prototype.drawNode;
 LGraphCanvas.prototype.drawNode = function (node: LGraphNode, ctx: CanvasRenderingContext2D) {
-  if (node.constructor === Label) {
+  if (node.constructor === Label.prototype.constructor) {
     // These get set very aggressively; maybe an extension is doing it. We'll just clear them out
     // each time.
     (node as Label).bgcolor = "transparent";
@@ -175,18 +181,13 @@ LGraphCanvas.prototype.drawNode = function (node: LGraphNode, ctx: CanvasRenderi
  * click).
  */
 const oldGetNodeOnPos = LGraph.prototype.getNodeOnPos;
-LGraph.prototype.getNodeOnPos = function <T extends LGraphNode>(
-  x: number,
-  y: number,
-  nodes_list?: LGraphNode[],
-  margin?: number,
-) {
+LGraph.prototype.getNodeOnPos = function (x: number, y: number, nodes_list?: LGraphNode[]) {
   if (
     // processMouseDown always passes in the nodes_list
     nodes_list &&
     rgthree.processingMouseDown &&
-    rgthree.lastAdjustedMouseEvent?.type.includes("down") &&
-    rgthree.lastAdjustedMouseEvent?.which === 1
+    rgthree.lastCanvasMouseEvent?.type.includes("down") &&
+    rgthree.lastCanvasMouseEvent?.which === 1
   ) {
     // Using the same logic from LGraphCanvas processMouseDown, let's see if we consider this a
     // double click.
@@ -195,7 +196,7 @@ LGraph.prototype.getNodeOnPos = function <T extends LGraphNode>(
       nodes_list = [...nodes_list].filter((n) => !(n instanceof Label) || !n.flags?.pinned);
     }
   }
-  return oldGetNodeOnPos.apply(this, [x, y, nodes_list, margin]) as T | null;
+  return oldGetNodeOnPos.apply(this, [x, y, nodes_list]);
 };
 
 // Register the extension.

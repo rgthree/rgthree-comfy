@@ -1,5 +1,13 @@
-import type {ComfyNodeConstructor, ComfyObjectInfo} from "typings/comfy.js";
-import type {INodeSlot, LGraphNode, LLink, LGraphCanvas} from "typings/litegraph.js";
+import type {
+  LGraphNode,
+  LLink,
+  LGraphCanvas,
+  INodeInputSlot,
+  INodeOutputSlot,
+  ISlotType,
+  LGraphNodeConstructor,
+} from "@comfyorg/litegraph";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {DynamicContextNodeBase, InputLike} from "./dynamic_context_base.js";
@@ -7,7 +15,6 @@ import {NodeTypesString} from "./constants.js";
 import {
   InputMutation,
   SERVICE as CONTEXT_SERVICE,
-  stripContextInputPrefixes,
   getContextOutputName,
 } from "./services/context_service.js";
 import {getConnectedInputNodesAndFilterPassThroughs} from "./utils.js";
@@ -66,13 +73,13 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
   }
 
   override onConnectionsChange(
-    type: number,
+    type: ISlotType,
     slotIndex: number,
     isConnected: boolean,
-    link: LLink,
-    ioSlot: INodeSlot,
+    link: LLink | null | undefined,
+    inputOrOutput: INodeInputSlot | INodeOutputSlot,
   ): void {
-    super.onConnectionsChange?.call(this, type, slotIndex, isConnected, link, ioSlot);
+    super.onConnectionsChange?.call(this, type, slotIndex, isConnected, link, inputOrOutput);
     if (this.configuring) {
       return;
     }
@@ -196,7 +203,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
 
 app.registerExtension({
   name: "rgthree.DynamicContextSwitch",
-  async beforeRegisterNodeDef(nodeType: ComfyNodeConstructor, nodeData: ComfyObjectInfo) {
+  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     if (!CONFIG_SERVICE.getConfigValue("unreleased.dynamic_context.enabled")) {
       return;
     }
