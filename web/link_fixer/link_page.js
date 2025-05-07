@@ -1,4 +1,4 @@
-import { fixBadLinks } from "../common/link_fixer.js";
+import { WorkflowLinkFixer } from "../common/link_fixer.js";
 import { getPngMetadata } from "../common/comfyui_shim.js";
 function wait(ms = 16, value) {
     return new Promise((resolve) => {
@@ -15,13 +15,9 @@ const logger = {
             : (logger.logTo.innerText += args.join(",") + "\n");
     },
 };
-const findBadLinksLogger = {
-    log: async (...args) => {
-        logger.log(...args);
-    },
-};
 export class LinkPage {
     constructor() {
+        this.fixer = null;
         this.containerEl = document.querySelector(".box");
         this.figcaptionEl = document.querySelector("figcaption");
         this.outputeMessageEl = document.querySelector(".output");
@@ -38,23 +34,20 @@ export class LinkPage {
         });
     }
     async onFixClick(e) {
-        if (!this.graphResults || !this.graph) {
+        var _a;
+        if (!((_a = this.fixer) === null || _a === void 0 ? void 0 : _a.checkedData) || !this.graph) {
             this.updateUi("⛔ Fix button click without results.");
             return;
         }
-        let graphFinalResults = fixBadLinks(this.graph, true);
-        graphFinalResults = fixBadLinks(graphFinalResults.graph, true);
-        if (graphFinalResults.patched || graphFinalResults.deleted) {
-            graphFinalResults = fixBadLinks(graphFinalResults.graph, true);
-        }
-        this.graphFinalResults = graphFinalResults;
-        await this.saveFixedWorkflow();
-        if (graphFinalResults.hasBadLinks) {
+        this.graphFinalResults = this.fixer.fix();
+        if (this.graphFinalResults.hasBadLinks) {
             this.updateUi("⛔ Hmm... Still detecting bad links. Can you file an issue at https://github.com/rgthree/rgthree-comfy/issues with your image/workflow.");
         }
         else {
             this.updateUi("✅ Workflow fixed.<br><br><small>Please load new saved workflow json and double check linking and execution.</small>");
         }
+        await wait(16);
+        await this.saveFixedWorkflow();
     }
     async onDrop(event) {
         var _a, _b, _c, _d;
@@ -105,12 +98,12 @@ export class LinkPage {
         }
         if (this.graphResults) {
             this.containerEl.classList.add("-has-results");
-            if (!this.graphResults.patched && !this.graphResults.deleted) {
+            if (!this.graphResults.patches && !this.graphResults.deletes) {
                 this.outputeMessageEl.innerHTML = "✅ No bad links detected in the workflow.";
             }
             else {
                 this.containerEl.classList.add("-has-fixable-results");
-                this.outputeMessageEl.innerHTML = `⚠️ Found ${this.graphResults.patched} links to fix, and ${this.graphResults.deleted} to be removed.`;
+                this.outputeMessageEl.innerHTML = `⚠️ Found ${this.graphResults.patches} links to fix, and ${this.graphResults.deletes} to be removed.`;
             }
         }
         else {
@@ -158,7 +151,8 @@ export class LinkPage {
         }
     }
     async loadGraphData(graphData) {
-        this.graphResults = await fixBadLinks(graphData);
+        this.fixer = WorkflowLinkFixer.create(graphData);
+        this.graphResults = this.fixer.check();
         this.updateUi();
     }
     async saveFixedWorkflow() {

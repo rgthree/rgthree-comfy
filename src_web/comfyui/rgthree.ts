@@ -19,7 +19,7 @@ import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
-import {fixBadLinks} from "rgthree/common/link_fixer.js";
+import {WorkflowLinkFixer} from "rgthree/common/link_fixer.js";
 import {injectCss, wait} from "rgthree/common/shared_utils.js";
 import {replaceNode, waitForCanvas, waitForGraph} from "./utils.js";
 import {NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree} from "./constants.js";
@@ -770,7 +770,8 @@ class Rgthree extends EventTarget {
           .querySelector(".comfy-modal-content")
           ?.textContent?.includes("Loading aborted due");
         const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
-        const fixBadLinksResult = fixBadLinks(graphToUse as unknown as TLGraph);
+        const fixer = WorkflowLinkFixer.create(graphToUse as unknown as TLGraph);
+        const fixBadLinksResult = fixer.check();
         if (fixBadLinksResult.hasBadLinks) {
           const [n, v] = rgthree.logParts(
             LogLevel.WARN,
@@ -802,10 +803,7 @@ class Rgthree extends EventTarget {
                       )
                     ) {
                       try {
-                        const fixBadLinksResult = fixBadLinks(
-                          graphToUse as unknown as TLGraph,
-                          true,
-                        );
+                        const fixBadLinksResult = fixer.fix();
                         if (!fixBadLinksResult.hasBadLinks) {
                           rgthree.hideMessage("bad-links");
                           alert(
@@ -981,7 +979,7 @@ class Rgthree extends EventTarget {
   }
 
   monitorBadLinks() {
-    const badLinksFound = fixBadLinks(app.graph);
+    const badLinksFound = WorkflowLinkFixer.create(app.graph).check();
     if (badLinksFound.hasBadLinks && !this.monitorBadLinksAlerted) {
       this.monitorBadLinksAlerted = true;
       alert(

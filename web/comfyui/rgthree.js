@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { fixBadLinks } from "../../rgthree/common/link_fixer.js";
+import { WorkflowLinkFixer } from "../../rgthree/common/link_fixer.js";
 import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString, addRgthree, getNodeTypeStrings } from "./constants.js";
@@ -528,7 +528,8 @@ class Rgthree extends EventTarget {
                 const wasLoadingAborted = (_b = (_a = document
                     .querySelector(".comfy-modal-content")) === null || _a === void 0 ? void 0 : _a.textContent) === null || _b === void 0 ? void 0 : _b.includes("Loading aborted due");
                 const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
-                const fixBadLinksResult = fixBadLinks(graphToUse);
+                const fixer = WorkflowLinkFixer.create(graphToUse);
+                const fixBadLinksResult = fixer.check();
                 if (fixBadLinksResult.hasBadLinks) {
                     const [n, v] = rgthree.logParts(LogLevel.WARN, `The workflow you've loaded has corrupt linking data. Open ${new URL(location.href).origin}/rgthree/link_fixer to try to fix.`);
                     (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
@@ -550,7 +551,7 @@ class Rgthree extends EventTarget {
                                         event.preventDefault();
                                         if (confirm("This will attempt to fix in place. Please make sure to have a saved copy of your workflow.")) {
                                             try {
-                                                const fixBadLinksResult = fixBadLinks(graphToUse, true);
+                                                const fixBadLinksResult = fixer.fix();
                                                 if (!fixBadLinksResult.hasBadLinks) {
                                                     rgthree.hideMessage("bad-links");
                                                     alert("Success! It's possible some valid links may have been affected. Please check and verify your workflow.");
@@ -682,7 +683,7 @@ class Rgthree extends EventTarget {
         return GLOBAL_LOG_LEVEL >= LogLevel.DEV || window.location.href.includes("rgthree-dev");
     }
     monitorBadLinks() {
-        const badLinksFound = fixBadLinks(app.graph);
+        const badLinksFound = WorkflowLinkFixer.create(app.graph).check();
         if (badLinksFound.hasBadLinks && !this.monitorBadLinksAlerted) {
             this.monitorBadLinksAlerted = true;
             alert(`Problematic links just found in live data. Can you save your workflow and file a bug with ` +
