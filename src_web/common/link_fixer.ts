@@ -1,4 +1,11 @@
-import type {LGraph, LGraphNode, LLink, ISlotType, INodeOutputSlot} from "@comfyorg/litegraph";
+import type {
+  LGraph,
+  LGraphNode,
+  LLink,
+  ISlotType,
+  INodeOutputSlot,
+  INodeInputSlot,
+} from "@comfyorg/litegraph";
 import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode";
 import type {ISerialisedNode, ISerialisedGraph} from "@comfyorg/litegraph/dist/types/serialisation";
 import type {SerialisedLLinkArray, LinkId} from "@comfyorg/litegraph/dist/LLink";
@@ -289,11 +296,10 @@ export abstract class WorkflowLinkFixer<
         let {node, slot, linkIdToUse, dir, op} = instruction as WorkflowLinkFixerNodeInstruction;
         if (dir == IoDirection.INPUT) {
           node.inputs = node.inputs || [];
-          const oldValue = node.inputs[slot]?.link;
-          node.inputs[slot]!.link = linkIdToUse;
-          this.log(
-            `Node #${node.id}: Set link ${linkIdToUse} to input slot ${slot} (was ${oldValue})`,
-          );
+          const old = node.inputs[slot]?.link;
+          node.inputs[slot] = node.inputs[slot] || ({} as INodeInputSlot);
+          node.inputs[slot].link = linkIdToUse;
+          this.log(`Node #${node.id}: Set link ${linkIdToUse} to input slot ${slot} (was ${old})`);
         } else if (op === "ADD" && linkIdToUse != null) {
           node.outputs = node.outputs || [];
           node.outputs[slot] = node.outputs[slot] || ({} as INodeOutputSlot);
@@ -301,9 +307,18 @@ export abstract class WorkflowLinkFixer<
           node.outputs[slot].links.push(linkIdToUse);
           this.log(`Node #${node.id}: Add link ${linkIdToUse} to output slot #${slot}`);
         } else if (op === "REMOVE" && linkIdToUse != null) {
-          let linkIdIndex = node.outputs![slot]!.links!.indexOf(linkIdToUse);
-          node.outputs![slot]!.links!.splice(linkIdIndex, 1);
-          this.log(`Node #${node.id}: Remove link ${linkIdToUse} from output slot #${slot}`);
+          // We should never not have this data since the check call would have found it to be
+          // removed, but we can be safe and appease TS compiler at the same time.
+          if (node.outputs?.[slot]?.links?.length === undefined) {
+            this.log(
+              `Node #${node.id}: Couldn't remove link ${linkIdToUse} from output slot #${slot}` +
+                ` because it didn't exist.`,
+            );
+          } else {
+            let linkIdIndex = node.outputs![slot].links.indexOf(linkIdToUse);
+            node.outputs[slot].links.splice(linkIdIndex, 1);
+            this.log(`Node #${node.id}: Remove link ${linkIdToUse} from output slot #${slot}`);
+          }
         } else {
           throw new Error("Unhandled Node Instruction");
         }
@@ -313,9 +328,9 @@ export abstract class WorkflowLinkFixer<
         if (wasDeleted === true) {
           this.log(`Link #${instruction.linkId}: Removed workflow link b/c ${instruction.reason}`);
         } else {
-          this.log(`Error Link #${instruction.linkId}: ${wasDeleted}`);
+          this.log(`Error Link #${instruction.linkId} was not removed!`);
         }
-        deletes++;
+        deletes += wasDeleted ? 1 : 0;
       } else {
         throw new Error("Unhandled Instruction");
       }
@@ -353,69 +368,70 @@ export abstract class WorkflowLinkFixer<
     linkId: number,
     op: "ADD" | "REMOVE",
   ): WorkflowLinkFixerNodeInstruction | null {
-    this.patchedNodeSlots[node.id] = this.patchedNodeSlots[node.id] || {};
-    const patchedNode = this.patchedNodeSlots[node.id]!;
+    const nodeId = node.id;
+    this.patchedNodeSlots[nodeId] = this.patchedNodeSlots[nodeId] || {};
+    const patchedNode = this.patchedNodeSlots[nodeId];
     if (ioDir == IoDirection.INPUT) {
       patchedNode["inputs"] = patchedNode["inputs"] || {};
       // We can set to null (delete), so undefined means we haven't set it at all.
-      if (patchedNode["inputs"]![slot] !== undefined) {
+      if (patchedNode["inputs"][slot] !== undefined) {
         this.log(
-          ` > Already set ${node.id}.inputs[${slot}] to ${patchedNode["inputs"]![slot]!} Skipping.`,
+          ` > Already set ${nodeId}.inputs[${slot}] to ${patchedNode["inputs"][slot]} Skipping.`,
         );
         return null;
       }
       let linkIdToUse = op === "REMOVE" ? null : linkId;
-      patchedNode["inputs"]![slot] = linkIdToUse;
+      patchedNode["inputs"][slot] = linkIdToUse;
       return {node, dir: ioDir, op, slot, linkId, linkIdToUse};
     }
 
     patchedNode["outputs"] = patchedNode["outputs"] || {};
-    patchedNode["outputs"]![slot] = patchedNode["outputs"]![slot] || {
+    patchedNode["outputs"][slot] = patchedNode["outputs"][slot] || {
       links: [...(node.outputs?.[slot]?.links || [])],
       changes: {},
     };
-    if (patchedNode["outputs"]![slot]!["changes"]![linkId] !== undefined) {
+    if (patchedNode["outputs"][slot]["changes"][linkId] !== undefined) {
       this.log(
-        ` > Already set ${node.id}.outputs[${slot}] to ${patchedNode["inputs"]![slot]}! Skipping.`,
+        ` > Already set ${nodeId}.outputs[${slot}] to ${patchedNode["outputs"][slot]}! Skipping.`,
       );
       return null;
     }
-    patchedNode["outputs"]![slot]!["changes"]![linkId] = op;
+    patchedNode["outputs"][slot]["changes"][linkId] = op;
     if (op === "ADD") {
-      let linkIdIndex = patchedNode["outputs"]![slot]!["links"].indexOf(linkId);
+      let linkIdIndex = patchedNode["outputs"][slot]["links"].indexOf(linkId);
       if (linkIdIndex !== -1) {
         this.log(` > Hmmm.. asked to add ${linkId} but it is already in list...`);
         return null;
       }
-      patchedNode["outputs"]![slot]!["links"].push(linkId);
+      patchedNode["outputs"][slot]["links"].push(linkId);
       return {node, dir: ioDir, op, slot, linkId, linkIdToUse: linkId};
     }
 
-    let linkIdIndex = patchedNode["outputs"]![slot]!["links"].indexOf(linkId);
+    let linkIdIndex = patchedNode["outputs"][slot]["links"].indexOf(linkId);
     if (linkIdIndex === -1) {
       this.log(` > Hmmm.. asked to remove ${linkId} but it doesn't exist...`);
       return null;
     }
-    patchedNode["outputs"]![slot]!["links"].splice(linkIdIndex, 1);
+    patchedNode["outputs"][slot]["links"].splice(linkIdIndex, 1);
     return {node, dir: ioDir, op, slot, linkId, linkIdToUse: linkId};
   }
 
   /** Checks if a node (or patched data) has a linkId. */
   private nodeHasLinkId(node: N, ioDir: IoDirection, slot: number, linkId: number) {
+    const nodeId = node.id;
     let has = false;
     if (ioDir === IoDirection.INPUT) {
       let nodeHasIt = node.inputs?.[slot]?.link === linkId;
-      if (this.patchedNodeSlots[node.id]?.["inputs"]) {
-        let patchedHasIt = this.patchedNodeSlots[node.id]!["inputs"]![slot] === linkId;
+      if (this.patchedNodeSlots[nodeId]?.["inputs"]) {
+        let patchedHasIt = this.patchedNodeSlots[nodeId]["inputs"][slot] === linkId;
         has = patchedHasIt;
       } else {
         has = nodeHasIt;
       }
     } else {
       let nodeHasIt = node.outputs?.[slot]?.links?.includes(linkId);
-      if (this.patchedNodeSlots[node.id]?.["outputs"]?.[slot]?.["changes"][linkId]) {
-        let patchedHasIt =
-          this.patchedNodeSlots[node.id]!["outputs"]![slot]?.links.includes(linkId);
+      if (this.patchedNodeSlots[nodeId]?.["outputs"]?.[slot]?.["changes"][linkId]) {
+        let patchedHasIt = this.patchedNodeSlots[nodeId]["outputs"][slot].links.includes(linkId);
         has = !!patchedHasIt;
       } else {
         has = !!nodeHasIt;
@@ -427,19 +443,20 @@ export abstract class WorkflowLinkFixer<
   /** Checks if a node (or patched data) has a linkId. */
   private nodeHasAnyLink(node: N, ioDir: IoDirection, slot: number) {
     // Patched data should be canonical. We can double check if fixing too.
+    const nodeId = node.id;
     let hasAny = false;
     if (ioDir === IoDirection.INPUT) {
       let nodeHasAny = node.inputs?.[slot]?.link != null;
-      if (this.patchedNodeSlots[node.id]?.["inputs"]) {
-        let patchedHasAny = this.patchedNodeSlots[node.id]!["inputs"]![slot] != null;
+      if (this.patchedNodeSlots[nodeId]?.["inputs"]) {
+        let patchedHasAny = this.patchedNodeSlots[nodeId]["inputs"][slot] != null;
         hasAny = patchedHasAny;
       } else {
         hasAny = !!nodeHasAny;
       }
     } else {
       let nodeHasAny = node.outputs?.[slot]?.links?.length;
-      if (this.patchedNodeSlots[node.id]?.["outputs"]?.[slot]?.["changes"]) {
-        let patchedHasAny = this.patchedNodeSlots[node.id]!["outputs"]![slot]?.links.length;
+      if (this.patchedNodeSlots[nodeId]?.["outputs"]?.[slot]?.["changes"]) {
+        let patchedHasAny = this.patchedNodeSlots[nodeId]["outputs"][slot].links?.length;
         hasAny = !!patchedHasAny;
       } else {
         hasAny = !!nodeHasAny;

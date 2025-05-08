@@ -152,7 +152,7 @@ export class WorkflowLinkFixer {
         return { ...this.checkedData };
     }
     fix(force = false, times) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f, _g;
         if (!this.checkedData || force) {
             this.check(force);
         }
@@ -163,9 +163,10 @@ export class WorkflowLinkFixer {
                 let { node, slot, linkIdToUse, dir, op } = instruction;
                 if (dir == IoDirection.INPUT) {
                     node.inputs = node.inputs || [];
-                    const oldValue = (_a = node.inputs[slot]) === null || _a === void 0 ? void 0 : _a.link;
+                    const old = (_a = node.inputs[slot]) === null || _a === void 0 ? void 0 : _a.link;
+                    node.inputs[slot] = node.inputs[slot] || {};
                     node.inputs[slot].link = linkIdToUse;
-                    this.log(`Node #${node.id}: Set link ${linkIdToUse} to input slot ${slot} (was ${oldValue})`);
+                    this.log(`Node #${node.id}: Set link ${linkIdToUse} to input slot ${slot} (was ${old})`);
                 }
                 else if (op === "ADD" && linkIdToUse != null) {
                     node.outputs = node.outputs || [];
@@ -175,9 +176,15 @@ export class WorkflowLinkFixer {
                     this.log(`Node #${node.id}: Add link ${linkIdToUse} to output slot #${slot}`);
                 }
                 else if (op === "REMOVE" && linkIdToUse != null) {
-                    let linkIdIndex = node.outputs[slot].links.indexOf(linkIdToUse);
-                    node.outputs[slot].links.splice(linkIdIndex, 1);
-                    this.log(`Node #${node.id}: Remove link ${linkIdToUse} from output slot #${slot}`);
+                    if (((_d = (_c = (_b = node.outputs) === null || _b === void 0 ? void 0 : _b[slot]) === null || _c === void 0 ? void 0 : _c.links) === null || _d === void 0 ? void 0 : _d.length) === undefined) {
+                        this.log(`Node #${node.id}: Couldn't remove link ${linkIdToUse} from output slot #${slot}` +
+                            ` because it didn't exist.`);
+                    }
+                    else {
+                        let linkIdIndex = node.outputs[slot].links.indexOf(linkIdToUse);
+                        node.outputs[slot].links.splice(linkIdIndex, 1);
+                        this.log(`Node #${node.id}: Remove link ${linkIdToUse} from output slot #${slot}`);
+                    }
                 }
                 else {
                     throw new Error("Unhandled Node Instruction");
@@ -190,9 +197,9 @@ export class WorkflowLinkFixer {
                     this.log(`Link #${instruction.linkId}: Removed workflow link b/c ${instruction.reason}`);
                 }
                 else {
-                    this.log(`Error Link #${instruction.linkId}: ${wasDeleted}`);
+                    this.log(`Error Link #${instruction.linkId} was not removed!`);
                 }
-                deletes++;
+                deletes += wasDeleted ? 1 : 0;
             }
             else {
                 throw new Error("Unhandled Instruction");
@@ -205,10 +212,10 @@ export class WorkflowLinkFixer {
             newFix = this.fix(true, times - 1);
         }
         return {
-            hasBadLinks: (_b = newFix === null || newFix === void 0 ? void 0 : newFix.hasBadLinks) !== null && _b !== void 0 ? _b : newCheck.hasBadLinks,
+            hasBadLinks: (_e = newFix === null || newFix === void 0 ? void 0 : newFix.hasBadLinks) !== null && _e !== void 0 ? _e : newCheck.hasBadLinks,
             graph: this.graph,
-            patches: patches + ((_c = newFix === null || newFix === void 0 ? void 0 : newFix.patches) !== null && _c !== void 0 ? _c : 0),
-            deletes: deletes + ((_d = newFix === null || newFix === void 0 ? void 0 : newFix.deletes) !== null && _d !== void 0 ? _d : 0),
+            patches: patches + ((_f = newFix === null || newFix === void 0 ? void 0 : newFix.patches) !== null && _f !== void 0 ? _f : 0),
+            deletes: deletes + ((_g = newFix === null || newFix === void 0 ? void 0 : newFix.deletes) !== null && _g !== void 0 ? _g : 0),
         };
     }
     log(...args) {
@@ -218,12 +225,13 @@ export class WorkflowLinkFixer {
     }
     getNodePatchInstruction(node, ioDir, slot, linkId, op) {
         var _a, _b;
-        this.patchedNodeSlots[node.id] = this.patchedNodeSlots[node.id] || {};
-        const patchedNode = this.patchedNodeSlots[node.id];
+        const nodeId = node.id;
+        this.patchedNodeSlots[nodeId] = this.patchedNodeSlots[nodeId] || {};
+        const patchedNode = this.patchedNodeSlots[nodeId];
         if (ioDir == IoDirection.INPUT) {
             patchedNode["inputs"] = patchedNode["inputs"] || {};
             if (patchedNode["inputs"][slot] !== undefined) {
-                this.log(` > Already set ${node.id}.inputs[${slot}] to ${patchedNode["inputs"][slot]} Skipping.`);
+                this.log(` > Already set ${nodeId}.inputs[${slot}] to ${patchedNode["inputs"][slot]} Skipping.`);
                 return null;
             }
             let linkIdToUse = op === "REMOVE" ? null : linkId;
@@ -236,7 +244,7 @@ export class WorkflowLinkFixer {
             changes: {},
         };
         if (patchedNode["outputs"][slot]["changes"][linkId] !== undefined) {
-            this.log(` > Already set ${node.id}.outputs[${slot}] to ${patchedNode["inputs"][slot]}! Skipping.`);
+            this.log(` > Already set ${nodeId}.outputs[${slot}] to ${patchedNode["outputs"][slot]}! Skipping.`);
             return null;
         }
         patchedNode["outputs"][slot]["changes"][linkId] = op;
@@ -258,12 +266,13 @@ export class WorkflowLinkFixer {
         return { node, dir: ioDir, op, slot, linkId, linkIdToUse: linkId };
     }
     nodeHasLinkId(node, ioDir, slot, linkId) {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const nodeId = node.id;
         let has = false;
         if (ioDir === IoDirection.INPUT) {
             let nodeHasIt = ((_b = (_a = node.inputs) === null || _a === void 0 ? void 0 : _a[slot]) === null || _b === void 0 ? void 0 : _b.link) === linkId;
-            if ((_c = this.patchedNodeSlots[node.id]) === null || _c === void 0 ? void 0 : _c["inputs"]) {
-                let patchedHasIt = this.patchedNodeSlots[node.id]["inputs"][slot] === linkId;
+            if ((_c = this.patchedNodeSlots[nodeId]) === null || _c === void 0 ? void 0 : _c["inputs"]) {
+                let patchedHasIt = this.patchedNodeSlots[nodeId]["inputs"][slot] === linkId;
                 has = patchedHasIt;
             }
             else {
@@ -272,8 +281,8 @@ export class WorkflowLinkFixer {
         }
         else {
             let nodeHasIt = (_f = (_e = (_d = node.outputs) === null || _d === void 0 ? void 0 : _d[slot]) === null || _e === void 0 ? void 0 : _e.links) === null || _f === void 0 ? void 0 : _f.includes(linkId);
-            if ((_j = (_h = (_g = this.patchedNodeSlots[node.id]) === null || _g === void 0 ? void 0 : _g["outputs"]) === null || _h === void 0 ? void 0 : _h[slot]) === null || _j === void 0 ? void 0 : _j["changes"][linkId]) {
-                let patchedHasIt = (_k = this.patchedNodeSlots[node.id]["outputs"][slot]) === null || _k === void 0 ? void 0 : _k.links.includes(linkId);
+            if ((_j = (_h = (_g = this.patchedNodeSlots[nodeId]) === null || _g === void 0 ? void 0 : _g["outputs"]) === null || _h === void 0 ? void 0 : _h[slot]) === null || _j === void 0 ? void 0 : _j["changes"][linkId]) {
+                let patchedHasIt = this.patchedNodeSlots[nodeId]["outputs"][slot].links.includes(linkId);
                 has = !!patchedHasIt;
             }
             else {
@@ -284,11 +293,12 @@ export class WorkflowLinkFixer {
     }
     nodeHasAnyLink(node, ioDir, slot) {
         var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        const nodeId = node.id;
         let hasAny = false;
         if (ioDir === IoDirection.INPUT) {
             let nodeHasAny = ((_b = (_a = node.inputs) === null || _a === void 0 ? void 0 : _a[slot]) === null || _b === void 0 ? void 0 : _b.link) != null;
-            if ((_c = this.patchedNodeSlots[node.id]) === null || _c === void 0 ? void 0 : _c["inputs"]) {
-                let patchedHasAny = this.patchedNodeSlots[node.id]["inputs"][slot] != null;
+            if ((_c = this.patchedNodeSlots[nodeId]) === null || _c === void 0 ? void 0 : _c["inputs"]) {
+                let patchedHasAny = this.patchedNodeSlots[nodeId]["inputs"][slot] != null;
                 hasAny = patchedHasAny;
             }
             else {
@@ -297,8 +307,8 @@ export class WorkflowLinkFixer {
         }
         else {
             let nodeHasAny = (_f = (_e = (_d = node.outputs) === null || _d === void 0 ? void 0 : _d[slot]) === null || _e === void 0 ? void 0 : _e.links) === null || _f === void 0 ? void 0 : _f.length;
-            if ((_j = (_h = (_g = this.patchedNodeSlots[node.id]) === null || _g === void 0 ? void 0 : _g["outputs"]) === null || _h === void 0 ? void 0 : _h[slot]) === null || _j === void 0 ? void 0 : _j["changes"]) {
-                let patchedHasAny = (_k = this.patchedNodeSlots[node.id]["outputs"][slot]) === null || _k === void 0 ? void 0 : _k.links.length;
+            if ((_j = (_h = (_g = this.patchedNodeSlots[nodeId]) === null || _g === void 0 ? void 0 : _g["outputs"]) === null || _h === void 0 ? void 0 : _h[slot]) === null || _j === void 0 ? void 0 : _j["changes"]) {
+                let patchedHasAny = (_k = this.patchedNodeSlots[nodeId]["outputs"][slot].links) === null || _k === void 0 ? void 0 : _k.length;
                 hasAny = !!patchedHasAny;
             }
             else {
