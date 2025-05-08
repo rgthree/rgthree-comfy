@@ -346,7 +346,7 @@ class WorkflowLinkFixerGraph extends WorkflowLinkFixer {
             this.graph.links.delete(id);
             return true;
         }
-        if (!this.graph.links[id] == null) {
+        if (this.graph.links[id] == null) {
             return `Link #${id} not found in workflow links.`;
         }
         delete this.graph.links[id];
