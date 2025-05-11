@@ -174,6 +174,18 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    </details>
 
 
+## Power Primitive
+> A single node that can output primitives (STRING, INT, FLOAT, BOOL). If connecting an input, it will cast/convert the primitive input to the desired output.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - You can hide the type selector input from the right-click menu or properties.
+>    - You can also fast-switch the output type from the right-click menu as well.
+>
+>    </details>
+
+
+
 ## Fast Groups Muter
 > The Fast Groups Muter is an input-less node that automatically collects all groups in your current workflow and allows you to quickly mute and unmute all nodes within the group.
 > <details>

@@ -24,6 +24,7 @@ export const NodeTypesString = {
     FAST_GROUPS_BYPASSER: addRgthree("Fast Groups Bypasser"),
     FAST_ACTIONS_BUTTON: addRgthree("Fast Actions Button"),
     LABEL: addRgthree("Label"),
+    POWER_PRIMITIVE: addRgthree("Power Primitive"),
     POWER_PROMPT: addRgthree("Power Prompt"),
     POWER_PROMPT_SIMPLE: addRgthree("Power Prompt - Simple"),
     SDXL_EMPTY_LATENT_IMAGE: addRgthree("SDXL Empty Latent Image"),

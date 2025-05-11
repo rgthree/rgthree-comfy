@@ -19,7 +19,7 @@ import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
-import {defineProperty} from "rgthree/common/shared_utils.js";
+import {defineProperty, moveArrayItem} from "rgthree/common/shared_utils.js";
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -185,13 +185,30 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (!this.widgets) {
       return;
     }
-    if (typeof widgetOrSlot === "number") {
-      this.widgets.splice(widgetOrSlot, 1);
-    } else if (widgetOrSlot) {
-      const index = this.widgets.indexOf(widgetOrSlot);
+    const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;
+    if (widget) {
+      const index = this.widgets.indexOf(widget);
       if (index > -1) {
         this.widgets.splice(index, 1);
       }
+      widget.onRemove?.();
+    }
+  }
+
+  /**
+   * Replaces an existing widget.
+   */
+  replaceWidget(widgetOrSlot: IWidget | number | undefined, newWidget: IWidget) {
+    let index = null;
+    if (widgetOrSlot) {
+      index = typeof widgetOrSlot === 'number' ? widgetOrSlot : this.widgets.indexOf(widgetOrSlot);
+      this.removeWidget(index);
+    }
+    index = index != null ? index : this.widgets.length - 1;
+    if (this.widgets.includes(newWidget)) {
+      moveArrayItem(this.widgets, newWidget, index);
+    } else {
+      this.widgets.splice(index, 0, newWidget);
     }
   }
 
