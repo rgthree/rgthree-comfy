@@ -47,10 +47,10 @@ app.registerExtension({
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
         nodeType.prototype.getExtraMenuOptions = function (canvas, options) {
             var _a;
-            options = (_a = getExtraMenuOptions === null || getExtraMenuOptions === void 0 ? void 0 : getExtraMenuOptions.call(this, canvas, options)) !== null && _a !== void 0 ? _a : options;
+            const extraOptions = (_a = getExtraMenuOptions === null || getExtraMenuOptions === void 0 ? void 0 : getExtraMenuOptions.call(this, canvas, options)) !== null && _a !== void 0 ? _a : [];
             showQueueNodesMenuIfOutputNodesAreSelected(options);
             showQueueGroupNodesMenuIfGroupIsSelected(options);
-            return [];
+            return extraOptions;
         };
     },
     async setup() {

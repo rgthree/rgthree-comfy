@@ -70,10 +70,10 @@ app.registerExtension({
       canvas: TLGraphCanvas,
       options: (IContextMenuValue<unknown> | null)[],
     ): (IContextMenuValue<unknown> | null)[] {
-      options = getExtraMenuOptions?.call(this, canvas, options) ?? options;
+      const extraOptions = getExtraMenuOptions?.call(this, canvas, options) ?? [];
       showQueueNodesMenuIfOutputNodesAreSelected(options);
       showQueueGroupNodesMenuIfGroupIsSelected(options);
-      return [];
+      return extraOptions;
     };
   },
 
