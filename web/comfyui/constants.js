@@ -16,6 +16,7 @@ export const NodeTypesString = {
     DYNAMIC_CONTEXT: addRgthree("Dynamic Context"),
     DYNAMIC_CONTEXT_SWITCH: addRgthree("Dynamic Context Switch"),
     DISPLAY_ANY: addRgthree("Display Any"),
+    IMAGE_OR_LATENT_SIZE: addRgthree("Image or Latent Size"),
     NODE_MODE_RELAY: addRgthree("Mute / Bypass Relay"),
     NODE_MODE_REPEATER: addRgthree("Mute / Bypass Repeater"),
     FAST_MUTER: addRgthree("Fast Muter"),
