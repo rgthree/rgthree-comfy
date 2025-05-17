@@ -185,6 +185,22 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    </details>
 
 
+## Power Puter
+> A  powerful and versatile node that opens the door for a wide range of utility by offering mult-line code parsing for output. This node can be used for simple string concatenation, or math operations; to an image dimension or a node's widgets with advanced list comprehension. If you want to output something in your workflow, this is the node to do it.
+> <details>
+>    <summary>ℹ️ <i>More Information</i></summary>
+>
+>    - Evaluate almost any kind of input and more, and choose your output from INT, FLOAT, STRING, or BOOL.
+>    - Connect some nodes and do simply math operations like `a + b` or `ceil(1 / 2)`.
+>    - Or do more advanced things, like input an image, and get the width like `a.shape[2]`.
+>    - Even more powerful, you can target nodes in the prompt that's sent to the backend. For instance; if you have a Power Lora Loader node at id #5, and want to get a comma-delimited list of the enabled loras, you could enter:
+>
+>      ```
+>      loras = [v.lora for v in node(5).inputs.values() if 'lora' in v and v.on]
+>      ', '.join(loras)
+>      ```
+>
+>    </details>
 
 ## Fast Groups Muter
 > The Fast Groups Muter is an input-less node that automatically collects all groups in your current workflow and allows you to quickly mute and unmute all nodes within the group.

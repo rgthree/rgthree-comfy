@@ -32,6 +32,7 @@ export const NodeTypesString = {
   POWER_PRIMITIVE: addRgthree("Power Primitive"),
   POWER_PROMPT: addRgthree("Power Prompt"),
   POWER_PROMPT_SIMPLE: addRgthree("Power Prompt - Simple"),
+  POWER_PUTER: addRgthree("Power Puter"),
   SDXL_EMPTY_LATENT_IMAGE: addRgthree("SDXL Empty Latent Image"),
   SDXL_POWER_PROMPT_POSITIVE: addRgthree("SDXL Power Prompt - Positive"),
   SDXL_POWER_PROMPT_NEGATIVE: addRgthree("SDXL Power Prompt - Simple / Negative"),
