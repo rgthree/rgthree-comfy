@@ -81,7 +81,7 @@ async def get_model_info(file: str,
     should_save = True
 
   if img_next_to_file:
-    img_next_to_file_url = f'/rgthree/api/loras/img?file={file}'
+    img_next_to_file_url = f'/rgthree/api/{model_type}/img?file={file}'
     if len(info_data['images']) == 0 or info_data['images'][0]['url'] != img_next_to_file_url:
       info_data['images'].insert(0, {'url': img_next_to_file_url})
       should_save = True
