@@ -1,8 +1,22 @@
 /**
  * @fileoverview A set of methods that mimic a bit of the Jasmine testing library, but simpler and
  * more succinct for manipulating a comfy integration test.
+ *
+ * Tests are not bundled by default, to test build with "--with-tests" and then invoke from the
+ * dev console like `rgthree_tests.TestDescribeLabel()`. The output is in the test itself.
  */
 import { wait } from "rgthree/common/shared_utils.js";
+
+declare global {
+  interface Window {
+    rgthree_tests: {
+      [key: string]: any;
+    };
+  }
+}
+
+
+window.rgthree_tests = window.rgthree_tests || {};
 
 type TestContext = {
   label?: string;
@@ -12,9 +26,13 @@ type TestContext = {
 let contexts: TestContext[] = [];
 
 export function describe(label: string, fn: Function) {
-  return async () => {
+  if (!label.startsWith('Test')) {
+    throw new Error('Test labels should start with "Test"');
+  }
+   window.rgthree_tests[label] = async () => {
     await describeRun(label, fn);
   };
+  return window.rgthree_tests[label];
 }
 
 export async function describeRun(label: string, fn: Function) {

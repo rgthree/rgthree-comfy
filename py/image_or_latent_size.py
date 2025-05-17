@@ -27,6 +27,5 @@ class RgthreeImageOrLatentSize:
       count, _, height, width = image_or_latent_or_mask['samples'].shape
       return (width * 8, height * 8)
 
-    shape = input.shape
-    print(shape)
-    return (shape[2], shape[1])
+    batch, height, width, channel = image_or_latent_or_mask.shape
+    return (width, height)

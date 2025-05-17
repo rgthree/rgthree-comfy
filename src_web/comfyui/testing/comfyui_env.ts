@@ -18,6 +18,8 @@ export class ComfyUITestEnvironment {
 
   constructor() {}
 
+  wait = wait;
+
   async addNode(nodeString: string, options: addNodeOptions = {}) {
     const [canvas, graph] = [app.canvas, app.graph];
     const node = LiteGraph.createNode(nodeString)!;

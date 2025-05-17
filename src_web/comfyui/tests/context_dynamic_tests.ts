@@ -1,15 +1,9 @@
-import type {
-  LiteGraph as TLiteGraph,
-  LGraphNode as TLGraphNode,
-  LGraphNode,
-} from "@comfyorg/litegraph";
+import type {LGraphNode} from "@comfyorg/litegraph";
 
 import {NodeTypesString} from "../constants.js";
 import {wait} from "rgthree/common/shared_utils.js";
 import {describe, should, beforeEach, expect, describeRun} from "../testing/runner.js";
 import {ComfyUITestEnvironment} from "../testing/comfyui_env.js";
-
-declare const LiteGraph: typeof TLiteGraph;
 
 const env = new ComfyUITestEnvironment();
 
@@ -44,10 +38,9 @@ function vertifyInputsStructure(node: LGraphNode, expectedLength: number) {
   verifyInputAndOutputName(node, expectedLength - 1, "+", false);
 }
 
-(window as any).rgthree_tests = (window as any).rgthree_tests || {};
-(window as any).rgthree_tests.test_dynamic_context = describe("ContextDynamicTest", async () => {
-  let nodeConfig!: TLGraphNode;
-  let nodeCtx!: TLGraphNode;
+describe("TestContextDynamic", async () => {
+  let nodeConfig!: LGraphNode;
+  let nodeCtx!: LGraphNode;
 
   let lastNode: LGraphNode | null = null;
 
@@ -99,8 +92,8 @@ function vertifyInputsStructure(node: LGraphNode, expectedLength: number) {
   });
 
   await describeRun("Nested", async () => {
-    let nodeConfig2!: TLGraphNode;
-    let nodeCtx2!: TLGraphNode;
+    let nodeConfig2!: LGraphNode;
+    let nodeCtx2!: LGraphNode;
 
     await beforeEach(async () => {
       nodeConfig2 = await env.addNode(NodeTypesString.KSAMPLER_CONFIG, {placement: "start"});
