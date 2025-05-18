@@ -18,7 +18,7 @@ COLORS = {
   'BRIGHT_CYAN': '\33[96m',
   'BRIGHT_WHITE': '\33[97m',
   # Styles.
-  'RESET': '\33[00m',
+  'RESET': '\33[0m',  # Note, Portainer doesn't like 00 here, so we'll use 0. Should be fine...
   'BOLD': '\33[01m',
   'NORMAL': '\33[22m',
   'ITALIC': '\33[03m',
