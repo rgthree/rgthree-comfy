@@ -267,8 +267,10 @@ class _Puter:
       return val
 
     # f-strings: https://www.basicexamples.com/example/python/ast-JoinedStr
+    # Note, this will str() all evaluated items in the fstrings, and doesn't handle f-string
+    # directives, like padding, etc.
     if isinstance(stmt, ast.JoinedStr):
-      vals = [self._eval_statement(v, ctx=ctx) for v in stmt.values]
+      vals = [str(self._eval_statement(v, ctx=ctx)) for v in stmt.values]
       val = ''.join(vals)
       return val
 
