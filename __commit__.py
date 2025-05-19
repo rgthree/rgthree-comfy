@@ -40,13 +40,13 @@ with open(_FILE_PY_PROJECT, "w", encoding='utf-8') as f:
   f.write(py_project)
 log_step(status="Done")
 
-log_step(f'Running git add')
+log_step('Running git add')
 process = subprocess.Popen(['git', 'add', '.'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 stdout, stderr = process.communicate()
 log_step(status="Done")
 
-log_step(f'Running git commit')
-process = subprocess.Popen(['git', 'commit', '-a', '-v', '-m', f'"{args.message}"'],
+log_step('Running git commit')
+process = subprocess.Popen(['git', 'commit', '-a', '-v', '-m', args.message],
                            stdout=subprocess.PIPE,
                            stderr=subprocess.PIPE)
 stdout, stderr = process.communicate()

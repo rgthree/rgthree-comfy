@@ -3,7 +3,7 @@ for complex operations for primitives and workflow items for output. From string
 math operations, list comprehension, and node value output.
 
 Originally based off https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/aac13aa7ce35b07d43633c3bbe654a38c00d74f5/py/math_expression.py
-Under an MIT License https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/aac13aa7ce35b07d43633c3bbe654a38c00d74f5/LICENSE
+under an MIT License https://github.com/pythongosssss/ComfyUI-Custom-Scripts/blob/aac13aa7ce35b07d43633c3bbe654a38c00d74f5/LICENSE
 """
 
 import math
@@ -11,11 +11,12 @@ import ast
 import json
 import random
 import dataclasses
+import re
 
 from typing import Any, Callable
 import operator as op
 from .constants import get_category, get_name
-from .utils import FlexibleOptionalInputType, any_type
+from .utils import FlexibleOptionalInputType, any_type, get_dict_value
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -49,11 +50,35 @@ _FUNCTIONS = {
     Function(name="str", call=str, args=(1, 1)),
     Function(name="bool", call=bool, args=(1, 1)),
     # Special
-    Function(name="node", call='_get_node_by_id', args=(1, 1)),
+    Function(name="node", call='_get_node', args=(1, 1)),
+    Function(name="nodes", call='_get_nodes', args=(0, 1)),
     Function(name="dir", call=dir, args=(1, 1)),
     Function(name="type", call=type, args=(1, 1)),
   ]
 }
+
+# A list of function names (from above) that could change without us knowing (globally available in
+# the prompt, no from an input). This allows us to always mark the node as changed since we cannot
+# tell.
+_GLOBAL_FUNCTION_NAMES = ['node', 'nodes']
+
+
+# Special functions by class type (called from the Attrs.)
+_SPECIAL_FUNCTIONS = {
+  "Power Lora Loader (rgthree)": {
+    # Get a list of the enabled loras from a power lora loader.
+    "loras":
+      lambda node: [{
+        'name': lora['lora'],
+        'strength': lora['strength']
+      } | ({
+        'strength_clip': lora['strengthTwo']
+      } if 'strengthTwo' in lora else {})
+                    for name, lora in node['inputs'].items()
+                    if name.startswith('lora_') and lora['on']]
+  }
+}
+
 
 _OPERATORS = {
   ast.Add: op.add,
@@ -103,8 +128,10 @@ class RgthreePowerPuter:
   def IS_CHANGED(cls, **kwargs):
     """Forces a changed state if we could be unaware of data changes (like using `node()`)."""
     global _IS_CHANGED_GLOBAL
-    if 'node(' in kwargs['code']:
-      _IS_CHANGED_GLOBAL += 1
+    for gn in _GLOBAL_FUNCTION_NAMES:
+      if f'{gn}(' in kwargs['code']:
+        _IS_CHANGED_GLOBAL += 1
+        break
     return _IS_CHANGED_GLOBAL
 
   def main(self, **kwargs):
@@ -164,10 +191,27 @@ class _Puter:
         break
     return last_value
 
-  def _get_node_by_id(self, node_id: int | str):
+  def _get_nodes(self, node_id: int | str | None = None) -> dict[str, Any]:
+    """Get a dict of the nodes that match the node_id, or all the nodes in the prompt."""
+    if not node_id:
+      return {**self._prompt}
+    node_id = str(node_id)
+    nodes = []
+    if re.match(r'\d+$', node_id):
+      nodes = {id: n for id, n in self._prompt.items() if node_id == id}
+    if not nodes:
+      nodes = {
+        id: n for id, n in self._prompt.items() if node_id == get_dict_value(n, '_meta.title', '')
+      }
+    return nodes
+
+  def _get_node(self, node_id: int | str):
     """Returns a prompt-node from the hidden prompt."""
     node_id = str(node_id)
-    return self._prompt[node_id] if node_id in self._prompt else None
+    nodes = [n for n in self._get_nodes(node_id).values()]
+    if nodes and len(nodes) > 1:
+      print('ERROR more than one node, returning first.')
+    return nodes[0] if nodes else None
 
   def _eval_statement(self, stmt: ast.stmt, ctx: dict | None = None):
     """Evaluates an ast.stmt."""
@@ -212,7 +256,12 @@ class _Puter:
         except AttributeError:
           # If we're a dict, then just return None instead of error; saves time.
           if isinstance(item, dict):
-            val = None
+            # Any special cases in the _SPECIAL_FUNCTIONS
+            class_type = get_dict_value(item, "class_type")
+            if class_type in _SPECIAL_FUNCTIONS and attr in _SPECIAL_FUNCTIONS[class_type]:
+              val = _SPECIAL_FUNCTIONS[class_type][attr](item)
+            else:
+              val = None
           else:
             raise
       return val
@@ -247,7 +296,7 @@ class _Puter:
         # A call, like my_dct.items(), or a named ctx list
         if isinstance(gen.iter, ast.Call):
           iter = self._eval_statement(gen.iter.func, ctx=gen_ctx)()
-        elif isinstance(gen.iter, ast.Name):
+        elif isinstance(gen.iter, (ast.Name, ast.Attribute)):
           iter = self._eval_statement(gen.iter, ctx=gen_ctx)
 
         for v in iter:
