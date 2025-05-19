@@ -231,6 +231,8 @@ class Rgthree extends EventTarget {
   /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
   private queueNodeIds: NodeId[] | null = null;
 
+  readonly version = CONFIG_SERVICE.getConfigValue('version');
+
   logger = new LogSession("[rgthree]");
 
   monitorBadLinksAlerted = false;
@@ -1028,3 +1030,16 @@ function getBookmarks(): IContextMenuValue[] {
 export const rgthree = new Rgthree();
 // Expose it on window because, why not.
 (window as any).rgthree = rgthree;
+
+
+app.registerExtension({
+	name: "Comfy.RgthreeComfy",
+
+	aboutPageBadges: [
+		{
+			label: `rgthree-comfy v${rgthree.version}`,
+			url: 'https://github.com/rgthree/rgthree-comfy',
+			icon: 'rgthree-comfy-about-badge-logo'
+		}
+	],
+})

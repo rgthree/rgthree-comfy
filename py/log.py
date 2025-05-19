@@ -1,3 +1,5 @@
+from .pyproject import NAME
+
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
 # https://en.wikipedia.org/wiki/ANSI_escape_code#3-bit_and_4-bit
 COLORS = {
@@ -76,6 +78,6 @@ def log(message, color=None, msg_color=None, prefix=None):
   color = COLORS[color] if color is not None and color in COLORS else COLORS["BRIGHT_GREEN"]
   msg_color = COLORS[msg_color] if msg_color is not None and msg_color in COLORS else ''
   prefix = f'[{prefix}]' if prefix is not None else ''
-  msg = f'{color}[rgthree-comfy]{prefix}'
+  msg = f'{color}[{NAME}]{prefix}'
   msg += f'{msg_color} {message}{COLORS["RESET"]}'
   print(msg)

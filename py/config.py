@@ -1,8 +1,8 @@
 import os
 import json
-import re
 
 from .utils import get_dict_value, set_dict_value, dict_has_key, load_json_file
+from .pyproject import VERSION
 
 
 def get_config_value(key):
@@ -94,7 +94,7 @@ def refresh_config():
     print('writing new user config.')
     write_user_config()
 
-  RGTHREE_CONFIG = extend_config(DEFAULT_CONFIG, USER_CONFIG)
+  RGTHREE_CONFIG = {"version": VERSION} | extend_config(DEFAULT_CONFIG, USER_CONFIG)
 
   if "unreleased" in USER_CONFIG and "unreleased" not in RGTHREE_CONFIG:
     RGTHREE_CONFIG["unreleased"] = USER_CONFIG["unreleased"]
