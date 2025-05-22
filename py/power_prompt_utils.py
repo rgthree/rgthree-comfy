@@ -38,7 +38,7 @@ def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
 
 # pylint: disable = too-many-return-statements, too-many-branches
 def get_lora_by_filename(file_path, lora_paths=None, log_node=None):
-  """Returns a lora by filename, looking for exactl paths and then fuzzier matching."""
+  """Returns a lora by filename, looking for exact paths and then fuzzier matching."""
   lora_paths = lora_paths if lora_paths is not None else folder_paths.get_filename_list('loras')
 
   if file_path in lora_paths:
