@@ -46,7 +46,7 @@ def log_step_info(msg:str, status='info'):
   step_infos.append({"msg": f'  - {msg}', "type": status})
 
 
-def build(with_tests = False, fix = False):
+def build(without_tests = True, fix = False):
 
   THIS_DIR = os.path.dirname(os.path.abspath(__file__))
   DIR_SRC_WEB = os.path.abspath(f'{THIS_DIR}/src_web/')
@@ -84,10 +84,10 @@ def build(with_tests = False, fix = False):
   checked = subprocess.run(["node", "./node_modules/typescript/bin/tsc"], check=True)
   log_step(status="Done")
 
-  if with_tests:
+  if not without_tests:
     log_step(msg='Removing directories (KEEPING TESTING)', status="Notice")
   else:
-    log_step(msg='Removing uneeded directories')
+    log_step(msg='Removing unneeded directories')
     test_path = os.path.join(DIR_WEB, 'comfyui', 'tests')
     if os.path.exists(test_path):
       rmtree(test_path)
@@ -137,10 +137,10 @@ def build(with_tests = False, fix = False):
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser()
-  parser.add_argument("-t", "--with-tests", default=False, action="store_true")
+  parser.add_argument("-t", "--no-tests", default=False, action="store_true")
   parser.add_argument("-f", "--fix", default=False, action="store_true")
   args = parser.parse_args()
 
   start = time.time()
-  build(with_tests=args.with_tests, fix=args.fix)
+  build(without_tests=args.no_tests, fix=args.fix)
   print(f'Finished all in {round(time.time() - start, 3)}s')

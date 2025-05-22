@@ -17,6 +17,7 @@ from typing import Any, Callable
 import operator as op
 from .constants import get_category, get_name
 from .utils import FlexibleOptionalInputType, any_type, get_dict_value
+from .log import log_node_warn
 
 
 @dataclasses.dataclass(frozen=True, kw_only=True)
@@ -44,6 +45,7 @@ _FUNCTIONS = {
     Function(name="max", call=max, args=(2, None)),
     Function(name="random_int", call=random.randint, args=(2, 2)),
     Function(name="random_choice", call=random.choice, args=(2, None)),
+    Function(name="re", call=re.compile, args=(1, 1)),
     # Casts
     Function(name="int", call=int, args=(1, 1)),
     Function(name="float", call=float, args=(1, 1)),
@@ -62,7 +64,6 @@ _FUNCTIONS = {
 # tell.
 _GLOBAL_FUNCTION_NAMES = ['node', 'nodes']
 
-
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
   "Power Lora Loader (rgthree)": {
@@ -78,7 +79,6 @@ _SPECIAL_FUNCTIONS = {
                     if name.startswith('lora_') and lora['on']]
   }
 }
-
 
 _OPERATORS = {
   ast.Add: op.add,
@@ -102,11 +102,13 @@ _OPERATORS = {
 
 _IS_CHANGED_GLOBAL = 0
 
+_NODE_NAME = get_name("Power Puter")
+
 
 class RgthreePowerPuter:
   """A powerful node that can compute and evaluate expressions and output as various types."""
 
-  NAME = get_name("Power Puter")
+  NAME = _NODE_NAME
   CATEGORY = get_category()
 
   @classmethod
@@ -178,6 +180,9 @@ class _Puter:
     self._code = code
     self._workflow = workflow
     self._prompt = prompt
+    self._prompt_nodes = []
+    if self._prompt:
+      self._prompt_nodes = [{'id': id} | {**node} for id, node in self._prompt.items()]
 
   def execute(self, code=str | None) -> Any:
     """Evaluates a the code block."""
@@ -191,26 +196,33 @@ class _Puter:
         break
     return last_value
 
-  def _get_nodes(self, node_id: int | str | None = None) -> dict[str, Any]:
-    """Get a dict of the nodes that match the node_id, or all the nodes in the prompt."""
+  def _get_nodes(self, node_id: int | str | re.Pattern | None = None) -> list[Any]:
+    """Get a list of the nodes that match the node_id, or all the nodes in the prompt."""
+    log_node_warn(
+      _NODE_NAME,
+      "There was a breaking change to `nodes()` in Power Puter. The return is now a list of nodes,"
+      " rather than a dict. Update any Power Puter code."
+    )
+    nodes = self._prompt_nodes.copy()
     if not node_id:
-      return {**self._prompt}
-    node_id = str(node_id)
-    nodes = []
-    if re.match(r'\d+$', node_id):
-      nodes = {id: n for id, n in self._prompt.items() if node_id == id}
-    if not nodes:
-      nodes = {
-        id: n for id, n in self._prompt.items() if node_id == get_dict_value(n, '_meta.title', '')
-      }
-    return nodes
+      return nodes
 
-  def _get_node(self, node_id: int | str):
+    if isinstance(node_id, re.Pattern):
+      found = [n for n in nodes if re.search(node_id, get_dict_value(n, '_meta.title', ''))]
+    else:
+      node_id = str(node_id)
+      found = None
+      if re.match(r'\d+$', node_id):
+        found = [n for n in nodes if node_id == n['id']]
+      if not found:
+        found = [n for n in nodes if node_id == get_dict_value(n, '_meta.title', '')]
+    return found
+
+  def _get_node(self, node_id: int | str | re.Pattern) -> Any | None:
     """Returns a prompt-node from the hidden prompt."""
-    node_id = str(node_id)
-    nodes = [n for n in self._get_nodes(node_id).values()]
+    nodes = self._get_nodes(node_id)
     if nodes and len(nodes) > 1:
-      print('ERROR more than one node, returning first.')
+      log_node_warn(_NODE_NAME, f"More than one node found for '{node_id}'. Returning first.")
     return nodes[0] if nodes else None
 
   def _eval_statement(self, stmt: ast.stmt, ctx: dict | None = None):
@@ -285,42 +297,56 @@ class _Puter:
       # Like: [v.lower() for v in lora_list]
       # Like: [v for v in l if v.startswith('B')]
       # Like: [v.lower() for v in l if v.startswith('B') or v.startswith('F')]
+      # ---
+      # Like: [l for n in nodes(re('Loras')).values() if (l := n.loras)]
       final_list = []
 
-      for gen in stmt.generators:
-        gen_ctx = {**ctx}
-        if isinstance(gen.target, ast.Tuple):
-          gen_ctx[gen.target.elts[0].id] = None
-          gen_ctx[gen.target.elts[1].id] = None
-        elif isinstance(gen.target, ast.Name):
+      gen_ctx = {**ctx}
+
+      generators = [*stmt.generators]
+
+      def handle_gen(generators: list[ast.comprehension]):
+        gen = generators.pop(0)
+        if isinstance(gen.target, ast.Name):
           gen_ctx[gen.target.id] = None
+        elif isinstance(gen.target, ast.Tuple):  # dict, like `for k, v in d.entries()`
+          for elt in gen.target.elts:
+            gen_ctx[elt.id] = None
+        else:
+          raise ValueError('Na')
 
         # A call, like my_dct.items(), or a named ctx list
         if isinstance(gen.iter, ast.Call):
-          iter = self._eval_statement(gen.iter.func, ctx=gen_ctx)()
+          gen_iters = self._eval_statement(gen.iter.func, ctx=gen_ctx)()
         elif isinstance(gen.iter, (ast.Name, ast.Attribute)):
-          iter = self._eval_statement(gen.iter, ctx=gen_ctx)
+          gen_iters = self._eval_statement(gen.iter, ctx=gen_ctx)
 
-        for v in iter:
-          # Unpack if we were a dict, otherwise it's just the item
-          if isinstance(v, (tuple, list)):
-            gen_ctx[gen.target.elts[0].id] = v[0]
-            gen_ctx[gen.target.elts[1].id] = v[1]
+        for gen_iter in gen_iters:
+          if_ctx = {**gen_ctx}
+          if isinstance(gen.target, ast.Tuple):  # dict, like `for k, v in d.entries()`
+            for i, elt in enumerate(gen.target.elts):
+              if_ctx[elt.id] = gen_iter[i]
           else:
-            gen_ctx[gen.target.id] = v
-
+            if_ctx[gen.target.id] = gen_iter
           good = True
           for ifcall in gen.ifs:
-            if not self._eval_statement(ifcall, ctx=gen_ctx):
+            if not self._eval_statement(ifcall, ctx=if_ctx):
               good = False
               break
           if not good:
             continue
+          gen_ctx.update(if_ctx)
+          if len(generators):
+            handle_gen(generators)
+          else:
+            final_list.append(self._eval_statement(stmt.elt, gen_ctx))
+        generators.insert(0, gen)
 
-          final_list.append(self._eval_statement(stmt.elt, gen_ctx))
-        return final_list
+      handle_gen(generators)
+      return final_list
 
     if isinstance(stmt, ast.Call):
+      call = None
       if isinstance(stmt.func, ast.Attribute):
         call = self._eval_statement(stmt.func, ctx=ctx)
       if isinstance(stmt.func, ast.Name):
@@ -335,6 +361,8 @@ class _Puter:
             toErr = " or more" if fn.args[1] is None else f" to {fn.args[1]}"
             raise SyntaxError(f"Invalid function call: {fn.name} requires {fn.args[0]}{toErr} args")
       if not call:
+        # print(type(stmt))
+        # print(type(stmt.func))
         raise ValueError(f'No call for ast.Call {stmt}')
       args = []
       for arg in stmt.args:
@@ -363,7 +391,14 @@ class _Puter:
     # Assign a variable and add it to our ctx.
     if isinstance(stmt, ast.Assign):
       value = self._eval_statement(stmt.value, ctx=ctx)
-      self._ctx[stmt.targets[0].id] = value
+      ctx[stmt.targets[0].id] = value
+      return value
+
+    # For assigning a var in a list comprehension.
+    # Like [name for node in node_list if (name := node.name)]
+    if isinstance(stmt, ast.NamedExpr):
+      value = self._eval_statement(stmt.value, ctx=ctx)
+      ctx[stmt.target.id] = value
       return value
 
     raise TypeError(stmt)
