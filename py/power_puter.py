@@ -317,7 +317,7 @@ class _Puter:
 
         # A call, like my_dct.items(), or a named ctx list
         if isinstance(gen.iter, ast.Call):
-          gen_iters = self._eval_statement(gen.iter.func, ctx=gen_ctx)()
+          gen_iters = self._eval_statement(gen.iter, ctx=gen_ctx)
         elif isinstance(gen.iter, (ast.Name, ast.Attribute)):
           gen_iters = self._eval_statement(gen.iter, ctx=gen_ctx)
 
