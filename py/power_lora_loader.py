@@ -1,13 +1,19 @@
+import asyncio
+
 from nodes import LoraLoader
 from .constants import get_category, get_name
 from .power_prompt_utils import get_lora_by_filename
 from .utils import FlexibleOptionalInputType, any_type
+from .server.utils_info import get_model_info
+from .log import log_node_warn
+
+NODE_NAME = get_name('Power Lora Loader')
 
 
 class RgthreePowerLoraLoader:
   """ The Power Lora Loader is a powerful, flexible node to add multiple loras to a model/clip."""
 
-  NAME = get_name('Power Lora Loader')
+  NAME = NODE_NAME
   CATEGORY = get_category()
 
   @classmethod
@@ -42,3 +48,29 @@ class RgthreePowerLoraLoader:
             model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
 
     return (model, clip)
+
+  @classmethod
+  def get_enabled_loras_from_prompt_node(cls, prompt_node: dict) -> list[dict[str, str | float]]:
+    return [{
+      'name': lora['lora'],
+      'strength': lora['strength']
+    } | ({
+      'strength_clip': lora['strengthTwo']
+    } if 'strengthTwo' in lora else {})
+            for name, lora in prompt_node['inputs'].items()
+            if name.startswith('lora_') and lora['on']]
+
+  @classmethod
+  def get_enabled_triggers_from_prompt_node(cls, prompt_node: dict, max_each: int = 1):
+    loras = [l['name'] for l in cls.get_enabled_loras_from_prompt_node(prompt_node)]
+    trained_words = []
+    for lora in loras:
+      info = asyncio.run(get_model_info(lora, 'loras'))
+      if not info or not info.keys():
+        log_node_warn(NODE_NAME, f'No info found for lora {lora} when grabbging triggers.')
+        continue
+      if 'trainedWords' not in info or not info['trainedWords']:
+        log_node_warn(NODE_NAME, f'No trained words for lora {lora} when grabbging triggers.')
+        continue
+      trained_words += [w for wi in info['trainedWords'][:max_each] if (wi and (w := wi['word']))]
+    return trained_words
