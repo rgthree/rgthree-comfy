@@ -12,6 +12,7 @@ import json
 import random
 import dataclasses
 import re
+import time
 
 from typing import Any, Callable
 import operator as op
@@ -59,13 +60,9 @@ _FUNCTIONS = {
     Function(name="input_node", call='_get_input_node', args=(0, 1)),
     Function(name="dir", call=dir, args=(1, 1)),
     Function(name="type", call=type, args=(1, 1)),
+    Function(name="print", call=print, args=(0, None)),
   ]
 }
-
-# A list of function names (from above) that could change without us knowing (globally available in
-# the prompt, no from an input). This allows us to always mark the node as changed since we cannot
-# tell.
-_GLOBAL_FUNCTION_NAMES = ['node', 'nodes']
 
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
@@ -75,6 +72,16 @@ _SPECIAL_FUNCTIONS = {
     "triggers": RgthreePowerLoraLoader.get_enabled_triggers_from_prompt_node,
   }
 }
+
+# Series of regex checks for usage of a non-deterministic function. Using these is fine, but means
+# the output can't be cached because it's either random, or is associated with another node that is
+# not connected to ours (like looking up a node in the prompt). Using these means downstream nodes
+# would always be run; that is fine for something like a final JSON output, but less so for a prompt
+# text.
+_NON_DETERMINISTIC_FUNCTION_CHECKS = [
+  r'(?<!input_)(nodes?)\(',
+  r'(?<!\.)(random_(int|choice))\(',
+]
 
 _OPERATORS = {
   ast.Add: op.add,
@@ -95,8 +102,6 @@ _OPERATORS = {
   ast.RShift: op.rshift,
   ast.LShift: op.lshift
 }
-
-_IS_CHANGED_GLOBAL = 0
 
 _NODE_NAME = get_name("Power Puter")
 
@@ -126,12 +131,25 @@ class RgthreePowerPuter:
   @classmethod
   def IS_CHANGED(cls, **kwargs):
     """Forces a changed state if we could be unaware of data changes (like using `node()`)."""
-    global _IS_CHANGED_GLOBAL
-    for gn in _GLOBAL_FUNCTION_NAMES:
-      if f'{gn}(' in kwargs['code']:
-        _IS_CHANGED_GLOBAL += 1
-        break
-    return _IS_CHANGED_GLOBAL
+
+    # Strip string literals and comments.
+    code = kwargs['code']
+    code = re.sub(r"'[^']+?'", "''", code)
+    code = re.sub(r'"[^"]+?"', '""', code)
+    code = re.sub(r'#.*\n', '\n', code)
+
+    # If we have a non-deterministic function, then we'll always consider ourself changed since we
+    # cannot be sure that the data would be the same (random, another unconnected node, etc).
+    for check in _NON_DETERMINISTIC_FUNCTION_CHECKS:
+      matches = re.search(check, code)
+      if matches:
+        log_node_warn(
+          _NODE_NAME,
+          f"Note, Power Puter (node #{kwargs['unique_id']}) cannot be cached b/c it's using a"
+          f" non-deterministic function call. Matches function call for '{matches.group(1)}'."
+        )
+        return time.time()
+    return 42
 
   def main(self, **kwargs):
     """Does the nodes' work."""
@@ -147,6 +165,10 @@ class RgthreePowerPuter:
     del ctx['code']
     del ctx['extra_pnginfo']
     del ctx['prompt']
+
+    # Clean the code before evaluating. For now, we just change usage of `input_node` so the passed
+    # variable is a string, if it isn't (instead of `input_node(a)` it's to be `input_node('a')`.
+    code = re.sub(r'input_node\(([^\'"].*?)\)', r'input_node("\1")', code)
 
     eva = _Puter(code=code, ctx=ctx, workflow=workflow, prompt=prompt, unique_id=unique_id)
     value = eva.execute()
@@ -198,11 +220,6 @@ class _Puter:
 
   def _get_nodes(self, node_id: int | str | re.Pattern | None = None) -> list[Any]:
     """Get a list of the nodes that match the node_id, or all the nodes in the prompt."""
-    log_node_warn(
-      _NODE_NAME,
-      "There was a breaking change to `nodes()` in Power Puter. The return is now a list of nodes,"
-      " rather than a dict. Update any Power Puter code."
-    )
     nodes = self._prompt_nodes.copy()
     if not node_id:
       return nodes
@@ -235,6 +252,7 @@ class _Puter:
       return [n for n in self._prompt_nodes if n['id'] == connected_node_id][0]
     except (TypeError, IndexError, KeyError):
       log_node_warn(_NODE_NAME, f'No input node found for "{input_name}". ')
+    return None
 
   def _eval_statement(self, stmt: ast.stmt, ctx: dict, prev_stmt: ast.stmt | None = None):
     """Evaluates an ast.stmt."""
