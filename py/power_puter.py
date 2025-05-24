@@ -49,6 +49,7 @@ _FUNCTIONS = {
     Function(name="random_int", call=random.randint, args=(2, 2)),
     Function(name="random_choice", call=random.choice, args=(2, None)),
     Function(name="re", call=re.compile, args=(1, 1)),
+    Function(name="len", call=len, args=(1, 1)),
     # Casts
     Function(name="int", call=int, args=(1, 1)),
     Function(name="float", call=float, args=(1, 1)),
@@ -153,6 +154,7 @@ class RgthreePowerPuter:
 
   def main(self, **kwargs):
     """Does the nodes' work."""
+    # print('\n\nRUN!\n\n')
     output = kwargs['output']
     code = kwargs['code']
     unique_id = kwargs['unique_id']
@@ -290,7 +292,12 @@ class _Puter:
       # Like: node(14).inputs.sampler_name (Attribute)
       # Like: node(14)['inputs']['sampler_name'] (Subscript)
       item = self._eval_statement(stmt.value, ctx=ctx)
-      attr = stmt.attr if hasattr(stmt, 'attr') else stmt.slice.value
+      attr = None
+      if hasattr(stmt, 'attr'):
+        attr = stmt.attr
+      else:
+        # Slice could be a name or a constant; evaluate it
+        attr = self._eval_statement(stmt.slice, ctx=ctx)
       try:
         val = item[attr]
       except (TypeError, IndexError, KeyError):
@@ -397,6 +404,8 @@ class _Puter:
         if isinstance(call, tuple):
           args.append(call[1])
           call = call[0]
+        if not call:
+          raise ValueError(f'No call for ast.Call {stmt.func}')
       if isinstance(stmt.func, ast.Name):
         name = stmt.func.id
         if name in _FUNCTIONS:
@@ -408,10 +417,8 @@ class _Puter:
           if num_args < fn.args[0] or (fn.args[1] is not None and num_args > fn.args[1]):
             toErr = " or more" if fn.args[1] is None else f" to {fn.args[1]}"
             raise SyntaxError(f"Invalid function call: {fn.name} requires {fn.args[0]}{toErr} args")
-      if not call:
-        # print(type(stmt))
-        # print(type(stmt.func))
-        raise ValueError(f'No call for ast.Call {stmt}')
+        if not call:
+          raise ValueError(f'No call for ast.Call {name}')
       for arg in stmt.args:
         args.append(self._eval_statement(arg, ctx=ctx))
       for kwarg in stmt.keywords:
