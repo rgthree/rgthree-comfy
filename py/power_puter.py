@@ -466,7 +466,14 @@ class _Puter:
     # Assign a variable and add it to our ctx.
     if isinstance(stmt, ast.Assign):
       value = self._eval_statement(stmt.value, ctx=ctx)
-      ctx[stmt.targets[0].id] = value
+      if len(stmt.targets) != 1:
+        raise ValueError('Expected length of assign targets to be 1')
+      target = stmt.targets[0]
+      if isinstance(target, ast.Tuple):
+        for i, elt in enumerate(target.elts):
+          ctx[elt.id] = value[i]
+      else:  # Should be ast.Name
+        ctx[target.id] = value
       return value
 
     # For assigning a var in a list comprehension.
