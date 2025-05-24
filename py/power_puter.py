@@ -182,11 +182,15 @@ class RgthreePowerPuter:
         value = float(value)
       elif output == 'BOOL':
         value = bool(value)
-      elif isinstance(value, (dict, list)):
-        value = json.dumps(value, indent=2)
-      else:
-        value = str(value)
-
+      elif output == 'STRING':
+        if isinstance(value, (dict, list)):
+          value = json.dumps(value, indent=2)
+        else:
+          value = str(value)
+      elif output == '*':
+        # Do nothing, the output will be passed as-is. This could be anything and it's up to the
+        # user to control the intended output, like passing through an input value, etc.
+        pass
     return (value,)
 
 

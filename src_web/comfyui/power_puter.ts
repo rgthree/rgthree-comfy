@@ -55,7 +55,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
           this.scheduleStabilize();
         },
         {
-          values: ["INT", "FLOAT", "STRING", "BOOL"],
+          values: ["INT", "FLOAT", "STRING", "BOOL", "*"],
         },
       );
       this.expressionWidget = ComfyWidgets["STRING"](

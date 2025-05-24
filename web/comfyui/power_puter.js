@@ -33,7 +33,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
             this.outputTypeWidget = this.addWidget("combo", "output", "STRING", (...args) => {
                 this.scheduleStabilize();
             }, {
-                values: ["INT", "FLOAT", "STRING", "BOOL"],
+                values: ["INT", "FLOAT", "STRING", "BOOL", "*"],
             });
             this.expressionWidget = ComfyWidgets["STRING"](this, "code", ["STRING", { multiline: true }], app).widget;
         }
