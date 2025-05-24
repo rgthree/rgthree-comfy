@@ -8,7 +8,7 @@ from .log import log_node_warn, log_node_info
 
 def get_and_strip_loras(prompt, silent=False, log_node="Power Prompt"):
   """Collects and strips lora tags from a prompt."""
-  pattern = '<lora:([^:>]*?)(?::(-?\d*(?:\.\d*)?))?>'
+  pattern = r'<lora:([^:>]*?)(?::(-?\d*(?:\.\d*)?))?>'
   lora_paths = folder_paths.get_filename_list('loras')
 
   matches = re.findall(pattern, prompt)
