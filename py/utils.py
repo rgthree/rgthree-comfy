@@ -15,22 +15,40 @@ class FlexibleOptionalInputType(dict):
   Enables both flexible/dynamic input types (like for Any Switch) or a dynamic number of inputs
   (like for Any Switch, Context Switch, Context Merge, Power Lora Loader, etc).
 
-  Note, for ComfyUI, all that's needed is the `__contains__` override below, which tells ComfyUI
-  that our node will handle the input, regardless of what it is.
+  Initially, ComfyUI only needed to return True for `__contains__` below, which told ComfyUI that
+  our node will handle the input, regardless of what it is.
 
-  However, with https://github.com/comfyanonymous/ComfyUI/pull/2666 a large change would occur
-  requiring more details on the input itself. There, we need to return a list/tuple where the first
-  item is the type. This can be a real type, or use the AnyType for additional flexibility.
-
-  This should be forwards compatible unless more changes occur in the PR.
+  However, after https://github.com/comfyanonymous/ComfyUI/pull/2666 ComdyUI's execution changed
+  also checking the data for the key; specifcially, the type which is the first tuple entry. This
+  type is supplied to our FlexibleOptionalInputType and returned for any non-data key. This can be a
+  real type, or use the AnyType for additional flexibility.
   """
-  def __init__(self, type):
+  def __init__(self, type, data: dict | None = None):
+    """Initializes the FlexibleOptionalInputType.
+
+    Args:
+      type: The flexible type to use when ComfyUI retrieves an unknown key (via `__getitem__`).
+      data: An optional dict to use as the basis. This is stored both in a `data` attribute, so we
+        can look it up without hitting our overrides, as well as iterated over and adding its key
+        and values to our `self` keys. This way, when looked at, we will appear to represent this
+        data. When used in an "optional" INPUT_TYPES, these are the starting optional node types.
+    """
     self.type = type
+    self.data = data
+    if self.data is not None:
+      for k, v in self.data.items():
+        self[k] = v
 
   def __getitem__(self, key):
+    # If we have this key in the initial data, then return it. Otherwise return the tuple with our
+    # flexible type.
+    if self.data is not None and key in self.data:
+      val = self.data[key]
+      return val
     return (self.type, )
 
   def __contains__(self, key):
+    """Always contain a key, and we'll always return the tuple above when asked for it."""
     return True
 
 
