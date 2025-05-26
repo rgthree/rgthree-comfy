@@ -164,7 +164,7 @@ class RgthreePowerPuter:
 
     ctx = {}
     # Set variable names, defaulting to None instead of KeyErrors
-    for c in 'abcdefghijklmnopqrstuvwxyz'.split(''):
+    for c in list('abcdefghijklmnopqrstuvwxyz'):
       ctx[c] = kwargs[c] if c in kwargs else None
 
 
