@@ -73,10 +73,18 @@ class RgthreePowerLoraLoader:
     for lora in loras:
       info = asyncio.run(get_model_info(lora, 'loras'))
       if not info or not info.keys():
-        log_node_warn(NODE_NAME, f'No info found for lora {lora} when grabbing triggers.')
+        log_node_warn(
+          NODE_NAME,
+          f'No info found for lora {lora} when grabbing triggers. Have you generated an info file'
+          ' from the Power Lora Loader "Show Info" dialog?'
+        )
         continue
       if 'trainedWords' not in info or not info['trainedWords']:
-        log_node_warn(NODE_NAME, f'No trained words for lora {lora} when grabbing triggers.')
+        log_node_warn(
+          NODE_NAME,
+          f'No trained words for lora {lora} when grabbing triggers. Have you fetched data from'
+          'civitai or manually added words?'
+        )
         continue
       trained_words += [w for wi in info['trainedWords'][:max_each] if (wi and (w := wi['word']))]
     return trained_words

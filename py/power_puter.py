@@ -162,11 +162,11 @@ class RgthreePowerPuter:
     workflow = pnginfo["workflow"] if "workflow" in pnginfo else {"nodes": []}
     prompt = kwargs['prompt']
 
-    ctx = {**kwargs}
-    del ctx['output']
-    del ctx['code']
-    del ctx['extra_pnginfo']
-    del ctx['prompt']
+    ctx = {}
+    # Set variable names, defaulting to None instead of KeyErrors
+    for c in 'abcdefghijklmnopqrstuvwxyz'.split(''):
+      ctx[c] = kwargs[c] if c in kwargs else None
+
 
     # Clean the code before evaluating. For now, we just change usage of `input_node` so the passed
     # variable is a string, if it isn't (instead of `input_node(a)` it's to be `input_node('a')`.
