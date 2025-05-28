@@ -1,12 +1,12 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, empty, appendChildren, getClosestOrSelf, query, queryAll, setAttributes, } from "../../rgthree/common/utils_dom.js";
 import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
-import { LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
+import { CHECKPOINT_INFO_SERVICE, LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "../../rgthree/common/menu.js";
 import { generateId, injectCss } from "../../rgthree/common/shared_utils.js";
 class RgthreeInfoDialog extends RgthreeDialog {
-    constructor(file, type = "lora") {
+    constructor(file) {
         const dialogOptions = {
             class: "rgthree-info-dialog",
             title: `<h2>Loading...</h2>`,
@@ -228,6 +228,17 @@ export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
     }
     async clearModelInfo(file) {
         return LORA_INFO_SERVICE.clearFetchedInfo(file);
+    }
+}
+export class RgthreeCheckpointInfoDialog extends RgthreeInfoDialog {
+    async getModelInfo(file) {
+        return CHECKPOINT_INFO_SERVICE.getInfo(file, false, false);
+    }
+    async refreshModelInfo(file) {
+        return CHECKPOINT_INFO_SERVICE.refreshInfo(file);
+    }
+    async clearModelInfo(file) {
+        return CHECKPOINT_INFO_SERVICE.clearFetchedInfo(file);
     }
 }
 function infoTableRow(name, value, help = "", editableFieldName = "") {

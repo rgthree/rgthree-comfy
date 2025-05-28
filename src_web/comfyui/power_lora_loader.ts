@@ -4,7 +4,7 @@ import type {
   Vector2,
   IContextMenuValue,
   IFoundSlot,
-  LGraphNodeConstructor
+  LGraphNodeConstructor,
 } from "@comfyorg/litegraph";
 import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
 import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
@@ -144,7 +144,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       new RgthreeBetterButtonWidget(
         "➕ Add Lora",
         (event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) => {
-          rgthreeApi.getLoras().then((loras) => {
+          rgthreeApi.getLoras().then((lorasDetails) => {
+            const loras = lorasDetails.map((l) => l.file);
             showLoraChooser(
               event as MouseEvent,
               (value: IContextMenuValue | string) => {
@@ -227,7 +228,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       const index = this.widgets.indexOf(widget);
       const canMoveUp = !!this.widgets[index - 1]?.name?.startsWith("lora_");
       const canMoveDown = !!this.widgets[index + 1]?.name?.startsWith("lora_");
-      const menuItems: (IContextMenuValue|null)[] = [
+      const menuItems: (IContextMenuValue | null)[] = [
         {
           content: `ℹ️ Show Info`,
           callback: () => {
@@ -262,10 +263,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
           },
         },
       ];
-      new LiteGraph.ContextMenu(
-        menuItems,
-        {title: "LORA WIDGET", event: rgthree.lastCanvasMouseEvent!}
-      );
+      new LiteGraph.ContextMenu(menuItems, {
+        title: "LORA WIDGET",
+        event: rgthree.lastCanvasMouseEvent!,
+      });
 
       // [🤮] ComfyUI doesn't have a possible return type as falsy, even though the impl skips the
       // menu when the return is falsy. Casting as any.
@@ -374,7 +375,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
  */
 class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
   override value = {type: "PowerLoraLoaderHeaderWidget"};
-  override readonly type = 'custom';
+  override readonly type = "custom";
 
   protected override hitAreas: RgthreeBaseHitAreas<"toggle"> = {
     toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
@@ -464,7 +465,7 @@ type PowerLoraLoaderWidgetValue = {
  * The PowerLoaderWidget that combines several custom drawing and functionality in a single row.
  */
 class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue> {
-  override readonly type = 'custom';
+  override readonly type = "custom";
 
   /** Whether the strength has changed with mouse move (to cancel mouse up). */
   private haveMouseMovedStrength = false;
@@ -677,7 +678,10 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     ctx.restore();
   }
 
-  override serializeValue(node: TLGraphNode, index: number): PowerLoraLoaderWidgetValue | Promise<PowerLoraLoaderWidgetValue> {
+  override serializeValue(
+    node: TLGraphNode,
+    index: number,
+  ): PowerLoraLoaderWidgetValue | Promise<PowerLoraLoaderWidgetValue> {
     const v = {...this.value};
     // Never send the second value to the backend if we're not showing it, otherwise, let's just
     // make sure it's not null.

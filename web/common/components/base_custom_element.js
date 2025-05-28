@@ -1,24 +1,47 @@
-import { $el } from "../../common/utils_dom.js";
+import { $el, getActionEls } from "../../common/utils_dom.js";
+import { bind } from "../utils_templates.js";
 const CSS_STYLE_SHEETS = new Map();
+const CSS_STYLE_SHEETS_ADDED = new Map();
 const HTML_TEMPLATE_FILES = new Map();
-async function getStyleSheet(name) {
+function getCommonPath(name, extension) {
+    return `rgthree/common/components/${name.replace("rgthree-", "").replace(/\-/g, "_")}.${extension}`;
+}
+async function getStyleSheet(name, markupOrPath) {
+    if (markupOrPath.includes("{")) {
+        return markupOrPath;
+    }
     if (!CSS_STYLE_SHEETS.has(name)) {
         try {
-            const response = await fetch(`rgthree/common/components/${name.replace("rgthree-", "").replace(/\-/g, "_")}.css`);
-            const text = await response.text();
+            const path = markupOrPath || getCommonPath(name, "css");
+            const text = await (await fetch(path)).text();
             CSS_STYLE_SHEETS.set(name, text);
         }
         catch (e) {
-            alert("Error loading rgthree custom component css.");
         }
     }
     return CSS_STYLE_SHEETS.get(name);
 }
-async function getTemplateMarkup(name) {
+async function addStyleSheet(name, markupOrPath) {
+    if (markupOrPath.includes("{")) {
+        throw new Error("Page-level stylesheets should be passed a path.");
+    }
+    if (!CSS_STYLE_SHEETS_ADDED.has(name)) {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = markupOrPath;
+        document.head.appendChild(link);
+        CSS_STYLE_SHEETS_ADDED.set(name, link);
+    }
+    return CSS_STYLE_SHEETS_ADDED.get(name);
+}
+async function getTemplateMarkup(name, markupOrPath) {
+    if (markupOrPath.includes("<template")) {
+        return markupOrPath;
+    }
     if (!HTML_TEMPLATE_FILES.has(name)) {
         try {
-            const response = await fetch(`rgthree/common/components/${name.replace("rgthree-", "").replace(/\-/g, "_")}.html`);
-            const text = await response.text();
+            const path = markupOrPath || getCommonPath(name, "html");
+            const text = await (await fetch(path)).text();
             HTML_TEMPLATE_FILES.set(name, text);
         }
         catch (e) {
@@ -29,81 +52,156 @@ async function getTemplateMarkup(name) {
 export class RgthreeCustomElement extends HTMLElement {
     constructor() {
         super(...arguments);
+        this.ctor = this.constructor;
+        this.hasBeenConnected = false;
         this.connected = false;
         this.templates = new Map();
+        this.firstConnectedPromise = new Promise((resolve) => (this.firstConnectedPromiseResolver = resolve));
+        this.eventElements = new Map();
     }
     static create() {
-        if (this.name === "rgthree-override") {
+        if (this.NAME === "rgthree-override") {
             throw new Error("Must override component NAME");
         }
-        if (!customElements.get(this.name)) {
-            customElements.define(this.NAME, this);
+        if (!window.customElements.get(this.NAME)) {
+            window.customElements.define(this.NAME, this);
         }
         return document.createElement(this.NAME);
     }
     onFirstConnected() {
     }
-    ;
     onReconnected() {
     }
-    ;
     onConnected() {
     }
-    ;
     onDisconnected() {
     }
-    ;
+    onAction(action, e) {
+        console.log("onAction", action, e);
+    }
+    getElement(query) {
+        const el = this.querySelector(query);
+        if (!el) {
+            throw new Error("No element found for query: " + query);
+        }
+        return el;
+    }
+    onActionInternal(action, e) {
+        if (typeof this[action] === "function") {
+            this[action](e);
+        }
+        else {
+            this.onAction(action, e);
+        }
+    }
+    onConnectedInternal() {
+        this.connectActionElements();
+        this.onConnected();
+    }
+    onDisconnectedInternal() {
+        this.disconnectActionElements();
+        this.onDisconnected();
+    }
     async connectedCallback() {
-        const elementName = this.constructor.NAME;
+        const elementName = this.ctor.NAME;
         const wasConnected = this.connected;
         if (!wasConnected) {
             this.connected = true;
         }
-        if (!this.shadow) {
+        if (!this.hasBeenConnected) {
             const [stylesheet, markup] = await Promise.all([
-                getStyleSheet(elementName),
-                getTemplateMarkup(elementName),
+                this.ctor.USE_SHADOW
+                    ? getStyleSheet(elementName, this.ctor.CSS)
+                    : addStyleSheet(elementName, this.ctor.CSS),
+                getTemplateMarkup(elementName, this.ctor.TEMPLATES),
             ]);
             if (markup) {
-                const temp = $el('div');
+                const temp = $el("div");
                 const templatesMarkup = markup.match(/<template[^]*?<\/template>/gm) || [];
                 for (const markup of templatesMarkup) {
                     temp.innerHTML = markup;
                     const template = temp.children[0];
                     if (!(template instanceof HTMLTemplateElement)) {
-                        throw new Error('Not a template element.');
+                        throw new Error("Not a template element.");
                     }
-                    const id = template.getAttribute('id');
+                    let id = template.getAttribute("id");
                     if (!id) {
-                        throw new Error('Not template id.');
+                        id = this.ctor.NAME;
                     }
                     this.templates.set(id, template);
                 }
             }
-            this.shadow = this.attachShadow({ mode: "open" });
-            const sheet = new CSSStyleSheet();
-            sheet.replaceSync(stylesheet);
-            this.shadow.adoptedStyleSheets = [sheet];
+            if (this.ctor.USE_SHADOW) {
+                this.root = this.attachShadow({ mode: "open" });
+                if (typeof stylesheet === "string") {
+                    const sheet = new CSSStyleSheet();
+                    sheet.replaceSync(stylesheet);
+                    this.root.adoptedStyleSheets = [sheet];
+                }
+            }
+            else {
+                this.root = this;
+            }
             let template;
             if (this.templates.has(elementName)) {
                 template = this.templates.get(elementName);
             }
-            else if (this.templates.has(elementName.replace('rgthree-', ''))) {
-                template = this.templates.get(elementName.replace('rgthree-', ''));
+            else if (this.templates.has(elementName.replace("rgthree-", ""))) {
+                template = this.templates.get(elementName.replace("rgthree-", ""));
             }
             if (template) {
-                this.shadow.appendChild(template.content.cloneNode(true));
+                this.root.appendChild(template.content.cloneNode(true));
+                for (const name of template.getAttributeNames()) {
+                    if (name != "id" && template.getAttribute(name)) {
+                        this.setAttribute(name, template.getAttribute(name));
+                    }
+                }
             }
             this.onFirstConnected();
+            this.hasBeenConnected = true;
+            this.firstConnectedPromiseResolver();
         }
         else {
             this.onReconnected();
         }
-        this.onConnected();
+        this.onConnectedInternal();
     }
     disconnectedCallback() {
         this.connected = false;
         this.onDisconnected();
     }
+    connectActionElements() {
+        const data = getActionEls(this);
+        for (const dataItem of Object.values(data)) {
+            const mapItem = this.eventElements.get(dataItem.el) || {};
+            for (const [event, action] of Object.entries(dataItem.actions)) {
+                if (mapItem[event]) {
+                    console.warn(`Element already has an event for ${event}`);
+                    continue;
+                }
+                mapItem[event] = (e) => {
+                    this.onActionInternal(action, e);
+                };
+                dataItem.el.addEventListener(event, mapItem[event]);
+            }
+        }
+    }
+    disconnectActionElements() {
+        for (const [el, eventData] of this.eventElements.entries()) {
+            for (const [event, fn] of Object.entries(eventData)) {
+                el.removeEventListener(event, fn);
+            }
+        }
+    }
+    async bindWhenConnected(data, el) {
+        await this.firstConnectedPromise;
+        this.bind(data, el);
+    }
+    bind(data, el) {
+        bind(el || this.root, data);
+    }
 }
 RgthreeCustomElement.NAME = "rgthree-override";
+RgthreeCustomElement.USE_SHADOW = true;
+RgthreeCustomElement.TEMPLATES = "";
+RgthreeCustomElement.CSS = "";

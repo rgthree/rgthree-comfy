@@ -1,17 +1,53 @@
 import type {RgthreeModelInfo} from "typings/rgthree.js";
 
-type ModelInfoType = "loras";
+export type ModelInfoType = "loras" | "checkpoints";
+
+type ModelsOptions = {
+  type: ModelInfoType;
+  files?: string[];
+};
+
+type GetModelsOptions = ModelsOptions & {
+  type: ModelInfoType;
+  files?: string[];
+  format?: null | "details";
+};
+
+type GetModelsInfoOptions = GetModelsOptions & {
+  light?: boolean;
+};
+
+type GetModelsResponseDetails = {
+  file: string;
+  modified: number;
+  has_info: boolean;
+  image?: string;
+};
 
 class RgthreeApi {
-  private baseUrl: string;
-  private comfyBaseUrl: string;
+  private baseUrl!: string;
+  private comfyBaseUrl!: string;
   getCheckpointsPromise: Promise<string[]> | null = null;
   getSamplersPromise: Promise<string[]> | null = null;
   getSchedulersPromise: Promise<string[]> | null = null;
-  getLorasPromise: Promise<string[]> | null = null;
+  getLorasPromise: Promise<GetModelsResponseDetails[]> | null = null;
   getWorkflowsPromise: Promise<string[]> | null = null;
 
   constructor(baseUrl?: string) {
+    this.setBaseUrl(baseUrl);
+  }
+
+  setBaseUrl(baseUrlArg?: string) {
+    let baseUrl = null;
+    if (baseUrlArg) {
+      baseUrl = baseUrlArg;
+    } else if (window.location.pathname.includes("/rgthree/")) {
+      // Try to find how many relatives paths we need to go back to hit ./rgthree/api
+      const parts = window.location.pathname.split("/rgthree/")[1]?.split("/");
+      if (parts && parts.length) {
+        baseUrl = parts.map(() => "../").join("") + "rgthree/api";
+      }
+    }
     this.baseUrl = baseUrl || "./rgthree/api";
 
     // Calculate the comfyUI api base path by checkin gif we're on an rgthree independant page (as
@@ -44,7 +80,7 @@ class RgthreeApi {
 
   getLoras(force = false) {
     if (!this.getLorasPromise || force) {
-      this.getLorasPromise = this.fetchJson("/loras", {cache: "no-store"});
+      this.getLorasPromise = this.fetchJson("/loras?format=details", {cache: "no-store"});
     }
     return this.getLorasPromise;
   }
@@ -63,56 +99,65 @@ class RgthreeApi {
    * @param light Whether or not to generate a json file if there isn't one. This isn't necessary if
    * we're just checking for values, but is more necessary when opening an info dialog.
    */
-  async getLorasInfo(lora: string, light?: boolean): Promise<RgthreeModelInfo | null>;
-  async getLorasInfo(light?: boolean): Promise<RgthreeModelInfo[] | null>;
-  async getLorasInfo(...args: any) {
-    return this.getModelInfo("loras", ...args);
+
+  async getModelsInfo(options: GetModelsInfoOptions): Promise<RgthreeModelInfo[]> {
+    const params = new URLSearchParams();
+    if (options.files?.length) {
+      params.set("files", options.files.join(","));
+    }
+    if (options.light) {
+      params.set("light", "1");
+    }
+    if (options.format) {
+      params.set("format", options.format);
+    }
+    const path = `/${options.type}/info?` + params.toString();
+    return (await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path)) || [];
+  }
+  async getLorasInfo(options: Omit<GetModelsInfoOptions, "type"> = {}) {
+    return this.getModelsInfo({type: "loras", ...options});
+  }
+  async getCheckpointsInfo(options: Omit<GetModelsInfoOptions, "type"> = {}) {
+    return this.getModelsInfo({type: "checkpoints", ...options});
   }
 
-  async refreshLorasInfo(file: string): Promise<RgthreeModelInfo | null>;
-  async refreshLorasInfo(): Promise<RgthreeModelInfo[] | null>;
-  async refreshLorasInfo(file?: string) {
-    return this.refreshModelInfo("loras", file);
+  async refreshModelsInfo(options: ModelsOptions) {
+    const params = new URLSearchParams();
+    if (options.files?.length) {
+      params.set("files", options.files.join(","));
+    }
+    const path = `/${options.type}/info/refresh?` + params.toString();
+    const infos = await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
+    return infos;
+  }
+  async refreshLorasInfo(options: Omit<ModelsOptions, "type"> = {}) {
+    return this.refreshModelsInfo({type: "loras", ...options});
+  }
+  async refreshCheckpointsInfo(options: Omit<ModelsOptions, "type"> = {}) {
+    return this.refreshModelsInfo({type: "checkpoints", ...options});
   }
 
-  async clearLorasInfo(file?: string): Promise<void> {
-    return this.clearModelInfo("loras", file);
+  async clearModelsInfo(options: ModelsOptions) {
+    const params = new URLSearchParams();
+    if (options.files?.length) {
+      // encodeURIComponent ?
+      params.set("files", options.files.join(","));
+    }
+    const path = `/${options.type}/info/clear?` + params.toString();
+    await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
+    return;
+  }
+  async clearLorasInfo(options: Omit<ModelsOptions, "type"> = {}) {
+    return this.clearModelsInfo({type: "loras", ...options});
+  }
+  async clearCheckpointsInfo(options: Omit<ModelsOptions, "type"> = {}) {
+    return this.clearModelsInfo({type: "checkpoints", ...options});
   }
 
   /**
    * Saves partial data sending it to the backend..
    */
-  async saveLoraInfo(
-    file: string,
-    data: Partial<RgthreeModelInfo>,
-  ): Promise<RgthreeModelInfo | null> {
-    return this.saveModelInfo("loras", file, data);
-  }
-
-  private async getModelInfo(type: ModelInfoType, ...args: any) {
-    const params = new URLSearchParams();
-    const isSingle = typeof args[0] == "string";
-    if (isSingle) {
-      params.set("file", args[0]);
-    }
-    params.set("light", (isSingle ? args[1] : args[0]) === false ? "0" : "1");
-    const path = `/${type}/info?` + params.toString();
-    return await this.fetchApiJsonOrNull<RgthreeModelInfo[] | RgthreeModelInfo>(path);
-  }
-
-  private async refreshModelInfo(type: ModelInfoType, file?: string) {
-    const path = `/${type}/info/refresh` + (file ? `?file=${encodeURIComponent(file)}` : "");
-    const infos = await this.fetchApiJsonOrNull<RgthreeModelInfo[] | RgthreeModelInfo>(path);
-    return infos;
-  }
-
-  private async clearModelInfo(type: ModelInfoType, file?: string) {
-    const path = `/${type}/info/clear` + (file ? `?file=${encodeURIComponent(file)}` : "");
-    await this.fetchApiJsonOrNull<RgthreeModelInfo[]>(path);
-    return;
-  }
-
-  private async saveModelInfo(
+  async saveModelInfo(
     type: ModelInfoType,
     file: string,
     data: Partial<RgthreeModelInfo>,
@@ -123,6 +168,20 @@ class RgthreeApi {
       `/${type}/info?file=${encodeURIComponent(file)}`,
       {cache: "no-store", method: "POST", body},
     );
+  }
+
+  async saveLoraInfo(
+    file: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null> {
+    return this.saveModelInfo("loras", file, data);
+  }
+
+  async saveCheckpointsInfo(
+    file: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null> {
+    return this.saveModelInfo("checkpoints", file, data);
   }
 
   /**

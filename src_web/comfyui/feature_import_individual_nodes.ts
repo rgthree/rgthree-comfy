@@ -4,6 +4,7 @@ import type {ComfyNodeDef} from "typings/comfy.js";
 import {app} from "scripts/app.js";
 import {tryToGetWorkflowDataFromEvent} from "rgthree/common/utils_workflow.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import {NodeTypesString} from "./constants.js";
 
 /**
  * Registers the GroupHeaderToggles which places a mute and/or bypass icons in groups headers for
@@ -44,13 +45,16 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
     return false;
   }
 
+  const dynamicWidgetLengthNodes = [NodeTypesString.POWER_LORA_LOADER];
+
   let handled = false;
   const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
   const exact = (workflow?.nodes || []).find(
     (n) =>
       n.id === node.id &&
       n.type === node.type &&
-      n.widgets_values?.length === node.widgets_values?.length,
+      (dynamicWidgetLengthNodes.includes(node.type) ||
+        n.widgets_values?.length === node.widgets_values?.length),
   );
   if (!exact) {
     // If we tried, but didn't find an exact match, then allow user to stop the default behavior.
@@ -86,6 +90,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
       // Title is overridden if it's not supplied; set it to the current then.
       title: node.title,
       widgets_values: [...(exact?.widgets_values || [])],
+      mode: exact.mode,
     } as any);
     handled = true;
 

@@ -19,12 +19,12 @@ class BaseModelInfoService extends EventTarget {
         return this.fetchInfo(file, true);
     }
     async clearFetchedInfo(file) {
-        await this.apiClearInfo(file);
+        await rgthreeApi.clearModelsInfo({ type: this.modelInfoType, files: [file] });
         this.fileToInfo.delete(file);
         return null;
     }
     async savePartialInfo(file, data) {
-        let info = await this.apiSaveInfo(file, data);
+        let info = await rgthreeApi.saveModelInfo(this.modelInfoType, file, data);
         this.fileToInfo.set(file, info);
         return info;
     }
@@ -36,13 +36,15 @@ class BaseModelInfoService extends EventTarget {
         }
     }
     async fetchInfo(file, refresh = false, light = false) {
+        var _a;
         let info = null;
         if (!refresh) {
-            info = await this.apiFetchInfo(file, light);
+            info = await rgthreeApi.getModelsInfo({ type: this.modelInfoType, files: [file], light });
         }
         else {
-            info = await this.apiRefreshInfo(file);
+            info = await rgthreeApi.refreshModelsInfo({ type: this.modelInfoType, files: [file] });
         }
+        info = (_a = info === null || info === void 0 ? void 0 : info[0]) !== null && _a !== void 0 ? _a : null;
         if (!light) {
             this.fileToInfo.set(file, info);
         }
@@ -55,19 +57,16 @@ class BaseModelInfoService extends EventTarget {
 class LoraInfoService extends BaseModelInfoService {
     constructor() {
         super(...arguments);
-        this.apiRefreshEventString = "rgthree-refreshed-lora-info";
+        this.apiRefreshEventString = "rgthree-refreshed-loras-info";
+        this.modelInfoType = 'loras';
     }
-    apiFetchInfo(file, light) {
-        return rgthreeApi.getLorasInfo(file, light);
-    }
-    apiRefreshInfo(file) {
-        return rgthreeApi.refreshLorasInfo(file);
-    }
-    apiSaveInfo(file, data) {
-        return rgthreeApi.saveLoraInfo(file, data);
-    }
-    apiClearInfo(file) {
-        return rgthreeApi.clearLorasInfo(file);
+}
+class CheckpointInfoService extends BaseModelInfoService {
+    constructor() {
+        super(...arguments);
+        this.apiRefreshEventString = "rgthree-refreshed-checkpoints-info";
+        this.modelInfoType = 'checkpoints';
     }
 }
 export const LORA_INFO_SERVICE = new LoraInfoService();
+export const CHECKPOINT_INFO_SERVICE = new CheckpointInfoService();

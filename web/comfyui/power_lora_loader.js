@@ -68,7 +68,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         moveArrayItem(this.widgets, this.addCustomWidget(new PowerLoraLoaderHeaderWidget()), 1);
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("➕ Add Lora", (event, pos, node) => {
-            rgthreeApi.getLoras().then((loras) => {
+            rgthreeApi.getLoras().then((lorasDetails) => {
+                const loras = lorasDetails.map((l) => l.file);
                 showLoraChooser(event, (value) => {
                     var _b;
                     if (typeof value === "string") {
@@ -149,7 +150,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                     },
                 },
             ];
-            new LiteGraph.ContextMenu(menuItems, { title: "LORA WIDGET", event: rgthree.lastCanvasMouseEvent });
+            new LiteGraph.ContextMenu(menuItems, {
+                title: "LORA WIDGET",
+                event: rgthree.lastCanvasMouseEvent,
+            });
             return undefined;
         }
         return this.defaultGetSlotMenuOptions(slot);
@@ -243,7 +247,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
     constructor(name = "PowerLoraLoaderHeaderWidget") {
         super(name);
         this.value = { type: "PowerLoraLoaderHeaderWidget" };
-        this.type = 'custom';
+        this.type = "custom";
         this.hitAreas = {
             toggle: { bounds: [0, 0], onDown: this.onToggleDown },
         };
@@ -296,7 +300,7 @@ const DEFAULT_LORA_WIDGET_DATA = {
 class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     constructor(name) {
         super(name);
-        this.type = 'custom';
+        this.type = "custom";
         this.haveMouseMovedStrength = false;
         this.loraInfoPromise = null;
         this.loraInfo = null;

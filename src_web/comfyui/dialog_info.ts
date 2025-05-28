@@ -16,7 +16,7 @@ import {
   dotdotdot,
 } from "rgthree/common/media/svgs.js";
 import {RgthreeModelInfo} from "typings/rgthree.js";
-import {LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
+import {CHECKPOINT_INFO_SERVICE, LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
 import {rgthree} from "./rgthree.js";
 import {MenuButton} from "rgthree/common/menu.js";
 import {generateId, injectCss} from "rgthree/common/shared_utils.js";
@@ -29,7 +29,7 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
   private modifiedModelData = false;
   private modelInfo: RgthreeModelInfo | null = null;
 
-  constructor(file: string, type: string = "lora") {
+  constructor(file: string) {
     const dialogOptions: RgthreeDialogOptions = {
       class: "rgthree-info-dialog",
       title: `<h2>Loading...</h2>`,
@@ -347,6 +347,18 @@ export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
   }
   override async clearModelInfo(file: string) {
     return LORA_INFO_SERVICE.clearFetchedInfo(file);
+  }
+}
+
+export class RgthreeCheckpointInfoDialog extends RgthreeInfoDialog {
+  override async getModelInfo(file: string) {
+    return CHECKPOINT_INFO_SERVICE.getInfo(file, false, false);
+  }
+  override async refreshModelInfo(file: string) {
+    return CHECKPOINT_INFO_SERVICE.refreshInfo(file);
+  }
+  override async clearModelInfo(file: string) {
+    return CHECKPOINT_INFO_SERVICE.clearFetchedInfo(file);
   }
 }
 

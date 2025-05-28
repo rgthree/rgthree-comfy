@@ -130,6 +130,19 @@ def path_exists(path):
     return os.path.exists(path)
   return False
 
+def file_exists(path):
+  """Checks if a file exists, accepting None type."""
+  if path is not None:
+    return os.path.isfile(path)
+  return False
+
+def remove_path(path):
+  """Removes a path, if it exists."""
+  if path_exists(path):
+    os.remove(path)
+    return True
+  return False
+
 
 class ByPassTypeTuple(tuple):
   """A special class that will return additional "AnyType" strings beyond defined values.

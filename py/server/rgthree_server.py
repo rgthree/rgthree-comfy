@@ -2,6 +2,7 @@ import os
 from aiohttp import web
 from server import PromptServer
 
+from ..config import get_config_value
 from .utils_server import set_default_page_resources, set_default_page_routes
 from .routes_config import *
 from .routes_model_info import *
@@ -20,3 +21,5 @@ set_default_page_resources("common", routes)
 set_default_page_resources("lib", routes)
 
 set_default_page_routes("link_fixer", routes)
+if get_config_value('unreleased.models_page.enabled') is True:
+  set_default_page_routes("models", routes)

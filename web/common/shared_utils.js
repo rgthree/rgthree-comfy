@@ -140,3 +140,239 @@ export function defineProperty(instance, property, desc) {
     }
     return Object.defineProperty(instance, property, desc);
 }
+export function areDataViewsEqual(a, b) {
+    if (a.byteLength !== b.byteLength) {
+        return false;
+    }
+    for (let i = 0; i < a.byteLength; i++) {
+        if (a.getUint8(i) !== b.getUint8(i)) {
+            return false;
+        }
+    }
+    return true;
+}
+function looksLikeBase64(source) {
+    return source.length > 500 || source.startsWith("data:");
+}
+export function areArrayBuffersEqual(a, b) {
+    if (a == b || !a || !b) {
+        return a == b;
+    }
+    return areDataViewsEqual(new DataView(a), new DataView(b));
+}
+export function getCanvasImageData(image) {
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    canvas.width = image.width;
+    canvas.height = image.height;
+    ctx.drawImage(image, 0, 0);
+    const imageData = ctx.getImageData(0, 0, image.width, image.height);
+    return [canvas, ctx, imageData];
+}
+export async function convertToBase64(source) {
+    if (source instanceof Promise) {
+        source = await source;
+    }
+    if (typeof source === "string" && looksLikeBase64(source)) {
+        return source;
+    }
+    if (typeof source === "string" || source instanceof Blob || source instanceof ArrayBuffer) {
+        return convertToBase64(await loadImage(source));
+    }
+    if (source instanceof HTMLImageElement) {
+        const [canvas, ctx, imageData] = getCanvasImageData(source);
+        return convertToBase64(canvas);
+    }
+    if (source instanceof HTMLCanvasElement) {
+        return source.toDataURL("image/png");
+    }
+    throw Error("Unknown source to convert to base64.");
+}
+export async function convertToArrayBuffer(source) {
+    if (source instanceof Promise) {
+        source = await source;
+    }
+    if (source instanceof ArrayBuffer) {
+        return source;
+    }
+    if (typeof source === "string") {
+        if (looksLikeBase64(source)) {
+            var binaryString = atob(source.replace(/^.*?;base64,/, ""));
+            var bytes = new Uint8Array(binaryString.length);
+            for (var i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+        return convertToArrayBuffer(await loadImage(source));
+    }
+    if (source instanceof HTMLImageElement) {
+        const [canvas, ctx, imageData] = getCanvasImageData(source);
+        return convertToArrayBuffer(canvas);
+    }
+    if (source instanceof HTMLCanvasElement) {
+        return convertToArrayBuffer(source.toDataURL());
+    }
+    if (source instanceof Blob) {
+        return source.arrayBuffer();
+    }
+    throw Error("Unknown source to convert to arraybuffer.");
+}
+export async function loadImage(source) {
+    if (source instanceof Promise) {
+        source = await source;
+    }
+    if (source instanceof HTMLImageElement) {
+        return loadImage(source.src);
+    }
+    if (source instanceof Blob) {
+        return loadImage(source.arrayBuffer());
+    }
+    if (source instanceof HTMLCanvasElement) {
+        return loadImage(source.toDataURL());
+    }
+    if (source instanceof ArrayBuffer) {
+        var binary = "";
+        var bytes = new Uint8Array(source);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        return loadImage(`data:${getMimeTypeFromArrayBuffer(bytes)};base64,${btoa(binary)}`);
+    }
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.addEventListener("load", () => {
+            resolve(img);
+        });
+        img.addEventListener("error", () => {
+            reject(img);
+        });
+        img.src = source;
+    });
+}
+function getMimeTypeFromArrayBuffer(buffer) {
+    const len = 4;
+    if (buffer.length >= len) {
+        let signatureArr = new Array(len);
+        for (let i = 0; i < len; i++)
+            signatureArr[i] = buffer[i].toString(16);
+        const signature = signatureArr.join("").toUpperCase();
+        switch (signature) {
+            case "89504E47":
+                return "image/png";
+            case "47494638":
+                return "image/gif";
+            case "25504446":
+                return "application/pdf";
+            case "FFD8FFDB":
+            case "FFD8FFE0":
+                return "image/jpeg";
+            case "504B0304":
+                return "application/zip";
+            default:
+                return null;
+        }
+    }
+    return null;
+}
+export class Broadcaster extends EventTarget {
+    constructor(channelName) {
+        super();
+        this.queue = {};
+        this.queue = {};
+        this.channel = new BroadcastChannel(channelName);
+        this.channel.addEventListener("message", (e) => {
+            this.onMessage(e);
+        });
+    }
+    getId() {
+        let id;
+        do {
+            id = generateId(6);
+        } while (this.queue[id]);
+        return id;
+    }
+    async broadcastAndWait(action, payload, options) {
+        const id = this.getId();
+        this.queue[id] = getResolver(options === null || options === void 0 ? void 0 : options.timeout);
+        this.channel.postMessage({
+            id,
+            action,
+            payload,
+        });
+        let response;
+        try {
+            response = await this.queue[id].promise;
+        }
+        catch (e) {
+            console.log("CAUGHT", e);
+            response = [];
+        }
+        return response;
+    }
+    broadcast(action, payload) {
+        this.channel.postMessage({
+            id: this.getId(),
+            action,
+            payload,
+        });
+    }
+    reply(replyId, action, payload) {
+        this.channel.postMessage({
+            id: this.getId(),
+            replyId,
+            action,
+            payload,
+        });
+    }
+    openWindowAndWaitForMessage(rgthreePath, windowName) {
+        const id = this.getId();
+        this.queue[id] = getResolver();
+        const win = window.open(`/rgthree/${rgthreePath}#broadcastLoadMsgId=${id}`, windowName);
+        return { window: win, promise: this.queue[id].promise };
+    }
+    onMessage(e) {
+        var _a, _b;
+        const msgId = ((_a = e.data) === null || _a === void 0 ? void 0 : _a.replyId) || "";
+        const queueItem = this.queue[msgId];
+        if (queueItem) {
+            if (queueItem.completed) {
+                console.error(`${msgId} already completed..`);
+            }
+            queueItem.deferment = queueItem.deferment || { data: [] };
+            queueItem.deferment.data.push(e.data.payload);
+            queueItem.deferment.timeout && clearTimeout(queueItem.deferment.timeout);
+            queueItem.deferment.timeout = setTimeout(() => {
+                queueItem.resolve(queueItem.deferment.data);
+            }, 250);
+        }
+        else {
+            this.dispatchEvent(new CustomEvent("rgthree-broadcast-message", {
+                detail: Object.assign({ replyTo: (_b = e.data) === null || _b === void 0 ? void 0 : _b.id }, e.data),
+            }));
+        }
+    }
+    addMessageListener(callback, options) {
+        return super.addEventListener("rgthree-broadcast-message", callback, options);
+    }
+}
+const broadcastChannelMap = new Map();
+export function broadcastOnChannel(channel, action, payload) {
+    let queue = broadcastChannelMap.get(channel);
+    if (!queue) {
+        broadcastChannelMap.set(channel, {});
+        queue = broadcastChannelMap.get(channel);
+    }
+    let id;
+    do {
+        id = generateId(6);
+    } while (queue[id]);
+    queue[id] = getResolver();
+    channel.postMessage({
+        id,
+        action,
+        payload,
+    });
+    return queue[id].promise;
+}

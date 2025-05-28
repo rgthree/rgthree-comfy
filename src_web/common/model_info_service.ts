@@ -1,5 +1,5 @@
 import type {RgthreeModelInfo} from "typings/rgthree.js";
-import {rgthreeApi} from "./rgthree_api.js";
+import {ModelInfoType, rgthreeApi} from "./rgthree_api.js";
 import {api} from "scripts/api.js";
 
 /**
@@ -7,16 +7,9 @@ import {api} from "scripts/api.js";
  */
 abstract class BaseModelInfoService extends EventTarget {
   private readonly fileToInfo = new Map<string, RgthreeModelInfo | null>();
+  protected abstract readonly modelInfoType: ModelInfoType;
 
-  protected abstract apiRefreshEventString: string;
-
-  protected abstract apiFetchInfo(file: string, light: boolean): Promise<RgthreeModelInfo | null>;
-  protected abstract apiRefreshInfo(file: string): Promise<RgthreeModelInfo | null>;
-  protected abstract apiSaveInfo(
-    file: string,
-    data: Partial<RgthreeModelInfo>,
-  ): Promise<RgthreeModelInfo | null>;
-  protected abstract apiClearInfo(file: string): Promise<void>;
+  protected abstract readonly apiRefreshEventString: string;
 
   constructor() {
     super();
@@ -42,14 +35,13 @@ abstract class BaseModelInfoService extends EventTarget {
   }
 
   async clearFetchedInfo(file: string) {
-    await this.apiClearInfo(file);
-    // await rgthreeApi.clearLorasInfo(file);
+    await rgthreeApi.clearModelsInfo({type: this.modelInfoType, files: [file]});
     this.fileToInfo.delete(file);
     return null;
   }
 
   async savePartialInfo(file: string, data: Partial<RgthreeModelInfo>) {
-    let info = await this.apiSaveInfo(file, data);
+    let info = await rgthreeApi.saveModelInfo(this.modelInfoType, file, data);
     this.fileToInfo.set(file, info);
     return info;
   }
@@ -64,12 +56,11 @@ abstract class BaseModelInfoService extends EventTarget {
   private async fetchInfo(file: string, refresh = false, light = false) {
     let info = null;
     if (!refresh) {
-      info = await this.apiFetchInfo(file, light);
-      // info = await rgthreeApi.getLorasInfo(file, light);
+      info = await rgthreeApi.getModelsInfo({type: this.modelInfoType, files: [file], light});
     } else {
-      info = await this.apiRefreshInfo(file);
-      // info = await rgthreeApi.refreshLorasInfo(file);
+      info = await rgthreeApi.refreshModelsInfo({type: this.modelInfoType, files: [file]});
     }
+    info = info?.[0] ?? null;
     if (!light) {
       this.fileToInfo.set(file, info);
     }
@@ -92,21 +83,17 @@ abstract class BaseModelInfoService extends EventTarget {
  * Lora type implementation of ModelInfoTypeService.
  */
 class LoraInfoService extends BaseModelInfoService {
-  protected apiRefreshEventString = "rgthree-refreshed-lora-info";
-
-  protected override apiFetchInfo(file: string, light: boolean) {
-    return rgthreeApi.getLorasInfo(file, light);
-  }
-  protected override apiRefreshInfo(file: string) {
-    return rgthreeApi.refreshLorasInfo(file);
-  }
-  protected override apiSaveInfo(file: string, data: Partial<RgthreeModelInfo>) {
-    return rgthreeApi.saveLoraInfo(file, data);
-  }
-  protected override apiClearInfo(file: string) {
-    return rgthreeApi.clearLorasInfo(file);
-  }
+  protected override readonly apiRefreshEventString = "rgthree-refreshed-loras-info";
+  protected override readonly modelInfoType = 'loras';
 }
 
+/**
+ * Checkpoint type implementation of ModelInfoTypeService.
+ */
+class CheckpointInfoService extends BaseModelInfoService {
+  protected override readonly apiRefreshEventString = "rgthree-refreshed-checkpoints-info";
+  protected override readonly modelInfoType = 'checkpoints';
+}
 
 export const LORA_INFO_SERVICE = new LoraInfoService();
+export const CHECKPOINT_INFO_SERVICE = new CheckpointInfoService();
