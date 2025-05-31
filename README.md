@@ -187,6 +187,8 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 
 ## Power Puter
 > A  powerful and versatile node that opens the door for a wide range of utility by offering mult-line code parsing for output. This node can be used for simple string concatenation, or math operations; to an image dimension or a node's widgets with advanced list comprehension. If you want to output something in your workflow, this is the node to do it.
+>
+> Additional documentation available in the [wiki](https://github.com/rgthree/rgthree-comfy/wiki/Node:-Power-Puter)
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
