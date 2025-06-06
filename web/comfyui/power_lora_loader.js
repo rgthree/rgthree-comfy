@@ -307,14 +307,14 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.showModelAndClip = null;
         this.hitAreas = {
             toggle: { bounds: [0, 0], onDown: this.onToggleDown },
-            lora: { bounds: [0, 0], onDown: this.onLoraDown },
-            strengthDec: { bounds: [0, 0], onDown: this.onStrengthDecDown },
-            strengthVal: { bounds: [0, 0], onUp: this.onStrengthValUp },
-            strengthInc: { bounds: [0, 0], onDown: this.onStrengthIncDown },
+            lora: { bounds: [0, 0], onClick: this.onLoraClick },
+            strengthDec: { bounds: [0, 0], onClick: this.onStrengthDecDown },
+            strengthVal: { bounds: [0, 0], onClick: this.onStrengthValUp },
+            strengthInc: { bounds: [0, 0], onClick: this.onStrengthIncDown },
             strengthAny: { bounds: [0, 0], onMove: this.onStrengthAnyMove },
-            strengthTwoDec: { bounds: [0, 0], onDown: this.onStrengthTwoDecDown },
-            strengthTwoVal: { bounds: [0, 0], onUp: this.onStrengthTwoValUp },
-            strengthTwoInc: { bounds: [0, 0], onDown: this.onStrengthTwoIncDown },
+            strengthTwoDec: { bounds: [0, 0], onClick: this.onStrengthTwoDecDown },
+            strengthTwoVal: { bounds: [0, 0], onClick: this.onStrengthTwoValUp },
+            strengthTwoInc: { bounds: [0, 0], onClick: this.onStrengthTwoIncDown },
             strengthTwoAny: { bounds: [0, 0], onMove: this.onStrengthTwoAnyMove },
         };
         this._value = {
@@ -366,7 +366,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const lowQuality = isLowQuality();
         const midY = posY + height * 0.5;
         let posX = margin;
-        drawRoundedRectangle(ctx, { posX, posY, height, width: node.size[0] - margin * 2 });
+        drawRoundedRectangle(ctx, { pos: [posX, posY], size: [node.size[0] - margin * 2, height] });
         this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: this.value.on });
         posX += this.hitAreas.toggle.bounds[1] + innerMargin;
         if (lowQuality) {
@@ -470,7 +470,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     onInfoDown(event, pos, node) {
         this.showLoraInfoDialog();
     }
-    onLoraDown(event, pos, node) {
+    onLoraClick(event, pos, node) {
         showLoraChooser(event, (value) => {
             if (typeof value === "string") {
                 this.value.lora = value;

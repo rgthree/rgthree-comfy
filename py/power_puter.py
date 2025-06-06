@@ -17,8 +17,8 @@ import time
 from typing import Any, Callable
 import operator as op
 from .constants import get_category, get_name
-from .utils import FlexibleOptionalInputType, any_type, get_dict_value
-from .log import log_node_warn
+from .utils import ByPassTypeTuple, FlexibleOptionalInputType, any_type, get_dict_value
+from .log import log_node_error, log_node_warn
 
 from .power_lora_loader import RgthreePowerLoraLoader
 
@@ -55,6 +55,8 @@ _FUNCTIONS = {
     Function(name="float", call=float, args=(1, 1)),
     Function(name="str", call=str, args=(1, 1)),
     Function(name="bool", call=bool, args=(1, 1)),
+    Function(name="list", call=list, args=(1, 1)),
+    Function(name="tuple", call=tuple, args=(1, 1)),
     # Special
     Function(name="node", call='_get_node', args=(0, 1)),
     Function(name="nodes", call='_get_nodes', args=(0, 1)),
@@ -79,10 +81,7 @@ _SPECIAL_FUNCTIONS = {
 # not connected to ours (like looking up a node in the prompt). Using these means downstream nodes
 # would always be run; that is fine for something like a final JSON output, but less so for a prompt
 # text.
-_NON_DETERMINISTIC_FUNCTION_CHECKS = [
-  r'(?<!input_)(nodes?)\(',
-  r'(?<!\.)(random_(int|choice))\(',
-]
+_NON_DETERMINISTIC_FUNCTION_CHECKS = [r'(?<!input_)(nodes?)\(', r'(?<!\.)(random_(int|choice))\(',]
 
 _OPERATORS = {
   ast.Add: op.add,
@@ -125,8 +124,8 @@ class RgthreePowerPuter:
       },
     }
 
-  RETURN_TYPES = (any_type,)
-  RETURN_NAMES = ('*',)
+  RETURN_TYPES = ByPassTypeTuple((any_type,))
+  RETURN_NAMES = ByPassTypeTuple(("*",))
   FUNCTION = "main"
 
   @classmethod
@@ -154,44 +153,79 @@ class RgthreePowerPuter:
 
   def main(self, **kwargs):
     """Does the nodes' work."""
-    # print('\n\nRUN!\n\n')
-    output = kwargs['output']
     code = kwargs['code']
     unique_id = kwargs['unique_id']
     pnginfo = kwargs['extra_pnginfo']
     workflow = pnginfo["workflow"] if "workflow" in pnginfo else {"nodes": []}
     prompt = kwargs['prompt']
 
+    outputs = get_dict_value(kwargs, 'outputs.outputs', None)
+    if not outputs:
+      output = kwargs.get('output', None)
+      if not output:
+        output = 'STRING'
+      outputs = [output]
+
     ctx = {}
     # Set variable names, defaulting to None instead of KeyErrors
     for c in list('abcdefghijklmnopqrstuvwxyz'):
       ctx[c] = kwargs[c] if c in kwargs else None
-
 
     # Clean the code before evaluating. For now, we just change usage of `input_node` so the passed
     # variable is a string, if it isn't (instead of `input_node(a)` it's to be `input_node('a')`.
     code = re.sub(r'input_node\(([^\'"].*?)\)', r'input_node("\1")', code)
 
     eva = _Puter(code=code, ctx=ctx, workflow=workflow, prompt=prompt, unique_id=unique_id)
-    value = eva.execute()
+    values = eva.execute()
 
-    if value is not None:
-      if output == 'INT':
-        value = int(value)
-      elif output == 'FLOAT':
-        value = float(value)
-      elif output == 'BOOL':
-        value = bool(value)
-      elif output == 'STRING':
-        if isinstance(value, (dict, list)):
-          value = json.dumps(value, indent=2)
-        else:
-          value = str(value)
-      elif output == '*':
-        # Do nothing, the output will be passed as-is. This could be anything and it's up to the
-        # user to control the intended output, like passing through an input value, etc.
-        pass
-    return (value,)
+    # Check if we have multiple outputs that the returned value is a tuple and raise if not.
+    if len(outputs) > 1 and not isinstance(values, tuple):
+      t = re.sub(r'^<[a-z]*\s(.*?)>$', r'\1', str(type(values)))
+      msg = (
+        f"When using multiple node outputs, the value from the code should be a 'tuple' with the"
+        f" number of items equal to the number of outputs. But value from code was of type {t}."
+      )
+      log_node_error(_NODE_NAME, f'{msg}\n')
+      raise ValueError(msg)
+
+    if len(outputs) == 1:
+      values = (values,)
+
+    if len(values) > len(outputs):
+      log_node_warn(
+        _NODE_NAME,
+        f"Expected value from code to be tuple with {len(outputs)} items, but value from code had"
+        f" {len(values)} items. Extra values will be dropped."
+      )
+    elif len(values) < len(outputs):
+      log_node_warn(
+        _NODE_NAME,
+        f"Expected value from code to be tuple with {len(outputs)} items, but value from code had"
+        f" {len(values)} items. Extra outputs will be null."
+      )
+
+    # Now, we'll go over out return tuple, and cast as the output types.
+    response = []
+    for i, output in enumerate(outputs):
+      value = values[i] if len(values) > i else None
+      if value is not None:
+        if output == 'INT':
+          value = int(value)
+        elif output == 'FLOAT':
+          value = float(value)
+        elif output == 'BOOL':
+          value = bool(value)
+        elif output == 'STRING':
+          if isinstance(value, (dict, list)):
+            value = json.dumps(value, indent=2)
+          else:
+            value = str(value)
+        elif output == '*':
+          # Do nothing, the output will be passed as-is. This could be anything and it's up to the
+          # user to control the intended output, like passing through an input value, etc.
+          pass
+      response.append(value)
+    return tuple(response)
 
 
 class _Puter:

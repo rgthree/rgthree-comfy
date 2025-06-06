@@ -334,11 +334,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
     }
     draw(ctx, node, width, posY, height) {
         var _a;
-        const widgetData = drawNodeWidget(ctx, {
-            width,
-            height,
-            posY,
-        });
+        const widgetData = drawNodeWidget(ctx, { size: [width, height], pos: [15, posY] });
         const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
         let currentX = widgetData.width - widgetData.margin;
         if (!widgetData.lowQuality && showNav) {

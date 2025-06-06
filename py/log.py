@@ -58,6 +58,11 @@ def log_node_info(node_name, message, msg_color='RESET'):
   _log_node("CYAN", node_name, message, msg_color=msg_color)
 
 
+def log_node_error(node_name, message, msg_color='RESET'):
+  """Logs an info message."""
+  _log_node("RED", node_name, message, msg_color=msg_color)
+
+
 def log_node_warn(node_name, message, msg_color='RESET'):
   """Logs an warn message."""
   _log_node("YELLOW", node_name, message, msg_color=msg_color)

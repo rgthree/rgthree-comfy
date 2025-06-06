@@ -1,14 +1,20 @@
 import type {
   LGraphNode,
+  Size,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
   Vector4,
 } from "@comfyorg/litegraph";
 import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {IBaseWidget, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
+import type {ICustomWidget, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
 
 import {app} from "scripts/app.js";
-import {drawNodeWidget, drawRoundedRectangle, fitString, isLowQuality} from "./utils_canvas.js";
+import {
+  drawNodeWidget,
+  drawWidgetButton,
+  fitString,
+  isLowQuality,
+} from "./utils_canvas.js";
 
 /**
  * Draws a label on teft, and a value on the right, ellipsizing when out of space.
@@ -44,28 +50,12 @@ export function drawLabelAndValue(
 export type RgthreeBaseWidgetBounds = {
   /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
   bounds: Vector2 | Vector4;
-  onDown?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
-  onDown?(
-    event: CanvasMouseEvent,
-    pos: Vector2,
-    node: LGraphNode,
-    bounds: RgthreeBaseWidgetBounds,
-  ): boolean | void;
-  onUp?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
-  onUp?(
-    event: CanvasMouseEvent,
-    pos: Vector2,
-    node: LGraphNode,
-    bounds: RgthreeBaseWidgetBounds,
-  ): boolean | void;
-  onMove?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void;
-  onMove?(
-    event: CanvasMouseEvent,
-    pos: Vector2,
-    node: LGraphNode,
-    bounds: RgthreeBaseWidgetBounds,
-  ): boolean | void;
+  onDown?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
+  onUp?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
+  onMove?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
+  onClick?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
   data?: any;
+  wasMouseClickedAndIsOver?: boolean;
 };
 
 export type RgthreeBaseHitAreas<Keys extends string> = {
@@ -77,13 +67,13 @@ type NotArray<T> = T extends Array<any> ? never : T;
 /**
  * A base widget that handles mouse events more properly.
  */
-export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implements IBaseWidget {
+export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implements ICustomWidget {
   // We don't want our value to be an array as a widget will be serialized as an "input" for the API
   // which uses an array value to represent a link. To keep things simpler, we'll avoid using an
   // array at all.
   abstract value: NotArray<V>;
 
-  type: IBaseWidget['type'] = 'custom';
+  type: ICustomWidget["type"] = "custom";
   name: string;
   options: IWidgetOptions = {};
   y: number = 0;
@@ -95,6 +85,7 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
   // protected hitAreas: {[key: string]: RgthreeBaseWidgetBounds} = {};
   protected readonly hitAreas: RgthreeBaseHitAreas<any> = {};
   private downedHitAreasForMove: RgthreeBaseWidgetBounds[] = [];
+  private downedHitAreasForClick: RgthreeBaseWidgetBounds[] = [];
 
   constructor(name: string) {
     this.name = name;
@@ -121,17 +112,22 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
       this.mouseDowned = [...pos] as Vector2;
       this.isMouseDownedAndOver = true;
       this.downedHitAreasForMove.length = 0;
+      this.downedHitAreasForClick.length = 0;
       // Loop over out bounds data and call any specifics.
       let anyHandled = false;
       for (const part of Object.values(this.hitAreas)) {
-        if ((part.onDown || part.onMove) && this.clickWasWithinBounds(pos, part.bounds)) {
+        if (this.clickWasWithinBounds(pos, part.bounds)) {
           if (part.onMove) {
             this.downedHitAreasForMove.push(part);
+          }
+          if (part.onClick) {
+            this.downedHitAreasForClick.push(part);
           }
           if (part.onDown) {
             const thisHandled = part.onDown.apply(this, [event, pos, node, part]);
             anyHandled = anyHandled || thisHandled == true;
           }
+          part.wasMouseClickedAndIsOver = true;
         }
       }
       return this.onMouseDown(event, pos, node) ?? anyHandled;
@@ -142,6 +138,7 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
     if (event.type == "pointerup") {
       if (!this.mouseDowned) return true;
       this.downedHitAreasForMove.length = 0;
+      const wasMouseDownedAndOver = this.isMouseDownedAndOver;
       this.cancelMouseDown();
       let anyHandled = false;
       for (const part of Object.values(this.hitAreas)) {
@@ -149,6 +146,18 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
           const thisHandled = part.onUp.apply(this, [event, pos, node, part]);
           anyHandled = anyHandled || thisHandled == true;
         }
+        part.wasMouseClickedAndIsOver = false;
+      }
+      for (const part of this.downedHitAreasForClick) {
+        if (this.clickWasWithinBounds(pos, part.bounds)) {
+          const thisHandled = part.onClick!.apply(this, [event, pos, node, part]);
+          anyHandled = anyHandled || thisHandled == true;
+        }
+      }
+      this.downedHitAreasForClick.length = 0;
+      if (wasMouseDownedAndOver) {
+        const thisHandled = this.onMouseClick(event, pos, node)
+        anyHandled = anyHandled || thisHandled == true;
       }
       return this.onMouseUp(event, pos, node) ?? anyHandled;
     }
@@ -166,8 +175,13 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
       ) {
         this.isMouseDownedAndOver = false;
       }
-      for (const part of this.downedHitAreasForMove) {
-        part.onMove!.apply(this, [event, pos, node, part]);
+      for (const part of Object.values(this.hitAreas)) {
+        if (this.downedHitAreasForMove.includes(part)) {
+          part.onMove!.apply(this, [event, pos, node, part]);
+        }
+        if (this.downedHitAreasForClick.includes(part)) {
+          part.wasMouseClickedAndIsOver = this.clickWasWithinBounds(pos, part.bounds);
+        }
       }
       return this.onMouseMove(event, pos, node) ?? true;
     }
@@ -195,6 +209,14 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
   }
 
   /**
+   * An event that fires when the pointer is let go _over the widget_ and when the widget that was
+   * originally pressed down.
+   */
+  onMouseClick(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+    return;
+  }
+
+  /**
    * An event that fires when the pointer is moving after pressing down. Will fire both on and off
    * of the widget. Check `isMouseDownedAndOver` to determine if the mouse is currently over the
    * widget or not.
@@ -208,27 +230,33 @@ export abstract class RgthreeBaseWidget<V extends IBaseWidget["value"]> implemen
  * A better implementation of the LiteGraph button widget.
  */
 export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
-  override readonly type = 'custom';
+  override readonly type = "custom";
 
   value: string = "";
   label: string = "";
-  mouseUpCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  mouseClickCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+
   constructor(
     name: string,
-    mouseUpCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void,
-    label?: string
+    mouseClickCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void,
+    label?: string,
   ) {
     super(name);
-    this.mouseUpCallback = mouseUpCallback;
+    this.mouseClickCallback = mouseClickCallback;
     this.label = label || name;
   }
 
   draw(ctx: CanvasRenderingContext2D, node: LGraphNode, width: number, y: number, height: number) {
-    drawWidgetButton({ctx, node, width, height, y}, this.label, this.isMouseDownedAndOver);
+    drawWidgetButton(
+      ctx,
+      {size: [width - 30, height], pos: [15, y]},
+      this.label,
+      this.isMouseDownedAndOver,
+    );
   }
 
-  override onMouseUp(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
-    return this.mouseUpCallback(event, pos, node);
+  override onMouseClick(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
+    return this.mouseClickCallback(event, pos, node);
   }
 }
 
@@ -245,7 +273,7 @@ export class RgthreeBetterTextWidget extends RgthreeBaseWidget<string> {
   }
 
   draw(ctx: CanvasRenderingContext2D, node: LGraphNode, width: number, y: number, height: number) {
-    const widgetData = drawNodeWidget(ctx, {width, height, posY: y});
+    const widgetData = drawNodeWidget(ctx, {size: [width, height], pos: [15, y]});
 
     if (!widgetData.lowQuality) {
       drawLabelAndValue(ctx, this.name, this.value, width, y, height);
@@ -274,14 +302,13 @@ type RgthreeDividerWidgetOptions = {
   thickness: number;
 };
 
-
 /**
  * A divider widget; can also be used as a spacer if fed a 0 thickness.
  */
 export class RgthreeDividerWidget extends RgthreeBaseWidget<{}> {
   override value = {};
   override options = {serialize: false};
-  override readonly type = 'custom';
+  override readonly type = "custom";
 
   private readonly widgetOptions: RgthreeDividerWidgetOptions = {
     marginTop: 7,
@@ -334,9 +361,9 @@ export type RgthreeLabelWidgetOptions = {
  * A simple label widget, drawn with no background.
  */
 export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
-  override readonly type = 'custom';
+  override readonly type = "custom";
   override options = {serialize: false};
-  value = '';
+  value = "";
 
   private readonly widgetOptions: RgthreeLabelWidgetOptions = {};
   private posY: number = 0;
@@ -361,7 +388,7 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
     ctx.save();
 
     let text = this.widgetOptions.text ?? this.name;
-    if (typeof text === 'function') {
+    if (typeof text === "function") {
       text = text();
     }
 
@@ -421,8 +448,8 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
 }
 
 /** An invisible widget. */
-export class RgthreeInvisibleWidget<T extends IBaseWidget["value"]> extends RgthreeBaseWidget<T> {
-  override readonly type = 'custom';
+export class RgthreeInvisibleWidget<T extends ICustomWidget["value"]> extends RgthreeBaseWidget<T> {
+  override readonly type = "custom";
 
   value: NotArray<T>;
   private serializeValueFn?: (node: LGraphNode, index: number) => Promise<T> | T;
@@ -451,56 +478,4 @@ export class RgthreeInvisibleWidget<T extends IBaseWidget["value"]> extends Rgth
       ? this.serializeValueFn(node, index)
       : super.serializeValue(node, index);
   }
-}
-
-type DrawContext = {
-  ctx: CanvasRenderingContext2D;
-  node: LGraphNode;
-  width: number;
-  y: number;
-  height: number;
-};
-
-/**
- * Draws a better button.
- */
-export function drawWidgetButton(
-  drawCtx: DrawContext,
-  text: string,
-  isMouseDownedAndOver: boolean = false,
-) {
-  // First, add a shadow if we're not down or lowquality.
-  drawCtx.ctx.save();
-  if (!isLowQuality() && !isMouseDownedAndOver) {
-    drawRoundedRectangle(drawCtx.ctx, {
-      width: drawCtx.width - 30 - 2,
-      height: drawCtx.height,
-      posY: drawCtx.y + 1,
-      posX: 15 + 1,
-      borderRadius: 4,
-      colorBackground: "#000000aa",
-      colorStroke: "#000000aa",
-    });
-  }
-
-  drawRoundedRectangle(drawCtx.ctx, {
-    width: drawCtx.width - 30,
-    height: drawCtx.height,
-    posY: drawCtx.y + (isMouseDownedAndOver ? 1 : 0),
-    posX: 15,
-    borderRadius: isLowQuality() ? 0 : 4,
-    colorBackground: isMouseDownedAndOver ? "#444" : LiteGraph.WIDGET_BGCOLOR,
-  });
-
-  if (!isLowQuality()) {
-    drawCtx.ctx.textBaseline = "middle";
-    drawCtx.ctx.textAlign = "center";
-    drawCtx.ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
-    drawCtx.ctx.fillText(
-      text,
-      drawCtx.node.size[0] / 2,
-      drawCtx.y + drawCtx.height / 2 + (isMouseDownedAndOver ? 1 : 0),
-    );
-  }
-  drawCtx.ctx.restore();
 }

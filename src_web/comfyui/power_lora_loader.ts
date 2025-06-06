@@ -488,17 +488,17 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     | "strengthTwoAny"
   > = {
     toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
-    lora: {bounds: [0, 0] as Vector2, onDown: this.onLoraDown},
+    lora: {bounds: [0, 0] as Vector2, onClick: this.onLoraClick},
     // info: { bounds: [0, 0] as Vector2, onDown: this.onInfoDown },
 
-    strengthDec: {bounds: [0, 0] as Vector2, onDown: this.onStrengthDecDown},
-    strengthVal: {bounds: [0, 0] as Vector2, onUp: this.onStrengthValUp},
-    strengthInc: {bounds: [0, 0] as Vector2, onDown: this.onStrengthIncDown},
+    strengthDec: {bounds: [0, 0] as Vector2, onClick: this.onStrengthDecDown},
+    strengthVal: {bounds: [0, 0] as Vector2, onClick: this.onStrengthValUp},
+    strengthInc: {bounds: [0, 0] as Vector2, onClick: this.onStrengthIncDown},
     strengthAny: {bounds: [0, 0] as Vector2, onMove: this.onStrengthAnyMove},
 
-    strengthTwoDec: {bounds: [0, 0] as Vector2, onDown: this.onStrengthTwoDecDown},
-    strengthTwoVal: {bounds: [0, 0] as Vector2, onUp: this.onStrengthTwoValUp},
-    strengthTwoInc: {bounds: [0, 0] as Vector2, onDown: this.onStrengthTwoIncDown},
+    strengthTwoDec: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoDecDown},
+    strengthTwoVal: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoValUp},
+    strengthTwoInc: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoIncDown},
     strengthTwoAny: {bounds: [0, 0] as Vector2, onMove: this.onStrengthTwoAnyMove},
   };
 
@@ -567,7 +567,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     let posX = margin;
 
     // Draw the background.
-    drawRoundedRectangle(ctx, {posX, posY, height, width: node.size[0] - margin * 2});
+    drawRoundedRectangle(ctx, {pos: [posX, posY], size: [node.size[0] - margin * 2, height]});
 
     // Draw the toggle
     this.hitAreas.toggle.bounds = drawTogglePart(ctx, {posX, posY, height, value: this.value.on});
@@ -704,7 +704,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     this.showLoraInfoDialog();
   }
 
-  onLoraDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onLoraClick(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
     showLoraChooser(event, (value: IContextMenuValue) => {
       if (typeof value === "string") {
         this.value.lora = value;
