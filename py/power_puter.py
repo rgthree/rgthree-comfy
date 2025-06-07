@@ -13,9 +13,10 @@ import random
 import dataclasses
 import re
 import time
-
-from typing import Any, Callable
 import operator as op
+
+from typing import Any, Callable, Optional, Union
+
 from .constants import get_category, get_name
 from .utils import ByPassTypeTuple, FlexibleOptionalInputType, any_type, get_dict_value
 from .log import log_node_error, log_node_warn
@@ -34,8 +35,8 @@ class Function():
   """
 
   name: str
-  call: Callable | str
-  args: tuple[int, int | None]
+  call: Union[Callable, str]
+  args: tuple[int, Optional[int]]
 
 
 _FUNCTIONS = {
@@ -245,7 +246,7 @@ class _Puter:
       self._prompt_nodes = [{'id': id} | {**node} for id, node in self._prompt.items()]
     self._prompt_node = [n for n in self._prompt_nodes if n['id'] == unique_id][0]
 
-  def execute(self, code=str | None) -> Any:
+  def execute(self, code=Optional[str]) -> Any:
     """Evaluates a the code block."""
     code = code or self._code
     node = ast.parse(self._code)
@@ -258,7 +259,7 @@ class _Puter:
         break
     return last_value
 
-  def _get_nodes(self, node_id: int | str | re.Pattern | None = None) -> list[Any]:
+  def _get_nodes(self, node_id: Union[int, str, re.Pattern, None] = None) -> list[Any]:
     """Get a list of the nodes that match the node_id, or all the nodes in the prompt."""
     nodes = self._prompt_nodes.copy()
     if not node_id:
@@ -275,7 +276,7 @@ class _Puter:
         found = [n for n in nodes if node_id == get_dict_value(n, '_meta.title', '')]
     return found
 
-  def _get_node(self, node_id: int | str | re.Pattern | None = None) -> Any | None:
+  def _get_node(self, node_id: Union[int, str, re.Pattern, None] = None) -> Union[Any, None]:
     """Returns a prompt-node from the hidden prompt."""
     if node_id is None:
       return self._prompt_node
@@ -294,7 +295,7 @@ class _Puter:
       log_node_warn(_NODE_NAME, f'No input node found for "{input_name}". ')
     return None
 
-  def _eval_statement(self, stmt: ast.stmt, ctx: dict, prev_stmt: ast.stmt | None = None):
+  def _eval_statement(self, stmt: ast.stmt, ctx: dict, prev_stmt: Union[ast.stmt, None] = None):
     """Evaluates an ast.stmt."""
 
     if '__returned__' in ctx:

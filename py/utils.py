@@ -2,12 +2,15 @@ import json
 import os
 import re
 
+from typing import Union
+
 
 class AnyType(str):
   """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
 
   def __ne__(self, __value: object) -> bool:
     return False
+
 
 class FlexibleOptionalInputType(dict):
   """A special class to make flexible nodes that pass data to our python handlers.
@@ -23,7 +26,8 @@ class FlexibleOptionalInputType(dict):
   type is supplied to our FlexibleOptionalInputType and returned for any non-data key. This can be a
   real type, or use the AnyType for additional flexibility.
   """
-  def __init__(self, type, data: dict | None = None):
+
+  def __init__(self, type, data: Union[dict, None] = None):
     """Initializes the FlexibleOptionalInputType.
 
     Args:
@@ -45,7 +49,7 @@ class FlexibleOptionalInputType(dict):
     if self.data is not None and key in self.data:
       val = self.data[key]
       return val
-    return (self.type, )
+    return (self.type,)
 
   def __contains__(self, key):
     """Always contain a key, and we'll always return the tuple above when asked for it."""
@@ -56,13 +60,13 @@ any_type = AnyType("*")
 
 
 def is_dict_value_falsy(data: dict, dict_key: str):
-  """ Checks if a dict value is falsy."""
+  """Checks if a dict value is falsy."""
   val = get_dict_value(data, dict_key)
   return not val
 
 
 def get_dict_value(data: dict, dict_key: str, default=None):
-  """ Gets a deeply nested value given a dot-delimited key."""
+  """Gets a deeply nested value given a dot-delimited key."""
   keys = dict_key.split('.')
   key = keys.pop(0) if len(keys) > 0 else None
   found = data[key] if key in data else None
@@ -72,12 +76,12 @@ def get_dict_value(data: dict, dict_key: str, default=None):
 
 
 def set_dict_value(data: dict, dict_key: str, value, create_missing_objects=True):
-  """ Sets a deeply nested value given a dot-delimited key."""
+  """Sets a deeply nested value given a dot-delimited key."""
   keys = dict_key.split('.')
   key = keys.pop(0) if len(keys) > 0 else None
   if key not in data:
-    if create_missing_objects == False:
-      return
+    if create_missing_objects is False:
+      return data
     data[key] = {}
   if len(keys) == 0:
     data[key] = value
@@ -88,7 +92,7 @@ def set_dict_value(data: dict, dict_key: str, value, create_missing_objects=True
 
 
 def dict_has_key(data: dict, dict_key):
-  """ Checks if a dict has a deeply nested dot-delimited key."""
+  """Checks if a dict has a deeply nested dot-delimited key."""
   keys = dict_key.split('.')
   key = keys.pop(0) if len(keys) > 0 else None
   if key is None or key not in data:
@@ -124,17 +128,20 @@ def save_json_file(file_path: str, data: dict):
   with open(file_path, 'w+', encoding='UTF-8') as file:
     json.dump(data, file, sort_keys=False, indent=2, separators=(",", ": "))
 
+
 def path_exists(path):
   """Checks if a path exists, accepting None type."""
   if path is not None:
     return os.path.exists(path)
   return False
 
+
 def file_exists(path):
   """Checks if a file exists, accepting None type."""
   if path is not None:
     return os.path.isfile(path)
   return False
+
 
 def remove_path(path):
   """Removes a path, if it exists."""

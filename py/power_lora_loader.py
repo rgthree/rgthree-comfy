@@ -1,5 +1,7 @@
 import asyncio
 
+from typing import Union
+
 from nodes import LoraLoader
 from .constants import get_category, get_name
 from .power_prompt_utils import get_lora_by_filename
@@ -56,7 +58,9 @@ class RgthreePowerLoraLoader:
     return (model, clip)
 
   @classmethod
-  def get_enabled_loras_from_prompt_node(cls, prompt_node: dict) -> list[dict[str, str | float]]:
+  def get_enabled_loras_from_prompt_node(cls,
+                                         prompt_node: dict) -> list[dict[str, Union[str, float]]]:
+    """Gets enabled loras of a node within a server prompt."""
     return [{
       'name': lora['lora'],
       'strength': lora['strength']
@@ -68,6 +72,7 @@ class RgthreePowerLoraLoader:
 
   @classmethod
   def get_enabled_triggers_from_prompt_node(cls, prompt_node: dict, max_each: int = 1):
+    """Gets trigger words up to the max for enabled loras of a node within a server prompt."""
     loras = [l['name'] for l in cls.get_enabled_loras_from_prompt_node(prompt_node)]
     trained_words = []
     for lora in loras:
