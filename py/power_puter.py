@@ -24,7 +24,7 @@ from .log import log_node_error, log_node_warn
 from .power_lora_loader import RgthreePowerLoraLoader
 
 
-@dataclasses.dataclass(frozen=True, kw_only=True)
+@dataclasses.dataclass(frozen=True) # Note, kw_only=True is only python 3.10+
 class Function():
   """Function data.
 
