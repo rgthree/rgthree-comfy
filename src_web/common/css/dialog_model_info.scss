@@ -313,6 +313,10 @@
         margin: 0;
         position: static;
 
+        video, img {
+          max-height: 45vh;
+        }
+
         figcaption {
           position: absolute;
           left: 0;

@@ -256,8 +256,11 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
           ?.map(
             (img) => `
         <li>
-          <figure>
-            <img src="${img.url}" />
+          <figure>${
+            img.type === 'video'
+              ? `<video src="${img.url}" autoplay loop></video>`
+              : `<img src="${img.url}" />`
+            }
             <figcaption><!--
               -->${imgInfoField(
                 "",

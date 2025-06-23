@@ -265,6 +265,9 @@
   margin: 0;
   position: static;
 }
+.rgthree-info-dialog .rgthree-info-images > li figure video, .rgthree-info-dialog .rgthree-info-images > li figure img {
+  max-height: 45vh;
+}
 .rgthree-info-dialog .rgthree-info-images > li figure figcaption {
   position: absolute;
   left: 0;
