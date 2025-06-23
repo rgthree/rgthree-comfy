@@ -39,6 +39,20 @@ class Function():
   args: tuple[int, Optional[int]]
 
 
+def purge_vram(purge_models=True):
+  """Purges vram and, optionally, unloads models."""
+  import gc
+  import torch
+  gc.collect()
+  if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+  if purge_models:
+    import comfy
+    comfy.model_management.unload_all_models()
+    comfy.model_management.soft_empty_cache()
+
+
 _FUNCTIONS = {
   fn.name: fn for fn in [
     Function(name="round", call=round, args=(1, 2)),
@@ -51,6 +65,7 @@ _FUNCTIONS = {
     Function(name="random_choice", call=random.choice, args=(2, None)),
     Function(name="re", call=re.compile, args=(1, 1)),
     Function(name="len", call=len, args=(1, 1)),
+    Function(name="enumerate", call=enumerate, args=(1, 1)),
     # Casts
     Function(name="int", call=int, args=(1, 1)),
     Function(name="float", call=float, args=(1, 1)),
@@ -62,6 +77,7 @@ _FUNCTIONS = {
     Function(name="node", call='_get_node', args=(0, 1)),
     Function(name="nodes", call='_get_nodes', args=(0, 1)),
     Function(name="input_node", call='_get_input_node', args=(0, 1)),
+    Function(name="purge_vram", call=purge_vram, args=(0, 1)),
     Function(name="dir", call=dir, args=(1, 1)),
     Function(name="type", call=type, args=(1, 1)),
     Function(name="print", call=print, args=(0, None)),
