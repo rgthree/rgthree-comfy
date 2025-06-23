@@ -7,6 +7,7 @@ import type {
 } from "@comfyorg/litegraph";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -26,7 +27,7 @@ import {rgthree} from "./rgthree.js";
 
 const ALPHABET = "abcdefghijklmnopqrstuv".split("");
 
-const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOL", "*"];
+const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOLEAN", "*"];
 
 class RgthreePowerPuter extends RgthreeBaseServerNode {
   static override title = NodeTypesString.POWER_PUTER;
@@ -43,6 +44,16 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
     this.addAnyInput(2);
     this.addInitialWidgets();
   }
+
+  // /**
+  //  * We need to patch in the configure to fix a bug where Power Puter was using BOOL instead of
+  //  * BOOLEAN.
+  //  */
+  // override configure(info: ISerialisedNode): void {
+  //   super.configure(info);
+  //   // Update BOOL to BOOLEAN due to a bug using BOOL instead of BOOLEAN.
+  //   this.outputTypeWidget
+  // }
 
   static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
@@ -112,7 +123,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
       <ul>
         <li><p>
           Evaluate almost any kind of input and more, and choose your output from INT, FLOAT,
-          STRING, or BOOL.
+          STRING, or BOOLEAN.
         </p></li>
         <li><p>
           Connect some nodes and do simply math operations like <code>a + b</code> or
@@ -196,11 +207,10 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
 
   set value(v: OutputsWidgetValue) {
     // Handle a string being passed in, as the original Power Puter output widget was a string.
-    if (typeof v === "string") {
-      this._value.outputs = [v];
-    } else {
-      this._value.outputs = [...v.outputs];
-    }
+    let outputs = typeof v === "string" ? [v] : [...v.outputs];
+    // Handle a case where the initial version used "BOOL" instead of "BOOLEAN" incorrectly.
+    outputs = outputs.map(o => o === 'BOOL' ? 'BOOLEAN' : o)
+    this._value.outputs = outputs;
   }
 
   get value(): OutputsWidgetValue {

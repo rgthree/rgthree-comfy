@@ -24,7 +24,7 @@ const PRIMITIVES = {
   // "STRING (multiline)": "STRING",
   INT: "INT",
   FLOAT: "FLOAT",
-  BOOL: "BOOL",
+  BOOLEAN: "BOOLEAN",
 };
 
 class RgthreePowerPrimitive extends RgthreeBaseServerNode {
@@ -65,6 +65,10 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
    */
   override configure(info: ISerialisedNode): void {
     super.configure(info);
+    // Update BOOL to BOOLEAN due to a bug using BOOL instead of BOOLEAN.
+    if (this.outputTypeWidget.value === 'BOOL') {
+      this.outputTypeWidget.value = 'BOOLEAN';
+    }
     setTimeout(() => {
       this.setTypedData();
     });
@@ -157,7 +161,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       value = Number(value);
       value = value == null || isNaN(value) ? 0 : value;
       newWidget.value = value;
-    } else if (type === "BOOL") {
+    } else if (type === "BOOLEAN") {
       newWidget = this.addWidget("toggle", name, !!(value ?? true), undefined, {
         on: "true",
         off: "false",

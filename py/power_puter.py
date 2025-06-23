@@ -230,7 +230,10 @@ class RgthreePowerPuter:
           value = int(value)
         elif output == 'FLOAT':
           value = float(value)
-        elif output == 'BOOL':
+        # Accidentally defined "BOOL" when should have been "BOOLEAN."
+        # TODO: Can prob get rid of BOOl after a bit when UIs would be updated from sending
+        # BOOL incorrectly.
+        elif output in ('BOOL', 'BOOLEAN'):
           value = bool(value)
         elif output == 'STRING':
           if isinstance(value, (dict, list)):

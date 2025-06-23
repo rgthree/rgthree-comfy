@@ -35,9 +35,9 @@ describe("TestPowerPuter", async () => {
       // FLOAT
       ["1", "1.0", "FLOAT"],
       ["1.3 + 2.8", "4.1", "FLOAT"],
-      // BOOL
-      ["1", "True", "BOOL"],
-      ["1 - 1", "False", "BOOL"],
+      // BOOLEAN
+      ["1", "True", "BOOLEAN"],
+      ["1 - 1", "False", "BOOLEAN"],
     ];
     for (const data of checks) {
       setPowerPuterValue(powerPuter, data[0], data[2]);

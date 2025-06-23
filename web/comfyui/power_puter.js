@@ -8,7 +8,7 @@ import { RgthreeBaseWidget } from "./utils_widgets.js";
 import { drawPlusIcon, drawRoundedRectangle, drawWidgetButton, isLowQuality, measureText, } from "./utils_canvas.js";
 import { rgthree } from "./rgthree.js";
 const ALPHABET = "abcdefghijklmnopqrstuv".split("");
-const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOL", "*"];
+const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOLEAN", "*"];
 class RgthreePowerPuter extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
         super(title);
@@ -72,7 +72,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
       <ul>
         <li><p>
           Evaluate almost any kind of input and more, and choose your output from INT, FLOAT,
-          STRING, or BOOL.
+          STRING, or BOOLEAN.
         </p></li>
         <li><p>
           Connect some nodes and do simply math operations like <code>a + b</code> or
@@ -127,12 +127,9 @@ class OutputsWidget extends RgthreeBaseWidget {
         this.node = node;
     }
     set value(v) {
-        if (typeof v === "string") {
-            this._value.outputs = [v];
-        }
-        else {
-            this._value.outputs = [...v.outputs];
-        }
+        let outputs = typeof v === "string" ? [v] : [...v.outputs];
+        outputs = outputs.map(o => o === 'BOOL' ? 'BOOLEAN' : o);
+        this._value.outputs = outputs;
     }
     get value() {
         return this._value;

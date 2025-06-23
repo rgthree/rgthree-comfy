@@ -43,6 +43,11 @@ output_to_type = {
     'cast': lambda x: int(cast_to_float(x)),
     'null': 0,
   },
+  'BOOLEAN': {
+    'cast': cast_to_bool,
+    'null': False,
+  },
+  # This can be removed soon, there was a bug where this should have been BOOLEAN
   'BOOL': {
     'cast': cast_to_bool,
     'null': False,

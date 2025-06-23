@@ -175,7 +175,7 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 
 
 ## Power Primitive
-> A single node that can output primitives (STRING, INT, FLOAT, BOOL). If connecting an input, it will cast/convert the primitive input to the desired output.
+> A single node that can output primitives (STRING, INT, FLOAT, BOOLEAN). If connecting an input, it will cast/convert the primitive input to the desired output.
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
@@ -192,7 +192,7 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 > <details>
 >    <summary>ℹ️ <i>More Information</i></summary>
 >
->    - Evaluate almost any kind of input and more, and choose your output from INT, FLOAT, STRING, or BOOL.
+>    - Evaluate almost any kind of input and more, and choose your output from INT, FLOAT, STRING, or BOOLEAN.
 >    - Connect some nodes and do simply math operations like `a + b` or `ceil(1 / 2)`.
 >    - Or do more advanced things, like input an image, and get the width like `a.shape[2]`.
 >    - Even more powerful, you can target nodes in the prompt that's sent to the backend. For instance; if you have a Power Lora Loader node at id #5, and want to get a comma-delimited list of the enabled loras, you could enter:

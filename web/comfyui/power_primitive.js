@@ -8,7 +8,7 @@ const PRIMITIVES = {
     STRING: "STRING",
     INT: "INT",
     FLOAT: "FLOAT",
-    BOOL: "BOOL",
+    BOOLEAN: "BOOLEAN",
 };
 class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
@@ -26,6 +26,9 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     }
     configure(info) {
         super.configure(info);
+        if (this.outputTypeWidget.value === 'BOOL') {
+            this.outputTypeWidget.value = 'BOOLEAN';
+        }
         setTimeout(() => {
             this.setTypedData();
         });
@@ -95,7 +98,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
             value = value == null || isNaN(value) ? 0 : value;
             newWidget.value = value;
         }
-        else if (type === "BOOL") {
+        else if (type === "BOOLEAN") {
             newWidget = this.addWidget("toggle", name, !!(value !== null && value !== void 0 ? value : true), undefined, {
                 on: "true",
                 off: "false",
