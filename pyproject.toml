@@ -1,7 +1,7 @@
 [project]
 name = "rgthree-comfy"
 description = "Making ComfyUI more comfortable."
-version = "1.0.2506222249"
+version = "1.0.2506230015"
 license = { file = "LICENSE" }
 dependencies = []
 

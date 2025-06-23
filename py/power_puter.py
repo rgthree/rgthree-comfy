@@ -15,7 +15,7 @@ import re
 import time
 import operator as op
 
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 from .constants import get_category, get_name
 from .utils import ByPassTypeTuple, FlexibleOptionalInputType, any_type, get_dict_value
@@ -66,6 +66,7 @@ _FUNCTIONS = {
     Function(name="re", call=re.compile, args=(1, 1)),
     Function(name="len", call=len, args=(1, 1)),
     Function(name="enumerate", call=enumerate, args=(1, 1)),
+    Function(name="range", call=range, args=(1, 3)),
     # Casts
     Function(name="int", call=int, args=(1, 1)),
     Function(name="float", call=float, args=(1, 1)),
@@ -314,7 +315,7 @@ class _Puter:
       log_node_warn(_NODE_NAME, f'No input node found for "{input_name}". ')
     return None
 
-  def _eval_statement(self, stmt: ast.stmt, ctx: dict, prev_stmt: Union[ast.stmt, None] = None):
+  def _eval_statement(self, stmt: ast.AST, ctx: dict, prev_stmt: Union[ast.AST, None] = None):
     """Evaluates an ast.stmt."""
 
     if '__returned__' in ctx:
@@ -351,7 +352,8 @@ class _Puter:
       # Like: node(14)['inputs']['sampler_name'] (Subscript)
       item = self._eval_statement(stmt.value, ctx=ctx)
       attr = None
-      if hasattr(stmt, 'attr'):
+      # if hasattr(stmt, 'attr'):
+      if isinstance(stmt, ast.Attribute):
         attr = stmt.attr
       else:
         # Slice could be a name or a constant; evaluate it
@@ -400,6 +402,20 @@ class _Puter:
         return val
       raise NameError(f"Name not found: {stmt.id}")
 
+    if isinstance(stmt, ast.For):
+      for_iter = self._eval_statement(stmt.iter, ctx=ctx)
+      for item in for_iter:
+        # Set the for var(s)
+        if isinstance(stmt.target, ast.Name):
+          ctx[stmt.target.id] = item
+        elif isinstance(stmt.target, ast.Tuple):  # dict, like `for k, v in d.entries()`
+          for i, elt in enumerate(stmt.target.elts):
+            ctx[elt.id] = item[i]
+        bodies = stmt.body if isinstance(stmt.body, list) else [stmt.body]
+        for body in bodies:
+          value = self._eval_statement(body, ctx=ctx)
+      return None
+
     if isinstance(stmt, ast.ListComp):
       # Like: [v.lora for name, v in node(19).inputs.items() if name.startswith('lora_')]
       # Like: [v.lower() for v in lora_list]
@@ -423,11 +439,15 @@ class _Puter:
         else:
           raise ValueError('Na')
 
+        gen_iters = None
         # A call, like my_dct.items(), or a named ctx list
         if isinstance(gen.iter, ast.Call):
           gen_iters = self._eval_statement(gen.iter, ctx=gen_ctx)
         elif isinstance(gen.iter, (ast.Name, ast.Attribute, ast.List, ast.Tuple)):
           gen_iters = self._eval_statement(gen.iter, ctx=gen_ctx)
+
+        if not isinstance(gen_iters, Iterable):
+          raise ValueError('No iteraors found for list comprehension')
 
         for gen_iter in gen_iters:
           if_ctx = {**gen_ctx}
@@ -518,16 +538,27 @@ class _Puter:
       return value
 
     # Assign a variable and add it to our ctx.
-    if isinstance(stmt, ast.Assign):
-      value = self._eval_statement(stmt.value, ctx=ctx)
-      if len(stmt.targets) != 1:
-        raise ValueError('Expected length of assign targets to be 1')
-      target = stmt.targets[0]
-      if isinstance(target, ast.Tuple):
+    if isinstance(stmt, (ast.Assign, ast.AugAssign)):
+      if isinstance(stmt, ast.AugAssign):
+        left = self._eval_statement(stmt.target, ctx=ctx)
+        right = self._eval_statement(stmt.value, ctx=ctx)
+        value = _OPERATORS[type(stmt.op)](left, right)
+        target = stmt.target
+      else:
+        value = self._eval_statement(stmt.value, ctx=ctx)
+        if len(stmt.targets) != 1:
+          raise ValueError('Expected length of assign targets to be 1')
+        target = stmt.targets[0]
+
+      if isinstance(target, ast.Tuple):  # like `a, z = (1,2)` (ast.Assign only)
         for i, elt in enumerate(target.elts):
           ctx[elt.id] = value[i]
-      else:  # Should be ast.Name
+      elif isinstance(target, ast.Name):  # like `a = 1``
         ctx[target.id] = value
+      elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):  # like `a[0] = 1``
+        ctx[target.value.id][self._eval_statement(target.slice, ctx=ctx)] = value
+      else:
+        raise ValueError('Unhandled target type for Assign.')
       return value
 
     # For assigning a var in a list comprehension.
@@ -538,7 +569,10 @@ class _Puter:
       return value
 
     if isinstance(stmt, ast.Return):
-      value = self._eval_statement(stmt.value, ctx=ctx)
+      if stmt.value is None:
+        value = None
+      else:
+        value = self._eval_statement(stmt.value, ctx=ctx)
       # Mark that we have a return value, as we may be deeper in evaluation, like going through an
       # if condition's body.
       ctx['__returned__'] = value

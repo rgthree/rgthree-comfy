@@ -6,7 +6,15 @@ import {describe, should, beforeEach, expect, describeRun} from "../testing/runn
 
 const env = new ComfyUITestEnvironment();
 
-function setPowerPuterValue(node: LGraphNode, value: string, outputType: string = "STRING") {
+function setPowerPuterValue(node: LGraphNode, outputType: string, value: string) {
+  // Strip as much whitespace on first non-empty line from all lines.
+  if (value.includes('\n')) {
+    value = value.replace(/^\n/gm, '')
+    const strip = value.match(/^(.*?)\S/)?.[1]?.length;
+    if (strip) {
+      value = value.replace(new RegExp(`^.{${strip}}`, 'mg'), '')
+    }
+  }
   node.widgets![1]!.value = value;
   node.widgets![0]!.value = outputType;
 }
@@ -24,11 +32,11 @@ describe("TestPowerPuter", async () => {
   });
 
   await should("output constants and concatenation", async () => {
-    const checks: Array<[string, string] | [string, string, string]> = [
-      ["1", "1"],
-      ['"abc"', "abc"],
-      ["1 + 2", "3"],
-      ['"abc" + "xyz"', "abcxyz"],
+    const checks: Array<[string, string, string]> = [
+      ["1", "1", "STRING"],
+      ['"abc"', "abc", "STRING"],
+      ["1 + 2", "3", "STRING"],
+      ['"abc" + "xyz"', "abcxyz", "STRING"],
       // INT
       ["1", "1", "INT"],
       ["1 + 2", "3", "INT"],
@@ -40,7 +48,7 @@ describe("TestPowerPuter", async () => {
       ["1 - 1", "False", "BOOLEAN"],
     ];
     for (const data of checks) {
-      setPowerPuterValue(powerPuter, data[0], data[2]);
+      setPowerPuterValue(powerPuter, data[2], data[0]);
       await env.queuePrompt();
       expect(displayAny.widgets![0]!.value).toBe(data[0], data[1]);
     }
@@ -52,5 +60,51 @@ describe("TestPowerPuter", async () => {
 
   await should("handle complex inputs", async () => {
     // TODO
+  });
+
+  await should("handle a for loop", async () => {
+    setPowerPuterValue(
+      powerPuter,
+      "STRING",
+      `
+        a = 0
+        b = ''
+        for n in range(4):
+          a += n
+          for m in range(2):
+            b += f'{str(n)}-{str(m)}.'
+        f'a:{a} b:{b}'
+      `,
+    );
+    await env.queuePrompt();
+    expect(displayAny.widgets![0]!.value).toBe("a:6 b:0-0.0-1.1-0.1-1.2-0.2-1.3-0.3-1.");
+  });
+
+  await should("handle assigning with a subscript slice", async () => {
+    setPowerPuterValue(
+      powerPuter,
+      "STRING",
+      `
+        a = [1,2,0]
+        a[a[2]] = 3
+        tuple(a)
+      `,
+    );
+    await env.queuePrompt();
+    expect(displayAny.widgets![0]!.value).toBe("(3, 2, 0)");
+  });
+
+  await should("handle aug assigning with a subscript slice", async () => {
+    setPowerPuterValue(
+      powerPuter,
+      "STRING",
+      `
+        a = [1,2,0]
+        a[a[2]] += 3
+        tuple(a)
+      `,
+    );
+    await env.queuePrompt();
+    expect(displayAny.widgets![0]!.value).toBe("(4, 2, 0)");
   });
 });
