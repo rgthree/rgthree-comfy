@@ -486,6 +486,16 @@ class _Puter:
       val = ''.join(vals)
       return val
 
+    if isinstance(stmt, ast.Slice):
+      if not stmt.lower or not stmt.upper:
+        raise ValueError('Unhandled Slice w/o lower or upper.')
+      slice_lower = self._eval_statement(stmt.lower, ctx=ctx)
+      slice_upper = self._eval_statement(stmt.upper, ctx=ctx)
+      if stmt.step:
+        slice_step = self._eval_statement(stmt.step, ctx=ctx)
+        return slice(slice_lower, slice_upper, slice_step)
+      return slice(slice_lower, slice_upper)
+
     if isinstance(stmt, ast.Name):
       if stmt.id in ctx:
         val = ctx[stmt.id]
@@ -655,7 +665,7 @@ class _Puter:
           ctx[elt.id] = value[i]
       elif isinstance(target, ast.Name):  # like `a = 1``
         ctx[target.id] = value
-      elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name): # `a[0] = 1`
+      elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):  # `a[0] = 1`
         ctx[target.value.id][self._eval_statement(target.slice, ctx=ctx)] = value
       else:
         raise ValueError('Unhandled target type for Assign.')
