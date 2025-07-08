@@ -14,17 +14,19 @@ import dataclasses
 import re
 import time
 import operator as op
+import datetime
 
 from typing import Any, Callable, Iterable, Optional, Union
+from types import MappingProxyType
 
 from .constants import get_category, get_name
 from .utils import ByPassTypeTuple, FlexibleOptionalInputType, any_type, get_dict_value
-from .log import log_node_error, log_node_warn
+from .log import log_node_error, log_node_warn, log_node_info
 
 from .power_lora_loader import RgthreePowerLoraLoader
 
 
-@dataclasses.dataclass(frozen=True) # Note, kw_only=True is only python 3.10+
+@dataclasses.dataclass(frozen=True)  # Note, kw_only=True is only python 3.10+
 class Function():
   """Function data.
 
@@ -53,37 +55,68 @@ def purge_vram(purge_models=True):
     comfy.model_management.soft_empty_cache()
 
 
-_FUNCTIONS = {
-  fn.name: fn for fn in [
-    Function(name="round", call=round, args=(1, 2)),
-    Function(name="ceil", call=math.ceil, args=(1, 1)),
-    Function(name="floor", call=math.floor, args=(1, 1)),
-    Function(name="sqrt", call=math.sqrt, args=(1, 1)),
-    Function(name="min", call=min, args=(2, None)),
-    Function(name="max", call=max, args=(2, None)),
-    Function(name="random_int", call=random.randint, args=(2, 2)),
-    Function(name="random_choice", call=random.choice, args=(2, None)),
-    Function(name="re", call=re.compile, args=(1, 1)),
-    Function(name="len", call=len, args=(1, 1)),
-    Function(name="enumerate", call=enumerate, args=(1, 1)),
-    Function(name="range", call=range, args=(1, 3)),
-    # Casts
-    Function(name="int", call=int, args=(1, 1)),
-    Function(name="float", call=float, args=(1, 1)),
-    Function(name="str", call=str, args=(1, 1)),
-    Function(name="bool", call=bool, args=(1, 1)),
-    Function(name="list", call=list, args=(1, 1)),
-    Function(name="tuple", call=tuple, args=(1, 1)),
-    # Special
-    Function(name="node", call='_get_node', args=(0, 1)),
-    Function(name="nodes", call='_get_nodes', args=(0, 1)),
-    Function(name="input_node", call='_get_input_node', args=(0, 1)),
-    Function(name="purge_vram", call=purge_vram, args=(0, 1)),
-    Function(name="dir", call=dir, args=(1, 1)),
-    Function(name="type", call=type, args=(1, 1)),
-    Function(name="print", call=print, args=(0, None)),
-  ]
+_BUILTIN_FN_PREFIX = '__rgthreefn.'
+
+
+def _get_built_in_fn_key(fn: Function):
+  """Returns a key for a built-in function."""
+  return f'{_BUILTIN_FN_PREFIX}{hash(fn.name)}'
+
+
+def _get_built_in_fn_by_key(key: str):
+  """Returns the `Function` for the provided key (purposefully, not name)."""
+  if not key.startswith(_BUILTIN_FN_PREFIX) or key not in _BUILT_INS_BY_NAME_AND_KEY:
+    raise ValueError('No built in function found.')
+  return _BUILT_INS_BY_NAME_AND_KEY[key]
+
+
+_BUILT_IN_FNS_LIST = [
+  Function(name="round", call=round, args=(1, 2)),
+  Function(name="ceil", call=math.ceil, args=(1, 1)),
+  Function(name="floor", call=math.floor, args=(1, 1)),
+  Function(name="sqrt", call=math.sqrt, args=(1, 1)),
+  Function(name="min", call=min, args=(2, None)),
+  Function(name="max", call=max, args=(2, None)),
+  Function(name=".random_int", call=random.randint, args=(2, 2)),
+  Function(name=".random_choice", call=random.choice, args=(1, 1)),
+  Function(name=".random_seed", call=random.seed, args=(1, 1)),
+  Function(name="re", call=re.compile, args=(1, 1)),
+  Function(name="len", call=len, args=(1, 1)),
+  Function(name="enumerate", call=enumerate, args=(1, 1)),
+  Function(name="range", call=range, args=(1, 3)),
+  # Casts
+  Function(name="int", call=int, args=(1, 1)),
+  Function(name="float", call=float, args=(1, 1)),
+  Function(name="str", call=str, args=(1, 1)),
+  Function(name="bool", call=bool, args=(1, 1)),
+  Function(name="list", call=list, args=(1, 1)),
+  Function(name="tuple", call=tuple, args=(1, 1)),
+  # Special
+  Function(name="node", call='_get_node', args=(0, 1)),
+  Function(name="nodes", call='_get_nodes', args=(0, 1)),
+  Function(name="input_node", call='_get_input_node', args=(0, 1)),
+  Function(name="purge_vram", call=purge_vram, args=(0, 1)),
+  Function(name="dir", call=dir, args=(1, 1)),
+  Function(name="type", call=type, args=(1, 1)),
+  Function(name="print", call=print, args=(0, None)),
+]
+
+_BUILT_INS_BY_NAME_AND_KEY = {
+  fn.name: fn for fn in _BUILT_IN_FNS_LIST
+} | {
+  key: fn for fn in _BUILT_IN_FNS_LIST if (key := _get_built_in_fn_key(fn))
 }
+
+_BUILT_INS = MappingProxyType(
+  {fn.name: key for fn in _BUILT_IN_FNS_LIST if (key := _get_built_in_fn_key(fn))} | {
+    'random':
+      MappingProxyType({
+        'int': _get_built_in_fn_key(_BUILT_INS_BY_NAME_AND_KEY['.random_int']),
+        'choice': _get_built_in_fn_key(_BUILT_INS_BY_NAME_AND_KEY['.random_choice']),
+        'seed': _get_built_in_fn_key(_BUILT_INS_BY_NAME_AND_KEY['.random_seed']),
+      }),
+  }
+)
 
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
@@ -99,7 +132,7 @@ _SPECIAL_FUNCTIONS = {
 # not connected to ours (like looking up a node in the prompt). Using these means downstream nodes
 # would always be run; that is fine for something like a final JSON output, but less so for a prompt
 # text.
-_NON_DETERMINISTIC_FUNCTION_CHECKS = [r'(?<!input_)(nodes?)\(', r'(?<!\.)(random_(int|choice))\(',]
+_NON_DETERMINISTIC_FUNCTION_CHECKS = [r'(?<!input_)(nodes?)\(',]
 
 _OPERATORS = {
   ast.Add: op.add,
@@ -122,6 +155,35 @@ _OPERATORS = {
 }
 
 _NODE_NAME = get_name("Power Puter")
+
+
+def _update_code(code: str, unique_id: str, log=False):
+  """Updates the code to either newer syntax or general cleaning."""
+
+  # Change usage of `input_node` so the passed variable is a string, if it isn't. So, instead of
+  # `input_node(a)` it needs to be `input_node('a')`
+  code = re.sub(r'input_node\(([^\'"].*?)\)', r'input_node("\1")', code)
+
+  # Update use of `random_int` to `random.int`
+  srch = re.compile(r'random_int\(')
+  if re.search(srch, code):
+    if log:
+      log_node_warn(
+        _NODE_NAME, f"Power Puter node #{unique_id} should update to use the `random.int`"
+        " built-in instead of `random_int`."
+      )
+    code = re.sub(srch, 'random.int(', code)
+
+  # Update use of `random_choice` to `random.choice`
+  srch = re.compile(r'random_choice\(')
+  if re.search(srch, code):
+    if log:
+      log_node_warn(
+        _NODE_NAME, f"Power Puter node #{unique_id} should update to use the `random.choice`"
+        " built-in instead of `random_choice`."
+      )
+    code = re.sub(srch, 'random.choice(', code)
+  return code
 
 
 class RgthreePowerPuter:
@@ -150,8 +212,8 @@ class RgthreePowerPuter:
   def IS_CHANGED(cls, **kwargs):
     """Forces a changed state if we could be unaware of data changes (like using `node()`)."""
 
+    code = _update_code(kwargs['code'], unique_id=kwargs['unique_id'])
     # Strip string literals and comments.
-    code = kwargs['code']
     code = re.sub(r"'[^']+?'", "''", code)
     code = re.sub(r'"[^"]+?"', '""', code)
     code = re.sub(r'#.*\n', '\n', code)
@@ -167,6 +229,27 @@ class RgthreePowerPuter:
           f" non-deterministic function call. Matches function call for '{matches.group(1)}'."
         )
         return time.time()
+
+    # Advanced checks.
+    has_rand_seed = re.search(r'random\.seed\(', code)
+    has_rand_int_or_choice = re.search(r'(?<!\.)(random\.(int|choice))\(', code)
+    if has_rand_int_or_choice:
+      if not has_rand_seed or has_rand_seed.span()[0] > has_rand_int_or_choice.span()[0]:
+        log_node_warn(
+          _NODE_NAME,
+          f"Note, Power Puter (node #{kwargs['unique_id']}) cannot be cached b/c it's using a"
+          " non-deterministic function call. Matches function call for"
+          f" `{has_rand_int_or_choice.group(1)}`."
+        )
+        return time.time()
+      if has_rand_seed:
+        log_node_info(
+          _NODE_NAME,
+          f"Power Puter node #{kwargs['unique_id']} WILL be cached eventhough it's using"
+          f" a non-deterministic random call `{has_rand_int_or_choice.group(1)}` because it also"
+          f" calls `random.seed` first. NOTE: Please ensure that the seed value is deterministic."
+        )
+
     return 42
 
   def main(self, **kwargs):
@@ -189,9 +272,7 @@ class RgthreePowerPuter:
     for c in list('abcdefghijklmnopqrstuvwxyz'):
       ctx[c] = kwargs[c] if c in kwargs else None
 
-    # Clean the code before evaluating. For now, we just change usage of `input_node` so the passed
-    # variable is a string, if it isn't (instead of `input_node(a)` it's to be `input_node('a')`.
-    code = re.sub(r'input_node\(([^\'"].*?)\)', r'input_node("\1")', code)
+    code = _update_code(kwargs['code'], unique_id=kwargs['unique_id'], log=True)
 
     eva = _Puter(code=code, ctx=ctx, workflow=workflow, prompt=prompt, unique_id=unique_id)
     values = eva.execute()
@@ -268,15 +349,24 @@ class _Puter:
 
   def execute(self, code=Optional[str]) -> Any:
     """Evaluates a the code block."""
-    code = code or self._code
-    node = ast.parse(self._code)
-    ctx = {**self._ctx}
+
+    # Always store random state and initialize a new seed. We'll restore the state later.
+    initial_random_state = random.getstate()
+    random.seed(datetime.datetime.now().timestamp())
     last_value = None
-    for body in node.body:
-      last_value = self._eval_statement(body, ctx)
-      # If we got a return, then that's it folks.
-      if isinstance(body, ast.Return):
-        break
+    try:
+      code = code or self._code
+      node = ast.parse(self._code)
+      ctx = {**self._ctx}
+      for body in node.body:
+        last_value = self._eval_statement(body, ctx)
+        # If we got a return, then that's it folks.
+        if isinstance(body, ast.Return):
+          break
+    except:
+      random.setstate(initial_random_state)
+      raise
+    random.setstate(initial_random_state)
     return last_value
 
   def _get_nodes(self, node_id: Union[int, str, re.Pattern, None] = None) -> list[Any]:
@@ -400,6 +490,9 @@ class _Puter:
       if stmt.id in ctx:
         val = ctx[stmt.id]
         return val
+      if stmt.id in _BUILT_INS:
+        val = _BUILT_INS[stmt.id]
+        return val
       raise NameError(f"Name not found: {stmt.id}")
 
     if isinstance(stmt, ast.For):
@@ -484,19 +577,26 @@ class _Puter:
           call = call[0]
         if not call:
           raise ValueError(f'No call for ast.Call {stmt.func}')
+
+      name = ''
       if isinstance(stmt.func, ast.Name):
         name = stmt.func.id
-        if name in _FUNCTIONS:
-          fn = _FUNCTIONS[name]
-          call = fn.call
-          if isinstance(call, str):
-            call = getattr(self, call)
-          num_args = len(stmt.args)
-          if num_args < fn.args[0] or (fn.args[1] is not None and num_args > fn.args[1]):
-            toErr = " or more" if fn.args[1] is None else f" to {fn.args[1]}"
-            raise SyntaxError(f"Invalid function call: {fn.name} requires {fn.args[0]}{toErr} args")
-        if not call:
-          raise ValueError(f'No call for ast.Call {name}')
+        if name in _BUILT_INS:
+          call = _BUILT_INS[name]
+
+      if isinstance(call, str) and call.startswith(_BUILTIN_FN_PREFIX):
+        fn = _get_built_in_fn_by_key(call)
+        call = fn.call
+        if isinstance(call, str):
+          call = getattr(self, call)
+        num_args = len(stmt.args)
+        if num_args < fn.args[0] or (fn.args[1] is not None and num_args > fn.args[1]):
+          toErr = " or more" if fn.args[1] is None else f" to {fn.args[1]}"
+          raise SyntaxError(f"Invalid function call: {fn.name} requires {fn.args[0]}{toErr} args")
+
+      if not call:
+        raise ValueError(f'No call for ast.Call {name}')
+
       for arg in stmt.args:
         args.append(self._eval_statement(arg, ctx=ctx))
       for kwarg in stmt.keywords:
@@ -555,7 +655,7 @@ class _Puter:
           ctx[elt.id] = value[i]
       elif isinstance(target, ast.Name):  # like `a = 1``
         ctx[target.id] = value
-      elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name):  # like `a[0] = 1``
+      elif isinstance(target, ast.Subscript) and isinstance(target.value, ast.Name): # `a[0] = 1`
         ctx[target.value.id][self._eval_statement(target.slice, ctx=ctx)] = value
       else:
         raise ValueError('Unhandled target type for Assign.')
