@@ -96,7 +96,7 @@ class RgthreeSeed:
             'metadata because workflow was not provided.')
         else:
           workflow_node = next(
-            (x for x in extra_pnginfo['workflow']['nodes'] if x['id'] == int(unique_id)), None)
+            (x for x in extra_pnginfo['workflow']['nodes'] if str(x['id']) == str(unique_id)), None)
           if workflow_node is None or 'widgets_values' not in workflow_node:
             log_node_warn(
               self.NAME, 'Cannot save server-generated seed to image workflow ' +
