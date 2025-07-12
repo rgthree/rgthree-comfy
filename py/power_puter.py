@@ -478,6 +478,17 @@ class _Puter:
         value.append(self._eval_statement(elt, ctx=ctx))
       return tuple(value) if isinstance(stmt, ast.Tuple) else value
 
+    if isinstance(stmt, ast.Dict):
+      the_dict = {}
+      if stmt.keys:
+        if len(stmt.keys) != len(stmt.values):
+          raise ValueError('Expected same number of keys as values for dict.')
+        for i, k in enumerate(stmt.keys):
+          item_key = self._eval_statement(k, ctx=ctx)
+          item_value = self._eval_statement(stmt.values[i], ctx=ctx)
+          the_dict[item_key] = item_value
+      return the_dict
+
     # f-strings: https://www.basicexamples.com/example/python/ast-JoinedStr
     # Note, this will str() all evaluated items in the fstrings, and doesn't handle f-string
     # directives, like padding, etc.
