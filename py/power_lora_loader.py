@@ -1,4 +1,5 @@
 import asyncio
+import folder_paths
 
 from typing import Union
 
@@ -22,10 +23,10 @@ class RgthreePowerLoraLoader:
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
       "required": {
-        "model": ("MODEL",),
       },
       # Since we will pass any number of loras in from the UI, this needs to always allow an
       "optional": FlexibleOptionalInputType(type=any_type, data={
+        "model": ("MODEL",),
         "clip": ("CLIP",),
       }),
       "hidden": {},
@@ -35,7 +36,7 @@ class RgthreePowerLoraLoader:
   RETURN_NAMES = ("MODEL", "CLIP")
   FUNCTION = "load_loras"
 
-  def load_loras(self, model, clip=None, **kwargs):
+  def load_loras(self, model=None, clip=None, **kwargs):
     """Loops over the provided loras in kwargs and applies valid ones."""
     for key, value in kwargs.items():
       key = key.upper()
@@ -52,7 +53,7 @@ class RgthreePowerLoraLoader:
           strength_clip = strength_clip if strength_clip is not None else strength_model
         if value['on'] and (strength_model != 0 or strength_clip != 0):
           lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
-          if lora is not None:
+          if model is not None and lora is not None:
             model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
 
     return (model, clip)
@@ -61,14 +62,20 @@ class RgthreePowerLoraLoader:
   def get_enabled_loras_from_prompt_node(cls,
                                          prompt_node: dict) -> list[dict[str, Union[str, float]]]:
     """Gets enabled loras of a node within a server prompt."""
-    return [{
-      'name': lora['lora'],
-      'strength': lora['strength']
-    } | ({
-      'strength_clip': lora['strengthTwo']
-    } if 'strengthTwo' in lora else {})
-            for name, lora in prompt_node['inputs'].items()
-            if name.startswith('lora_') and lora['on']]
+    result = []
+    for name, lora in prompt_node['inputs'].items():
+      if name.startswith('lora_') and lora['on']:
+        lora_file = get_lora_by_filename(lora['lora'], log_node=cls.NAME)
+        if lora_file is not None:  # Add the same safety check
+          lora_dict = {
+            'name': lora['lora'],
+            'strength': lora['strength'],
+            'path': folder_paths.get_full_path("loras", lora_file)
+          }
+          if 'strengthTwo' in lora:
+            lora_dict['strength_clip'] = lora['strengthTwo']
+          result.append(lora_dict)
+    return result
 
   @classmethod
   def get_enabled_triggers_from_prompt_node(cls, prompt_node: dict, max_each: int = 1):
