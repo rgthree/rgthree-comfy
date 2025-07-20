@@ -21,7 +21,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   // counteract it's computeSize calculation by offsetting the start.
   static slot_start_y = -20;
 
-  // LiteGraph adds mroe spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
+  // LiteGraph adds more spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
   // override it with a setter and re-set it measured exactly as we want.
   ___collapsed_width: number = 0;
 
@@ -47,6 +47,8 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   constructor(title = Bookmark.title) {
     super(title);
     const nextShortcutChar = getNextShortcut();
+
+    // Shortcut key widget
     this.addWidget(
       "text",
       "shortcut_key",
@@ -54,9 +56,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       (value: string, ...args) => {
         value = value.trim()[0] || "1";
       },
-      {
-        y: 8,
-      },
+      {y: 8},
     );
     this.addWidget("number", "zoom", 1, (value: number) => {}, {
       y: 8 + LiteGraph.NODE_WIDGET_HEIGHT + 4,
@@ -64,6 +64,41 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       min: 0.5,
       precision: 2,
     });
+
+    // Preset dropdown widget
+    const presets = [
+      "top left",
+      "top center",
+      "top right",
+      "center",
+      "bottom left",
+      "bottom center",
+      "bottom right",
+    ];
+    this.addWidget(
+      "combo",
+      "Preset",
+      "center", // Default value
+      (value: string) => {
+      },
+      {
+        y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 2,
+        values: presets,
+      },
+    );
+
+    // X-Offset widget
+    this.addWidget<INumberWidget>("number", "X-Offset", 16, (value: number) => {}, {
+      y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 3,
+      precision: 0,
+    });
+
+    // Y-Offset widget
+    this.addWidget<INumberWidget>("number", "Y-Offset", 40, (value: number) => {}, {
+      y: 8 + (LiteGraph.NODE_WIDGET_HEIGHT + 4) * 4,
+      precision: 0,
+    });
+
     this.keypressBound = this.onKeypress.bind(this);
     this.title = "🔖";
     this.onConstructed();
@@ -123,15 +158,45 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   canvasToBookmark() {
     const canvas = app.canvas as LGraphCanvas;
-    // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
-    // https://github.com/rgthree/rgthree-comfy/issues/71
-    if (canvas?.ds?.offset) {
-      canvas.ds.offset[0] = -this.pos[0] + 16;
-      canvas.ds.offset[1] = -this.pos[1] + 40;
+
+    if (!canvas?.ds?.offset || canvas.ds.scale == null) {
+      console.error("Canvas offset or scale is undefined.");
+      return;
     }
-    if (canvas?.ds?.scale != null) {
-      canvas.ds.scale = Number(this.widgets[1]!.value || 1);
+
+    // Preset mapping
+    const presets: Record<string, {x: number; y: number}> = {
+      "top left": {x: 0, y: 0},
+      "top center": {x: canvas.canvas.width / 2, y: 0},
+      "top right": {x: canvas.canvas.width, y: 0},
+      "center": {x: canvas.canvas.width / 2, y: canvas.canvas.height / 2},
+      "bottom left": {x: 0, y: canvas.canvas.height},
+      "bottom center": {x: canvas.canvas.width / 2, y: canvas.canvas.height},
+      "bottom right": {x: canvas.canvas.width, y: canvas.canvas.height},
+    };
+
+    // Get the preset value from a widget or input
+    const presetName = String(this.widgets[2]?.value || "center"); // Default to "center"
+
+    // Find the corresponding preset
+    const preset = presets[presetName];
+    if (!preset) {
+      console.error(`Invalid preset: ${presetName}`);
+      return;
     }
+
+    // Get the X and Y offset values from the widgets
+    const xOffset = Number(this.widgets[3]?.value || 0); // X-Offset widget
+    const yOffset = Number(this.widgets[4]?.value || 0); // Y-Offset widget
+
+    // Apply the offsets to the preset positions
+    canvas.ds.offset[0] = -this.pos[0] + preset.x + xOffset;
+    canvas.ds.offset[1] = -this.pos[1] + preset.y + yOffset;
+
+    // Apply scale
+    canvas.ds.scale = Number(this.widgets[1]?.value || 1);
+
+    // Mark the canvas as dirty
     canvas.setDirty(true, true);
   }
 }
