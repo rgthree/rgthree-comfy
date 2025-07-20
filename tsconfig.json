@@ -14,8 +14,11 @@
       // Theser are just vanity. Currently nothing else augments it but, if a dependency were to we
       // may need to change these.
       "@comfyorg/frontend": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      // Tree Sitter, for parsing python in js.
+      "web-tree-sitter": ["node_modules/web-tree-sitter/web-tree-sitter.d.ts"],
       "typings/*": ["src_web/typings/*"],
       "rgthree/common/*": ["src_web/common/*"],
+      "rgthree/lib/*": ["src_web/lib/*"],
       "node_modules": ["node_modules/*"],
       "scripts/*":  ["src_web/scripts_comfy/*"],
     },
@@ -40,6 +43,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "allowUnusedLabels": true,
     "skipLibCheck": true,
+    "types": []
   },
   "include": [
     "src_web/*.ts", "src_web/**/*.ts", "src_web/typings/index.d.ts",
