@@ -332,6 +332,13 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
     set toggled(value) {
         this.value.toggled = value;
     }
+    toggle(value) {
+        value = value == null ? !this.toggled : value;
+        if (value !== this.toggled) {
+            this.value.toggled = value;
+            this.doModeChange();
+        }
+    }
     draw(ctx, node, width, posY, height) {
         var _a;
         const widgetData = drawNodeWidget(ctx, { size: [width, height], pos: [15, posY] });
@@ -400,10 +407,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
                 }
             }
             else {
-                this.toggled = !this.value;
-                setTimeout(() => {
-                    this.doModeChange();
-                }, 20);
+                this.toggle();
             }
         }
         return true;

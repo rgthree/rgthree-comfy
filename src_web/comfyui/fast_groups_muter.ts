@@ -409,6 +409,14 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
     this.value.toggled = value;
   }
 
+  toggle(value?: boolean) {
+    value = value == null ? !this.toggled : value;
+    if (value !== this.toggled) {
+      this.value.toggled = value;
+      this.doModeChange();
+    }
+  }
+
   draw(
     ctx: CanvasRenderingContext2D,
     node: FastGroupsMuter,
@@ -501,10 +509,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
           canvas.setDirty(true, true);
         }
       } else {
-        this.toggled = !this.value;
-        setTimeout(() => {
-          this.doModeChange();
-        }, 20);
+        this.toggle();
       }
     }
     return true;

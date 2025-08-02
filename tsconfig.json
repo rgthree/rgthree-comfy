@@ -43,6 +43,7 @@
     "noPropertyAccessFromIndexSignature": true,
     "allowUnusedLabels": true,
     "skipLibCheck": true,
+    "experimentalDecorators": true,
     "types": []
   },
   "include": [

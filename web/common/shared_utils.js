@@ -33,6 +33,12 @@ export function debounce(fn, ms = 64) {
     }
     return DEBOUNCE_FN_TO_PROMISE.get(fn);
 }
+export function check(value, msg = "", ...args) {
+    if (!value) {
+        console.error(msg, ...(args || []));
+        throw new Error(msg || "Error");
+    }
+}
 export function wait(ms = 16) {
     if (ms === 16) {
         return new Promise((resolve) => {
@@ -46,6 +52,16 @@ export function wait(ms = 16) {
             resolve();
         }, ms);
     });
+}
+export function deepFreeze(obj) {
+    const propNames = Reflect.ownKeys(obj);
+    for (const name of propNames) {
+        const value = obj[name];
+        if ((value && typeof value === "object") || typeof value === "function") {
+            deepFreeze(value);
+        }
+    }
+    return Object.freeze(obj);
 }
 function dec2hex(dec) {
     return dec.toString(16).padStart(2, "0");

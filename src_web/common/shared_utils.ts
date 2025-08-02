@@ -65,6 +65,14 @@ export function debounce(fn: Function, ms = 64) {
   return DEBOUNCE_FN_TO_PROMISE.get(fn);
 }
 
+/** Checks that a value is not falsy. */
+export function check(value: any, msg = "", ...args: any[]): asserts value {
+  if (!value) {
+    console.error(msg, ...(args || []));
+    throw new Error(msg || "Error");
+  }
+}
+
 /** Waits a certain number of ms, as a `Promise.` */
 export function wait(ms = 16): Promise<void> {
   // Special logic, if we're waiting 16ms, then trigger on next frame.
@@ -80,6 +88,21 @@ export function wait(ms = 16): Promise<void> {
       resolve();
     }, ms);
   });
+}
+
+/** Deeply freezes the passed in object. */
+export function deepFreeze<T extends Object>(obj: T): T {
+  // Retrieve the property names defined on object
+  const propNames = Reflect.ownKeys(obj);
+
+  // Freeze properties before freezing self
+  for (const name of propNames) {
+    const value = (obj as any)[name];
+    if ((value && typeof value === "object") || typeof value === "function") {
+      deepFreeze(value);
+    }
+  }
+  return Object.freeze(obj);
 }
 
 function dec2hex(dec: number) {
