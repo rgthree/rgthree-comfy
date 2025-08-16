@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
-import { changeModeOfNodes, getOutputNodes } from "./utils.js";
+import { changeModeOfNodes, getGroupNodes, getOutputNodes } from "./utils.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 const BTN_SIZE = 20;
 const BTN_MARGIN = [6, 6];
@@ -44,8 +44,10 @@ app.registerExtension({
                 const clickedOnToggle = clickedOnToggleButton(originalEvent, group) || "";
                 const toggleAction = clickedOnToggle === null || clickedOnToggle === void 0 ? void 0 : clickedOnToggle.toLocaleUpperCase();
                 if (toggleAction) {
+                    console.log(toggleAction);
+                    const nodes = getGroupNodes(group);
                     if (toggleAction === "QUEUE") {
-                        const outputNodes = getOutputNodes(group._nodes);
+                        const outputNodes = getOutputNodes(nodes);
                         if (!(outputNodes === null || outputNodes === void 0 ? void 0 : outputNodes.length)) {
                             rgthree.showMessage({
                                 id: "no-output-in-group",
@@ -62,9 +64,9 @@ app.registerExtension({
                         const toggleMode = TOGGLE_TO_MODE.get(toggleAction);
                         if (toggleMode) {
                             group.recomputeInsideNodes();
-                            const hasAnyActiveNodes = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
-                            const isAllMuted = !hasAnyActiveNodes && group._nodes.every((n) => n.mode === LiteGraph.NEVER);
-                            const isAllBypassed = !hasAnyActiveNodes && !isAllMuted && group._nodes.every((n) => n.mode === 4);
+                            const hasAnyActiveNodes = nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                            const isAllMuted = !hasAnyActiveNodes && nodes.every((n) => n.mode === LiteGraph.NEVER);
+                            const isAllBypassed = !hasAnyActiveNodes && !isAllMuted && nodes.every((n) => n.mode === 4);
                             let newMode = LiteGraph.ALWAYS;
                             if (toggleMode === LiteGraph.NEVER) {
                                 newMode = isAllMuted ? LiteGraph.ALWAYS : LiteGraph.NEVER;
@@ -72,7 +74,7 @@ app.registerExtension({
                             else {
                                 newMode = isAllBypassed ? LiteGraph.ALWAYS : 4;
                             }
-                            changeModeOfNodes(group._nodes, newMode);
+                            changeModeOfNodes(nodes, newMode);
                         }
                     }
                     canvas.selected_group = null;
@@ -87,7 +89,7 @@ app.registerExtension({
                 !rgthree.lastCanvasMouseEvent) {
                 return;
             }
-            const graph = app.graph;
+            const graph = app.canvas.graph;
             let groups;
             if (CONFIG_SERVICE.getFeatureValue("group_header_fast_toggle.show") !== "always") {
                 const hoverGroup = graph.getGroupOnPos(rgthree.lastCanvasMouseEvent.canvasX, rgthree.lastCanvasMouseEvent.canvasY);
@@ -102,10 +104,13 @@ app.registerExtension({
             const toggles = getToggles();
             ctx.save();
             for (const group of groups || []) {
+                const nodes = getGroupNodes(group);
                 let anyActive = false;
-                let allMuted = !!group._nodes.length;
+                let allMuted = !!nodes.length;
                 let allBypassed = allMuted;
-                for (const node of group._nodes) {
+                for (const node of nodes) {
+                    if (!(node instanceof LGraphNode))
+                        continue;
                     anyActive = anyActive || node.mode === LiteGraph.ALWAYS;
                     allMuted = allMuted && node.mode === LiteGraph.NEVER;
                     allBypassed = allBypassed && node.mode === 4;
@@ -123,7 +128,7 @@ app.registerExtension({
                     const midX = x + BTN_SIZE / 2;
                     const midY = y + BTN_SIZE / 2;
                     if (toggle === "queue") {
-                        const outputNodes = getOutputNodes(group._nodes);
+                        const outputNodes = getOutputNodes(nodes);
                         const oldGlobalAlpha = ctx.globalAlpha;
                         if (!(outputNodes === null || outputNodes === void 0 ? void 0 : outputNodes.length)) {
                             ctx.globalAlpha = 0.5;

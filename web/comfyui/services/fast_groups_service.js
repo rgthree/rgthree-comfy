@@ -1,4 +1,5 @@
 import { app } from "../../../scripts/app.js";
+import { getGroupNodes, traverseNodesDepthFirst } from "../utils.js";
 class FastGroupsService {
     constructor() {
         this.msThreshold = 400;
@@ -62,9 +63,18 @@ class FastGroupsService {
     getBoundingsForAllNodes() {
         if (!this.cachedNodeBoundings) {
             this.cachedNodeBoundings = {};
-            for (const node of app.graph._nodes) {
-                this.cachedNodeBoundings[Number(node.id)] = node.getBounding();
-            }
+            traverseNodesDepthFirst(app.graph._nodes, (node) => {
+                var _a, _b;
+                let bounds = node.getBounding();
+                if (bounds[0] === 0 && bounds[1] === 0 && bounds[2] === 0 && bounds[3] === 0) {
+                    const ctx = (_b = (_a = node.graph) === null || _a === void 0 ? void 0 : _a.primaryCanvas) === null || _b === void 0 ? void 0 : _b.canvas.getContext('2d');
+                    if (ctx) {
+                        node.updateArea(ctx);
+                        bounds = node.getBounding();
+                    }
+                }
+                this.cachedNodeBoundings[String(node.id)] = bounds;
+            });
             setTimeout(() => {
                 this.cachedNodeBoundings = null;
             }, 50);
@@ -73,25 +83,39 @@ class FastGroupsService {
     }
     recomputeInsideNodesForGroup(group) {
         const cachedBoundings = this.getBoundingsForAllNodes();
-        const nodes = group.graph._nodes;
-        group._nodes.length = 0;
+        const nodes = group.graph.nodes;
+        group._children.clear();
+        group.nodes.length = 0;
         for (const node of nodes) {
-            const node_bounding = cachedBoundings[Number(node.id)];
-            if (!node_bounding || !LiteGraph.overlapBounding(group._bounding, node_bounding)) {
-                continue;
+            const nodeBounding = cachedBoundings[String(node.id)];
+            const nodeCenter = nodeBounding &&
+                [nodeBounding[0] + nodeBounding[2] * 0.5, nodeBounding[1] + nodeBounding[3] * 0.5];
+            if (nodeCenter) {
+                const grouBounds = group._bounding;
+                if (nodeCenter[0] >= grouBounds[0] &&
+                    nodeCenter[0] < grouBounds[0] + grouBounds[2] &&
+                    nodeCenter[1] >= grouBounds[1] &&
+                    nodeCenter[1] < grouBounds[1] + grouBounds[3]) {
+                    group._children.add(node);
+                    group.nodes.push(node);
+                }
             }
-            group._nodes.push(node);
         }
     }
     getGroupsUnsorted(now) {
+        var _a;
         const canvas = app.canvas;
         const graph = app.graph;
         if (!canvas.selected_group_moving &&
             (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)) {
             this.groupsUnsorted = [...graph._groups];
+            const subgraphs = graph.subgraphs.values();
+            let s;
+            while ((s = subgraphs.next().value))
+                this.groupsUnsorted.push(...((_a = s.groups) !== null && _a !== void 0 ? _a : []));
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
-                group.rgthree_hasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+                group.rgthree_hasAnyActiveNode = getGroupNodes(group).some((n) => n.mode === LiteGraph.ALWAYS);
             }
             this.msLastUnsorted = now;
         }

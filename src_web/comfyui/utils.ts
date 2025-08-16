@@ -5,7 +5,7 @@ import type {
   LGraph,
   IContextMenuOptions,
   ContextMenu,
-  LGraphNode,
+  LGraphNode as TLGraphNode,
   INodeSlot,
   INodeInputSlot,
   INodeOutputSlot,
@@ -17,6 +17,7 @@ import type {
   LinkDirection,
   Point,
   ComfyApp,
+  LGraphGroup,
 } from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {Constructor} from "typings/rgthree";
@@ -65,11 +66,11 @@ export const LAYOUT_LABEL_OPPOSITES: {[label: string]: string} = {
 export const LAYOUT_CLOCKWISE = ["Top", "Right", "Bottom", "Left"];
 
 interface MenuConfig {
-  name: string | ((node: LGraphNode) => string);
+  name: string | ((node: TLGraphNode) => string);
   property?: string;
-  prepareValue?: (value: NodeProperty | undefined, node: LGraphNode) => any;
-  callback?: (node: LGraphNode, value?: string) => void;
-  subMenuOptions?: (string | null)[] | ((node: LGraphNode) => (string | null)[]);
+  prepareValue?: (value: NodeProperty | undefined, node: TLGraphNode) => any;
+  callback?: (node: TLGraphNode, value?: string) => void;
+  subMenuOptions?: (string | null)[] | ((node: TLGraphNode) => (string | null)[]);
 }
 
 export function addMenuItem(
@@ -131,7 +132,7 @@ export function waitForGraph() {
 }
 
 export function addMenuItemOnExtraMenuOptions(
-  node: LGraphNode,
+  node: TLGraphNode,
   config: MenuConfig,
   menuOptions: (IContextMenuValue | null)[],
   after = "Shape",
@@ -166,7 +167,7 @@ export function addMenuItemOnExtraMenuOptions(
       _options: IContextMenuOptions,
       event: MouseEvent,
       parentMenu: ContextMenu | undefined,
-      _node: LGraphNode,
+      _node: TLGraphNode,
     ) => {
       if (!!subMenuOptions?.length) {
         new LiteGraph.ContextMenu(
@@ -179,7 +180,7 @@ export function addMenuItemOnExtraMenuOptions(
               _options: IContextMenuOptions,
               _event: MouseEvent,
               _parentMenu: ContextMenu | undefined,
-              _node: LGraphNode,
+              _node: TLGraphNode,
             ) => {
               if (config.property) {
                 node.properties = node.properties || {};
@@ -211,7 +212,7 @@ export function addConnectionLayoutSupport(
     ["Left", "Right"],
     ["Right", "Left"],
   ],
-  callback?: (node: LGraphNode) => void,
+  callback?: (node: TLGraphNode) => void,
 ) {
   addMenuItem(node, app, {
     name: "Connections Layout",
@@ -249,7 +250,7 @@ export function addConnectionLayoutSupport(
   };
 }
 
-export function setConnectionsLayout(node: LGraphNode, newLayout: [string, string]) {
+export function setConnectionsLayout(node: TLGraphNode, newLayout: [string, string]) {
   newLayout = newLayout || (node as any).defaultConnectionsLayout || ["Left", "Right"];
   // If we didn't supply an output layout, and there's no outputs, then just choose the opposite of the
   // input as a safety.
@@ -265,7 +266,7 @@ export function setConnectionsLayout(node: LGraphNode, newLayout: [string, strin
 
 /** Allows collapsing of connections into one. Pretty unusable, unless you're the muter. */
 export function setConnectionsCollapse(
-  node: LGraphNode,
+  node: TLGraphNode,
   collapseConnections: boolean | null = null,
 ) {
   node.properties = node.properties || {};
@@ -275,7 +276,7 @@ export function setConnectionsCollapse(
 }
 
 export function getConnectionPosForLayout(
-  node: LGraphNode,
+  node: TLGraphNode,
   isInput: boolean,
   slotNumber: number,
   out: Vector2,
@@ -407,7 +408,7 @@ function toggleConnectionLabel(cxn: any, hide = true) {
 }
 
 export function addHelpMenuItem(
-  node: LGraphNode,
+  node: TLGraphNode,
   content: string,
   menuOptions: (IContextMenuValue | null)[],
 ) {
@@ -439,10 +440,10 @@ export enum PassThroughFollowing {
  * like reroutes, etc.
  */
 export function shouldPassThrough(
-  node?: LGraphNode | null,
+  node?: TLGraphNode | null,
   passThroughFollowing = PassThroughFollowing.ALL,
 ) {
-  const type = (node?.constructor as typeof LGraphNode)?.type;
+  const type = (node?.constructor as typeof TLGraphNode)?.type;
   if (!type || passThroughFollowing === PassThroughFollowing.NONE) {
     return false;
   }
@@ -466,11 +467,11 @@ function filterOutPassthroughNodes(
  * like reroute, etc. Will also disconnect duplicate nodes from a provided node
  */
 export function getConnectedInputNodes(
-  startNode: LGraphNode,
-  currentNode?: LGraphNode,
+  startNode: TLGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-): LGraphNode[] {
+): TLGraphNode[] {
   return getConnectedNodesInfo(
     startNode,
     IoDirection.INPUT,
@@ -480,8 +481,8 @@ export function getConnectedInputNodes(
   ).map((n) => n.node);
 }
 export function getConnectedInputInfosAndFilterPassThroughs(
-  startNode: LGraphNode,
-  currentNode?: LGraphNode,
+  startNode: TLGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
 ) {
@@ -491,11 +492,11 @@ export function getConnectedInputInfosAndFilterPassThroughs(
   );
 }
 export function getConnectedInputNodesAndFilterPassThroughs(
-  startNode: LGraphNode,
-  currentNode?: LGraphNode,
+  startNode: TLGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-): LGraphNode[] {
+): TLGraphNode[] {
   return getConnectedInputInfosAndFilterPassThroughs(
     startNode,
     currentNode,
@@ -505,11 +506,11 @@ export function getConnectedInputNodesAndFilterPassThroughs(
 }
 
 export function getConnectedOutputNodes(
-  startNode: LGraphNode,
-  currentNode?: LGraphNode,
+  startNode: TLGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-): LGraphNode[] {
+): TLGraphNode[] {
   return getConnectedNodesInfo(
     startNode,
     IoDirection.OUTPUT,
@@ -520,11 +521,11 @@ export function getConnectedOutputNodes(
 }
 
 export function getConnectedOutputNodesAndFilterPassThroughs(
-  startNode: LGraphNode,
-  currentNode?: LGraphNode,
+  startNode: TLGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
-): LGraphNode[] {
+): TLGraphNode[] {
   return filterOutPassthroughNodes(
     getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing),
     passThroughFollowing,
@@ -532,16 +533,16 @@ export function getConnectedOutputNodesAndFilterPassThroughs(
 }
 
 export type ConnectedNodeInfo = {
-  node: LGraphNode;
+  node: TLGraphNode;
   travelFromSlot: number;
   travelToSlot: number;
   originTravelFromSlot: number;
 };
 
 export function getConnectedNodesInfo(
-  startNode: LGraphNode,
+  startNode: TLGraphNode,
   dir = IoDirection.INPUT,
-  currentNode?: LGraphNode,
+  currentNode?: TLGraphNode,
   slot?: number,
   passThroughFollowing = PassThroughFollowing.ALL,
   originTravelFromSlot?: number,
@@ -578,7 +579,7 @@ export function getConnectedNodesInfo(
       const connectedId = dir == IoDirection.OUTPUT ? link.target_id : link.origin_id;
       const travelToSlot = dir == IoDirection.OUTPUT ? link.target_slot : link.origin_slot;
       originTravelFromSlot = originTravelFromSlot != null ? originTravelFromSlot : travelFromSlot;
-      const originNode: LGraphNode = graph.getNodeById(connectedId)!;
+      const originNode: TLGraphNode = graph.getNodeById(connectedId)!;
       if (!link) {
         console.error("No connected node found... weird");
         continue;
@@ -624,7 +625,7 @@ export type ConnectionType = {
  * from, but find a type _after_ it (in case it needs to change).
  */
 export function followConnectionUntilType(
-  node: LGraphNode,
+  node: TLGraphNode,
   dir: IoDirection,
   slotNum?: number,
   skipSelf = false,
@@ -668,7 +669,7 @@ function getTypeFromSlot(
     const connectedId = dir == IoDirection.OUTPUT ? link.link.target_id : link.link.origin_id;
     const connectedSlotNum =
       dir == IoDirection.OUTPUT ? link.link.target_slot : link.link.origin_slot;
-    const connectedNode: LGraphNode = graph.getNodeById(connectedId)!;
+    const connectedNode: TLGraphNode = graph.getNodeById(connectedId)!;
     // Reversed since if we're traveling down the output we want the connected node's input, etc.
     const connectedSlots =
       dir === IoDirection.OUTPUT ? connectedNode.inputs : connectedNode.outputs;
@@ -687,11 +688,11 @@ function getTypeFromSlot(
 }
 
 export async function replaceNode(
-  existingNode: LGraphNode,
-  typeOrNewNode: string | LGraphNode,
+  existingNode: TLGraphNode,
+  typeOrNewNode: string | TLGraphNode,
   inputNameMap?: Map<string, string>,
 ) {
-  const existingCtor = existingNode.constructor as typeof LGraphNode;
+  const existingCtor = existingNode.constructor as typeof TLGraphNode;
 
   const newNode =
     typeof typeOrNewNode === "string" ? LiteGraph.createNode(typeOrNewNode)! : typeOrNewNode;
@@ -726,9 +727,9 @@ export async function replaceNode(
   // We now collect the links data, inputs and outputs, of the old node since these will be
   // lost when we remove it.
   const links: {
-    node: LGraphNode;
+    node: TLGraphNode;
     slot: number | string;
-    targetNode: LGraphNode;
+    targetNode: TLGraphNode;
     targetSlot: number | string;
   }[] = [];
   for (const [index, output] of existingNode.outputs.entries()) {
@@ -769,7 +770,7 @@ export async function replaceNode(
 }
 
 export function getOriginNodeByLink(linkId?: number | null) {
-  let node: LGraphNode | null = null;
+  let node: TLGraphNode | null = null;
   if (linkId != null) {
     const link: LLink = app.graph.links[linkId]!;
     node = (link != null && app.graph.getNodeById(link.origin_id)) || null;
@@ -777,7 +778,7 @@ export function getOriginNodeByLink(linkId?: number | null) {
   return node;
 }
 
-export function applyMixins(original: Constructor<LGraphNode>, constructors: any[]) {
+export function applyMixins(original: Constructor<TLGraphNode>, constructors: any[]) {
   constructors.forEach((baseCtor) => {
     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
       Object.defineProperty(
@@ -823,7 +824,7 @@ export function getSlotLinks(inputOrOutput?: INodeInputSlot | INodeOutputSlot | 
  * slots to match the order.
  */
 export async function matchLocalSlotsToServer(
-  node: LGraphNode,
+  node: TLGraphNode,
   direction: IoDirection,
   serverNodeData: ComfyNodeDef,
 ) {
@@ -953,7 +954,7 @@ LiteGraph.isValidConnection = function (typeA: ISlotType, typeB: ISlotType): boo
 /**
  * Returns a list of output nodes given a list of nodes.
  */
-export function getOutputNodes(nodes: LGraphNode[]) {
+export function getOutputNodes(nodes: TLGraphNode[]) {
   return (
     nodes?.filter((n) => {
       return (
@@ -967,7 +968,7 @@ export function getOutputNodes(nodes: LGraphNode[]) {
  * Changes the mode of a node. We must go through this to change a node's mode after the
  * introduction of subgraphs, as ComfyUI doesn't update the mode of a node in a subgraph on its own.
  */
-export function changeModeOfNodes(nodeOrNodes: LGraphNode | LGraphNode[], mode: LGraphEventMode) {
+export function changeModeOfNodes(nodeOrNodes: TLGraphNode | TLGraphNode[], mode: LGraphEventMode) {
   const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
   traverseNodesDepthFirst(nodes, (n) => {
     n.mode = mode;
@@ -978,8 +979,8 @@ export function changeModeOfNodes(nodeOrNodes: LGraphNode | LGraphNode[], mode: 
  * Performs depth-first traversal of nodes and their subgraphs.
  * Adapted from ComfyUI Frontend's method.
  */
-function traverseNodesDepthFirst(nodes: LGraphNode[], visitor: (n: LGraphNode) => void) {
-  const stack: Array<{node: LGraphNode}> = nodes.map((node) => ({node}));
+export function traverseNodesDepthFirst(nodes: TLGraphNode[], visitor: (n: TLGraphNode) => void) {
+  const stack: Array<{node: TLGraphNode}> = nodes.map((node) => ({node}));
 
   // Process stack iteratively (DFS)
   while (stack.length > 0) {
@@ -996,6 +997,14 @@ function traverseNodesDepthFirst(nodes: LGraphNode[], visitor: (n: LGraphNode) =
       }
     }
   }
+}
+
+/**
+ * Found an issue where group._nodes had nodes that weren't in the actual group. group._nodes is
+ * marked deprecated, so we'll go ahead and use _children and filter.
+ */
+export function getGroupNodes(group: LGraphGroup) : TLGraphNode[] {
+  return Array.from(group._children).filter(c => c instanceof LGraphNode);
 }
 
 /**

@@ -646,7 +646,7 @@ export function changeModeOfNodes(nodeOrNodes, mode) {
         n.mode = mode;
     });
 }
-function traverseNodesDepthFirst(nodes, visitor) {
+export function traverseNodesDepthFirst(nodes, visitor) {
     var _a;
     const stack = nodes.map((node) => ({ node }));
     while (stack.length > 0) {
@@ -659,6 +659,9 @@ function traverseNodesDepthFirst(nodes, visitor) {
             }
         }
     }
+}
+export function getGroupNodes(group) {
+    return Array.from(group._children).filter(c => c instanceof LGraphNode);
 }
 export function getFullColor(color, liteGraphKey = "color") {
     if (!color) {

@@ -10,6 +10,7 @@ const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
+const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
 export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     constructor(title = FastGroupsMuter.title) {
@@ -23,6 +24,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         this.properties[PROPERTY_MATCH_COLORS] = "";
         this.properties[PROPERTY_MATCH_TITLE] = "";
         this.properties[PROPERTY_SHOW_NAV] = true;
+        this.properties[PROPERTY_SHOW_ALL_GRAPHS] = true;
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
         this.properties[PROPERTY_RESTRICTION] = "default";
@@ -38,7 +40,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
     }
     refreshWidgets() {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
         const canvas = app.canvas;
         let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
         let customAlphabet = null;
@@ -123,6 +125,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                     console.error(e);
                     continue;
                 }
+            }
+            const showAllGraphs = (_j = this.properties) === null || _j === void 0 ? void 0 : _j[PROPERTY_SHOW_ALL_GRAPHS];
+            if (!showAllGraphs && group.graph !== app.canvas.getCurrentGraph()) {
+                continue;
             }
             let isDirty = false;
             const widgetLabel = `Enable ${group.title}`;
@@ -221,7 +227,11 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             <li><p>
               <code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you
               to the group. <i>(default: true)</i>
-              </p></li>
+            </p></li>
+            <li><p>
+              <code>${PROPERTY_SHOW_ALL_GRAPHS}</code> - Show groups from all [sub]graphs in the
+              workflow. <i>(default: true)</i>
+            </p></li>
             <li><p>
               <code>${PROPERTY_SORT}</code> - Sort the toggles' order by "alphanumeric", graph
               "position", or "custom alphabet". <i>(default: "position")</i>
@@ -271,6 +281,7 @@ BaseFastGroupsModeChanger.exposedActions = ["Mute all", "Enable all", "Toggle al
 BaseFastGroupsModeChanger["@matchColors"] = { type: "string" };
 BaseFastGroupsModeChanger["@matchTitle"] = { type: "string" };
 BaseFastGroupsModeChanger["@showNav"] = { type: "boolean" };
+BaseFastGroupsModeChanger["@showAllGraphs"] = { type: "boolean" };
 BaseFastGroupsModeChanger["@sort"] = {
     type: "combo",
     values: ["position", "alphanumeric", "custom alphabet"],

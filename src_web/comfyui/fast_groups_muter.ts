@@ -22,6 +22,7 @@ const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
 const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
+const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
 
 /**
@@ -47,6 +48,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   static "@matchColors" = {type: "string"};
   static "@matchTitle" = {type: "string"};
   static "@showNav" = {type: "boolean"};
+  static "@showAllGraphs" = {type: "boolean"};
   static "@sort" = {
     type: "combo",
     values: ["position", "alphanumeric", "custom alphabet"],
@@ -57,6 +59,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     [PROPERTY_MATCH_COLORS]: string;
     [PROPERTY_MATCH_TITLE]: string;
     [PROPERTY_SHOW_NAV]: boolean;
+    [PROPERTY_SHOW_ALL_GRAPHS]: boolean;
     [PROPERTY_SORT]: string;
     [PROPERTY_SORT_CUSTOM_ALPHA]: string;
     [PROPERTY_RESTRICTION]: string;
@@ -72,6 +75,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     this.properties[PROPERTY_MATCH_COLORS] = "";
     this.properties[PROPERTY_MATCH_TITLE] = "";
     this.properties[PROPERTY_SHOW_NAV] = true;
+    this.properties[PROPERTY_SHOW_ALL_GRAPHS] = true;
     this.properties[PROPERTY_SORT] = "position";
     this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
     this.properties[PROPERTY_RESTRICTION] = "default";
@@ -185,6 +189,10 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
           continue;
         }
       }
+      const showAllGraphs = this.properties?.[PROPERTY_SHOW_ALL_GRAPHS];
+      if (!showAllGraphs && group.graph !== app.canvas.getCurrentGraph()) {
+        continue;
+      }
       let isDirty = false;
       const widgetLabel = `Enable ${group.title}`;
       let widget = this.widgets.find((w) => w.label === widgetLabel) as FastGroupsToggleRowWidget;
@@ -296,7 +304,11 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             <li><p>
               <code>${PROPERTY_SHOW_NAV}</code> - Add / remove a quick navigation arrow to take you
               to the group. <i>(default: true)</i>
-              </p></li>
+            </p></li>
+            <li><p>
+              <code>${PROPERTY_SHOW_ALL_GRAPHS}</code> - Show groups from all [sub]graphs in the
+              workflow. <i>(default: true)</i>
+            </p></li>
             <li><p>
               <code>${PROPERTY_SORT}</code> - Sort the toggles' order by "alphanumeric", graph
               "position", or "custom alphabet". <i>(default: "position")</i>

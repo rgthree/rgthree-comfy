@@ -164,6 +164,12 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (cloned?.properties && !!window.structuredClone) {
       cloned.properties = structuredClone(cloned.properties);
     }
+    // [🤮] https://github.com/Comfy-Org/ComfyUI_frontend/issues/5037
+    // ComfyUI started throwing errors when some of our nodes wanted to remove inputs when cloning
+    // (like our dynamic inputs) because the disconnect method that's automatically called assumes
+    // there should be a graph. For now, I _think_ we can simply assign the current graph to avoid
+    // the error, which would then be overwritten when placed...
+    cloned.graph = this.graph;
     return cloned;
   }
 
