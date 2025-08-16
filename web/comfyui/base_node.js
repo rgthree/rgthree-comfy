@@ -94,11 +94,21 @@ export class RgthreeBaseNode extends LGraphNode {
         action;
     }
     removeWidget(widget) {
+        var _a;
         if (typeof widget === "number") {
             widget = this.widgets[widget];
         }
-        if (widget != null) {
+        if (!widget)
+            return;
+        if (typeof super.removeWidget === 'function') {
             super.removeWidget(widget);
+        }
+        else {
+            const index = this.widgets.indexOf(widget);
+            if (index > -1) {
+                this.widgets.splice(index, 1);
+            }
+            (_a = widget.onRemove) === null || _a === void 0 ? void 0 : _a.call(widget);
         }
     }
     replaceWidget(widgetOrSlot, newWidget) {

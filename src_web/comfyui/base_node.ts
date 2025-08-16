@@ -187,8 +187,19 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (typeof widget === "number") {
       widget = this.widgets[widget];
     }
-    if (widget != null) {
+    if (!widget) return;
+
+    // Comfy added their own removeWidget, but it's not fully rolled out to stable, so keep our
+    // original implementation.
+    // TODO: Can be simplified eventually.
+    if (typeof super.removeWidget === 'function') {
       super.removeWidget(widget as IBaseWidget);
+    } else {
+      const index = this.widgets.indexOf(widget as IWidget);
+      if (index > -1) {
+        this.widgets.splice(index, 1);
+      }
+      widget.onRemove?.();
     }
   }
 
