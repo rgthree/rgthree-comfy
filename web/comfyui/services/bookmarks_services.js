@@ -1,10 +1,15 @@
 import { app } from "../../../scripts/app.js";
 import { NodeTypesString } from "../constants.js";
+import { traverseNodesDepthFirst } from "../utils.js";
 class BookmarksService {
     getCurrentBookmarks() {
-        return app.graph._nodes
-            .filter((n) => n.type === NodeTypesString.BOOKMARK)
-            .sort((a, b) => a.title.localeCompare(b.title));
+        const bookmarks = [];
+        traverseNodesDepthFirst(app.graph.nodes, (n) => {
+            if (n.type === NodeTypesString.BOOKMARK) {
+                bookmarks.push(n);
+            }
+        });
+        return bookmarks.sort((a, b) => a.title.localeCompare(b.title));
     }
 }
 export const SERVICE = new BookmarksService();

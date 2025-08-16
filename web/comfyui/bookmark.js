@@ -3,6 +3,7 @@ import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { NodeTypesString } from "./constants.js";
 import { getClosestOrSelf, query } from "../../rgthree/common/utils_dom.js";
+import { wait } from "../../rgthree/common/shared_utils.js";
 export class Bookmark extends RgthreeBaseVirtualNode {
     get _collapsed_width() {
         return this.___collapsed_width;
@@ -72,9 +73,13 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         }
         return false;
     }
-    canvasToBookmark() {
+    async canvasToBookmark() {
         var _a, _b;
         const canvas = app.canvas;
+        if (this.graph !== app.canvas.getCurrentGraph()) {
+            canvas.openSubgraph(this.graph);
+            await wait(16);
+        }
         if ((_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset) {
             canvas.ds.offset[0] = -this.pos[0] + 16;
             canvas.ds.offset[1] = -this.pos[1] + 40;

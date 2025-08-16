@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { WorkflowLinkFixer } from "../../rgthree/common/link_fixer.js";
 import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
@@ -700,18 +701,15 @@ class Rgthree extends EventTarget {
     }
 }
 function getBookmarks() {
-    const graph = app.graph;
-    const bookmarks = graph._nodes
-        .filter((n) => n.type === NodeTypesString.BOOKMARK)
-        .sort((a, b) => a.title.localeCompare(b.title))
-        .map((n) => ({
+    const bookmarks = BOOKMARKS_SERVICE.getCurrentBookmarks();
+    const bookmarkItems = bookmarks.map((n) => ({
         content: `[${n.shortcutKey}] ${n.title}`,
         className: "rgthree-contextmenu-item",
         callback: () => {
             n.canvasToBookmark();
         },
     }));
-    return !bookmarks.length
+    return !bookmarkItems.length
         ? []
         : [
             {
@@ -719,7 +717,7 @@ function getBookmarks() {
                 disabled: true,
                 className: "rgthree-contextmenu-item rgthree-contextmenu-label",
             },
-            ...bookmarks,
+            ...bookmarkItems,
         ];
 }
 export const rgthree = new Rgthree();

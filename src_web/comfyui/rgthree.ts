@@ -17,10 +17,11 @@ import type {ComfyApp} from "@comfyorg/frontend";
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import {SERVICE as BOOKMARKS_SERVICE} from "./services/bookmarks_services.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {WorkflowLinkFixer} from "rgthree/common/link_fixer.js";
 import {injectCss, wait} from "rgthree/common/shared_utils.js";
-import {replaceNode, waitForCanvas, waitForGraph} from "./utils.js";
+import {replaceNode, traverseNodesDepthFirst, waitForCanvas, waitForGraph} from "./utils.js";
 import {NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree} from "./constants.js";
 import {RgthreeProgressBar} from "rgthree/common/progress_bar.js";
 import {RgthreeConfigDialog} from "./config.js";
@@ -998,22 +999,16 @@ class Rgthree extends EventTarget {
 }
 
 function getBookmarks(): IContextMenuValue[] {
-  const graph: TLGraph = app.graph;
+  const bookmarks = BOOKMARKS_SERVICE.getCurrentBookmarks();
+  const bookmarkItems = bookmarks.map((n) => ({
+    content: `[${n.shortcutKey}] ${n.title}`,
+    className: "rgthree-contextmenu-item",
+    callback: () => {
+      n.canvasToBookmark();
+    },
+  }));
 
-  // Sorts by Title.
-  // I could see an option to sort by either Shortcut, Title, or Position.
-  const bookmarks = graph._nodes
-    .filter((n): n is Bookmark => n.type === NodeTypesString.BOOKMARK)
-    .sort((a, b) => a.title.localeCompare(b.title))
-    .map((n) => ({
-      content: `[${n.shortcutKey}] ${n.title}`,
-      className: "rgthree-contextmenu-item",
-      callback: () => {
-        n.canvasToBookmark();
-      },
-    }));
-
-  return !bookmarks.length
+  return !bookmarkItems.length
     ? []
     : [
         {
@@ -1021,7 +1016,7 @@ function getBookmarks(): IContextMenuValue[] {
           disabled: true,
           className: "rgthree-contextmenu-item rgthree-contextmenu-label",
         },
-        ...bookmarks,
+        ...bookmarkItems,
       ];
 }
 

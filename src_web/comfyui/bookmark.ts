@@ -1,10 +1,18 @@
-import type {LGraph, LGraphCanvas, LGraphNode, Point, CanvasMouseEvent} from "@comfyorg/frontend";
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  Point,
+  CanvasMouseEvent,
+  Subgraph,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {NodeTypesString} from "./constants.js";
 import {getClosestOrSelf, query} from "rgthree/common/utils_dom.js";
+import {wait} from "rgthree/common/shared_utils.js";
 
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
@@ -119,8 +127,12 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     return false;
   }
 
-  canvasToBookmark() {
+  async canvasToBookmark() {
     const canvas = app.canvas as LGraphCanvas;
+    if (this.graph !== app.canvas.getCurrentGraph()) {
+      canvas.openSubgraph(this.graph as Subgraph);
+      await wait(16);
+    }
     // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.
     // https://github.com/rgthree/rgthree-comfy/issues/71
     if (canvas?.ds?.offset) {
