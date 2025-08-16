@@ -1,6 +1,13 @@
-import {LGraphCanvas, LGraphNode, Vector2, LGraphNodeConstructor} from "@comfyorg/litegraph";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+import {
+  LGraphCanvas,
+  LGraphNode,
+  Vector2,
+  LGraphNodeConstructor,
+  CanvasMouseEvent,
+  ISerialisedNode,
+  Point,
+  CanvasPointerEvent,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -10,7 +17,6 @@ import {NodeTypesString} from "./constants.js";
 import {addConnectionLayoutSupport} from "./utils.js";
 import {RgthreeBaseHitAreas, RgthreeBaseWidget, RgthreeBaseWidgetBounds} from "./utils_widgets.js";
 import {measureText} from "./utils_canvas.js";
-import {Point, Size} from "@comfyorg/litegraph/dist/interfaces.js";
 
 type ComfyImageServerData = {filename: string; type: string; subfolder: string};
 type ComfyImageData = {name: string; selected: boolean; url: string; img?: HTMLImageElement};
@@ -115,7 +121,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
   override onNodeCreated() {
     this.canvasWidget = this.addCustomWidget(
       new RgthreeImageComparerWidget("rgthree_comparer", this),
-    );
+    ) as RgthreeImageComparerWidget;
     this.setSize(this.computeSize());
     this.setDirtyCanvas(true, true);
   }
@@ -139,25 +145,25 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     }
   }
 
-  override onMouseDown(event: CanvasMouseEvent, pos: Point, canvas: LGraphCanvas): boolean {
+  override onMouseDown(event: CanvasPointerEvent, pos: Point, canvas: LGraphCanvas): boolean {
     super.onMouseDown?.(event, pos, canvas);
     this.setIsPointerDown(true);
     return false;
   }
 
-  override onMouseEnter(event: CanvasMouseEvent): void {
+  override onMouseEnter(event: CanvasPointerEvent): void {
     super.onMouseEnter?.(event);
     this.setIsPointerDown(!!app.canvas.pointer_is_down);
     this.isPointerOver = true;
   }
 
-  override onMouseLeave(event: CanvasMouseEvent): void {
+  override onMouseLeave(event: CanvasPointerEvent): void {
     super.onMouseLeave?.(event);
     this.setIsPointerDown(false);
     this.isPointerOver = false;
   }
 
-  override onMouseMove(event: MouseEvent, pos: Point, canvas: LGraphCanvas): void {
+  override onMouseMove(event: CanvasPointerEvent, pos: Point, canvas: LGraphCanvas): void {
     super.onMouseMove?.(event, pos, canvas);
     this.pointerOverPos = [...pos] as Point;
     this.imageIndex = this.pointerOverPos[0] > this.size[0] / 2 ? 1 : 0;
@@ -217,7 +223,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
       </ul>`;
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeImageComparer);
   }
 
@@ -237,7 +243,7 @@ type RgthreeImageComparerWidgetValue = {
 };
 
 class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerWidgetValue> {
-  override readonly type = 'custom';
+  override readonly type = "custom";
 
   private node: RgthreeImageComparer;
 
@@ -466,7 +472,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
 app.registerExtension({
   name: "rgthree.ImageComparer",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeImageComparer.type) {
       RgthreeImageComparer.setUp(nodeType, nodeData);
     }

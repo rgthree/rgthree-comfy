@@ -1,8 +1,8 @@
-import type { ISerialisedGraph } from "@comfyorg/litegraph/dist/types/serialisation";
-import type { BadLinksData } from "../common/link_fixer.js";
+import type {ISerialisedGraph} from "@comfyorg/frontend";
+import type {BadLinksData} from "../common/link_fixer.js";
 
-import { WorkflowLinkFixer } from "../common/link_fixer.js";
-import { getPngMetadata } from "../common/comfyui_shim.js";
+import {WorkflowLinkFixer} from "../common/link_fixer.js";
+import {getPngMetadata} from "../common/comfyui_shim.js";
 
 function wait(ms = 16, value?: any) {
   return new Promise((resolve) => {
@@ -208,7 +208,7 @@ export class LinkPage {
       filename += ".json";
     }
     const json = JSON.stringify(this.graphFinalResults.graph, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+    const blob = new Blob([json], {type: "application/json"});
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.download = filename;

@@ -3,9 +3,9 @@ import type {
   LGraphGroup as TLGraphGroup,
   LGraph as TLGraph,
   Vector2,
-} from "@comfyorg/litegraph";
+  CanvasMouseEvent,
+} from "@comfyorg/frontend";
 import type {AdjustedMouseCustomEvent} from "typings/rgthree.js";
-import type { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";
@@ -58,7 +58,6 @@ function clickedOnToggleButton(e: CanvasMouseEvent, group: TLGraphGroup): string
 app.registerExtension({
   name: "rgthree.GroupHeaderToggles",
   async setup() {
-
     /**
      * LiteGraph won't call `drawGroups` unless the canvas is dirty. Other nodes will do this, but
      * in small workflows, we'll want to trigger it dirty so we can be drawn if we're in hover mode.

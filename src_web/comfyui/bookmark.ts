@@ -1,6 +1,4 @@
-import type {LGraph, LGraphCanvas, LGraphNode} from "@comfyorg/litegraph";
-import type {Point} from "@comfyorg/litegraph/dist/interfaces.js";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
+import type {LGraph, LGraphCanvas, LGraphNode, Point, CanvasMouseEvent} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";

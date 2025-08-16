@@ -3,11 +3,11 @@ import type {
   ContextMenu,
   IContextMenuOptions,
   IContextMenuValue,
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import { rgthree } from "./rgthree.js";
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
+import {rgthree} from "./rgthree.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
 const SPECIAL_ENTRIES = [/^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i, /^\p{Extended_Pictographic}/gu];
 
@@ -23,7 +23,10 @@ app.registerExtension({
     const existingContextMenu = LiteGraph.ContextMenu;
 
     // @ts-ignore: TypeScript doesn't like this override.
-    LiteGraph.ContextMenu = function (values: IContextMenuValue[], options: IContextMenuOptions<string, {rgthree_doNotNest: boolean}>) {
+    LiteGraph.ContextMenu = function (
+      values: IContextMenuValue[],
+      options: IContextMenuOptions<string, {rgthree_doNotNest: boolean}>,
+    ) {
       const threshold = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.threshold", 20);
       const enabled = CONFIG_SERVICE.getConfigValue("features.menu_auto_nest.subdirs", false);
 
@@ -54,7 +57,7 @@ app.registerExtension({
         return existingContextMenu.apply(this as any, [...arguments] as any);
       }
 
-      const folders: { [key: string]: IContextMenuValue[] } = {};
+      const folders: {[key: string]: IContextMenuValue[]} = {};
       const specialOps: IContextMenuValue[] = [];
       const folderless: IContextMenuValue[] = [];
       for (const value of values) {
@@ -62,9 +65,9 @@ app.registerExtension({
           folderless.push(value);
           continue;
         }
-        const newValue = typeof value === "string" ? { content: value } : Object.assign({}, value);
+        const newValue = typeof value === "string" ? {content: value} : Object.assign({}, value);
         (newValue as any).rgthree_originalValue = (value as any).rgthree_originalValue || value;
-        const valueContent = newValue.content || '';
+        const valueContent = newValue.content || "";
         const splitBy = valueContent.indexOf("/") > -1 ? "/" : "\\";
         const valueSplit = valueContent.split(splitBy);
         if (valueSplit.length > 1) {
@@ -83,7 +86,7 @@ app.registerExtension({
       if (foldersCount > 0) {
         // Propogate the original callback down through the options.
         (options as any).rgthree_originalCallback =
-        (options as any).rgthree_originalCallback ||
+          (options as any).rgthree_originalCallback ||
           (options.parentMenu?.options as any)?.rgthree_originalCallback ||
           options.callback;
         const oldCallback = (options as any)?.rgthree_originalCallback;
@@ -118,7 +121,7 @@ app.registerExtension({
         values = ([] as IContextMenuValue[]).concat(
           specialOps.map((f) => {
             if (typeof f === "string") {
-              f = { content: f };
+              f = {content: f};
             }
             f!.callback = newCallback;
             return f;
@@ -126,7 +129,7 @@ app.registerExtension({
           newValues,
           folderless.map((f) => {
             if (typeof f === "string") {
-              f = { content: f };
+              f = {content: f};
             }
             f!.callback = newCallback;
             return f;

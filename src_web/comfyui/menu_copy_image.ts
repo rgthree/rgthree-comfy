@@ -1,4 +1,4 @@
-import type {IContextMenuValue, LGraphCanvas, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {IContextMenuValue, LGraphCanvas} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -31,7 +31,7 @@ const clipboardSupportedPromise = new Promise<boolean>(async (resolve) => {
  */
 app.registerExtension({
   name: "rgthree.CopyImageToClipboard",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name.toLowerCase().includes("image")) {
       if (await clipboardSupportedPromise) {
         const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;

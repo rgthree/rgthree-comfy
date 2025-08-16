@@ -169,12 +169,12 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         }
         return changed;
     }
-    removeWidget(widgetOrSlot) {
-        const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;
+    removeWidget(widget) {
+        widget = typeof widget === "number" ? this.widgets[widget] : widget;
         if (widget && this.widgetToData.has(widget)) {
             this.widgetToData.delete(widget);
         }
-        super.removeWidget(widgetOrSlot);
+        super.removeWidget(widget);
     }
     async executeConnectedNodes() {
         var _a;

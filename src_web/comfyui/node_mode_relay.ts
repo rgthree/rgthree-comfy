@@ -6,7 +6,8 @@ import type {
   LGraphNode,
   LLink,
   Vector2,
-} from "@comfyorg/litegraph";
+  ISerialisedNode,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {
@@ -15,12 +16,11 @@ import {
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import { wait } from "rgthree/common/shared_utils.js";
-import { BaseCollectorNode } from "./base_node_collector.js";
-import { NodeTypesString, stripRgthree } from "./constants.js";
-import { fitString } from "./utils_canvas.js";
-import { rgthree } from "./rgthree.js";
-import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
+import {wait} from "rgthree/common/shared_utils.js";
+import {BaseCollectorNode} from "./base_node_collector.js";
+import {NodeTypesString, stripRgthree} from "./constants.js";
+import {fitString} from "./utils_canvas.js";
+import {rgthree} from "./rgthree.js";
 
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;

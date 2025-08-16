@@ -1,4 +1,4 @@
-import type {LGraphNode} from "@comfyorg/litegraph";
+import type {LGraphNode} from "@comfyorg/frontend";
 
 import {NodeTypesString} from "../constants";
 import {ComfyUITestEnvironment} from "../testing/comfyui_env";

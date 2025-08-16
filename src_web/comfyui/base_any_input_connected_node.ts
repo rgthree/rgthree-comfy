@@ -4,9 +4,14 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LGraphNode as TLGraphNode,
-  IWidget,
   ISlotType,
-} from "@comfyorg/litegraph";
+  ConnectByTypeOptions,
+  TWidgetType,
+  IWidgetOptions,
+  IWidget,
+  IBaseWidget,
+  WidgetTypeMap,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
@@ -20,8 +25,6 @@ import {
   getConnectedOutputNodes,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import {ConnectByTypeOptions} from "@comfyorg/litegraph/dist/LGraphNode.js";
-import {TWidgetType, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
 
 /**
  * A Virtual Node that allows any node's output to connect to it.
@@ -177,28 +180,31 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     return super.removeInput(slot);
   }
 
-  override addInput(name: string, type: string | -1, extra_info?: Partial<INodeInputSlot>) {
+  override addInput<TProperties extends Partial<INodeInputSlot>>(
+    name: string,
+    type: ISlotType,
+    extra_info?: TProperties | undefined,
+  ): INodeInputSlot & TProperties {
     (this as any)._tempWidth = this.size[0];
     return super.addInput(name, type, extra_info);
   }
 
-  override addWidget(
-    type: TWidgetType,
+  override addWidget<Type extends TWidgetType, TValue extends WidgetTypeMap[Type]["value"]>(
+    type: Type,
     name: string,
-    value: string | number | boolean | object,
-    callback: IWidget["callback"] | string | null,
+    value: TValue,
+    callback: IBaseWidget["callback"] | string | null,
     options?: IWidgetOptions | string,
-  ): IWidget {
+  ):
+    | IBaseWidget<string | number | boolean | object | undefined, string, IWidgetOptions<unknown>>
+    | WidgetTypeMap[Type] {
     (this as any)._tempWidth = this.size[0];
     return super.addWidget(type, name, value, callback, options);
   }
 
-  /**
-   * Guess this doesn't exist in Litegraph...
-   */
-  override removeWidget(widgetOrSlot?: IWidget | number) {
+  override removeWidget(widget: IBaseWidget | IWidget | number | undefined): void {
     (this as any)._tempWidth = this.size[0];
-    super.removeWidget(widgetOrSlot);
+    super.removeWidget(widget);
   }
 
   override computeSize(out: Vector2) {

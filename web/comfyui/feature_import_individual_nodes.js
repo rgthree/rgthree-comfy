@@ -55,22 +55,12 @@ export async function importIndividualNodesInnerOnDragDrop(node, e) {
     }
     else if (confirm("[rgthree-comfy] Found a matching node (same id & type) in the dropped workflow." +
         " Would you like to set the widget values?")) {
-        const slotToLayoutElement = new Map();
-        for (const slot of [...(node.inputs || []), ...(node.outputs || [])]) {
-            if (slot._layoutElement) {
-                slotToLayoutElement.set(slot, slot._layoutElement);
-                delete slot._layoutElement;
-            }
-        }
         node.configure({
             title: node.title,
             widgets_values: [...((exact === null || exact === void 0 ? void 0 : exact.widgets_values) || [])],
             mode: exact.mode,
         });
         handled = true;
-        for (const [slot, layoutElement] of slotToLayoutElement.entries()) {
-            slot._layoutElement = layoutElement;
-        }
     }
     return handled;
 }

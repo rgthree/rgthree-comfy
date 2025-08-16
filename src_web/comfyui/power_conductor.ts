@@ -1,5 +1,5 @@
 import type {Parser, Node, Tree} from "web-tree-sitter";
-import type {IStringWidget, IWidget} from "@comfyorg/litegraph/dist/types/widgets";
+import type {IStringWidget, IWidget} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {Exposed, execute, PyTuple} from "rgthree/common/py_parser.js";
@@ -77,7 +77,7 @@ class ComfyNodeWrapper {
   }
 
   @Exposed get widgets() {
-    return new PyTuple(this.getNode().widgets?.map((w) => new ComfyWidgetWrapper(w)));
+    return new PyTuple(this.getNode().widgets?.map((w) => new ComfyWidgetWrapper(w as IWidget)));
   }
 
   @Exposed get mode() {

@@ -3,11 +3,9 @@ import type {
   IWidget,
   LGraphNodeConstructor,
   Vector2,
-  Vector4,
-} from "@comfyorg/litegraph";
+  CanvasMouseEvent,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -24,6 +22,8 @@ import {
   measureText,
 } from "./utils_canvas.js";
 import {rgthree} from "./rgthree.js";
+
+type Vector4 = [number, number, number, number];
 
 const ALPHABET = "abcdefghijklmnopqrstuv".split("");
 
@@ -55,7 +55,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
   //   this.outputTypeWidget
   // }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
   }
 
@@ -76,7 +76,9 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
 
   private addInitialWidgets() {
     if (!this.outputTypeWidget) {
-      this.outputTypeWidget = this.addCustomWidget(new OutputsWidget("outputs", this));
+      this.outputTypeWidget = this.addCustomWidget(
+        new OutputsWidget("outputs", this),
+      ) as OutputsWidget;
       this.expressionWidget = ComfyWidgets["STRING"](
         this,
         "code",
@@ -209,7 +211,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
     // Handle a string being passed in, as the original Power Puter output widget was a string.
     let outputs = typeof v === "string" ? [v] : [...v.outputs];
     // Handle a case where the initial version used "BOOL" instead of "BOOLEAN" incorrectly.
-    outputs = outputs.map(o => o === 'BOOL' ? 'BOOLEAN' : o)
+    outputs = outputs.map((o) => (o === "BOOL" ? "BOOLEAN" : o));
     this._value.outputs = outputs;
   }
 
@@ -452,7 +454,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
 /** Register the node. */
 app.registerExtension({
   name: "rgthree.PowerPuter",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === NODE_CLASS.type) {
       NODE_CLASS.setUp(nodeType, nodeData);
     }

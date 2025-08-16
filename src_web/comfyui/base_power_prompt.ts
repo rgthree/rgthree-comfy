@@ -3,10 +3,10 @@ import type {
   LGraphNode,
   INodeOutputSlot,
   INodeInputSlot,
-  IWidget,
-} from "@comfyorg/litegraph";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
-import type {IComboWidget} from "@comfyorg/litegraph/dist/types/widgets.js";
+  ISerialisedNode,
+  IComboWidget,
+  IBaseWidget,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {api} from "scripts/api.js";
@@ -177,7 +177,7 @@ export class PowerPrompt {
     this.refreshCombos(event.detail[this.nodeData.name]);
   }
 
-  shouldRemoveServerWidget(widget: IWidget) {
+  shouldRemoveServerWidget(widget: IBaseWidget) {
     return (
       widget.name?.startsWith("insert_") ||
       widget.name?.startsWith("target_") ||
@@ -222,7 +222,7 @@ export class PowerPrompt {
               this.combos[key] = this.node.addWidget(
                 "combo",
                 key,
-                values,
+                values[0]!,
                 (selected) => {
                   if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
                     // We wait a frame because if we use a keydown event to call, it'll wipe out

@@ -1,4 +1,4 @@
-import type {INodeSlot, LGraphNode, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {INodeSlot, LGraphNode, LGraphNodeConstructor} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -12,7 +12,7 @@ import {NodeTypesString} from "./constants.js";
  */
 app.registerExtension({
   name: "rgthree.ImportIndividualNodes",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     const onDragOver = nodeType.prototype.onDragOver;
     nodeType.prototype.onDragOver = function (e: DragEvent) {
       let handled = onDragOver?.apply?.(this, [...arguments] as any);
@@ -50,7 +50,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
   let handled = false;
   const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
   const exact = (workflow?.nodes || []).find(
-    (n) =>
+    (n: any) =>
       n.id === node.id &&
       n.type === node.type &&
       (dynamicWidgetLengthNodes.includes(node.type) ||
@@ -73,19 +73,6 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
         " Would you like to set the widget values?",
     )
   ) {
-    // [🤮] Until https://github.com/Comfy-Org/ComfyUI_frontend/issues/3512 is resolved, we need
-    // to remove the `_layoutElement` field on inputs and outputs before calling configure. This
-    // field is not documented in the typing, but we can be a good citizen and store them in a map
-    // and add them back after the configure call. This can be removed if the above issue gets
-    // resolved.
-    const slotToLayoutElement = new Map<INodeSlot, INodeSlot["_layoutElement"]>();
-    for (const slot of [...(node.inputs || []), ...(node.outputs || [])]) {
-      if (slot._layoutElement) {
-        slotToLayoutElement.set(slot, slot._layoutElement);
-        delete slot._layoutElement;
-      }
-    }
-
     node.configure({
       // Title is overridden if it's not supplied; set it to the current then.
       title: node.title,
@@ -93,12 +80,6 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
       mode: exact.mode,
     } as any);
     handled = true;
-
-    // [🤮] Until https://github.com/Comfy-Org/ComfyUI_frontend/issues/3512 is resolved, we add
-    // back any `_layoutElement` we popped off for the configure call.
-    for (const [slot, layoutElement] of slotToLayoutElement.entries()) {
-      slot._layoutElement = layoutElement;
-    }
   }
   return handled;
 }

@@ -4,9 +4,9 @@
  * adding properties/methods that rgthree-comfy adds/uses. Mostly the latter are prefixed 'rgthree_'
  * but not always.
  */
-import "@comfyorg/litegraph";
+import "@comfyorg/frontend";
 
-declare module "@comfyorg/litegraph" {
+declare module "@comfyorg/frontend" {
   interface INodeSlot {
     // @rgthree: Hides a slot for rgthree-comfy draw methods.
     hidden?: boolean;
@@ -25,6 +25,9 @@ declare module "@comfyorg/litegraph" {
   }
 
   interface LGraphNode {
+    // @rgthree: rgthree-comfy added this before comfyui did and it was a bit more flexible.
+    removeWidget(widget: IBaseWidget|IWidget|number|undefined): void;
+
     // @rgthree (Fix): Implementation allows a falsy value to be returned and it will suppress the
     // menu all together.
     // NOTE: [🤮] We can't actually augment this because it's a return.. but keeping here because
@@ -79,7 +82,7 @@ declare module "@comfyorg/litegraph" {
   }
 }
 
-declare module "@comfyorg/litegraph/dist/types/widgets" {
+declare module "@/lib/litegraph/src/types/widgets" {
   interface IBaseWidget {
     // @rgthree (Fix): Where is this in Comfy types?
     inputEl?: HTMLInputElement;
@@ -89,7 +92,7 @@ declare module "@comfyorg/litegraph/dist/types/widgets" {
   }
 }
 
-declare module "@comfyorg/litegraph/dist/interfaces" {
+declare module "@/lib/litegraph/src/interfaces" {
   // @rgthree (Fix): widget is (or was?) available when inputs were moved from a widget.
   interface IFoundSlot {
     widget?: IBaseWidget;

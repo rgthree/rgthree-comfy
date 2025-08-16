@@ -1,4 +1,4 @@
-import type {LGraphNodeConstructor, LGraphNode as TLGraphNode} from "@comfyorg/litegraph";
+import type {LGraphNodeConstructor, LGraphNode as TLGraphNode} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {ComfyApp} from "@comfyorg/frontend";
 
@@ -11,11 +11,7 @@ let hasShownAlertForUpdatingInt = false;
 
 app.registerExtension({
   name: "rgthree.DisplayAny",
-  async beforeRegisterNodeDef(
-    nodeType: LGraphNodeConstructor,
-    nodeData: ComfyNodeDef,
-    app: ComfyApp,
-  ) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef, app: ComfyApp) {
     if (nodeData.name === "Display Any (rgthree)" || nodeData.name === "Display Int (rgthree)") {
       const onNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function () {
@@ -45,7 +41,7 @@ app.registerExtension({
         };
       };
 
-      addConnectionLayoutSupport(nodeType, app, [["Left"], ["Right"]]);
+      addConnectionLayoutSupport(nodeType as LGraphNodeConstructor, app, [["Left"], ["Right"]]);
 
       const onExecuted = nodeType.prototype.onExecuted;
       nodeType.prototype.onExecuted = function (message: any) {

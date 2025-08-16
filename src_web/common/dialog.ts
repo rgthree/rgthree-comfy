@@ -1,4 +1,4 @@
-import type { LGraphNode, LGraphNodeConstructor } from "@comfyorg/litegraph";
+import type { LGraphNode, LGraphNodeConstructor } from "@comfyorg/frontend";
 import { createElement as $el, getClosestOrSelf, setAttributes } from "./utils_dom.js";
 
 type RgthreeDialogButton = {

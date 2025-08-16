@@ -1,11 +1,11 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
-  IWidget,
   LGraphNode,
-  ContextMenuEventListener,
   ContextMenu,
-  IContextMenuItem,
-} from "@comfyorg/litegraph";
+  IContextMenuValue,
+  IBaseWidget,
+  IContextMenuOptions,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {rgthreeApi} from "rgthree/common/rgthree_api.js";
@@ -19,7 +19,7 @@ const PASS_THROUGH = function <T extends any, I extends any>(item: T) {
  */
 export async function showLoraChooser(
   event: PointerEvent | MouseEvent,
-  callback: ContextMenuEventListener,
+  callback: IContextMenuOptions["callback"],
   parentMenu?: ContextMenu | null,
   loras?: string[],
 ) {
@@ -43,10 +43,10 @@ export async function showLoraChooser(
  * @param mapFn The function used to map each node to the context menu item. If null is returned
  *     it will be filtered out (rather than use a separate filter method).
  */
-export function showNodesChooser<T extends IContextMenuItem>(
+export function showNodesChooser<T extends IContextMenuValue>(
   event: PointerEvent | MouseEvent,
   mapFn: (n: LGraphNode) => T | null,
-  callback: ContextMenuEventListener,
+  callback: IContextMenuOptions["callback"],
   parentMenu?: ContextMenu,
 ) {
   const canvas = app.canvas as TLGraphCanvas;
@@ -74,11 +74,11 @@ export function showNodesChooser<T extends IContextMenuItem>(
  * @param mapFn The function used to map each node to the context menu item. If null is returned
  *     it will be filtered out (rather than use a separate filter method).
  */
-export function showWidgetsChooser<T extends IContextMenuItem>(
+export function showWidgetsChooser<T extends IContextMenuValue>(
   event: PointerEvent | MouseEvent,
   node: LGraphNode,
-  mapFn: (n: IWidget) => T | null,
-  callback: ContextMenuEventListener,
+  mapFn: (n: IBaseWidget) => T | null,
+  callback: IContextMenuOptions["callback"],
   parentMenu?: ContextMenu,
 ) {
   const options: T[] = (node.widgets || [])

@@ -5,8 +5,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   ISlotType,
-  LGraphNodeConstructor,
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -58,7 +57,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
   lastInputsList: ShadowInputData[] = [];
 
   private shadowInputs: (InputLike & {count: number})[] = [
-    {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0},
+    {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null},
   ];
 
   constructor(title = DynamicContextSwitchNode.title) {
@@ -111,7 +110,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
    */
   private refreshInputsAndOutputs() {
     const inputs: (InputLike & {count: number})[] = [
-      {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0},
+      {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null},
     ];
     let numConnected = 0;
     for (let i = 0; i < this.inputs.length; i++) {
@@ -141,6 +140,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
           type: slotData.type,
           link: null,
           count: 1,
+          boundingRect: null,
         });
       }
     }
@@ -203,7 +203,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
 
 app.registerExtension({
   name: "rgthree.DynamicContextSwitch",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (!CONFIG_SERVICE.getConfigValue("unreleased.dynamic_context.enabled")) {
       return;
     }

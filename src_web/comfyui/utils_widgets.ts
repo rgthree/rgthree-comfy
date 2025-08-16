@@ -1,20 +1,16 @@
 import type {
   LGraphNode,
-  Size,
   LGraphCanvas as TLGraphCanvas,
   Vector2,
-  Vector4,
-} from "@comfyorg/litegraph";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {ICustomWidget, IWidgetOptions} from "@comfyorg/litegraph/dist/types/widgets.js";
+  ICustomWidget,
+  IWidgetOptions,
+  CanvasPointerEvent,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import {
-  drawNodeWidget,
-  drawWidgetButton,
-  fitString,
-  isLowQuality,
-} from "./utils_canvas.js";
+import {drawNodeWidget, drawWidgetButton, fitString, isLowQuality} from "./utils_canvas.js";
+
+type Vector4 = [number, number, number, number];
 
 /**
  * Draws a label on teft, and a value on the right, ellipsizing when out of space.
@@ -50,10 +46,30 @@ export function drawLabelAndValue(
 export type RgthreeBaseWidgetBounds = {
   /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
   bounds: Vector2 | Vector4;
-  onDown?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
-  onUp?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
-  onMove?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
-  onClick?(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode, bounds: RgthreeBaseWidgetBounds): boolean | void;
+  onDown?(
+    event: CanvasPointerEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
+  onUp?(
+    event: CanvasPointerEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
+  onMove?(
+    event: CanvasPointerEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
+  onClick?(
+    event: CanvasPointerEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds: RgthreeBaseWidgetBounds,
+  ): boolean | void;
   data?: any;
   wasMouseClickedAndIsOver?: boolean;
 };
@@ -105,7 +121,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
     return clickedX && pos[1] >= bounds[1] && pos[1] <= bounds[1] + bounds[3]!;
   }
 
-  mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
+  mouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
     const canvas = app.canvas as TLGraphCanvas;
 
     if (event.type == "pointerdown") {
@@ -156,7 +172,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
       }
       this.downedHitAreasForClick.length = 0;
       if (wasMouseDownedAndOver) {
-        const thisHandled = this.onMouseClick(event, pos, node)
+        const thisHandled = this.onMouseClick(event, pos, node);
         anyHandled = anyHandled || thisHandled == true;
       }
       return this.onMouseUp(event, pos, node) ?? anyHandled;
@@ -196,7 +212,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   }
 
   /** An event that fires when the pointer is pressed down (once). */
-  onMouseDown(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseDown(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -204,7 +220,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * An event that fires when the pointer is let go. Only fires if this was the widget that was
    * originally pressed down.
    */
-  onMouseUp(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -212,7 +228,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * An event that fires when the pointer is let go _over the widget_ and when the widget that was
    * originally pressed down.
    */
-  onMouseClick(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseClick(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -221,7 +237,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * of the widget. Check `isMouseDownedAndOver` to determine if the mouse is currently over the
    * widget or not.
    */
-  onMouseMove(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseMove(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
     return;
   }
 }
@@ -234,11 +250,11 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
 
   value: string = "";
   label: string = "";
-  mouseClickCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  mouseClickCallback: (event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) => boolean | void;
 
   constructor(
     name: string,
-    mouseClickCallback: (event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) => boolean | void,
+    mouseClickCallback: (event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) => boolean | void,
     label?: string,
   ) {
     super(name);
@@ -255,7 +271,7 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
     );
   }
 
-  override onMouseClick(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode) {
+  override onMouseClick(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
     return this.mouseClickCallback(event, pos, node);
   }
 }
@@ -280,7 +296,7 @@ export class RgthreeBetterTextWidget extends RgthreeBaseWidget<string> {
     }
   }
 
-  override mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean {
+  override mouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean {
     const canvas = app.canvas as TLGraphCanvas;
     if (event.type == "pointerdown") {
       canvas.prompt("Label", this.value, (v: string) => (this.value = v), event);
@@ -354,7 +370,7 @@ export type RgthreeLabelWidgetOptions = {
 
   /** A label to put on the right side. */
   actionLabel?: "__PLUS_ICON__" | string;
-  actionCallback?: (event: PointerEvent | CanvasMouseEvent) => void;
+  actionCallback?: (event: PointerEvent | CanvasPointerEvent) => void;
 };
 
 /**
@@ -427,7 +443,7 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
     ctx.restore();
   }
 
-  override mouse(event: CanvasMouseEvent, nodePos: Vector2, node: LGraphNode): boolean {
+  override mouse(event: CanvasPointerEvent, nodePos: Vector2, node: LGraphNode): boolean {
     if (
       event.type !== "pointerdown" ||
       isLowQuality() ||

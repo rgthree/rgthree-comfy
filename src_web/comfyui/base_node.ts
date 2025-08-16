@@ -5,11 +5,13 @@ import type {
   IFoundSlot,
   LGraphEventMode,
   LGraphNodeConstructor,
-} from "@comfyorg/litegraph";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+  ISerialisedNode,
+  IBaseWidget,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
 
+import {app} from "scripts/app.js";
 import {ComfyWidgets} from "scripts/widgets.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {LogLevel, rgthree} from "./rgthree.js";
@@ -179,19 +181,14 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   }
 
   /**
-   * Guess this doesn't exist in Litegraph...
+   * This didn't exist in LiteGraph/Comfy, but now it's added. Ours was a bit more flexible, though.
    */
-  removeWidget(widgetOrSlot?: IWidget | number) {
-    if (!this.widgets) {
-      return;
+  override removeWidget(widget: IBaseWidget | IWidget | number | undefined): void {
+    if (typeof widget === "number") {
+      widget = this.widgets[widget];
     }
-    const widget = typeof widgetOrSlot === "number" ? this.widgets[widgetOrSlot] : widgetOrSlot;
-    if (widget) {
-      const index = this.widgets.indexOf(widget);
-      if (index > -1) {
-        this.widgets.splice(index, 1);
-      }
-      widget.onRemove?.();
+    if (widget != null) {
+      super.removeWidget(widget as IBaseWidget);
     }
   }
 
@@ -201,8 +198,8 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   replaceWidget(widgetOrSlot: IWidget | number | undefined, newWidget: IWidget) {
     let index = null;
     if (widgetOrSlot) {
-      index = typeof widgetOrSlot === 'number' ? widgetOrSlot : this.widgets.indexOf(widgetOrSlot);
-      this.removeWidget(index);
+      index = typeof widgetOrSlot === "number" ? widgetOrSlot : this.widgets.indexOf(widgetOrSlot);
+      this.removeWidget(this.widgets[index]!);
     }
     index = index != null ? index : this.widgets.length - 1;
     if (this.widgets.includes(newWidget)) {
@@ -283,10 +280,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (super.getExtraMenuOptions) {
       super.getExtraMenuOptions?.apply(this, [canvas, options]);
     } else if (this.constructor.nodeType?.prototype?.getExtraMenuOptions) {
-      this.constructor.nodeType?.prototype?.getExtraMenuOptions?.apply(this, [
-        canvas,
-        options,
-      ]);
+      this.constructor.nodeType?.prototype?.getExtraMenuOptions?.apply(this, [canvas, options]);
     }
     // If we have help content, then add a menu item.
     const help = this.getHelp() || (this.constructor as any).help;
@@ -433,7 +427,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
 
   static __registeredForOverride__: boolean = false;
   static registerForOverride(
-    comfyClass: LGraphNodeConstructor,
+    comfyClass: typeof LGraphNode,
     nodeData: ComfyNodeDef,
     rgthreeClass: RgthreeBaseServerNodeConstructor,
   ) {

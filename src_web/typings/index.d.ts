@@ -12,7 +12,7 @@ import type {
   LGraph as TLGraph,
   LGraphCanvas as TLGraphCanvas,
   LiteGraph as TLiteGraph,
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
 
 declare global {
   const LiteGraph: typeof TLiteGraph;

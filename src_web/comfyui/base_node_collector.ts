@@ -1,6 +1,7 @@
-import type { INodeOutputSlot, LGraphNode } from "@comfyorg/litegraph";
-import { rgthree } from "./rgthree.js";
-import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
+import type {INodeOutputSlot, LGraphNode} from "@comfyorg/frontend";
+
+import {rgthree} from "./rgthree.js";
+import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
 import {
   PassThroughFollowing,
   getConnectedInputNodes,

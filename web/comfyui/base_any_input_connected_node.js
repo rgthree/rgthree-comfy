@@ -109,9 +109,9 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         this._tempWidth = this.size[0];
         return super.addWidget(type, name, value, callback, options);
     }
-    removeWidget(widgetOrSlot) {
+    removeWidget(widget) {
         this._tempWidth = this.size[0];
-        super.removeWidget(widgetOrSlot);
+        super.removeWidget(widget);
     }
     computeSize(out) {
         var _a, _b;

@@ -126,7 +126,7 @@ class Rgthree extends EventTarget {
         this.settingsDialog = null;
         this.progressBarEl = null;
         this.queueNodeIds = null;
-        this.version = CONFIG_SERVICE.getConfigValue('version');
+        this.version = CONFIG_SERVICE.getConfigValue("version");
         this.logger = new LogSession("[rgthree]");
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
@@ -729,8 +729,8 @@ app.registerExtension({
     aboutPageBadges: [
         {
             label: `rgthree-comfy v${rgthree.version}`,
-            url: 'https://github.com/rgthree/rgthree-comfy',
-            icon: 'rgthree-comfy-about-badge-logo'
-        }
+            url: "https://github.com/rgthree/rgthree-comfy",
+            icon: "rgthree-comfy-about-badge-logo",
+        },
     ],
 });

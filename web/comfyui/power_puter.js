@@ -128,7 +128,7 @@ class OutputsWidget extends RgthreeBaseWidget {
     }
     set value(v) {
         let outputs = typeof v === "string" ? [v] : [...v.outputs];
-        outputs = outputs.map(o => o === 'BOOL' ? 'BOOLEAN' : o);
+        outputs = outputs.map((o) => (o === "BOOL" ? "BOOLEAN" : o));
         this._value.outputs = outputs;
     }
     get value() {

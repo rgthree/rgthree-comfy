@@ -5,18 +5,17 @@ import type {
   LGraphGroup,
   LGraphNode,
   LLink,
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import { BaseCollectorNode } from "./base_node_collector.js";
-import { NodeTypesString, stripRgthree } from "./constants.js";
+import {BaseCollectorNode} from "./base_node_collector.js";
+import {NodeTypesString, stripRgthree} from "./constants.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
-import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 class NodeModeRepeater extends BaseCollectorNode {
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;

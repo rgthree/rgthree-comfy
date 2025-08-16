@@ -5,10 +5,12 @@ import type {
   ISlotType,
   INodeOutputSlot,
   INodeInputSlot,
-} from "@comfyorg/litegraph";
-import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode";
-import type {ISerialisedNode, ISerialisedGraph} from "@comfyorg/litegraph/dist/types/serialisation";
-import type {SerialisedLLinkArray, LinkId} from "@comfyorg/litegraph/dist/LLink";
+  SerialisedLLinkArray,
+  LinkId,
+  ISerialisedNode,
+  ISerialisedGraph,
+  NodeId,
+} from "@comfyorg/frontend";
 
 /**
  * The bad links data returned from either a fixer `check()`, or the results of a `fix()` call.

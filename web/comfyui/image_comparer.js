@@ -187,7 +187,7 @@ RgthreeImageComparer["@comparer_mode"] = {
 class RgthreeImageComparerWidget extends RgthreeBaseWidget {
     constructor(name, node) {
         super(name);
-        this.type = 'custom';
+        this.type = "custom";
         this.hitAreas = {};
         this.selected = [];
         this._value = { images: [] };

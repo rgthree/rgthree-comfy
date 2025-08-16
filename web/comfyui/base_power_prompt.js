@@ -137,7 +137,7 @@ export class PowerPrompt {
                     const shouldShow = values.length > 2 || (values.length > 1 && !values[1].match(/^disable\s[a-z]/i));
                     if (shouldShow) {
                         if (!this.combos[key]) {
-                            this.combos[key] = this.node.addWidget("combo", key, values, (selected) => {
+                            this.combos[key] = this.node.addWidget("combo", key, values[0], (selected) => {
                                 if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
                                     wait().then(() => {
                                         if (key.includes("embedding")) {

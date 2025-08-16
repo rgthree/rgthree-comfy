@@ -4,13 +4,13 @@ import type {
   Vector2,
   IContextMenuValue,
   IFoundSlot,
-  LGraphNodeConstructor,
-} from "@comfyorg/litegraph";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
-import type {ICustomWidget} from "@comfyorg/litegraph/dist/types/widgets";
-import type {RgthreeModelInfo} from "typings/rgthree.js";
+  CanvasMouseEvent,
+  ISerialisedNode,
+  ICustomWidget,
+  CanvasPointerEvent,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
+import type {RgthreeModelInfo} from "typings/rgthree.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -118,7 +118,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     this.loraWidgetsCounter++;
     const widget = this.addCustomWidget(
       new PowerLoraLoaderWidget("lora_" + this.loraWidgetsCounter),
-    );
+    ) as PowerLoraLoaderWidget;
     if (lora) widget.setLora(lora);
     if (this.widgetButtonSpacer) {
       moveArrayItem(this.widgets, widget, this.widgets.indexOf(this.widgetButtonSpacer));
@@ -138,7 +138,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
     this.widgetButtonSpacer = this.addCustomWidget(
       new RgthreeDividerWidget({marginTop: 4, marginBottom: 0, thickness: 0}),
-    );
+    ) as RgthreeDividerWidget;
 
     this.addCustomWidget(
       new RgthreeBetterButtonWidget(
@@ -322,7 +322,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     }
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
   }
 
@@ -745,22 +745,22 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     }
   }
 
-  onStrengthValUp(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthValUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode) {
     this.doOnStrengthValUp(event, false);
   }
 
-  onStrengthTwoValUp(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthTwoValUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode) {
     this.doOnStrengthValUp(event, true);
   }
 
-  private doOnStrengthValUp(event: CanvasMouseEvent, isTwo = false) {
+  private doOnStrengthValUp(event: CanvasPointerEvent, isTwo = false) {
     if (this.haveMouseMovedStrength) return;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     const canvas = app.canvas as LGraphCanvas;
     canvas.prompt("Value", this.value[prop], (v: string) => (this.value[prop] = Number(v)), event);
   }
 
-  override onMouseUp(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode): boolean | void {
+  override onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode): boolean | void {
     super.onMouseUp(event, pos, node);
     this.haveMouseMovedStrength = false;
   }
@@ -804,7 +804,7 @@ const NODE_CLASS = RgthreePowerLoraLoader;
 /** Register the node. */
 app.registerExtension({
   name: "rgthree.PowerLoraLoader",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === NODE_CLASS.type) {
       NODE_CLASS.setUp(nodeType, nodeData);
     }

@@ -1,8 +1,8 @@
-import type { ISerialisedGraph } from "@comfyorg/litegraph/dist/types/serialisation";
-import type { ComfyApiFormat } from "typings/comfy.js";
+import type {ISerialisedGraph} from "@comfyorg/frontend";
+import type {ComfyApiFormat} from "typings/comfy.js";
 
-import { getResolver } from "./shared_utils.js";
-import { getPngMetadata, getWebpMetadata } from "./comfyui_shim.js";
+import {getResolver} from "./shared_utils.js";
+import {getPngMetadata, getWebpMetadata} from "./comfyui_shim.js";
 
 /**
  * Parses the workflow JSON and do any necessary cleanup.
@@ -18,7 +18,7 @@ function parseWorkflowJson(stringJson?: string) {
 
 export async function tryToGetWorkflowDataFromEvent(
   e: DragEvent,
-): Promise<{ workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null }> {
+): Promise<{workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null}> {
   let work;
   for (const file of e.dataTransfer?.files || []) {
     const data = await tryToGetWorkflowDataFromFile(file);
@@ -34,12 +34,12 @@ export async function tryToGetWorkflowDataFromEvent(
       return tryToGetWorkflowDataFromFile(await (await fetch(uri)).blob());
     }
   }
-  return { workflow: null, prompt: null };
+  return {workflow: null, prompt: null};
 }
 
 export async function tryToGetWorkflowDataFromFile(
   file: File | Blob,
-): Promise<{ workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null }> {
+): Promise<{workflow: ISerialisedGraph | null; prompt: ComfyApiFormat | null}> {
   if (file.type === "image/png") {
     const pngInfo = await getPngMetadata(file);
     return {
@@ -53,20 +53,20 @@ export async function tryToGetWorkflowDataFromFile(
     // Support loading workflows from that webp custom node.
     const workflow = parseWorkflowJson(pngInfo?.workflow || pngInfo?.Workflow || "null");
     const prompt = parseWorkflowJson(pngInfo?.prompt || pngInfo?.Prompt || "null");
-    return { workflow, prompt };
+    return {workflow, prompt};
   }
 
   if (file.type === "application/json" || (file as File).name?.endsWith(".json")) {
-    const resolver = getResolver<{ workflow: any; prompt: any }>();
+    const resolver = getResolver<{workflow: any; prompt: any}>();
     const reader = new FileReader();
     reader.onload = async () => {
       const json = parseWorkflowJson(reader.result as string);
       const isApiJson = Object.values(json).every((v: any) => v.class_type);
       const prompt = isApiJson ? json : null;
       const workflow = !isApiJson && !json?.templates ? json : null;
-      return { workflow, prompt };
+      return {workflow, prompt};
     };
     return resolver.promise;
   }
-  return { workflow: null, prompt: null };
+  return {workflow: null, prompt: null};
 }

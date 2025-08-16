@@ -88,7 +88,7 @@ export class DynamicContextNodeBase extends BaseContextNode {
     addContextInput(name, type, slot = -1) {
         const inputs = this.getContextInputsList();
         if (this.hasShadowInputs) {
-            inputs.push({ name, type, link: null });
+            inputs.push({ name, type, link: null, boundingRect: null });
         }
         else {
             this.addInput(name, type);

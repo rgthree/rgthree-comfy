@@ -1,4 +1,8 @@
-import type {IContextMenuValue, LGraphCanvas as TLGraphCanvas, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {
+  IContextMenuValue,
+  LGraphCanvas as TLGraphCanvas,
+  LGraphNode,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -41,7 +45,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(
       rgthree.lastCanvasMouseEvent.canvasY,
     );
 
-  const outputNodes = group && getOutputNodes(group._nodes);
+  const outputNodes: LGraphNode[] | null = (group && getOutputNodes(group._nodes)) || null;
   const menuItem = {
     content: `Queue Group Output Nodes (rgthree) &nbsp;`,
     className: "rgthree-contextmenu-item",
@@ -64,7 +68,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(
  */
 app.registerExtension({
   name: "rgthree.QueueNode",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
     nodeType.prototype.getExtraMenuOptions = function (
       canvas: TLGraphCanvas,

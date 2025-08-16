@@ -1,6 +1,5 @@
-import type {LGraph, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {LGraph, LGraphNodeConstructor, ISerialisedNode} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -56,17 +55,14 @@ class ImageInsetCrop extends RgthreeBaseServerNode {
     }
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, ImageInsetCrop);
   }
 }
 
 app.registerExtension({
   name: "rgthree.ImageInsetCrop",
-  async beforeRegisterNodeDef(
-    nodeType: LGraphNodeConstructor,
-    nodeData: ComfyNodeDef,
-  ) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === NodeTypesString.IMAGE_INSET_CROP) {
       ImageInsetCrop.setUp(nodeType, nodeData);
     }

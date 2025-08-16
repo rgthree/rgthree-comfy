@@ -1,4 +1,4 @@
-import type {LGraphNode, LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {LGraphNode, LGraphNodeConstructor} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -9,7 +9,7 @@ import {NodeTypesString} from "./constants.js";
 let nodeData: ComfyNodeDef | null = null;
 app.registerExtension({
   name: "rgthree.PowerPrompt",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, passedNodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, passedNodeData: ComfyNodeDef) {
     if (passedNodeData.name.includes("Power Prompt") && passedNodeData.name.includes("rgthree")) {
       nodeData = passedNodeData;
       const onNodeCreated = nodeType.prototype.onNodeCreated;
@@ -17,7 +17,7 @@ app.registerExtension({
         onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
         (this as any).powerPrompt = new PowerPrompt(this as LGraphNode, passedNodeData);
       };
-      addConnectionLayoutSupport(nodeType, app, [
+      addConnectionLayoutSupport(nodeType as LGraphNodeConstructor, app, [
         ["Left", "Right"],
         ["Right", "Left"],
       ]);

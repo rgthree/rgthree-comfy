@@ -1,8 +1,8 @@
-import type { Size } from "@comfyorg/litegraph";
+import type {Size} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import { NodeTypesString } from "./constants.js";
-import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
+import {NodeTypesString} from "./constants.js";
+import {BaseFastGroupsModeChanger} from "./fast_groups_muter.js";
 
 /**
  * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.

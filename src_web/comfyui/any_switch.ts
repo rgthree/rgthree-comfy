@@ -1,13 +1,18 @@
-import type { INodeInputSlot, INodeOutputSlot, LGraphNodeConstructor, LLink } from "@comfyorg/litegraph";
-import type { ComfyApp } from "@comfyorg/frontend";
-import type { ComfyNodeDef } from "typings/comfy.js";
+import type {
+  ComfyApp,
+  INodeInputSlot,
+  INodeOutputSlot,
+  LGraphNode,
+  LLink,
+} from "@comfyorg/frontend";
+import type {ComfyNodeDef} from "typings/comfy.js";
 
-import { app } from "scripts/app.js";
-import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { NodeTypesString } from "./constants.js";
-import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
-import { debounce } from "rgthree/common/shared_utils.js";
+import {app} from "scripts/app.js";
+import {IoDirection, addConnectionLayoutSupport, followConnectionUntilType} from "./utils.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {NodeTypesString} from "./constants.js";
+import {removeUnusedInputsFromEnd} from "./utils_inputs_outputs.js";
+import {debounce} from "rgthree/common/shared_utils.js";
 
 class RgthreeAnySwitch extends RgthreeBaseServerNode {
   static override title = NodeTypesString.ANY_SWITCH;
@@ -74,12 +79,12 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
         output.type === "RGTHREE_CONTEXT"
           ? "CONTEXT"
           : Array.isArray(this.nodeType) || this.nodeType.includes(",")
-          ? connectedType?.label || String(this.nodeType)
-          : String(this.nodeType);
+            ? connectedType?.label || String(this.nodeType)
+            : String(this.nodeType);
     }
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeAnySwitch);
     addConnectionLayoutSupport(RgthreeAnySwitch, app, [
       ["Left", "Right"],
@@ -90,7 +95,7 @@ class RgthreeAnySwitch extends RgthreeBaseServerNode {
 
 app.registerExtension({
   name: "rgthree.AnySwitch",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: any, app: ComfyApp) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: any, app: ComfyApp) {
     if (nodeData.name === "Any Switch (rgthree)") {
       RgthreeAnySwitch.setUp(nodeType, nodeData);
     }

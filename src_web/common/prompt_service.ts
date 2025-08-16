@@ -10,7 +10,7 @@ import type {
   ComfyApiPrompt,
 } from "typings/comfy.js";
 import { api } from "scripts/api.js";
-import type { LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "@comfyorg/litegraph";
+import type { LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "@comfyorg/frontend";
 import { Resolver, getResolver } from "./shared_utils.js";
 
 /**

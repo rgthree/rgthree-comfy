@@ -1,6 +1,4 @@
-import type {ComfyApp} from "@comfyorg/frontend";
-import type {IWidget, LGraphNode} from "@comfyorg/litegraph";
-import type {IStringWidget, IComboWidget} from "@comfyorg/litegraph/dist/types/widgets";
+import type {ComfyApp, IStringWidget, IComboWidget, IWidget, LGraphNode} from "@comfyorg/frontend";
 
 type ComfyWidgetFn<WidgetType extends IWidget> = (
   node: LGraphNode,

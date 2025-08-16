@@ -6,8 +6,7 @@ import type {
   ISlotType,
   LGraphNode,
   LLink,
-  LGraphNodeConstructor
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -292,7 +291,7 @@ export class DynamicContextNode extends DynamicContextNodeBase {
 const contextDynamicNodes = [DynamicContextNode];
 app.registerExtension({
   name: "rgthree.DynamicContext",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (!CONFIG_SERVICE.getConfigValue("unreleased.dynamic_context.enabled")) {
       return;
     }

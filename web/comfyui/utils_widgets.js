@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { drawNodeWidget, drawWidgetButton, fitString, isLowQuality, } from "./utils_canvas.js";
+import { drawNodeWidget, drawWidgetButton, fitString, isLowQuality } from "./utils_canvas.js";
 export function drawLabelAndValue(ctx, label, value, width, posY, height, options) {
     var _a;
     const outerMargin = 15;

@@ -7,9 +7,9 @@ import type {
   ContextMenu,
   IContextMenuValue,
   Size,
-} from "@comfyorg/litegraph";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
-import type {Point} from "@comfyorg/litegraph/dist/interfaces";
+  ISerialisedNode,
+  Point,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {addConnectionLayoutSupport} from "./utils.js";

@@ -5,9 +5,9 @@ import type {
   Vector2,
   Size,
   LGraphGroup,
-} from "@comfyorg/litegraph";
-import type {CanvasMouseEvent} from "@comfyorg/litegraph/dist/types/events.js";
-import type {Point} from "@comfyorg/litegraph/dist/interfaces.js";
+  CanvasMouseEvent,
+  Point,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
@@ -191,7 +191,9 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         // When we add a widget, litegraph is going to mess up the size, so we
         // store it so we can retrieve it in computeSize. Hacky..
         this.tempSize = [...this.size] as Size;
-        widget = this.addCustomWidget(new FastGroupsToggleRowWidget(group, this));
+        widget = this.addCustomWidget(
+          new FastGroupsToggleRowWidget(group, this),
+        ) as FastGroupsToggleRowWidget;
         this.setSize(this.computeSize());
         isDirty = true;
       }

@@ -12,8 +12,12 @@ import type {
   IContextMenuValue,
   ISlotType,
   LGraphNodeConstructor,
-} from "@comfyorg/litegraph";
-import type {ComfyApp} from "@comfyorg/frontend";
+  LGraphEventMode,
+  NodeProperty,
+  LinkDirection,
+  Point,
+  ComfyApp,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {Constructor} from "typings/rgthree";
 
@@ -21,9 +25,6 @@ import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
 import {Resolver, getResolver, wait} from "rgthree/common/shared_utils.js";
 import {RgthreeHelpDialog} from "rgthree/common/dialog.js";
-import {NodeProperty} from "@comfyorg/litegraph/dist/LGraphNode";
-import {LinkDirection} from "@comfyorg/litegraph/dist/types/globalEnums";
-import {Point} from "@comfyorg/litegraph/dist/interfaces";
 
 /**
  * Override the api.getNodeDefs call to add a hook for refreshing node defs.
@@ -564,11 +565,11 @@ export function getConnectedNodesInfo(
         linkIds = currentNode.inputs?.map((i) => i.link) || [];
       }
     }
-    let graph = app.graph as LGraph;
+    let graph = app.graph;
     for (const linkId of linkIds) {
       let link: LLink | null = null;
       if (typeof linkId == "number") {
-        link = graph.links[linkId] as LLink;
+        link = graph.links[linkId] ?? null;
       }
       if (!link) {
         continue;
@@ -965,9 +966,12 @@ export function getOutputNodes(nodes: LGraphNode[]) {
 /**
  * Gets a full color string, including parsing from the LGraphCanvas data.
  */
-export function getFullColor(color?: string, liteGraphKey: 'groupcolor'|'color'|'bgcolor' = 'color') {
+export function getFullColor(
+  color?: string,
+  liteGraphKey: "groupcolor" | "color" | "bgcolor" = "color",
+) {
   if (!color) {
-    return '';
+    return "";
   }
   if (LGraphCanvas.node_colors[color]) {
     color = LGraphCanvas.node_colors[color]![liteGraphKey];

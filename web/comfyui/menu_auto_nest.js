@@ -42,7 +42,7 @@ app.registerExtension({
                 }
                 const newValue = typeof value === "string" ? { content: value } : Object.assign({}, value);
                 newValue.rgthree_originalValue = value.rgthree_originalValue || value;
-                const valueContent = newValue.content || '';
+                const valueContent = newValue.content || "";
                 const splitBy = valueContent.indexOf("/") > -1 ? "/" : "\\";
                 const valueSplit = valueContent.split(splitBy);
                 if (valueSplit.length > 1) {

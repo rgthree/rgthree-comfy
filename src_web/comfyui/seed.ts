@@ -5,17 +5,18 @@ import type {
   IWidget,
   LGraphCanvas,
   IContextMenuValue,
-  LGraphNodeConstructor
-} from "@comfyorg/litegraph";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation";
+  LGraphNodeConstructor,
+  ISerialisedNode,
+  IButtonWidget,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef, ComfyApiPrompt} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
-import { ComfyWidgets } from "scripts/widgets.js";
-import { RgthreeBaseServerNode } from "./base_node.js";
-import { rgthree } from "./rgthree.js";
-import { addConnectionLayoutSupport } from "./utils.js";
-import { NodeTypesString } from "./constants.js";
+import {ComfyWidgets} from "scripts/widgets.js";
+import {RgthreeBaseServerNode} from "./base_node.js";
+import {rgthree} from "./rgthree.js";
+import {addConnectionLayoutSupport} from "./utils.js";
+import {NodeTypesString} from "./constants.js";
 
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 
@@ -111,35 +112,35 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     this.addWidget(
       "button",
       "🎲 Randomize Each Time",
-      '',
+      "",
       () => {
         this.seedWidget.value = SPECIAL_SEED_RANDOM;
       },
-      { serialize: false },
+      {serialize: false},
     );
 
     this.addWidget(
       "button",
       "🎲 New Fixed Random",
-      '',
+      "",
       () => {
         this.seedWidget.value =
           Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
       },
-      { serialize: false },
+      {serialize: false},
     );
 
     this.lastSeedButton = this.addWidget(
       "button",
       LAST_SEED_BUTTON_LABEL,
-      '',
+      "",
       () => {
         this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
         this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
         this.lastSeedButton.disabled = true;
       },
-      { width: 50, serialize: false },
-    );
+      {width: 50, serialize: false} as any,
+    ) as IButtonWidget;
     this.lastSeedButton.disabled = true;
   }
 
@@ -170,7 +171,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     this.lastSeedValue = ComfyWidgets["STRING"](
       this,
       "last_seed",
-      ["STRING", { multiline: true }],
+      ["STRING", {multiline: true}],
       app,
     ).widget as unknown as IWidget;
     this.lastSeedValue!.inputEl!.readOnly = true;
@@ -272,7 +273,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
     return seedToUse ?? inputSeed;
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, RgthreeSeed);
   }
 
@@ -289,7 +290,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
 app.registerExtension({
   name: "rgthree.Seed",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === RgthreeSeed.type) {
       RgthreeSeed.setUp(nodeType, nodeData);
     }

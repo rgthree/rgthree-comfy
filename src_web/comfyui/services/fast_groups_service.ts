@@ -1,12 +1,13 @@
-import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 import type {
   LGraph as TLGraph,
   LGraphCanvas as TLGraphCanvas,
   LGraphGroup,
-  Vector4,
-} from "@comfyorg/litegraph";
+} from "@comfyorg/frontend";
+import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 
 import {app} from "scripts/app.js";
+
+type Vector4 = [number, number, number, number];
 
 /**
  * A service that keeps global state that can be shared by multiple FastGroupsMuter or
@@ -142,9 +143,7 @@ class FastGroupsService {
       this.groupsUnsorted = [...graph._groups];
       for (const group of this.groupsUnsorted) {
         this.recomputeInsideNodesForGroup(group);
-        group.rgthree_hasAnyActiveNode = group._nodes.some(
-          (n) => n.mode === LiteGraph.ALWAYS,
-        );
+        group.rgthree_hasAnyActiveNode = group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
       }
       this.msLastUnsorted = now;
     }

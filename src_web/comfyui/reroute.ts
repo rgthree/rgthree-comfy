@@ -6,10 +6,11 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   LGraphNode as TLGraphNode,
-} from "@comfyorg/litegraph";
-import type {LinkDirection} from "@comfyorg/litegraph/dist/types/globalEnums.js";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
-import type {Point, Size} from "@comfyorg/litegraph/dist/interfaces.js";
+  LinkDirection,
+  ISerialisedNode,
+  Point,
+  Size,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {

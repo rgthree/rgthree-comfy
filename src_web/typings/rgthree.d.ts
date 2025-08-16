@@ -1,7 +1,7 @@
 /**
  * Typings specific to rgthree-comfy.
  */
-import type { LGraphNode, Vector2 } from "@comfyorg/litegraph";
+import type { LGraphNode, Vector2 } from "@comfyorg/frontend";
 import type { CanvasMouseEvent } from "@comfyorg/litegraph/dist/types/events.js";
 import type { RgthreeBaseNode, RgthreeBaseVirtualNode } from '../comfyui/base_node.js'
 

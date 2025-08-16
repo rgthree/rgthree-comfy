@@ -59,14 +59,14 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.randMax = Math.min(1125899906842624, (_b = this.seedWidget.options.max) !== null && _b !== void 0 ? _b : 0);
         this.randMin = Math.max(0, (_c = this.seedWidget.options.min) !== null && _c !== void 0 ? _c : 0);
         this.randomRange = (this.randMax - Math.max(0, this.randMin)) / (step / 10);
-        this.addWidget("button", "🎲 Randomize Each Time", '', () => {
+        this.addWidget("button", "🎲 Randomize Each Time", "", () => {
             this.seedWidget.value = SPECIAL_SEED_RANDOM;
         }, { serialize: false });
-        this.addWidget("button", "🎲 New Fixed Random", '', () => {
+        this.addWidget("button", "🎲 New Fixed Random", "", () => {
             this.seedWidget.value =
                 Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
         }, { serialize: false });
-        this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, '', () => {
+        this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, "", () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
             this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;

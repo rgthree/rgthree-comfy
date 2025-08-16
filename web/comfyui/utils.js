@@ -337,7 +337,7 @@ export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentN
     return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g;
     currentNode = currentNode || startNode;
     let rootNodes = [];
     if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
@@ -363,7 +363,7 @@ export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, curren
         for (const linkId of linkIds) {
             let link = null;
             if (typeof linkId == "number") {
-                link = graph.links[linkId];
+                link = (_g = graph.links[linkId]) !== null && _g !== void 0 ? _g : null;
             }
             if (!link) {
                 continue;
@@ -640,9 +640,9 @@ export function getOutputNodes(nodes) {
         return (n.mode != LiteGraph.NEVER && ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
     })) || []);
 }
-export function getFullColor(color, liteGraphKey = 'color') {
+export function getFullColor(color, liteGraphKey = "color") {
     if (!color) {
-        return '';
+        return "";
     }
     if (LGraphCanvas.node_colors[color]) {
         color = LGraphCanvas.node_colors[color][liteGraphKey];

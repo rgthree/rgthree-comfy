@@ -1,4 +1,4 @@
-import type {LGraphCanvas as TLGraphCanvas, Vector2} from "@comfyorg/litegraph";
+import type {LGraphCanvas as TLGraphCanvas, Vector2} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 

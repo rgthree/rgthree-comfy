@@ -1,17 +1,16 @@
-import type {LGraphNodeConstructor} from "@comfyorg/litegraph";
+import type {ISerialisedNode} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
 import {NodeTypesString} from "./constants.js";
-import {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 class RgthreeImageOrLatentSize extends RgthreeBaseServerNode {
   static override title = NodeTypesString.IMAGE_OR_LATENT_SIZE;
   static override type = NodeTypesString.IMAGE_OR_LATENT_SIZE;
   static comfyClass = NodeTypesString.IMAGE_OR_LATENT_SIZE;
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
   }
 
@@ -44,7 +43,7 @@ const NODE_CLASS = RgthreeImageOrLatentSize;
 /** Register the node. */
 app.registerExtension({
   name: "rgthree.ImageOrLatentSize",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === NODE_CLASS.type) {
       NODE_CLASS.setUp(nodeType, nodeData);
     }

@@ -1,4 +1,4 @@
-import type {LGraphNode} from "@comfyorg/litegraph";
+import type {LGraphNode} from "@comfyorg/frontend";
 
 import {NodeTypesString} from "../constants.js";
 import {wait} from "rgthree/common/shared_utils.js";

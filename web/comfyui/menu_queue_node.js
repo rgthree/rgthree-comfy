@@ -26,7 +26,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions) {
     }
     const group = rgthree.lastCanvasMouseEvent &&
         app.graph.getGroupOnPos(rgthree.lastCanvasMouseEvent.canvasX, rgthree.lastCanvasMouseEvent.canvasY);
-    const outputNodes = group && getOutputNodes(group._nodes);
+    const outputNodes = (group && getOutputNodes(group._nodes)) || null;
     const menuItem = {
         content: `Queue Group Output Nodes (rgthree) &nbsp;`,
         className: "rgthree-contextmenu-item",

@@ -5,12 +5,11 @@ import type {
   LGraph as TLGraph,
   IContextMenuOptions,
   ISerialisedGraph,
-} from "@comfyorg/litegraph";
-import type {
   CanvasMouseEvent,
   CanvasPointerExtensions,
-} from "@comfyorg/litegraph/dist/types/events.js";
-import type {NodeId} from "@comfyorg/litegraph/dist/LGraphNode.js";
+  NodeId,
+  ISerialisedNode,
+} from "@comfyorg/frontend";
 import type {ComfyApiFormat, ComfyApiPrompt} from "typings/comfy.js";
 import type {Bookmark} from "./bookmark.js";
 import type {ComfyApp} from "@comfyorg/frontend";
@@ -33,7 +32,6 @@ import {
   logoRgthree,
 } from "rgthree/common/media/svgs.js";
 import {createElement, queryAll, query} from "rgthree/common/utils_dom.js";
-import { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
 
 export enum LogLevel {
   IMPORTANT = 1,
@@ -231,7 +229,7 @@ class Rgthree extends EventTarget {
   /** Stores a node id that we will use to queu only that output node (with `queueOutputNode`). */
   private queueNodeIds: NodeId[] | null = null;
 
-  readonly version = CONFIG_SERVICE.getConfigValue('version');
+  readonly version = CONFIG_SERVICE.getConfigValue("version");
 
   logger = new LogSession("[rgthree]");
 
@@ -852,7 +850,7 @@ class Rgthree extends EventTarget {
    */
   getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(
     node: LGraphNode,
-  ): ISerialisedNode  | null {
+  ): ISerialisedNode | null {
     return (
       this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff?.nodes?.find(
         (n: ISerialisedNode) => n.id === node.id,
@@ -1031,15 +1029,14 @@ export const rgthree = new Rgthree();
 // Expose it on window because, why not.
 (window as any).rgthree = rgthree;
 
-
 app.registerExtension({
-	name: "Comfy.RgthreeComfy",
+  name: "Comfy.RgthreeComfy",
 
-	aboutPageBadges: [
-		{
-			label: `rgthree-comfy v${rgthree.version}`,
-			url: 'https://github.com/rgthree/rgthree-comfy',
-			icon: 'rgthree-comfy-about-badge-logo'
-		}
-	],
-})
+  aboutPageBadges: [
+    {
+      label: `rgthree-comfy v${rgthree.version}`,
+      url: "https://github.com/rgthree/rgthree-comfy",
+      icon: "rgthree-comfy-about-badge-logo",
+    },
+  ],
+});

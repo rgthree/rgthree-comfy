@@ -1,9 +1,8 @@
-import type { LGraphNode, IWidget} from "@comfyorg/litegraph";
-import type { ISerialisedNode } from "@comfyorg/litegraph/dist/types/serialisation.js";
+import type {LGraphNode, IWidget} from "@comfyorg/frontend";
 
-import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { PassThroughFollowing } from "./utils.js";
-import { wait } from "rgthree/common/shared_utils.js";
+import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
+import {PassThroughFollowing} from "./utils.js";
+import {wait} from "rgthree/common/shared_utils.js";
 
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   override readonly inputsPassThroughFollowing: PassThroughFollowing = PassThroughFollowing.ALL;
@@ -38,12 +37,12 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   override handleLinkedNodesStabilization(linkedNodes: LGraphNode[]) {
     let changed = false;
     for (const [index, node] of linkedNodes.entries()) {
-      let widget = this.widgets && this.widgets[index];
+      let widget: IWidget | undefined = this.widgets && this.widgets[index];
       if (!widget) {
         // When we add a widget, litegraph is going to mess up the size, so we
         // store it so we can retrieve it in computeSize. Hacky..
         (this as any)._tempWidth = this.size[0];
-        widget = this.addWidget("toggle", "", false, "", { on: "yes", off: "no" });
+        widget = this.addWidget("toggle", "", false, "", {on: "yes", off: "no"}) as IWidget;
         changed = true;
       }
       if (node) {
@@ -60,11 +59,11 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
   private setWidget(widget: IWidget, linkedNode: LGraphNode, forceValue?: boolean) {
     let changed = false;
     const value = forceValue == null ? linkedNode.mode === this.modeOn : forceValue;
-    let name =  `Enable ${linkedNode.title}`;
+    let name = `Enable ${linkedNode.title}`;
     // Need to set initally
     if (widget.name !== name) {
       widget.name = `Enable ${linkedNode.title}`;
-      widget.options = { on: "yes", off: "no" };
+      widget.options = {on: "yes", off: "no"};
       widget.value = value;
       (widget as any).doModeChange = (forceValue?: boolean, skipOtherNodeCheck?: boolean) => {
         let newValue = forceValue == null ? linkedNode.mode === this.modeOff : forceValue;

@@ -6,10 +6,10 @@ import type {
   IContextMenuValue,
   INodeOutputSlot,
   ISlotType,
-  LGraphNode,
+  ISerialisedNode,
   LLink,
-} from "@comfyorg/litegraph";
-import type {ISerialisedNode} from "@comfyorg/litegraph/dist/types/serialisation.js";
+  IBaseWidget,
+} from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
@@ -47,7 +47,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     this.properties[PROPERTY_HIDE_TYPE_SELECTOR] = false;
   }
 
-  static override setUp(comfyClass: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  static override setUp(comfyClass: typeof LGraphNode, nodeData: ComfyNodeDef) {
     RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
   }
 
@@ -124,7 +124,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
         {
           values: Object.keys(PRIMITIVES),
         },
-      );
+      ) as IWidget;
       this.outputTypeWidget.hidden = this.properties[PROPERTY_HIDE_TYPE_SELECTOR];
     }
     this.setTypedData();
@@ -143,7 +143,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     this.typeState = newTypeState;
 
     let value = this.valueWidget?.value ?? null;
-    let newWidget = null;
+    let newWidget: IWidget | null= null;
     // If we're linked, then set the UI to an empty string widget input, since the ComfyUI is rather
     // confusing by showing a value that is not the actual value used (from the input).
     if (linked) {
@@ -154,10 +154,10 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       newWidget.value = value ? "" : String(value);
     } else if (type === "INT" || type === "FLOAT") {
       const isFloat = type === "FLOAT";
-      newWidget = this.addWidget("number", name, value ?? 1, undefined, {
+      newWidget = this.addWidget("number", name, value ?? 1 as any, undefined, {
         precision: isFloat ? 1 : 0,
         step2: isFloat ? 0.1 : 0,
-      });
+      }) as IWidget;
       value = Number(value);
       value = value == null || isNaN(value) ? 0 : value;
       newWidget.value = value;
@@ -165,7 +165,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       newWidget = this.addWidget("toggle", name, !!(value ?? true), undefined, {
         on: "true",
         off: "false",
-      });
+      }) as IWidget;
       if (typeof value === "string") {
         value = !["false", "null", "None", "", "0"].includes(value.toLowerCase());
       }
@@ -187,9 +187,9 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
 
     // Set the input data.
     if (!this.inputs?.length) {
-      this.addInput("value", "*", {widget: this.valueWidget});
+      this.addInput("value", "*", {widget: this.valueWidget as any});
     } else {
-      this.inputs[0]!.widget = this.valueWidget;
+      this.inputs[0]!.widget = this.valueWidget as any;
     }
 
     // Set the output data.
@@ -246,7 +246,7 @@ const NODE_CLASS = RgthreePowerPrimitive;
 /** Register the node. */
 app.registerExtension({
   name: "rgthree.PowerPrimitive",
-  async beforeRegisterNodeDef(nodeType: LGraphNodeConstructor, nodeData: ComfyNodeDef) {
+  async beforeRegisterNodeDef(nodeType: typeof LGraphNode, nodeData: ComfyNodeDef) {
     if (nodeData.name === NODE_CLASS.type) {
       NODE_CLASS.setUp(nodeType, nodeData);
     }

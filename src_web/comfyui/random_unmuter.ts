@@ -1,10 +1,10 @@
-import type { LGraphNode } from "@comfyorg/litegraph";
+import type {LGraphNode} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { NodeTypesString } from "./constants.js";
-import { rgthree } from "./rgthree.js";
-import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
+import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
+import {NodeTypesString} from "./constants.js";
+import {rgthree} from "./rgthree.js";
+import {getConnectedInputNodesAndFilterPassThroughs} from "./utils.js";
 
 const MODE_MUTE = 2;
 const MODE_ALWAYS = 0;

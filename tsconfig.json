@@ -7,13 +7,13 @@
     // ],
     "baseUrl": "./",
     "paths": {
-      // `@comfyorg/litegraph` is how ComfyUi-Frontend augments litegraph.d.ts, so we should match.
-      "@comfyorg/litegraph": ["node_modules/@comfyorg/litegraph/dist/litegraph.d.ts"],
-      // ComfyUi-Frontend also augments one other module with the dist/ so we must keep it.
-      "@comfyorg/litegraph/dist/*": ["node_modules/@comfyorg/litegraph/dist/*"],
-      // Theser are just vanity. Currently nothing else augments it but, if a dependency were to we
-      // may need to change these.
+      // Main comfyui typedefs.
       "@comfyorg/frontend": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      // ComfyUI augments old litegraph types with these module names, so we need to map them back
+      // to itself to "see" these augmentations in our code.
+      "@/lib/litegraph/src/types/widgets": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@/lib/litegraph/src/interfaces": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@/lib/litegraph/src/litegraph": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
       // Tree Sitter, for parsing python in js.
       "web-tree-sitter": ["node_modules/web-tree-sitter/web-tree-sitter.d.ts"],
       "typings/*": ["src_web/typings/*"],
