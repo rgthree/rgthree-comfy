@@ -246,7 +246,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
       }, 32);
     }
     setTimeout(() => {
-      app.graph.setDirtyCanvas(true, true);
+      this.graph?.setDirtyCanvas(true, true);
     }, 16);
     return size;
   }
@@ -412,7 +412,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
     changeModeOfNodes(this.group._nodes, (newValue ? this.node.modeOn : this.node.modeOff));
     this.group.rgthree_hasAnyActiveNode = newValue;
     this.toggled = newValue;
-    app.graph.setDirtyCanvas(true, false);
+    this.group.graph?.setDirtyCanvas(true, false);
   }
 
   get toggled() {

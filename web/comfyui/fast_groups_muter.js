@@ -173,7 +173,8 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             }, 32);
         }
         setTimeout(() => {
-            app.graph.setDirtyCanvas(true, true);
+            var _a;
+            (_a = this.graph) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
         }, 16);
         return size;
     }
@@ -315,7 +316,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         this.node = node;
     }
     doModeChange(force, skipOtherNodeCheck) {
-        var _a, _b, _c;
+        var _a, _b, _c, _d;
         this.group.recomputeInsideNodes();
         const hasAnyActiveNodes = this.group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
         let newValue = force != null ? force : !hasAnyActiveNodes;
@@ -334,7 +335,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         changeModeOfNodes(this.group._nodes, (newValue ? this.node.modeOn : this.node.modeOff));
         this.group.rgthree_hasAnyActiveNode = newValue;
         this.toggled = newValue;
-        app.graph.setDirtyCanvas(true, false);
+        (_d = this.group.graph) === null || _d === void 0 ? void 0 : _d.setDirtyCanvas(true, false);
     }
     get toggled() {
         return this.value.toggled;

@@ -285,7 +285,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
           }
           await (node as RgthreeBaseVirtualNode).handleAction(action);
         }
-        app.graph.change();
+        this.graph?.change();
         continue;
       }
       console.warn("Fast Actions Button has a widget without correct data.");

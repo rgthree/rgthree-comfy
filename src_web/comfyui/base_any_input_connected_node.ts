@@ -135,7 +135,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
 
     // Only mark dirty if something's changed.
     if (dirty) {
-      app.graph.setDirtyCanvas(true, true);
+      this.graph.setDirtyCanvas(true, true);
     }
 
     // Schedule another stabilization in the future.
@@ -223,7 +223,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
       size[1] = size[1] - rows * LiteGraph.NODE_SLOT_HEIGHT;
     }
     setTimeout(() => {
-      app.graph.setDirtyCanvas(true, true);
+      this.graph?.setDirtyCanvas(true, true);
     }, 16);
     return size;
   }
@@ -319,7 +319,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
       property: "collapse_connections",
       prepareValue: (_value, node) => !node.properties?.["collapse_connections"],
       callback: (_node) => {
-        app.graph.setDirtyCanvas(true, true);
+        app.canvas.getCurrentGraph()?.setDirtyCanvas(true, true);
       },
     });
   }

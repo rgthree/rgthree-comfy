@@ -73,7 +73,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
         const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this);
         dirty = this.handleLinkedNodesStabilization(linkedNodes) || dirty;
         if (dirty) {
-            app.graph.setDirtyCanvas(true, true);
+            this.graph.setDirtyCanvas(true, true);
         }
         this.scheduleStabilizeWidgets(500);
     }
@@ -128,7 +128,8 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
             size[1] = size[1] - rows * LiteGraph.NODE_SLOT_HEIGHT;
         }
         setTimeout(() => {
-            app.graph.setDirtyCanvas(true, true);
+            var _a;
+            (_a = this.graph) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
         }, 16);
         return size;
     }
@@ -185,7 +186,8 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
             property: "collapse_connections",
             prepareValue: (_value, node) => { var _a; return !((_a = node.properties) === null || _a === void 0 ? void 0 : _a["collapse_connections"]); },
             callback: (_node) => {
-                app.graph.setDirtyCanvas(true, true);
+                var _a;
+                (_a = app.canvas.getCurrentGraph()) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
             },
         });
     }

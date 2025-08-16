@@ -260,7 +260,7 @@ class Rgthree extends EventTarget {
         };
         const onGroupAdd = LGraphCanvas.onGroupAdd;
         LGraphCanvas.onGroupAdd = function (...args) {
-            const graph = app.graph;
+            const graph = app.canvas.getCurrentGraph();
             onGroupAdd.apply(this, [...args]);
             LGraphCanvas.onShowPropertyEditor({}, null, null, null, graph._groups[graph._groups.length - 1]);
         };
@@ -336,7 +336,7 @@ class Rgthree extends EventTarget {
         }, 1016);
     }
     getRgthreeIContextMenuValues() {
-        const [canvas, graph] = [app.canvas, app.graph];
+        const [canvas, graph] = [app.canvas, app.canvas.getCurrentGraph()];
         const selectedNodes = Object.values(canvas.selected_nodes || {});
         let rerouteNodes = [];
         if (selectedNodes.length) {
@@ -369,7 +369,7 @@ class Rgthree extends EventTarget {
                             ];
                             canvas.graph.add(node);
                             canvas.selectNode(node);
-                            app.graph.setDirtyCanvas(true, true);
+                            graph.setDirtyCanvas(true, true);
                         }
                     },
                     extra: { rgthree_doNotNest: true },

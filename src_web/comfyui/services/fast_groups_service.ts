@@ -98,6 +98,7 @@ class FastGroupsService {
   getBoundingsForAllNodes() {
     if (!this.cachedNodeBoundings) {
       this.cachedNodeBoundings = {};
+      // Always start with the app/root graph.
       traverseNodesDepthFirst(app.graph._nodes, (node) => {
         let bounds = node.getBounding();
         // If the bounds are zero'ed out, then we could be a subgraph that hasn't rendered yet and
@@ -158,8 +159,8 @@ class FastGroupsService {
    * each time). So, we'll do our own dang thing, once.
    */
   private getGroupsUnsorted(now: number) {
-    const canvas = app.canvas as TLGraphCanvas;
-    const graph = app.graph as TLGraph;
+    const canvas = app.canvas;
+    const graph = canvas.getCurrentGraph() ?? app.graph;
 
     if (
       // Don't recalculate nodes if we're moving a group (added by ComfyUI in app.js)
@@ -183,7 +184,6 @@ class FastGroupsService {
   }
 
   private getGroupsAlpha(now: number) {
-    const graph = app.graph as TLGraph;
     if (!this.groupsSortedAlpha.length || now - this.msLastAlpha > this.msThreshold) {
       this.groupsSortedAlpha = [...this.getGroupsUnsorted(now)].sort((a, b) => {
         return a.title.localeCompare(b.title);
@@ -194,7 +194,6 @@ class FastGroupsService {
   }
 
   private getGroupsPosition(now: number) {
-    const graph = app.graph as TLGraph;
     if (!this.groupsSortedPosition.length || now - this.msLastPosition > this.msThreshold) {
       this.groupsSortedPosition = [...this.getGroupsUnsorted(now)].sort((a, b) => {
         // Sort by y, then x, clamped to 30.

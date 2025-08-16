@@ -140,8 +140,9 @@ export function addConnectionLayoutSupport(node, app, options = [
             return values;
         },
         callback: (node) => {
+            var _a;
             callback && callback(node);
-            app.graph.setDirtyCanvas(true, true);
+            (_a = node.graph) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
         },
     });
     node.prototype.getConnectionPos = function (isInput, slotNumber, out) {
@@ -337,7 +338,7 @@ export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentN
     return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     currentNode = currentNode || startNode;
     let rootNodes = [];
     if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
@@ -359,11 +360,11 @@ export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, curren
                 linkIds = ((_f = currentNode.inputs) === null || _f === void 0 ? void 0 : _f.map((i) => i.link)) || [];
             }
         }
-        let graph = app.graph;
+        const graph = (_g = currentNode.graph) !== null && _g !== void 0 ? _g : app.graph;
         for (const linkId of linkIds) {
             let link = null;
             if (typeof linkId == "number") {
-                link = (_g = graph.links[linkId]) !== null && _g !== void 0 ? _g : null;
+                link = (_h = graph.links[linkId]) !== null && _h !== void 0 ? _h : null;
             }
             if (!link) {
                 continue;
@@ -417,7 +418,7 @@ export function followConnectionUntilType(node, dir, slotNum, skipSelf = false) 
     return type;
 }
 function getTypeFromSlot(slot, dir, skipSelf = false) {
-    let graph = app.graph;
+    let graph = app.canvas.getCurrentGraph();
     let type = slot === null || slot === void 0 ? void 0 : slot.type;
     if (!skipSelf && type != null && type != "*") {
         return { type: type, label: slot === null || slot === void 0 ? void 0 : slot.label, name: slot === null || slot === void 0 ? void 0 : slot.name };

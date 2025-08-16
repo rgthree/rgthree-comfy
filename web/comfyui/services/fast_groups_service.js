@@ -103,16 +103,16 @@ class FastGroupsService {
         }
     }
     getGroupsUnsorted(now) {
-        var _a;
+        var _a, _b;
         const canvas = app.canvas;
-        const graph = app.graph;
+        const graph = (_a = canvas.getCurrentGraph()) !== null && _a !== void 0 ? _a : app.graph;
         if (!canvas.selected_group_moving &&
             (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)) {
             this.groupsUnsorted = [...graph._groups];
             const subgraphs = graph.subgraphs.values();
             let s;
             while ((s = subgraphs.next().value))
-                this.groupsUnsorted.push(...((_a = s.groups) !== null && _a !== void 0 ? _a : []));
+                this.groupsUnsorted.push(...((_b = s.groups) !== null && _b !== void 0 ? _b : []));
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
                 group.rgthree_hasAnyActiveNode = getGroupNodes(group).some((n) => n.mode === LiteGraph.ALWAYS);
@@ -122,7 +122,6 @@ class FastGroupsService {
         return this.groupsUnsorted;
     }
     getGroupsAlpha(now) {
-        const graph = app.graph;
         if (!this.groupsSortedAlpha.length || now - this.msLastAlpha > this.msThreshold) {
             this.groupsSortedAlpha = [...this.getGroupsUnsorted(now)].sort((a, b) => {
                 return a.title.localeCompare(b.title);
@@ -132,7 +131,6 @@ class FastGroupsService {
         return this.groupsSortedAlpha;
     }
     getGroupsPosition(now) {
-        const graph = app.graph;
         if (!this.groupsSortedPosition.length || now - this.msLastPosition > this.msThreshold) {
             this.groupsSortedPosition = [...this.getGroupsUnsorted(now)].sort((a, b) => {
                 const aY = Math.floor(a._pos[1] / 30);

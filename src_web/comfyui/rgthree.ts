@@ -414,7 +414,7 @@ class Rgthree extends EventTarget {
     // [⭐] Make it so when we add a group, we get to name it immediately.
     const onGroupAdd = LGraphCanvas.onGroupAdd;
     LGraphCanvas.onGroupAdd = function (...args: any[]) {
-      const graph = app.graph as TLGraph;
+      const graph = app.canvas.getCurrentGraph()!;
       onGroupAdd.apply(this, [...args] as any);
       // [🤮] Bad typing here.. especially the last arg; it is LGraphNode but can really be anything
       // with pos or size... pity. See more in our litegraph.d.ts.
@@ -537,7 +537,7 @@ class Rgthree extends EventTarget {
    * Returns the standard menu items for an rgthree-comfy context menu.
    */
   private getRgthreeIContextMenuValues(): IContextMenuValue[] {
-    const [canvas, graph] = [app.canvas as TLGraphCanvas, app.graph as TLGraph];
+    const [canvas, graph] = [app.canvas as TLGraphCanvas, app.canvas.getCurrentGraph()!];
     const selectedNodes = Object.values(canvas.selected_nodes || {});
     let rerouteNodes: LGraphNode[] = [];
     if (selectedNodes.length) {
@@ -575,7 +575,7 @@ class Rgthree extends EventTarget {
               ];
               canvas.graph!.add(node);
               canvas.selectNode(node);
-              app.graph.setDirtyCanvas(true, true);
+              graph.setDirtyCanvas(true, true);
             }
           },
           extra: {rgthree_doNotNest: true},

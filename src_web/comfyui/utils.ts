@@ -230,7 +230,7 @@ export function addConnectionLayoutSupport(
     },
     callback: (node) => {
       callback && callback(node);
-      app.graph.setDirtyCanvas(true, true);
+      node.graph?.setDirtyCanvas(true, true);
     },
   });
 
@@ -566,7 +566,7 @@ export function getConnectedNodesInfo(
         linkIds = currentNode.inputs?.map((i) => i.link) || [];
       }
     }
-    let graph = app.graph;
+    const graph = currentNode.graph ?? app.graph;
     for (const linkId of linkIds) {
       let link: LLink | null = null;
       if (typeof linkId == "number") {
@@ -659,7 +659,7 @@ function getTypeFromSlot(
   dir: IoDirection,
   skipSelf = false,
 ): ConnectionType | null {
-  let graph = app.graph as LGraph;
+  let graph = app.canvas.getCurrentGraph()!;
   let type = slot?.type;
   if (!skipSelf && type != null && type != "*") {
     return {type: type as string, label: slot?.label, name: slot?.name};

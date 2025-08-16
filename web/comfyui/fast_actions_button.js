@@ -177,7 +177,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         super.removeWidget(widget);
     }
     async executeConnectedNodes() {
-        var _a;
+        var _a, _b;
         for (const widget of this.widgets) {
             if (widget == this.buttonWidget) {
                 continue;
@@ -206,7 +206,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     }
                     await node.handleAction(action);
                 }
-                app.graph.change();
+                (_b = this.graph) === null || _b === void 0 ? void 0 : _b.change();
                 continue;
             }
             console.warn("Fast Actions Button has a widget without correct data.");
