@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { rgthree } from "./rgthree.js";
-import { getOutputNodes } from "./utils.js";
+import { changeModeOfNodes, getOutputNodes } from "./utils.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 const BTN_SIZE = 20;
 const BTN_MARGIN = [6, 6];
@@ -72,9 +72,7 @@ app.registerExtension({
                             else {
                                 newMode = isAllBypassed ? LiteGraph.ALWAYS : 4;
                             }
-                            for (const node of group._nodes) {
-                                node.mode = newMode;
-                            }
+                            changeModeOfNodes(group._nodes, newMode);
                         }
                     }
                     canvas.selected_group = null;

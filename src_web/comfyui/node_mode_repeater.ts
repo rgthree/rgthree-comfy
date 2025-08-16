@@ -13,6 +13,7 @@ import {NodeTypesString, stripRgthree} from "./constants.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
+  changeModeOfNodes,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
@@ -126,7 +127,7 @@ class NodeModeRepeater extends BaseCollectorNode {
           }
         }
       } else {
-        inputNode.mode = this.mode;
+        changeModeOfNodes(inputNode, this.mode);
       }
     }
 
@@ -157,7 +158,7 @@ class NodeModeRepeater extends BaseCollectorNode {
       for (const node of linkedNodes) {
         if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
           // Use "to" as there may be other getters in the way to access this.mode directly.
-          node.mode = to;
+          changeModeOfNodes(node, to);
         }
       }
     } else if (app.graph._groups?.length) {
@@ -168,7 +169,7 @@ class NodeModeRepeater extends BaseCollectorNode {
           for (const node of group._nodes) {
             if (node !== this) {
               // Use "to" as there may be other getters in the way to access this.mode directly.
-              node.mode = to;
+              changeModeOfNodes(node, to);
             }
           }
         }

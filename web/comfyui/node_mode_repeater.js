@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, changeModeOfNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
 class NodeModeRepeater extends BaseCollectorNode {
     constructor(title) {
         super(title);
@@ -68,7 +68,7 @@ class NodeModeRepeater extends BaseCollectorNode {
                 }
             }
             else {
-                inputNode.mode = this.mode;
+                changeModeOfNodes(inputNode, this.mode);
             }
         }
         this.hasTogglerOutput = hasTogglerOutput;
@@ -93,7 +93,7 @@ class NodeModeRepeater extends BaseCollectorNode {
         if (linkedNodes.length) {
             for (const node of linkedNodes) {
                 if (node.type !== NodeTypesString.NODE_MODE_RELAY) {
-                    node.mode = to;
+                    changeModeOfNodes(node, to);
                 }
             }
         }
@@ -103,7 +103,7 @@ class NodeModeRepeater extends BaseCollectorNode {
                 if ((_b = group._nodes) === null || _b === void 0 ? void 0 : _b.includes(this)) {
                     for (const node of group._nodes) {
                         if (node !== this) {
-                            node.mode = to;
+                            changeModeOfNodes(node, to);
                         }
                     }
                 }

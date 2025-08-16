@@ -964,6 +964,41 @@ export function getOutputNodes(nodes: LGraphNode[]) {
 }
 
 /**
+ * Changes the mode of a node. We must go through this to change a node's mode after the
+ * introduction of subgraphs, as ComfyUI doesn't update the mode of a node in a subgraph on its own.
+ */
+export function changeModeOfNodes(nodeOrNodes: LGraphNode | LGraphNode[], mode: LGraphEventMode) {
+  const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
+  traverseNodesDepthFirst(nodes, (n) => {
+    n.mode = mode;
+  });
+}
+
+/**
+ * Performs depth-first traversal of nodes and their subgraphs.
+ * Adapted from ComfyUI Frontend's method.
+ */
+function traverseNodesDepthFirst(nodes: LGraphNode[], visitor: (n: LGraphNode) => void) {
+  const stack: Array<{node: LGraphNode}> = nodes.map((node) => ({node}));
+
+  // Process stack iteratively (DFS)
+  while (stack.length > 0) {
+    const {node} = stack.pop()!;
+    visitor(node);
+
+    // If it's a subgraph and we should expand, add children to stack
+    if (node.isSubgraphNode?.() && node.subgraph) {
+      // Process children in reverse order to maintain left-to-right DFS processing
+      // when popping from stack (LIFO). Iterate backwards to avoid array reversal.
+      const children = node.subgraph.nodes;
+      for (let i = children.length - 1; i >= 0; i--) {
+        stack.push({node: children[i]!});
+      }
+    }
+  }
+}
+
+/**
  * Gets a full color string, including parsing from the LGraphCanvas data.
  */
 export function getFullColor(

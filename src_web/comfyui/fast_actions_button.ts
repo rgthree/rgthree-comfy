@@ -13,7 +13,7 @@ import type {RgthreeBaseVirtualNode} from "./base_node.js";
 import {app} from "scripts/app.js";
 import {BaseAnyInputConnectedNode} from "./base_any_input_connected_node.js";
 import {NodeTypesString} from "./constants.js";
-import {addMenuItem} from "./utils.js";
+import {addMenuItem, changeModeOfNodes} from "./utils.js";
 import {rgthree} from "./rgthree.js";
 
 const MODE_ALWAYS = 0;
@@ -272,11 +272,11 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       }
       if (node) {
         if (action === "Mute") {
-          node.mode = MODE_MUTE;
+          changeModeOfNodes(node, MODE_MUTE);
         } else if (action === "Bypass") {
-          node.mode = MODE_BYPASS;
+          changeModeOfNodes(node, MODE_BYPASS);
         } else if (action === "Enable") {
-          node.mode = MODE_ALWAYS;
+          changeModeOfNodes(node, MODE_ALWAYS);
         }
         // If there's a handleAction, always call it.
         if ((node as RgthreeBaseVirtualNode).handleAction) {

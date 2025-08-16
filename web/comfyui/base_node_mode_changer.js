@@ -1,5 +1,5 @@
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
-import { PassThroughFollowing } from "./utils.js";
+import { changeModeOfNodes, PassThroughFollowing } from "./utils.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
     constructor(title) {
@@ -59,7 +59,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
                         newValue = this.widgets.every((w) => !w.value || w === widget);
                     }
                 }
-                linkedNode.mode = (newValue ? this.modeOn : this.modeOff);
+                changeModeOfNodes(linkedNode, (newValue ? this.modeOn : this.modeOff));
                 widget.value = newValue;
             };
             widget.callback = () => {
@@ -70,7 +70,7 @@ export class BaseNodeModeChanger extends BaseAnyInputConnectedNode {
         if (forceValue != null) {
             const newMode = (forceValue ? this.modeOn : this.modeOff);
             if (linkedNode.mode !== newMode) {
-                linkedNode.mode = newMode;
+                changeModeOfNodes(linkedNode, newMode);
                 changed = true;
             }
         }

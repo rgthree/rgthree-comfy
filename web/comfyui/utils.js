@@ -640,6 +640,26 @@ export function getOutputNodes(nodes) {
         return (n.mode != LiteGraph.NEVER && ((_a = n.constructor.nodeData) === null || _a === void 0 ? void 0 : _a.output_node));
     })) || []);
 }
+export function changeModeOfNodes(nodeOrNodes, mode) {
+    const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
+    traverseNodesDepthFirst(nodes, (n) => {
+        n.mode = mode;
+    });
+}
+function traverseNodesDepthFirst(nodes, visitor) {
+    var _a;
+    const stack = nodes.map((node) => ({ node }));
+    while (stack.length > 0) {
+        const { node } = stack.pop();
+        visitor(node);
+        if (((_a = node.isSubgraphNode) === null || _a === void 0 ? void 0 : _a.call(node)) && node.subgraph) {
+            const children = node.subgraph.nodes;
+            for (let i = children.length - 1; i >= 0; i--) {
+                stack.push({ node: children[i] });
+            }
+        }
+    }
+}
 export function getFullColor(color, liteGraphKey = "color") {
     if (!color) {
         return "";

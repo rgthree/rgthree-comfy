@@ -8,6 +8,7 @@ import {RgthreeBetterButtonWidget} from "./utils_widgets.js";
 import {NodeTypesString} from "./constants.js";
 import {ComfyWidgets} from "scripts/widgets.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import { changeModeOfNodes } from "./utils.js";
 
 const BUILT_INS = {
   node: {
@@ -85,15 +86,15 @@ class ComfyNodeWrapper {
   }
 
   @Exposed mute() {
-    this.getNode().mode = 2;
+    changeModeOfNodes(this.getNode(), 2);
   }
 
   @Exposed bypass() {
-    this.getNode().mode = 4;
+    changeModeOfNodes(this.getNode(), 4);
   }
 
   @Exposed enable() {
-    this.getNode().mode = 0;
+    changeModeOfNodes(this.getNode(), 0);
   }
 }
 

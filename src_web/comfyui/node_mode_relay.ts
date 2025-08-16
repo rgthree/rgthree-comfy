@@ -13,6 +13,7 @@ import {app} from "scripts/app.js";
 import {
   PassThroughFollowing,
   addConnectionLayoutSupport,
+  changeModeOfNodes,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
 } from "./utils.js";
@@ -219,7 +220,7 @@ class NodeModeRelay extends BaseCollectorNode {
         if (this.outputs?.length) {
           const outputNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
           for (const outputNode of outputNodes) {
-            outputNode.mode = mode;
+            changeModeOfNodes(outputNode, mode);
             wait(16).then(() => {
               outputNode.setDirtyCanvas(true, true);
             });

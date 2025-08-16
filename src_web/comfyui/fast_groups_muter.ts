@@ -15,6 +15,7 @@ import {NodeTypesString} from "./constants.js";
 import {SERVICE as FAST_GROUPS_SERVICE} from "./services/fast_groups_service.js";
 import {drawNodeWidget, fitString} from "./utils_canvas.js";
 import {RgthreeBaseWidget} from "./utils_widgets.js";
+import { changeModeOfNodes } from "./utils.js";
 
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
@@ -396,9 +397,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
         newValue = this.node.widgets.every((w) => !w.value || w === this);
       }
     }
-    for (const node of this.group._nodes) {
-      node.mode = (newValue ? this.node.modeOn : this.node.modeOff) as 1 | 2 | 3 | 4;
-    }
+    changeModeOfNodes(this.group._nodes, (newValue ? this.node.modeOn : this.node.modeOff));
     this.group.rgthree_hasAnyActiveNode = newValue;
     this.toggled = newValue;
     app.graph.setDirtyCanvas(true, false);

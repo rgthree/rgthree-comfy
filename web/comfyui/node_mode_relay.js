@@ -1,5 +1,5 @@
 import { app } from "../../scripts/app.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, changeModeOfNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
@@ -134,7 +134,7 @@ class NodeModeRelay extends BaseCollectorNode {
                 if ((_b = this.outputs) === null || _b === void 0 ? void 0 : _b.length) {
                     const outputNodes = getConnectedOutputNodesAndFilterPassThroughs(this);
                     for (const outputNode of outputNodes) {
-                        outputNode.mode = mode;
+                        changeModeOfNodes(outputNode, mode);
                         wait(16).then(() => {
                             outputNode.setDirtyCanvas(true, true);
                         });
