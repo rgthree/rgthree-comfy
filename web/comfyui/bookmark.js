@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
+import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
 import { NodeTypesString } from "./constants.js";
 import { getClosestOrSelf, query } from "../../rgthree/common/utils_dom.js";
 import { wait } from "../../rgthree/common/shared_utils.js";
@@ -22,7 +23,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
-        const nextShortcutChar = getNextShortcut();
+        const nextShortcutChar = BOOKMARKS_SERVICE.getNextShortcut();
         this.addWidget("text", "shortcut_key", nextShortcutChar, (value, ...args) => {
             value = value.trim()[0] || "1";
         }, {
@@ -99,18 +100,3 @@ app.registerExtension({
         Bookmark.setUp();
     },
 });
-function isBookmark(node) {
-    return node.type === NodeTypesString.BOOKMARK;
-}
-function getExistingShortcuts() {
-    const graph = app.graph;
-    const bookmarkNodes = graph._nodes.filter(isBookmark);
-    const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
-    return usedShortcuts;
-}
-const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
-function getNextShortcut() {
-    var _a;
-    const existingShortcuts = getExistingShortcuts();
-    return (_a = SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char))) !== null && _a !== void 0 ? _a : "1";
-}

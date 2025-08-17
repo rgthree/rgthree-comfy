@@ -468,20 +468,21 @@ export async function replaceNode(existingNode, typeOrNewNode, inputNameMap) {
     };
     setSizeFn();
     const links = [];
+    const graph = existingNode.graph || app.graph;
     for (const [index, output] of existingNode.outputs.entries()) {
         for (const linkId of output.links || []) {
-            const link = app.graph.links[linkId];
+            const link = graph.links[linkId];
             if (!link)
                 continue;
-            const targetNode = app.graph.getNodeById(link.target_id);
+            const targetNode = graph.getNodeById(link.target_id);
             links.push({ node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot });
         }
     }
     for (const [index, input] of existingNode.inputs.entries()) {
         const linkId = input.link;
         if (linkId) {
-            const link = app.graph.links[linkId];
-            const originNode = app.graph.getNodeById(link.origin_id);
+            const link = graph.links[linkId];
+            const originNode = graph.getNodeById(link.origin_id);
             links.push({
                 node: originNode,
                 slot: link.origin_slot,
@@ -492,13 +493,13 @@ export async function replaceNode(existingNode, typeOrNewNode, inputNameMap) {
             });
         }
     }
-    app.graph.add(newNode);
+    graph.add(newNode);
     await wait();
     for (const link of links) {
         link.node.connect(link.slot, link.targetNode, link.targetSlot);
     }
     await wait();
-    app.graph.remove(existingNode);
+    graph.remove(existingNode);
     newNode.size = newNode.computeSize();
     newNode.setDirtyCanvas(true, true);
     return newNode;
@@ -506,8 +507,34 @@ export async function replaceNode(existingNode, typeOrNewNode, inputNameMap) {
 export function getOriginNodeByLink(linkId) {
     let node = null;
     if (linkId != null) {
-        const link = app.graph.links[linkId];
-        node = (link != null && app.graph.getNodeById(link.origin_id)) || null;
+        const link = getLinkById(linkId);
+        node = (link != null && getNodeById(link.origin_id)) || null;
+    }
+    return node;
+}
+export function getLinkById(linkId) {
+    var _a, _b, _c, _d;
+    if (linkId == null)
+        return null;
+    let link = (_a = app.graph.links[linkId]) !== null && _a !== void 0 ? _a : null;
+    link = (_c = link !== null && link !== void 0 ? link : (_b = app.canvas.getCurrentGraph()) === null || _b === void 0 ? void 0 : _b.links[linkId]) !== null && _c !== void 0 ? _c : null;
+    const subgraphs = app.graph.rootGraph.subgraphs.values();
+    let subgraph;
+    while (!link && (subgraph = subgraphs.next().value)) {
+        link = (_d = subgraph === null || subgraph === void 0 ? void 0 : subgraph.links[linkId]) !== null && _d !== void 0 ? _d : null;
+    }
+    return link;
+}
+export function getNodeById(id) {
+    var _a, _b, _c;
+    if (id == null)
+        return null;
+    let node = app.graph.getNodeById(id);
+    node = (_b = node !== null && node !== void 0 ? node : (_a = app.canvas.getCurrentGraph()) === null || _a === void 0 ? void 0 : _a.getNodeById(id)) !== null && _b !== void 0 ? _b : null;
+    const subgraphs = app.graph.rootGraph.subgraphs.values();
+    let subgraph;
+    while (!node && (subgraph = subgraphs.next().value)) {
+        node = (_c = subgraph === null || subgraph === void 0 ? void 0 : subgraph.getNodeById(id)) !== null && _c !== void 0 ? _c : null;
     }
     return node;
 }
@@ -642,17 +669,20 @@ export function getOutputNodes(nodes) {
     })) || []);
 }
 export function changeModeOfNodes(nodeOrNodes, mode) {
-    const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
-    traverseNodesDepthFirst(nodes, (n) => {
+    reduceNodesDepthFirst(nodeOrNodes, (n) => {
         n.mode = mode;
     });
 }
-export function traverseNodesDepthFirst(nodes, visitor) {
+export function reduceNodesDepthFirst(nodeOrNodes, reduceFn, reduceTo) {
     var _a;
+    const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
     const stack = nodes.map((node) => ({ node }));
     while (stack.length > 0) {
         const { node } = stack.pop();
-        visitor(node);
+        const result = reduceFn(node, reduceTo);
+        if (result !== undefined && result !== reduceTo) {
+            reduceTo = result;
+        }
         if (((_a = node.isSubgraphNode) === null || _a === void 0 ? void 0 : _a.call(node)) && node.subgraph) {
             const children = node.subgraph.nodes;
             for (let i = children.length - 1; i >= 0; i--) {
@@ -660,9 +690,10 @@ export function traverseNodesDepthFirst(nodes, visitor) {
             }
         }
     }
+    return reduceTo;
 }
 export function getGroupNodes(group) {
-    return Array.from(group._children).filter(c => c instanceof LGraphNode);
+    return Array.from(group._children).filter((c) => c instanceof LGraphNode);
 }
 export function getFullColor(color, liteGraphKey = "color") {
     if (!color) {

@@ -7,7 +7,7 @@ import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";
-import {getOutputNodes} from "./utils.js";
+import {getGroupNodes, getOutputNodes} from "./utils.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
 function showQueueNodesMenuIfOutputNodesAreSelected(
@@ -40,12 +40,12 @@ function showQueueGroupNodesMenuIfGroupIsSelected(
   }
   const group =
     rgthree.lastCanvasMouseEvent &&
-    app.graph.getGroupOnPos(
+    (app.canvas.getCurrentGraph() || app.graph).getGroupOnPos(
       rgthree.lastCanvasMouseEvent.canvasX,
       rgthree.lastCanvasMouseEvent.canvasY,
     );
 
-  const outputNodes: LGraphNode[] | null = (group && getOutputNodes(group._nodes)) || null;
+  const outputNodes: LGraphNode[] | null = (group && getOutputNodes(getGroupNodes(group))) || null;
   const menuItem = {
     content: `Queue Group Output Nodes (rgthree) &nbsp;`,
     className: "rgthree-contextmenu-item",

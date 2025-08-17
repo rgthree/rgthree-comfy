@@ -11,7 +11,6 @@ import type {
   ISerialisedNode,
 } from "@comfyorg/frontend";
 import type {ComfyApiFormat, ComfyApiPrompt} from "typings/comfy.js";
-import type {Bookmark} from "./bookmark.js";
 import type {ComfyApp} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
@@ -21,8 +20,8 @@ import {SERVICE as BOOKMARKS_SERVICE} from "./services/bookmarks_services.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {WorkflowLinkFixer} from "rgthree/common/link_fixer.js";
 import {injectCss, wait} from "rgthree/common/shared_utils.js";
-import {replaceNode, traverseNodesDepthFirst, waitForCanvas, waitForGraph} from "./utils.js";
-import {NodeTypesString, addRgthree, getNodeTypeStrings, stripRgthree} from "./constants.js";
+import {replaceNode, waitForCanvas, waitForGraph} from "./utils.js";
+import {NodeTypesString, addRgthree, getNodeTypeStrings} from "./constants.js";
 import {RgthreeProgressBar} from "rgthree/common/progress_bar.js";
 import {RgthreeConfigDialog} from "./config.js";
 import {

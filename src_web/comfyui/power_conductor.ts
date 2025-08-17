@@ -8,7 +8,7 @@ import {RgthreeBetterButtonWidget} from "./utils_widgets.js";
 import {NodeTypesString} from "./constants.js";
 import {ComfyWidgets} from "scripts/widgets.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
-import { changeModeOfNodes } from "./utils.js";
+import { changeModeOfNodes, getNodeById } from "./utils.js";
 
 const BUILT_INS = {
   node: {
@@ -63,7 +63,7 @@ class ComfyNodeWrapper {
   }
 
   private getNode() {
-    return app.graph.getNodeById(this.#id)!;
+    return getNodeById(this.#id)!;
   }
 
   @Exposed get id() {

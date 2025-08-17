@@ -107,19 +107,20 @@ async function updateCombinerToCollector(node: TLGraphNode) {
     // We now collect the links data, inputs and outputs, of the old node since these will be
     // lost when we remove it.
     const links: any[] = [];
+    const graph = (node.graph || app.graph);
     for (const [index, output] of node.outputs.entries()) {
       for (const linkId of output.links || []) {
-        const link: LLink = (app.graph as LGraph).links[linkId]!;
+        const link: LLink = graph.links[linkId]!;
         if (!link) continue;
-        const targetNode = app.graph.getNodeById(link.target_id);
+        const targetNode = graph.getNodeById(link.target_id);
         links.push({node: newNode, slot: index, targetNode, targetSlot: link.target_slot});
       }
     }
     for (const [index, input] of node.inputs.entries()) {
       const linkId = input.link;
       if (linkId) {
-        const link: LLink = (app.graph as LGraph).links[linkId]!;
-        const originNode = app.graph.getNodeById(link.origin_id);
+        const link: LLink = graph.links[linkId]!;
+        const originNode = graph.getNodeById(link.origin_id);
         links.push({
           node: originNode,
           slot: link.origin_slot,
@@ -129,14 +130,14 @@ async function updateCombinerToCollector(node: TLGraphNode) {
       }
     }
     // Add the new node, remove the old node.
-    app.graph.add(newNode);
+    graph.add(newNode);
     await wait();
     // Now go through and connect the other nodes up as they were.
     for (const link of links) {
       link.node.connect(link.slot, link.targetNode, link.targetSlot);
     }
     await wait();
-    app.graph.remove(node);
+    graph.remove(node);
   }
 }
 

@@ -57,20 +57,21 @@ async function updateCombinerToCollector(node) {
         newNode.size = [...node.size];
         newNode.properties = { ...node.properties };
         const links = [];
+        const graph = (node.graph || app.graph);
         for (const [index, output] of node.outputs.entries()) {
             for (const linkId of output.links || []) {
-                const link = app.graph.links[linkId];
+                const link = graph.links[linkId];
                 if (!link)
                     continue;
-                const targetNode = app.graph.getNodeById(link.target_id);
+                const targetNode = graph.getNodeById(link.target_id);
                 links.push({ node: newNode, slot: index, targetNode, targetSlot: link.target_slot });
             }
         }
         for (const [index, input] of node.inputs.entries()) {
             const linkId = input.link;
             if (linkId) {
-                const link = app.graph.links[linkId];
-                const originNode = app.graph.getNodeById(link.origin_id);
+                const link = graph.links[linkId];
+                const originNode = graph.getNodeById(link.origin_id);
                 links.push({
                     node: originNode,
                     slot: link.origin_slot,
@@ -79,13 +80,13 @@ async function updateCombinerToCollector(node) {
                 });
             }
         }
-        app.graph.add(newNode);
+        graph.add(newNode);
         await wait();
         for (const link of links) {
             link.node.connect(link.slot, link.targetNode, link.targetSlot);
         }
         await wait();
-        app.graph.remove(node);
+        graph.remove(node);
     }
 }
 app.registerExtension({

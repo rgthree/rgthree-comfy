@@ -18,6 +18,7 @@ import type {
   Point,
   ComfyApp,
   LGraphGroup,
+  NodeId,
 } from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {Constructor} from "typings/rgthree";
@@ -732,19 +733,20 @@ export async function replaceNode(
     targetNode: TLGraphNode;
     targetSlot: number | string;
   }[] = [];
+  const graph = existingNode.graph || app.graph;
   for (const [index, output] of existingNode.outputs.entries()) {
     for (const linkId of output.links || []) {
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
+      const link: LLink = graph.links[linkId]!;
       if (!link) continue;
-      const targetNode = app.graph.getNodeById(link.target_id)!;
+      const targetNode = graph.getNodeById(link.target_id)!;
       links.push({node: newNode, slot: output.name, targetNode, targetSlot: link.target_slot});
     }
   }
   for (const [index, input] of existingNode.inputs.entries()) {
     const linkId = input.link;
     if (linkId) {
-      const link: LLink = (app.graph as LGraph).links[linkId]!;
-      const originNode = app.graph.getNodeById(link.origin_id)!;
+      const link: LLink = graph.links[linkId]!;
+      const originNode = graph.getNodeById(link.origin_id)!;
       links.push({
         node: originNode,
         slot: link.origin_slot,
@@ -756,14 +758,14 @@ export async function replaceNode(
     }
   }
   // Add the new node, remove the old node.
-  app.graph.add(newNode);
+  graph.add(newNode);
   await wait();
   // Now go through and connect the other nodes up as they were.
   for (const link of links) {
     link.node.connect(link.slot, link.targetNode, link.targetSlot);
   }
   await wait();
-  app.graph.remove(existingNode);
+  graph.remove(existingNode);
   newNode.size = newNode.computeSize();
   newNode.setDirtyCanvas(true, true);
   return newNode;
@@ -772,8 +774,38 @@ export async function replaceNode(
 export function getOriginNodeByLink(linkId?: number | null) {
   let node: TLGraphNode | null = null;
   if (linkId != null) {
-    const link: LLink = app.graph.links[linkId]!;
-    node = (link != null && app.graph.getNodeById(link.origin_id)) || null;
+    const link = getLinkById(linkId);
+    node = (link != null && getNodeById(link.origin_id)) || null;
+  }
+  return node;
+}
+
+/**
+ * Gets a link by id across all graphs and subgraphs.
+ */
+export function getLinkById(linkId?: number | null) {
+  if (linkId == null) return null;
+  let link: LLink | null = app.graph.links[linkId] ?? null;
+  link = link ?? app.canvas.getCurrentGraph()?.links[linkId] ?? null;
+  const subgraphs = app.graph.rootGraph.subgraphs.values();
+  let subgraph;
+  while (!link && (subgraph = subgraphs.next().value)) {
+    link = subgraph?.links[linkId] ?? null;
+  }
+  return link;
+}
+
+/**
+ * Gets a node by id across all graphs and subgraphs.
+ */
+export function getNodeById(id: NodeId) {
+  if (id == null) return null;
+  let node = app.graph.getNodeById(id);
+  node = node ?? app.canvas.getCurrentGraph()?.getNodeById(id) ?? null;
+  const subgraphs = app.graph.rootGraph.subgraphs.values();
+  let subgraph;
+  while (!node && (subgraph = subgraphs.next().value)) {
+    node = subgraph?.getNodeById(id) ?? null;
   }
   return node;
 }
@@ -969,8 +1001,7 @@ export function getOutputNodes(nodes: TLGraphNode[]) {
  * introduction of subgraphs, as ComfyUI doesn't update the mode of a node in a subgraph on its own.
  */
 export function changeModeOfNodes(nodeOrNodes: TLGraphNode | TLGraphNode[], mode: LGraphEventMode) {
-  const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
-  traverseNodesDepthFirst(nodes, (n) => {
+  reduceNodesDepthFirst(nodeOrNodes, (n) => {
     n.mode = mode;
   });
 }
@@ -979,13 +1010,30 @@ export function changeModeOfNodes(nodeOrNodes: TLGraphNode | TLGraphNode[], mode
  * Performs depth-first traversal of nodes and their subgraphs.
  * Adapted from ComfyUI Frontend's method.
  */
-export function traverseNodesDepthFirst(nodes: TLGraphNode[], visitor: (n: TLGraphNode) => void) {
+export function reduceNodesDepthFirst(
+  nodeOrNodes: TLGraphNode | TLGraphNode[],
+  reduceFn: (node: TLGraphNode) => void,
+): void;
+export function reduceNodesDepthFirst<T>(
+  nodeOrNodes: TLGraphNode | TLGraphNode[],
+  reduceFn: (node: TLGraphNode, reduceTo: T) => T | void,
+  reduceTo: T,
+): T;
+export function reduceNodesDepthFirst<T>(
+  nodeOrNodes: TLGraphNode | TLGraphNode[],
+  reduceFn: (node: TLGraphNode, reduceTo: T) => T | void,
+  reduceTo?: T,
+): T {
+  const nodes = Array.isArray(nodeOrNodes) ? nodeOrNodes : [nodeOrNodes];
   const stack: Array<{node: TLGraphNode}> = nodes.map((node) => ({node}));
 
   // Process stack iteratively (DFS)
   while (stack.length > 0) {
     const {node} = stack.pop()!;
-    visitor(node);
+    const result = reduceFn(node, reduceTo as T);
+    if (result !== undefined && result !== reduceTo) {
+      reduceTo = result;
+    }
 
     // If it's a subgraph and we should expand, add children to stack
     if (node.isSubgraphNode?.() && node.subgraph) {
@@ -997,14 +1045,15 @@ export function traverseNodesDepthFirst(nodes: TLGraphNode[], visitor: (n: TLGra
       }
     }
   }
+  return reduceTo as T;
 }
 
 /**
  * Found an issue where group._nodes had nodes that weren't in the actual group. group._nodes is
  * marked deprecated, so we'll go ahead and use _children and filter.
  */
-export function getGroupNodes(group: LGraphGroup) : TLGraphNode[] {
-  return Array.from(group._children).filter(c => c instanceof LGraphNode);
+export function getGroupNodes(group: LGraphGroup): TLGraphNode[] {
+  return Array.from(group._children).filter((c) => c instanceof LGraphNode);
 }
 
 /**

@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
-import { PassThroughFollowing, addConnectionLayoutSupport, changeModeOfNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
+import { PassThroughFollowing, addConnectionLayoutSupport, changeModeOfNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, getGroupNodes, } from "./utils.js";
 class NodeModeRepeater extends BaseCollectorNode {
     constructor(title) {
         super(title);
@@ -97,11 +97,12 @@ class NodeModeRepeater extends BaseCollectorNode {
                 }
             }
         }
-        else if ((_a = app.graph._groups) === null || _a === void 0 ? void 0 : _a.length) {
-            for (const group of app.graph._groups) {
+        else if ((_b = (_a = this.graph) === null || _a === void 0 ? void 0 : _a._groups) === null || _b === void 0 ? void 0 : _b.length) {
+            for (const group of this.graph._groups) {
                 group.recomputeInsideNodes();
-                if ((_b = group._nodes) === null || _b === void 0 ? void 0 : _b.includes(this)) {
-                    for (const node of group._nodes) {
+                const groupNodes = getGroupNodes(group);
+                if (groupNodes === null || groupNodes === void 0 ? void 0 : groupNodes.includes(this)) {
+                    for (const node of groupNodes) {
                         if (node !== this) {
                             changeModeOfNodes(node, to);
                         }

@@ -16,6 +16,7 @@ import {
   changeModeOfNodes,
   getConnectedInputNodesAndFilterPassThroughs,
   getConnectedOutputNodesAndFilterPassThroughs,
+  getGroupNodes,
 } from "./utils.js";
 
 class NodeModeRepeater extends BaseCollectorNode {
@@ -161,12 +162,13 @@ class NodeModeRepeater extends BaseCollectorNode {
           changeModeOfNodes(node, to);
         }
       }
-    } else if (app.graph._groups?.length) {
+    } else if (this.graph?._groups?.length) {
       // No linked nodes.. check if we're in a group.
-      for (const group of app.graph._groups as LGraphGroup[]) {
+      for (const group of this.graph._groups as LGraphGroup[]) {
         group.recomputeInsideNodes();
-        if (group._nodes?.includes(this)) {
-          for (const node of group._nodes) {
+        const groupNodes = getGroupNodes(group);
+        if (groupNodes?.includes(this)) {
+          for (const node of groupNodes) {
             if (node !== this) {
               // Use "to" as there may be other getters in the way to access this.mode directly.
               changeModeOfNodes(node, to);

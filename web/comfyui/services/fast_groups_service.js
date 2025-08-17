@@ -1,5 +1,5 @@
 import { app } from "../../../scripts/app.js";
-import { getGroupNodes, traverseNodesDepthFirst } from "../utils.js";
+import { getGroupNodes, reduceNodesDepthFirst } from "../utils.js";
 class FastGroupsService {
     constructor() {
         this.msThreshold = 400;
@@ -62,8 +62,7 @@ class FastGroupsService {
     }
     getBoundingsForAllNodes() {
         if (!this.cachedNodeBoundings) {
-            this.cachedNodeBoundings = {};
-            traverseNodesDepthFirst(app.graph._nodes, (node) => {
+            this.cachedNodeBoundings = reduceNodesDepthFirst(app.graph._nodes, (node, acc) => {
                 var _a, _b;
                 let bounds = node.getBounding();
                 if (bounds[0] === 0 && bounds[1] === 0 && bounds[2] === 0 && bounds[3] === 0) {
@@ -73,8 +72,8 @@ class FastGroupsService {
                         bounds = node.getBounding();
                     }
                 }
-                this.cachedNodeBoundings[String(node.id)] = bounds;
-            });
+                acc[String(node.id)] = bounds;
+            }, {});
             setTimeout(() => {
                 this.cachedNodeBoundings = null;
             }, 50);

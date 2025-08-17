@@ -4,7 +4,7 @@ import { NodeTypesString } from "./constants.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";
 import { drawNodeWidget, fitString } from "./utils_canvas.js";
 import { RgthreeBaseWidget } from "./utils_widgets.js";
-import { changeModeOfNodes } from "./utils.js";
+import { changeModeOfNodes, getGroupNodes } from "./utils.js";
 const PROPERTY_SORT = "sort";
 const PROPERTY_SORT_CUSTOM_ALPHA = "customSortAlphabet";
 const PROPERTY_MATCH_COLORS = "matchColors";
@@ -318,7 +318,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
     doModeChange(force, skipOtherNodeCheck) {
         var _a, _b, _c, _d;
         this.group.recomputeInsideNodes();
-        const hasAnyActiveNodes = this.group._nodes.some((n) => n.mode === LiteGraph.ALWAYS);
+        const hasAnyActiveNodes = getGroupNodes(this.group).some((n) => n.mode === LiteGraph.ALWAYS);
         let newValue = force != null ? force : !hasAnyActiveNodes;
         if (skipOtherNodeCheck !== true) {
             if (newValue && ((_b = (_a = this.node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(" one"))) {
@@ -332,7 +332,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
                 newValue = this.node.widgets.every((w) => !w.value || w === this);
             }
         }
-        changeModeOfNodes(this.group._nodes, (newValue ? this.node.modeOn : this.node.modeOff));
+        changeModeOfNodes(getGroupNodes(this.group), (newValue ? this.node.modeOn : this.node.modeOff));
         this.group.rgthree_hasAnyActiveNode = newValue;
         this.toggled = newValue;
         (_d = this.group.graph) === null || _d === void 0 ? void 0 : _d.setDirtyCanvas(true, false);

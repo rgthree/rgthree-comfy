@@ -6,7 +6,7 @@ import type {
 import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 
 import {app} from "scripts/app.js";
-import {getGroupNodes, traverseNodesDepthFirst} from "../utils.js";
+import {getGroupNodes, reduceNodesDepthFirst} from "../utils.js";
 
 type Vector4 = [number, number, number, number];
 
@@ -97,9 +97,7 @@ class FastGroupsService {
    */
   getBoundingsForAllNodes() {
     if (!this.cachedNodeBoundings) {
-      this.cachedNodeBoundings = {};
-      // Always start with the app/root graph.
-      traverseNodesDepthFirst(app.graph._nodes, (node) => {
+      this.cachedNodeBoundings = reduceNodesDepthFirst(app.graph._nodes, (node, acc) => {
         let bounds = node.getBounding();
         // If the bounds are zero'ed out, then we could be a subgraph that hasn't rendered yet and
         // need to update them.
@@ -110,9 +108,8 @@ class FastGroupsService {
             bounds = node.getBounding();
           }
         }
-        this.cachedNodeBoundings![String(node.id)] = bounds as Vector4;
-
-      });
+        acc[String(node.id)] = bounds as Vector4;
+      }, {} as {[key: string]: Vector4});
       setTimeout(() => {
         this.cachedNodeBoundings = null;
       }, 50);

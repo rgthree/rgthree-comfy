@@ -10,6 +10,7 @@ import type {
 import {app} from "scripts/app.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
 import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
+import {SERVICE as BOOKMARKS_SERVICE} from "./services/bookmarks_services.js";
 import {NodeTypesString} from "./constants.js";
 import {getClosestOrSelf, query} from "rgthree/common/utils_dom.js";
 import {wait} from "rgthree/common/shared_utils.js";
@@ -52,7 +53,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   constructor(title = Bookmark.title) {
     super(title);
-    const nextShortcutChar = getNextShortcut();
+    const nextShortcutChar = BOOKMARKS_SERVICE.getNextShortcut();
     this.addWidget(
       "text",
       "shortcut_key",
@@ -152,20 +153,3 @@ app.registerExtension({
     Bookmark.setUp();
   },
 });
-
-function isBookmark(node: LGraphNode): node is Bookmark {
-  return node.type === NodeTypesString.BOOKMARK;
-}
-
-function getExistingShortcuts() {
-  const graph: LGraph = app.graph;
-  const bookmarkNodes = graph._nodes.filter(isBookmark);
-  const usedShortcuts = new Set(bookmarkNodes.map((n) => n.shortcutKey));
-  return usedShortcuts;
-}
-
-const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");
-function getNextShortcut() {
-  const existingShortcuts = getExistingShortcuts();
-  return SHORTCUT_DEFAULTS.find((char) => !existingShortcuts.has(char)) ?? "1";
-}
