@@ -102,16 +102,18 @@ class FastGroupsService {
         }
     }
     getGroupsUnsorted(now) {
-        var _a, _b;
+        var _a, _b, _c;
         const canvas = app.canvas;
         const graph = (_a = canvas.getCurrentGraph()) !== null && _a !== void 0 ? _a : app.graph;
         if (!canvas.selected_group_moving &&
             (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)) {
             this.groupsUnsorted = [...graph._groups];
-            const subgraphs = graph.subgraphs.values();
-            let s;
-            while ((s = subgraphs.next().value))
-                this.groupsUnsorted.push(...((_b = s.groups) !== null && _b !== void 0 ? _b : []));
+            const subgraphs = (_b = graph.subgraphs) === null || _b === void 0 ? void 0 : _b.values();
+            if (subgraphs) {
+                let s;
+                while ((s = subgraphs.next().value))
+                    this.groupsUnsorted.push(...((_c = s.groups) !== null && _c !== void 0 ? _c : []));
+            }
             for (const group of this.groupsUnsorted) {
                 this.recomputeInsideNodesForGroup(group);
                 group.rgthree_hasAnyActiveNode = getGroupNodes(group).some((n) => n.mode === LiteGraph.ALWAYS);

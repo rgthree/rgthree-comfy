@@ -787,10 +787,12 @@ export function getLinkById(linkId?: number | null) {
   if (linkId == null) return null;
   let link: LLink | null = app.graph.links[linkId] ?? null;
   link = link ?? app.canvas.getCurrentGraph()?.links[linkId] ?? null;
-  const subgraphs = app.graph.rootGraph.subgraphs.values();
-  let subgraph;
-  while (!link && (subgraph = subgraphs.next().value)) {
-    link = subgraph?.links[linkId] ?? null;
+  const subgraphs = app.graph.rootGraph.subgraphs?.values();
+  if (subgraphs) {
+    let subgraph;
+    while (!link && (subgraph = subgraphs.next().value)) {
+      link = subgraph?.links[linkId] ?? null;
+    }
   }
   return link;
 }
@@ -802,10 +804,12 @@ export function getNodeById(id: NodeId) {
   if (id == null) return null;
   let node = app.graph.getNodeById(id);
   node = node ?? app.canvas.getCurrentGraph()?.getNodeById(id) ?? null;
-  const subgraphs = app.graph.rootGraph.subgraphs.values();
-  let subgraph;
-  while (!node && (subgraph = subgraphs.next().value)) {
-    node = subgraph?.getNodeById(id) ?? null;
+  const subgraphs = app.graph.rootGraph.subgraphs?.values();
+  if (subgraphs) {
+    let subgraph;
+    while (!node && (subgraph = subgraphs.next().value)) {
+      node = subgraph?.getNodeById(id) ?? null;
+    }
   }
   return node;
 }

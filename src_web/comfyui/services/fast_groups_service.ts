@@ -166,9 +166,11 @@ class FastGroupsService {
       (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)
     ) {
       this.groupsUnsorted = [...graph._groups];
-      const subgraphs = graph.subgraphs.values();
-      let s;
-      while ((s = subgraphs.next().value)) this.groupsUnsorted.push(...(s.groups ?? []));
+      const subgraphs = graph.subgraphs?.values();
+      if (subgraphs) {
+        let s;
+        while ((s = subgraphs.next().value)) this.groupsUnsorted.push(...(s.groups ?? []));
+      }
       for (const group of this.groupsUnsorted) {
         this.recomputeInsideNodesForGroup(group);
         group.rgthree_hasAnyActiveNode = getGroupNodes(group).some(
