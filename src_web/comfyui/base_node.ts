@@ -197,8 +197,10 @@ export abstract class RgthreeBaseNode extends LGraphNode {
 
     // Comfy added their own removeWidget, but it's not fully rolled out to stable, so keep our
     // original implementation.
-    // TODO: Can be simplified eventually.
-    if (typeof super.removeWidget === 'function') {
+    // TODO: Actually, scratch that. The ComfyUI impl doesn't call widtget.onRemove?.() and so
+    // we shouldn't switch to it yet. See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/5090
+    const canUseComfyUIRemoveWidget = false;
+    if (canUseComfyUIRemoveWidget && typeof super.removeWidget === 'function') {
       super.removeWidget(widget as IBaseWidget);
     } else {
       const index = this.widgets.indexOf(widget as IWidget);

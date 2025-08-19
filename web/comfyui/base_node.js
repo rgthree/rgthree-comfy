@@ -101,7 +101,8 @@ export class RgthreeBaseNode extends LGraphNode {
         }
         if (!widget)
             return;
-        if (typeof super.removeWidget === 'function') {
+        const canUseComfyUIRemoveWidget = false;
+        if (canUseComfyUIRemoveWidget && typeof super.removeWidget === 'function') {
             super.removeWidget(widget);
         }
         else {
