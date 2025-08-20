@@ -38,7 +38,7 @@ export class PowerPrompt {
                 ]);
             }
             return (this.configuring ||
-                rgthree.loadingApiJson ||
+                !!rgthree.loadingApiJson ||
                 (canConnect && !this.node.inputs[inputIndex].disabled));
         };
         const oldOnConnectOutput = this.node.onConnectOutput;
@@ -54,7 +54,7 @@ export class PowerPrompt {
                 ]);
             }
             return (this.configuring ||
-                rgthree.loadingApiJson ||
+                !!rgthree.loadingApiJson ||
                 (canConnect && !this.node.outputs[outputIndex].disabled));
         };
         const onPropertyChanged = this.node.onPropertyChanged;

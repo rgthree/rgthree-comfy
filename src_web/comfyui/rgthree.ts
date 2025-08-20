@@ -198,6 +198,10 @@ class LogSession {
     return this.logParts(LogLevel.WARN, message, ...args);
   }
 
+  errorParts(message?: string, ...args: any[]) {
+    return this.logParts(LogLevel.ERROR, message, ...args);
+  }
+
   newSession(name?: string) {
     return new LogSession(`${this.name}${name}`);
   }
@@ -237,7 +241,11 @@ class Rgthree extends EventTarget {
   monitorLinkTimeout: number | null = null;
 
   processingQueue = false;
-  loadingApiJson = false;
+  /**
+   * The API Json currently being loaded, or null. Can be used as a falsy boolean to determine if
+   * `app.loadApiJson` is currently executing.
+   */
+  loadingApiJson: ComfyApiFormat | null = null;
   replacingReroute: NodeId | null = null;
   processingMouseDown = false;
   processingMouseUp = false;
@@ -698,12 +706,12 @@ class Rgthree extends EventTarget {
 
     // Keep state for when the app is in the middle of loading from an api JSON file.
     const loadApiJson = app.loadApiJson;
-    app.loadApiJson = async function () {
-      rgthree.loadingApiJson = true;
+    app.loadApiJson = async function(apiData: any, fileName: string) {
+      rgthree.loadingApiJson = apiData as ComfyApiFormat;
       try {
         loadApiJson.apply(app, [...arguments] as any);
       } finally {
-        rgthree.loadingApiJson = false;
+        rgthree.loadingApiJson = null;
       }
     };
 

@@ -9,7 +9,7 @@ import type {
   ICustomWidget,
   CanvasPointerEvent,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyApiFormat, ComfyNodeDef} from "typings/comfy.js";
 import type {RgthreeModelInfo} from "typings/rgthree.js";
 
 import {app} from "scripts/app.js";
@@ -74,6 +74,39 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
     // Prefetch loras list.
     rgthreeApi.getLoras();
+
+    // [🤮] If ComfyUI is loading from API JSON it doesn't pass us the actual information at all
+    // (like, in a `configure` call) and tries to set the widget data on its own. Unfortunately,
+    // since Power Lora Loader has dynamic widgets, this fails on ComfyUI's side. We can do so after
+    // the fact but, unfortuntely, we need to do it after a timeout since we don't have any
+    // information at this point to be able to tell what data we need (like, even the node id, let
+    // alone the actual data).
+    if (rgthree.loadingApiJson) {
+      const fullApiJson = rgthree.loadingApiJson;
+      setTimeout(() => {
+        this.configureFromApiJson(fullApiJson);
+      }, 16);
+    }
+  }
+
+  private configureFromApiJson(fullApiJson: ComfyApiFormat) {
+    if (this.id == null) {
+      const [n, v] = this.logger.errorParts("Cannot load from API JSON without node id.");
+      console[n]?.(...v);
+      return;
+    }
+    const nodeData =
+      fullApiJson[this.id] || fullApiJson[String(this.id)] || fullApiJson[Number(this.id)];
+    if (nodeData == null) {
+      const [n, v] = this.logger.errorParts(`No node found in API JSON for node id ${this.id}.`);
+      console[n]?.(...v);
+      return;
+    }
+    this.configure({
+      widgets_values: Object.values(nodeData.inputs).filter(
+        (input) => typeof (input as any)?.["lora"] === "string",
+      ),
+    });
   }
 
   /**
@@ -81,10 +114,16 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
    * added in `onNodeCreated`, letting `super.configure` and do nothing, then create our lora
    * widgets and, finally, add back in our default widgets.
    */
-  override configure(info: ISerialisedNode): void {
+  override configure(
+    info: ISerialisedNode | {widgets_values: ISerialisedNode["widgets_values"]},
+  ): void {
     while (this.widgets?.length) this.removeWidget(0);
     this.widgetButtonSpacer = null;
-    super.configure(info);
+    // Since we may be calling into configure manually for just widgets_values setting (like, from
+    // API JSON) we want to only call the parent class's configure with a real ISerialisedNode data.
+    if ((info as ISerialisedNode).id != null) {
+      super.configure(info as ISerialisedNode);
+    }
 
     (this as any)._tempWidth = this.size[0];
     (this as any)._tempHeight = this.size[1];

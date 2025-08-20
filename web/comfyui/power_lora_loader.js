@@ -24,13 +24,38 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.widgetButtonSpacer = null;
         this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
         rgthreeApi.getLoras();
+        if (rgthree.loadingApiJson) {
+            const fullApiJson = rgthree.loadingApiJson;
+            setTimeout(() => {
+                this.configureFromApiJson(fullApiJson);
+            }, 16);
+        }
+    }
+    configureFromApiJson(fullApiJson) {
+        var _b, _c;
+        if (this.id == null) {
+            const [n, v] = this.logger.errorParts("Cannot load from API JSON without node id.");
+            (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
+            return;
+        }
+        const nodeData = fullApiJson[this.id] || fullApiJson[String(this.id)] || fullApiJson[Number(this.id)];
+        if (nodeData == null) {
+            const [n, v] = this.logger.errorParts(`No node found in API JSON for node id ${this.id}.`);
+            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
+            return;
+        }
+        this.configure({
+            widgets_values: Object.values(nodeData.inputs).filter((input) => typeof (input === null || input === void 0 ? void 0 : input["lora"]) === "string"),
+        });
     }
     configure(info) {
         var _b;
         while ((_b = this.widgets) === null || _b === void 0 ? void 0 : _b.length)
             this.removeWidget(0);
         this.widgetButtonSpacer = null;
-        super.configure(info);
+        if (info.id != null) {
+            super.configure(info);
+        }
         this._tempWidth = this.size[0];
         this._tempHeight = this.size[1];
         for (const widgetValue of info.widgets_values || []) {

@@ -115,6 +115,9 @@ class LogSession {
     warnParts(message, ...args) {
         return this.logParts(LogLevel.WARN, message, ...args);
     }
+    errorParts(message, ...args) {
+        return this.logParts(LogLevel.ERROR, message, ...args);
+    }
     newSession(name) {
         return new LogSession(`${this.name}${name}`);
     }
@@ -132,7 +135,7 @@ class Rgthree extends EventTarget {
         this.monitorBadLinksAlerted = false;
         this.monitorLinkTimeout = null;
         this.processingQueue = false;
-        this.loadingApiJson = false;
+        this.loadingApiJson = null;
         this.replacingReroute = null;
         this.processingMouseDown = false;
         this.processingMouseUp = false;
@@ -470,13 +473,13 @@ class Rgthree extends EventTarget {
             }
         };
         const loadApiJson = app.loadApiJson;
-        app.loadApiJson = async function () {
-            rgthree.loadingApiJson = true;
+        app.loadApiJson = async function (apiData, fileName) {
+            rgthree.loadingApiJson = apiData;
             try {
                 loadApiJson.apply(app, [...arguments]);
             }
             finally {
-                rgthree.loadingApiJson = false;
+                rgthree.loadingApiJson = null;
             }
         };
         const graphToPrompt = app.graphToPrompt;
