@@ -6,6 +6,7 @@ from ..config import get_config_value
 from .utils_server import set_default_page_resources, set_default_page_routes
 from .routes_config import *
 from .routes_model_info import *
+from .routes_templates import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/')

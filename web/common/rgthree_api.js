@@ -124,5 +124,24 @@ class RgthreeApi {
         options.cache = options.cache || "no-cache";
         return fetch(url, options);
     }
+    async getPowerLoraTemplates(templateName = null) {
+        const route = templateName 
+            ? `/power-lora-templates?name=${encodeURIComponent(templateName)}`
+            : "/power-lora-templates";
+        const response = await this.fetchApiJsonOrNull(route);
+        if (templateName) {
+            return response; // Returns single template object
+        }
+        return response || []; // Returns array of templates
+    }
+    async savePowerLoraTemplate(name, items) {
+        const data = { name, items };
+        return await this.postJson("/power-lora-templates", data);
+    }
+    async deletePowerLoraTemplate(name) {
+        return await this.fetchApiJsonOrNull(`/power-lora-templates?name=${encodeURIComponent(name)}`, {
+            method: "DELETE"
+        });
+    }
 }
 export const rgthreeApi = new RgthreeApi();
