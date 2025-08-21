@@ -24,38 +24,13 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.widgetButtonSpacer = null;
         this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
         rgthreeApi.getLoras();
-        if (rgthree.loadingApiJson) {
-            const fullApiJson = rgthree.loadingApiJson;
-            setTimeout(() => {
-                this.configureFromApiJson(fullApiJson);
-            }, 16);
-        }
-    }
-    configureFromApiJson(fullApiJson) {
-        var _b, _c;
-        if (this.id == null) {
-            const [n, v] = this.logger.errorParts("Cannot load from API JSON without node id.");
-            (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
-            return;
-        }
-        const nodeData = fullApiJson[this.id] || fullApiJson[String(this.id)] || fullApiJson[Number(this.id)];
-        if (nodeData == null) {
-            const [n, v] = this.logger.errorParts(`No node found in API JSON for node id ${this.id}.`);
-            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
-            return;
-        }
-        this.configure({
-            widgets_values: Object.values(nodeData.inputs).filter((input) => typeof (input === null || input === void 0 ? void 0 : input["lora"]) === "string"),
-        });
     }
     configure(info) {
         var _b;
         while ((_b = this.widgets) === null || _b === void 0 ? void 0 : _b.length)
             this.removeWidget(0);
         this.widgetButtonSpacer = null;
-        if (info.id != null) {
-            super.configure(info);
-        }
+        super.configure(info);
         this._tempWidth = this.size[0];
         this._tempHeight = this.size[1];
         for (const widgetValue of info.widgets_values || []) {
@@ -74,7 +49,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.addNonLoraWidgets();
         const computed = this.computeSize();
         this.size = this.size || [0, 0];
-        this.size[0] = Math.max(this.size[0], computed[0]);
+        this.size[0] = Math.max(this.size[0], computed[0], 450); // Minimum width for trigger words
         this.size[1] = Math.max(this.size[1], computed[1]);
         this.setDirtyCanvas(true, true);
     }
@@ -109,6 +84,54 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                         }
                     }
                 }, null, [...loras]);
+            });
+            return true;
+        }));
+        this.addCustomWidget(new RgthreeBetterButtonWidget("💾 Save Template", (_event, _pos, node) => {
+            // The ComfyUI prompt is asynchronous and returns the value via the callback (3rd arg).
+            // We therefore need to do the work that depends on the name inside that callback.
+            app.canvas.prompt(
+                "Template name",
+                "My Lora Set",
+                (name) => {
+                    if (!name)
+                        return;
+                    const items = this.widgets
+                        .filter((w) => { var _b; return (_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_"); })
+                        .map((w) => ({ ...w.value }))
+                        .filter((v) => v && v.lora && v.lora !== "None");
+                    rgthreeApi.savePowerLoraTemplate(name, items);
+                }
+            );
+            return true;
+        }));
+        this.addCustomWidget(new RgthreeBetterButtonWidget("📂 Load Template", (event, _pos, node) => {
+            rgthreeApi.getPowerLoraTemplates().then((templates) => {
+                const names = (templates || []).map((t) => t.name);
+                showLoraChooser(event, (value) => {
+                    if (typeof value === "string" && value !== "NONE") {
+                        rgthreeApi.getPowerLoraTemplates(value).then((resp) => {
+                            const tpl = (resp === null || resp === void 0 ? void 0 : resp.items) ? resp : null;
+                            if (!tpl)
+                                return;
+                            const current = [...this.widgets];
+                            for (const w of current) {
+                                var _b;
+                                if ((_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
+                                    this.removeWidget(this.widgets.indexOf(w));
+                                }
+                            }
+                            for (const it of tpl.items) {
+                                const widget = this.addNewLoraWidget();
+                                widget.value = { ...it };
+                            }
+                            const computed = this.computeSize();
+                            const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
+                            this.size[1] = Math.max(tempHeight, computed[1]);
+                            this.setDirtyCanvas(true, true);
+                        });
+                    }
+                }, null, names.length ? names : ["NONE"]);
             });
             return true;
         }));
@@ -216,6 +239,15 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             }
         }
     }
+    getTriggerWords() {
+        const triggerWords = [];
+        for (const widget of this.widgets) {
+            if (widget.name && widget.name.startsWith("lora_") && widget.value && widget.value.on && widget.value.triggerWord) {
+                triggerWords.push(widget.value.triggerWord.trim());
+            }
+        }
+        return triggerWords.filter(word => word.length > 0).join(", ");
+    }
     static setUp(comfyClass, nodeData) {
         RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS);
     }
@@ -239,6 +271,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         <li><p>
           Add as many Lora's as you would like by clicking the "+ Add Lora" button.
           There's no real limit!
+        </p></li>
+        <li><p>
+          Click on the trigger word field for each lora to add activation words that will be 
+          automatically combined and output as text for use with prompt nodes.
         </p></li>
         <li><p>
           Right-click on a Lora widget for special options to move the lora up or down
@@ -300,6 +336,16 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
             ctx.textAlign = "left";
             ctx.textBaseline = "middle";
             ctx.fillText("Toggle All", posX, midY);
+            
+            // Add labels for the columns
+            const availableWidth = node.size[0] - posX - margin * 4 - innerMargin * 6;
+            const loraWidth = Math.max(100, availableWidth * 0.6);
+            const triggerWidth = availableWidth - loraWidth - innerMargin;
+            
+            ctx.textAlign = "center";
+            ctx.fillText("LoRA", posX + loraWidth / 2, midY);
+            ctx.fillText("Trigger Words", posX + loraWidth + innerMargin + triggerWidth / 2, midY);
+            
             let rposX = node.size[0] - margin - innerMargin - innerMargin;
             ctx.textAlign = "center";
             ctx.fillText(this.showModelAndClip ? "Clip" : "Strength", rposX - drawNumberWidgetPart.WIDTH_TOTAL / 2, midY);
@@ -319,6 +365,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
 const DEFAULT_LORA_WIDGET_DATA = {
     on: true,
     lora: null,
+    triggerWord: "",
     strength: 1,
     strengthTwo: null,
 };
@@ -333,6 +380,10 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.hitAreas = {
             toggle: { bounds: [0, 0], onDown: this.onToggleDown },
             lora: { bounds: [0, 0], onClick: this.onLoraClick },
+            triggerWord: { bounds: [0, 0], onClick: this.onTriggerWordClick },
+            remove: { bounds: [0, 0], onClick: this.onRemoveClick },
+            moveUp: { bounds: [0, 0], onClick: this.onMoveUpClick },
+            moveDown: { bounds: [0, 0], onClick: this.onMoveDownClick },
             strengthDec: { bounds: [0, 0], onClick: this.onStrengthDecDown },
             strengthVal: { bounds: [0, 0], onClick: this.onStrengthValUp },
             strengthInc: { bounds: [0, 0], onClick: this.onStrengthIncDown },
@@ -345,6 +396,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this._value = {
             on: true,
             lora: null,
+            triggerWord: "",
             strength: 1,
             strengthTwo: null,
         };
@@ -367,7 +419,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.getLoraInfo();
     }
     draw(ctx, node, w, posY, height) {
-        var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
         if (this.showModelAndClip !== currentShowModelAndClip) {
             let oldShowModelAndClip = this.showModelAndClip;
@@ -403,6 +455,42 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         }
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         let rposX = node.size[0] - margin - innerMargin - innerMargin;
+        
+        // Draw remove button
+        const removeIconSize = height * 0.66;
+        const removeWidth = removeIconSize + innerMargin;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+        ctx.fillText("✖", node.size[0] - margin - innerMargin, midY);
+        this.hitAreas.remove.bounds = [node.size[0] - margin - innerMargin - removeIconSize, removeWidth];
+        
+        // Draw move up/down arrows to reorder
+        const moveIconSize = height * 0.66;
+        const moveWidth = moveIconSize * 2 + innerMargin;
+        const arrowsRightEdge = node.size[0] - margin - innerMargin - removeWidth - innerMargin;
+        ctx.textAlign = "center";
+        // Compute centers for up and down icons
+        const downCenterX = arrowsRightEdge - moveIconSize * 0.5;
+        const upCenterX = downCenterX - moveIconSize - innerMargin;
+        
+        // Determine if we can move up/down (only within contiguous lora widgets)
+        const widgets = node.widgets;
+        const index = widgets.indexOf(this);
+        const canMoveUp = !!(widgets[index - 1] && widgets[index - 1].name && widgets[index - 1].name.startsWith("lora_"));
+        const canMoveDown = !!(widgets[index + 1] && widgets[index + 1].name && widgets[index + 1].name.startsWith("lora_"));
+        
+        const previousAlpha = ctx.globalAlpha;
+        ctx.globalAlpha = previousAlpha * (canMoveUp ? 1 : 0.35);
+        ctx.fillText("▲", upCenterX, midY);
+        ctx.globalAlpha = previousAlpha * (canMoveDown ? 1 : 0.35);
+        ctx.fillText("▼", downCenterX, midY);
+        ctx.globalAlpha = previousAlpha;
+        
+        // Set hit areas
+        this.hitAreas.moveUp.bounds = [upCenterX - moveIconSize * 0.5, moveIconSize];
+        this.hitAreas.moveDown.bounds = [downCenterX - moveIconSize * 0.5, moveIconSize];
+        
         const strengthValue = this.showModelAndClip
             ? ((_c = this.value.strengthTwo) !== null && _c !== void 0 ? _c : 1)
             : ((_d = this.value.strength) !== null && _d !== void 0 ? _d : 1);
@@ -414,7 +502,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             textColor = "#c66";
         }
         const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
-            posX: node.size[0] - margin - innerMargin - innerMargin,
+            posX: node.size[0] - margin - innerMargin - innerMargin - removeWidth - innerMargin - moveWidth - innerMargin,
             posY,
             height,
             value: strengthValue,
@@ -465,13 +553,37 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             this.hitAreas.info.bounds = [rposX - infoIconSize, infoWidth];
             rposX = rposX - infoIconSize - innerMargin;
         }
-        const loraWidth = rposX - posX;
+        
+        // Calculate available space and split between lora name and trigger word
+        const availableWidth = rposX - posX - innerMargin;
+        const loraWidth = Math.max(100, availableWidth * 0.6); // 60% for lora name, minimum 100px
+        const triggerWidth = availableWidth - loraWidth - innerMargin;
+        
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
+        
+        // Draw lora name
         const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
         ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
         this.hitAreas.lora.bounds = [posX, loraWidth];
         posX += loraWidth + innerMargin;
+        
+        // Draw trigger word field with background
+        const triggerWord = String(((_q = this.value) === null || _q === void 0 ? void 0 : _q.triggerWord) || "");
+        const triggerPadding = 4;
+        
+        // Draw trigger word background
+        ctx.save();
+        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+        ctx.fillRect(posX - triggerPadding, posY + triggerPadding, triggerWidth + triggerPadding * 2, height - triggerPadding * 2);
+        ctx.restore();
+        
+        // Draw trigger word text
+        ctx.fillStyle = triggerWord ? LiteGraph.WIDGET_TEXT_COLOR : "rgba(255, 255, 255, 0.5)";
+        const displayText = triggerWord || "trigger word...";
+        ctx.fillText(fitString(ctx, displayText, triggerWidth), posX, midY);
+        this.hitAreas.triggerWord.bounds = [posX - triggerPadding, triggerWidth + triggerPadding * 2];
+        
         ctx.globalAlpha = app.canvas.editor_alpha;
         ctx.restore();
     }
@@ -492,6 +604,39 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.cancelMouseDown();
         return true;
     }
+    onMoveUpClick(event, pos, node) {
+        const widgets = node.widgets;
+        const index = widgets.indexOf(this);
+        const canMoveUp = !!(widgets[index - 1] && widgets[index - 1].name && widgets[index - 1].name.startsWith("lora_"));
+        if (canMoveUp) {
+            moveArrayItem(widgets, this, index - 1);
+            node.setDirtyCanvas(true, true);
+        }
+        this.cancelMouseDown();
+        return true;
+    }
+    onMoveDownClick(event, pos, node) {
+        const widgets = node.widgets;
+        const index = widgets.indexOf(this);
+        const canMoveDown = !!(widgets[index + 1] && widgets[index + 1].name && widgets[index + 1].name.startsWith("lora_"));
+        if (canMoveDown) {
+            moveArrayItem(widgets, this, index + 1);
+            node.setDirtyCanvas(true, true);
+        }
+        this.cancelMouseDown();
+        return true;
+    }
+    onRemoveClick(event, pos, node) {
+        const widgets = node.widgets;
+        removeArrayItem(widgets, this);
+        const computed = node.computeSize && node.computeSize();
+        if (computed) {
+            node.size[1] = Math.max((node._tempHeight !== null && node._tempHeight !== void 0 ? node._tempHeight : 15), computed[1]);
+        }
+        node.setDirtyCanvas(true, true);
+        this.cancelMouseDown();
+        return true;
+    }
     onInfoDown(event, pos, node) {
         this.showLoraInfoDialog();
     }
@@ -504,6 +649,14 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             }
             node.setDirtyCanvas(true, true);
         });
+        this.cancelMouseDown();
+    }
+    onTriggerWordClick(event, pos, node) {
+        const canvas = app.canvas;
+        canvas.prompt("Trigger Word", this.value.triggerWord || "", (value) => {
+            this.value.triggerWord = value;
+            node.setDirtyCanvas(true, true);
+        }, event);
         this.cancelMouseDown();
     }
     onStrengthDecDown(event, pos, node) {
