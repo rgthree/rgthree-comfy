@@ -40,6 +40,7 @@ from .py.context_merge_big import RgthreeContextMergeBig
 from .py.image_comparer import RgthreeImageComparer
 from .py.power_lora_loader import RgthreePowerLoraLoader
 from .py.power_lora_loader_template import RgthreePowerLoraLoaderTemplate
+from .py.test_simple_node import RgthreeTestSimpleNode
 from .py.power_primitive import RgthreePowerPrimitive
 from .py.image_or_latent_size import RgthreeImageOrLatentSize
 from .py.image_resize import RgthreeImageResize
@@ -67,6 +68,7 @@ NODE_CLASS_MAPPINGS = {
   RgthreeImageComparer.NAME: RgthreeImageComparer,
   RgthreePowerLoraLoader.NAME: RgthreePowerLoraLoader,
   RgthreePowerLoraLoaderTemplate.NAME: RgthreePowerLoraLoaderTemplate,
+  RgthreeTestSimpleNode.NAME: RgthreeTestSimpleNode,
   RgthreePowerPrimitive.NAME: RgthreePowerPrimitive,
   RgthreeImageOrLatentSize.NAME: RgthreeImageOrLatentSize,
   RgthreeImageResize.NAME: RgthreeImageResize,
