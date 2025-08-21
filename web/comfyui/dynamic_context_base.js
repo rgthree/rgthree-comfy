@@ -1,7 +1,7 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { BaseContextNode } from "./context.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
-import { moveArrayItem, wait } from "../../rgthree/common/shared_utils.js";
+import { moveArrayItem, wait } from "rgthree/common/shared_utils.js";
 import { RgthreeInvisibleWidget } from "./utils_widgets.js";
 import { getContextOutputName, InputMutationOperation, } from "./services/context_service.js";
 import { SERVICE as CONTEXT_SERVICE } from "./services/context_service.js";

@@ -1,6 +1,6 @@
-import { rgthreeConfig } from "../../../rgthree/config.js";
-import { getObjectValue, setObjectValue } from "../../../rgthree/common/shared_utils.js";
-import { rgthreeApi } from "../../../rgthree/common/rgthree_api.js";
+import { rgthreeConfig } from "rgthree/config.js";
+import { getObjectValue, setObjectValue } from "rgthree/common/shared_utils.js";
+import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 class ConfigService extends EventTarget {
     getConfigValue(key, def) {
         return getObjectValue(rgthreeConfig, key, def);

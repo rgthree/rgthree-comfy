@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { IoDirection, followConnectionUntilType, getConnectedInputInfosAndFilterPassThroughs, } from "./utils.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONTEXT_SERVICE, InputMutationOperation, } from "./services/context_service.js";

@@ -1,16 +1,16 @@
-import { app } from "../../scripts/app.js";
-import { api } from "../../scripts/api.js";
+import { app } from "scripts/app.js";
+import { api } from "scripts/api.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
-import { WorkflowLinkFixer } from "../../rgthree/common/link_fixer.js";
-import { injectCss, wait } from "../../rgthree/common/shared_utils.js";
+import { WorkflowLinkFixer } from "rgthree/common/link_fixer.js";
+import { injectCss, wait } from "rgthree/common/shared_utils.js";
 import { replaceNode, waitForCanvas, waitForGraph } from "./utils.js";
 import { NodeTypesString, addRgthree, getNodeTypeStrings } from "./constants.js";
-import { RgthreeProgressBar } from "../../rgthree/common/progress_bar.js";
+import { RgthreeProgressBar } from "rgthree/common/progress_bar.js";
 import { RgthreeConfigDialog } from "./config.js";
-import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "../../rgthree/common/media/svgs.js";
-import { createElement, queryAll, query } from "../../rgthree/common/utils_dom.js";
+import { iconGear, iconNode, iconReplace, iconStarFilled, logoRgthree, } from "rgthree/common/media/svgs.js";
+import { createElement, queryAll, query } from "rgthree/common/utils_dom.js";
 export var LogLevel;
 (function (LogLevel) {
     LogLevel[LogLevel["IMPORTANT"] = 1] = "IMPORTANT";

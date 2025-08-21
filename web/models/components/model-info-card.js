@@ -1,4 +1,4 @@
-import { RgthreeCustomElement } from "../../common/components/base_custom_element.js";
+import { RgthreeCustomElement } from "rgthree/common/components/base_custom_element";
 export class RgthreeModelInfoCard extends RgthreeCustomElement {
     constructor() {
         super(...arguments);

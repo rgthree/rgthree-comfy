@@ -1,11 +1,11 @@
-import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js";
 import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
-import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
+import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
-import { defineProperty, moveArrayItem } from "../../rgthree/common/shared_utils.js";
+import { defineProperty, moveArrayItem } from "rgthree/common/shared_utils.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);

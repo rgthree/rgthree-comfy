@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";

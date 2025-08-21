@@ -1,6 +1,6 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { PassThroughFollowing, addConnectionLayoutSupport, changeModeOfNodes, getConnectedInputNodesAndFilterPassThroughs, getConnectedOutputNodesAndFilterPassThroughs, } from "./utils.js";
-import { wait } from "../../rgthree/common/shared_utils.js";
+import { wait } from "rgthree/common/shared_utils.js";
 import { BaseCollectorNode } from "./base_node_collector.js";
 import { NodeTypesString, stripRgthree } from "./constants.js";
 import { fitString } from "./utils_canvas.js";

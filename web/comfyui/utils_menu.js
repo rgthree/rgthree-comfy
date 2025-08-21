@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
+import { app } from "scripts/app.js";
+import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 const PASS_THROUGH = function (item) {
     return item;
 };

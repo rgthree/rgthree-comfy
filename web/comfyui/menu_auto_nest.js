@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 const SPECIAL_ENTRIES = [/^(CHOOSE|NONE|DISABLE|OPEN)(\s|$)/i, /^\p{Extended_Pictographic}/gu];

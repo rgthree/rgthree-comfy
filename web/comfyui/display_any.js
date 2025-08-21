@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { addConnectionLayoutSupport } from "./utils.js";
 import { rgthree } from "./rgthree.js";
 let hasShownAlertForUpdatingInt = false;

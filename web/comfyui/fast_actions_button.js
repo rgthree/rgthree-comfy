@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addMenuItem, changeModeOfNodes } from "./utils.js";

@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 const clipboardSupportedPromise = new Promise(async (resolve) => {
     try {
         const result = await navigator.permissions.query({ name: "clipboard-write" });

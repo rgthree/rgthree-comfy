@@ -1,4 +1,4 @@
-import { api } from "../../scripts/api.js";
+import { api } from "scripts/api.js";
 import { getResolver } from "./shared_utils.js";
 export class PromptExecution {
     constructor(id) {

@@ -1,4 +1,4 @@
-import { app } from "../../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { NodeTypesString } from "../constants.js";
 import { reduceNodesDepthFirst } from "../utils.js";
 const SHORTCUT_DEFAULTS = "1234567890abcdefghijklmnopqrstuvwxyz".split("");

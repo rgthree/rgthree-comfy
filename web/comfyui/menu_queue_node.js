@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { rgthree } from "./rgthree.js";
 import { getGroupNodes, getOutputNodes } from "./utils.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";

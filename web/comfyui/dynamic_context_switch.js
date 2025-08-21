@@ -1,9 +1,9 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { DynamicContextNodeBase } from "./dynamic_context_base.js";
 import { NodeTypesString } from "./constants.js";
 import { SERVICE as CONTEXT_SERVICE, getContextOutputName, } from "./services/context_service.js";
 import { getConnectedInputNodesAndFilterPassThroughs } from "./utils.js";
-import { debounce, moveArrayItem } from "../../rgthree/common/shared_utils.js";
+import { debounce, moveArrayItem } from "rgthree/common/shared_utils.js";
 import { measureText } from "./utils_canvas.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 class DynamicContextSwitchNode extends DynamicContextNodeBase {

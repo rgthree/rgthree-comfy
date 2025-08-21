@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { api } from "../../scripts/api.js";
+import { app } from "scripts/app.js";
+import { api } from "scripts/api.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addConnectionLayoutSupport } from "./utils.js";

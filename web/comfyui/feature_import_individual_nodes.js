@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { tryToGetWorkflowDataFromEvent } from "../../rgthree/common/utils_workflow.js";
+import { app } from "scripts/app.js";
+import { tryToGetWorkflowDataFromEvent } from "rgthree/common/utils_workflow.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { NodeTypesString } from "./constants.js";
 app.registerExtension({

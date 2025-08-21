@@ -1,9 +1,9 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { IoDirection, addConnectionLayoutSupport, followConnectionUntilType } from "./utils.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
-import { debounce } from "../../rgthree/common/shared_utils.js";
+import { debounce } from "rgthree/common/shared_utils.js";
 class RgthreeAnySwitch extends RgthreeBaseServerNode {
     constructor(title = RgthreeAnySwitch.title) {
         super(title);

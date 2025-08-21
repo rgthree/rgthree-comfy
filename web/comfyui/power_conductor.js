@@ -16,12 +16,12 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
     return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
 };
 var _ComfyNodeWrapper_id, _ComfyWidgetWrapper_widget;
-import { app } from "../../scripts/app.js";
-import { Exposed, execute, PyTuple } from "../../rgthree/common/py_parser.js";
+import { app } from "scripts/app.js";
+import { Exposed, execute, PyTuple } from "rgthree/common/py_parser.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { RgthreeBetterButtonWidget } from "./utils_widgets.js";
 import { NodeTypesString } from "./constants.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { changeModeOfNodes, getNodeById } from "./utils.js";
 const BUILT_INS = {

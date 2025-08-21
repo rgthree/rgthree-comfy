@@ -1,4 +1,4 @@
-import { SERVICE as PROMPT_SERVICE } from "../common/prompt_service.js";
+import { SERVICE as PROMPT_SERVICE } from "rgthree/common/prompt_service.js";
 import { createElement } from "./utils_dom.js";
 export class RgthreeProgressBar extends HTMLElement {
     static create() {

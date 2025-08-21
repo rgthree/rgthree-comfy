@@ -85,7 +85,7 @@ export async function execute(code, ctx, additionalBuiltins) {
 }
 async function parse(code) {
     if (!MEMOIZED.parser) {
-        const TreeSitter = (await import("../lib/tree-sitter.js"));
+        const TreeSitter = (await import("rgthree/lib/tree-sitter.js"));
         await TreeSitter.Parser.init();
         const lang = await TreeSitter.Language.load("rgthree/lib/tree-sitter-python.wasm");
         MEMOIZED.parser = new TreeSitter.Parser();

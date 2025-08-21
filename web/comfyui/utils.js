@@ -1,7 +1,7 @@
-import { app } from "../../scripts/app.js";
-import { api } from "../../scripts/api.js";
-import { getResolver, wait } from "../../rgthree/common/shared_utils.js";
-import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
+import { app } from "scripts/app.js";
+import { api } from "scripts/api.js";
+import { getResolver, wait } from "rgthree/common/shared_utils.js";
+import { RgthreeHelpDialog } from "rgthree/common/dialog.js";
 const oldApiGetNodeDefs = api.getNodeDefs;
 api.getNodeDefs = async function () {
     const defs = await oldApiGetNodeDefs.call(api);

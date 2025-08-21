@@ -1,5 +1,5 @@
-import { $el, getActionEls } from "../../common/utils_dom.js";
-import { bind } from "../utils_templates.js";
+import { $el, getActionEls } from "rgthree/common/utils_dom.js";
+import { bind } from "../utils_templates";
 const CSS_STYLE_SHEETS = new Map();
 const CSS_STYLE_SHEETS_ADDED = new Map();
 const HTML_TEMPLATE_FILES = new Map();

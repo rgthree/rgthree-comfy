@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { BaseNodeModeChanger } from "./base_node_mode_changer.js";
 import { NodeTypesString } from "./constants.js";
 const MODE_BYPASS = 4;

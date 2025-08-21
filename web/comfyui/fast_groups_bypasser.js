@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { NodeTypesString } from "./constants.js";
 import { BaseFastGroupsModeChanger } from "./fast_groups_muter.js";
 export class FastGroupsBypasser extends BaseFastGroupsModeChanger {

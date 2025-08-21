@@ -1,5 +1,5 @@
 import { createElement, getActionEls, query, queryAll } from "../common/utils_dom.js";
-import { rgthreeApi } from "../common/rgthree_api.js";
+import { rgthreeApi } from "rgthree/common/rgthree_api.js";
 import { RgthreeModelInfoCard } from "./components/model-info-card.js";
 function parseQuery(query) {
     const matches = query.match(/"[^\"]+"/g) || [];

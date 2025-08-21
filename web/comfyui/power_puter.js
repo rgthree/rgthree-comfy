@@ -1,9 +1,9 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
 import { removeUnusedInputsFromEnd } from "./utils_inputs_outputs.js";
-import { debounce } from "../../rgthree/common/shared_utils.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { debounce } from "rgthree/common/shared_utils.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { RgthreeBaseWidget } from "./utils_widgets.js";
 import { drawPlusIcon, drawRoundedRectangle, drawWidgetButton, isLowQuality, measureText, } from "./utils_canvas.js";
 import { rgthree } from "./rgthree.js";

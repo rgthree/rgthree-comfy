@@ -88,21 +88,15 @@ class RgthreePowerLoraLoaderTemplate extends RgthreeBaseServerNode {
             return true;
         }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("💾 Save Template", (_event, _pos, node) => {
-            // The ComfyUI prompt is asynchronous and returns the value via the callback (3rd arg).
-            // We therefore need to do the work that depends on the name inside that callback.
-            app.canvas.prompt(
-                "Template name",
-                "My Lora Set",
-                (name) => {
-                    if (!name)
-                        return;
-                    const items = this.widgets
-                        .filter((w) => { var _b; return (_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_"); })
-                        .map((w) => ({ ...w.value }))
-                        .filter((v) => v && v.lora && v.lora !== "None");
-                    rgthreeApi.savePowerLoraTemplate(name, items);
-                }
-            );
+            app.canvas.prompt("Template name", "My Lora Set", (name) => {
+                if (!name)
+                    return;
+                const items = this.widgets
+                    .filter((w) => { var _b; return (_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_"); })
+                    .map((w) => ({ ...w.value }))
+                    .filter((v) => v && v.lora && v.lora !== "None");
+                rgthreeApi.savePowerLoraTemplate(name, items);
+            });
             return true;
         }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("📂 Load Template", (event, _pos, node) => {
@@ -436,15 +430,12 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         ctx.fillText("✖", node.size[0] - margin - innerMargin, midY);
         this.hitAreas.remove.bounds = [node.size[0] - margin - innerMargin - removeIconSize, removeWidth];
-        // Draw move up/down arrows to reorder
         const moveIconSize = height * 0.66;
         const moveWidth = moveIconSize * 2 + innerMargin;
         const arrowsRightEdge = node.size[0] - margin - innerMargin - removeWidth - innerMargin;
         ctx.textAlign = "center";
-        // Compute centers for up and down icons
         const downCenterX = arrowsRightEdge - moveIconSize * 0.5;
         const upCenterX = downCenterX - moveIconSize - innerMargin;
-        // Determine if we can move up/down (only within contiguous lora widgets)
         const widgets = node.widgets;
         const index = widgets.indexOf(this);
         const canMoveUp = !!(widgets[index - 1] && widgets[index - 1].name && widgets[index - 1].name.startsWith("lora_"));
@@ -455,7 +446,6 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.globalAlpha = previousAlpha * (canMoveDown ? 1 : 0.35);
         ctx.fillText("▼", downCenterX, midY);
         ctx.globalAlpha = previousAlpha;
-        // Set hit areas
         this.hitAreas.moveUp.bounds = [upCenterX - moveIconSize * 0.5, moveIconSize];
         this.hitAreas.moveDown.bounds = [downCenterX - moveIconSize * 0.5, moveIconSize];
         const strengthValue = this.showModelAndClip

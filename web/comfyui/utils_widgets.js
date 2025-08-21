@@ -1,4 +1,4 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { drawNodeWidget, drawWidgetButton, fitString, isLowQuality } from "./utils_canvas.js";
 export function drawLabelAndValue(ctx, label, value, width, posY, height, options) {
     var _a;

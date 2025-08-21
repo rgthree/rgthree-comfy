@@ -1,8 +1,8 @@
-import { app } from "../../scripts/app.js";
+import { app } from "scripts/app.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
-import { moveArrayItem } from "../../rgthree/common/shared_utils.js";
+import { ComfyWidgets } from "scripts/widgets.js";
+import { moveArrayItem } from "rgthree/common/shared_utils.js";
 const PROPERTY_HIDE_TYPE_SELECTOR = "hideTypeSelector";
 const PRIMITIVES = {
     STRING: "STRING",

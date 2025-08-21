@@ -1,5 +1,5 @@
-import { app } from "../../scripts/app.js";
-import { ComfyWidgets } from "../../scripts/widgets.js";
+import { app } from "scripts/app.js";
+import { ComfyWidgets } from "scripts/widgets.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
 import { addConnectionLayoutSupport } from "./utils.js";
