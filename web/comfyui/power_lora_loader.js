@@ -15,6 +15,8 @@ const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
+const PROP_LABEL_SHOW_TRIGGER_WORDS = "Show Trigger Words";
+const PROP_LABEL_SHOW_TRIGGER_WORDS_STATIC = `@${PROP_LABEL_SHOW_TRIGGER_WORDS}`;
 class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
         super(title);
@@ -23,6 +25,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.loraWidgetsCounter = 0;
         this.widgetButtonSpacer = null;
         this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
+        this.properties[PROP_LABEL_SHOW_TRIGGER_WORDS] = false;
         rgthreeApi.getLoras();
     }
     configure(info) {
@@ -49,7 +52,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.addNonLoraWidgets();
         const computed = this.computeSize();
         this.size = this.size || [0, 0];
-        this.size[0] = Math.max(this.size[0], computed[0], 450); // Minimum width for trigger words
+        const minWidth = this.properties[PROP_LABEL_SHOW_TRIGGER_WORDS] ? 450 : 250;
+        this.size[0] = Math.max(this.size[0], computed[0], minWidth);
         this.size[1] = Math.max(this.size[1], computed[1]);
         this.setDirtyCanvas(true, true);
     }
@@ -304,6 +308,10 @@ RgthreePowerLoraLoader[_a] = {
     type: "combo",
     values: [PROP_VALUE_SHOW_STRENGTHS_SINGLE, PROP_VALUE_SHOW_STRENGTHS_SEPARATE],
 };
+RgthreePowerLoraLoader[PROP_LABEL_SHOW_TRIGGER_WORDS_STATIC] = {
+    type: "boolean",
+    default: false,
+};
 class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
     constructor(name = "PowerLoraLoaderHeaderWidget") {
         super(name);
@@ -311,6 +319,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
         this.type = "custom";
         this.hitAreas = {
             toggle: { bounds: [0, 0], onDown: this.onToggleDown },
+            triggerToggle: { bounds: [0, 0], onDown: this.onTriggerToggleDown },
         };
         this.showModelAndClip = null;
     }
@@ -337,14 +346,49 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
             ctx.textBaseline = "middle";
             ctx.fillText("Toggle All", posX, midY);
             
-            // Add labels for the columns
-            const availableWidth = node.size[0] - posX - margin * 4 - innerMargin * 6;
-            const loraWidth = Math.max(100, availableWidth * 0.6);
-            const triggerWidth = availableWidth - loraWidth - innerMargin;
+            // Check if trigger words are enabled
+            const showTriggerWords = node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS];
             
-            ctx.textAlign = "center";
-            ctx.fillText("LoRA", posX + loraWidth / 2, midY);
-            ctx.fillText("Trigger Words", posX + loraWidth + innerMargin + triggerWidth / 2, midY);
+            if (showTriggerWords) {
+                // Add labels for the columns when trigger words are enabled
+                const availableWidth = node.size[0] - posX - margin * 4 - innerMargin * 6;
+                const loraWidth = Math.max(100, availableWidth * 0.6);
+                const triggerWidth = availableWidth - loraWidth - innerMargin;
+                
+                ctx.textAlign = "center";
+                ctx.fillText("LoRA", posX + loraWidth / 2, midY);
+                
+                // Draw trigger words toggle and label
+                const triggerLabelX = posX + loraWidth + innerMargin + triggerWidth / 2;
+                const triggerToggleX = triggerLabelX - 60; // Position toggle to the left of label
+                
+                this.hitAreas.triggerToggle.bounds = drawTogglePart(ctx, { 
+                    posX: triggerToggleX, 
+                    posY: posY, 
+                    height, 
+                    value: showTriggerWords 
+                });
+                
+                ctx.textAlign = "left";
+                ctx.fillText("Trigger Words", triggerToggleX + this.hitAreas.triggerToggle.bounds[1] + innerMargin, midY);
+            } else {
+                // Just show "LoRA" label when trigger words are disabled
+                ctx.textAlign = "center";
+                const loraLabelX = posX + (node.size[0] - posX - margin * 4) / 2;
+                ctx.fillText("LoRA", loraLabelX, midY);
+                
+                // Draw trigger words toggle (off state)
+                const triggerToggleX = loraLabelX + 100;
+                this.hitAreas.triggerToggle.bounds = drawTogglePart(ctx, { 
+                    posX: triggerToggleX, 
+                    posY: posY, 
+                    height, 
+                    value: false 
+                });
+                
+                ctx.textAlign = "left";
+                ctx.fillText("Trigger Words", triggerToggleX + this.hitAreas.triggerToggle.bounds[1] + innerMargin, midY);
+            }
             
             let rposX = node.size[0] - margin - innerMargin - innerMargin;
             ctx.textAlign = "center";
@@ -358,6 +402,12 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
     }
     onToggleDown(event, pos, node) {
         node.toggleAllLoras();
+        this.cancelMouseDown();
+        return true;
+    }
+    onTriggerToggleDown(event, pos, node) {
+        node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS] = !node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS];
+        node.setDirtyCanvas(true, true);
         this.cancelMouseDown();
         return true;
     }
@@ -401,6 +451,12 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             strengthTwo: null,
         };
     }
+    
+    get minWidth() {
+        const node = app.graph._nodes?.find(n => n.widgets?.includes(this));
+        const showTriggerWords = node?.properties?.[PROP_LABEL_SHOW_TRIGGER_WORDS];
+        return showTriggerWords ? 350 : 200;
+    }
     set value(v) {
         this._value = v;
         if (typeof this._value !== "object") {
@@ -421,6 +477,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     draw(ctx, node, w, posY, height) {
         var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
         let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
+        let showTriggerWords = node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS];
+        
         if (this.showModelAndClip !== currentShowModelAndClip) {
             let oldShowModelAndClip = this.showModelAndClip;
             this.showModelAndClip = currentShowModelAndClip;
@@ -554,35 +612,46 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             rposX = rposX - infoIconSize - innerMargin;
         }
         
-        // Calculate available space and split between lora name and trigger word
-        const availableWidth = rposX - posX - innerMargin;
-        const loraWidth = Math.max(100, availableWidth * 0.6); // 60% for lora name, minimum 100px
-        const triggerWidth = availableWidth - loraWidth - innerMargin;
-        
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         
-        // Draw lora name
-        const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
-        ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
-        this.hitAreas.lora.bounds = [posX, loraWidth];
-        posX += loraWidth + innerMargin;
-        
-        // Draw trigger word field with background
-        const triggerWord = String(((_q = this.value) === null || _q === void 0 ? void 0 : _q.triggerWord) || "");
-        const triggerPadding = 4;
-        
-        // Draw trigger word background
-        ctx.save();
-        ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
-        ctx.fillRect(posX - triggerPadding, posY + triggerPadding, triggerWidth + triggerPadding * 2, height - triggerPadding * 2);
-        ctx.restore();
-        
-        // Draw trigger word text
-        ctx.fillStyle = triggerWord ? LiteGraph.WIDGET_TEXT_COLOR : "rgba(255, 255, 255, 0.5)";
-        const displayText = triggerWord || "trigger word...";
-        ctx.fillText(fitString(ctx, displayText, triggerWidth), posX, midY);
-        this.hitAreas.triggerWord.bounds = [posX - triggerPadding, triggerWidth + triggerPadding * 2];
+        if (showTriggerWords) {
+            // Calculate available space and split between lora name and trigger word
+            const availableWidth = rposX - posX - innerMargin;
+            const loraWidth = Math.max(100, availableWidth * 0.6); // 60% for lora name, minimum 100px
+            const triggerWidth = availableWidth - loraWidth - innerMargin;
+            
+            // Draw lora name
+            const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
+            ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
+            this.hitAreas.lora.bounds = [posX, loraWidth];
+            posX += loraWidth + innerMargin;
+            
+            // Draw trigger word field with background
+            const triggerWord = String(((_q = this.value) === null || _q === void 0 ? void 0 : _q.triggerWord) || "");
+            const triggerPadding = 4;
+            
+            // Draw trigger word background
+            ctx.save();
+            ctx.fillStyle = "rgba(0, 0, 0, 0.3)";
+            ctx.fillRect(posX - triggerPadding, posY + triggerPadding, triggerWidth + triggerPadding * 2, height - triggerPadding * 2);
+            ctx.restore();
+            
+            // Draw trigger word text
+            ctx.fillStyle = triggerWord ? LiteGraph.WIDGET_TEXT_COLOR : "rgba(255, 255, 255, 0.5)";
+            const displayText = triggerWord || "trigger word...";
+            ctx.fillText(fitString(ctx, displayText, triggerWidth), posX, midY);
+            this.hitAreas.triggerWord.bounds = [posX - triggerPadding, triggerWidth + triggerPadding * 2];
+        } else {
+            // Only show lora name when trigger words are disabled
+            const availableWidth = rposX - posX;
+            const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
+            ctx.fillText(fitString(ctx, loraLabel, availableWidth), posX, midY);
+            this.hitAreas.lora.bounds = [posX, availableWidth];
+            
+            // Disable trigger word hit area
+            this.hitAreas.triggerWord.bounds = [0, -1];
+        }
         
         ctx.globalAlpha = app.canvas.editor_alpha;
         ctx.restore();
