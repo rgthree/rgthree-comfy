@@ -18,6 +18,34 @@ export async function showLoraChooser(event, callback, parentMenu, loras) {
         callback,
     });
 }
+
+export async function showTemplateChooser(event, callback, parentMenu, templates) {
+    var _a, _b;
+    const canvas = app.canvas;
+    if (!templates) {
+        templates = await rgthreeApi.getPowerLoraTemplates().then((templates) => 
+            (templates || []).map((t) => ({
+                content: t.name,
+                value: t.name,
+                tooltip: `${t.items?.length || 0} loras - Modified: ${t.modified ? new Date(t.modified * 1000).toLocaleDateString() : 'Unknown'}`
+            }))
+        );
+    }
+    
+    // Add "None" option if no templates exist
+    if (!templates.length) {
+        templates = [{ content: "NONE", value: "NONE", tooltip: "No templates available" }];
+    }
+    
+    new LiteGraph.ContextMenu(templates, {
+        event: event,
+        parentMenu: parentMenu != null ? parentMenu : undefined,
+        title: "Choose a template",
+        scale: Math.max(1, (_b = (_a = canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) !== null && _b !== void 0 ? _b : 1),
+        className: "dark",
+        callback,
+    });
+}
 export function showNodesChooser(event, mapFn, callback, parentMenu) {
     var _a, _b;
     const canvas = app.canvas;

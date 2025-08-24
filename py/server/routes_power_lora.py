@@ -35,8 +35,16 @@ async def api_get_power_lora_templates(request):
       if t.get("name") == name:
         return web.json_response(t)
     return web.json_response({"status": 404, "error": f"Template not found: {name}"})
-  # Return minimal info for listing
-  listing = [{"name": t.get("name"), "modified": t.get("modified"), "created": t.get("created")} for t in templates]
+  # Return enhanced info for listing with lora count and dates
+  listing = []
+  for t in templates:
+    item_count = len(t.get("items", []))
+    listing.append({
+      "name": t.get("name"), 
+      "modified": t.get("modified"), 
+      "created": t.get("created"),
+      "items": item_count
+    })
   return web.json_response(listing)
 
 

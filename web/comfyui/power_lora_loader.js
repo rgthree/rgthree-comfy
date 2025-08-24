@@ -7,7 +7,7 @@ import { NodeTypesString } from "./constants.js";
 import { drawInfoIcon, drawNumberWidgetPart, drawRoundedRectangle, drawTogglePart, fitString, isLowQuality, } from "./utils_canvas.js";
 import { RgthreeBaseWidget, RgthreeBetterButtonWidget, RgthreeDividerWidget, } from "./utils_widgets.js";
 import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
-import { showLoraChooser } from "./utils_menu.js";
+import { showLoraChooser, showTemplateChooser } from "./utils_menu.js";
 import { moveArrayItem, removeArrayItem } from "../../rgthree/common/shared_utils.js";
 import { RgthreeLoraInfoDialog } from "./dialog_info.js";
 import { LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
@@ -110,32 +110,29 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             return true;
         }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("📂 Load Template", (event, _pos, node) => {
-            rgthreeApi.getPowerLoraTemplates().then((templates) => {
-                const names = (templates || []).map((t) => t.name);
-                showLoraChooser(event, (value) => {
-                    if (typeof value === "string" && value !== "NONE") {
-                        rgthreeApi.getPowerLoraTemplates(value).then((resp) => {
-                            const tpl = (resp === null || resp === void 0 ? void 0 : resp.items) ? resp : null;
-                            if (!tpl)
-                                return;
-                            const current = [...this.widgets];
-                            for (const w of current) {
-                                var _b;
-                                if ((_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
-                                    this.removeWidget(this.widgets.indexOf(w));
-                                }
+            showTemplateChooser(event, (selected) => {
+                if (typeof selected === "string" && selected !== "NONE") {
+                    rgthreeApi.getPowerLoraTemplates(selected).then((resp) => {
+                        const tpl = (resp === null || resp === void 0 ? void 0 : resp.items) ? resp : null;
+                        if (!tpl)
+                            return;
+                        const current = [...this.widgets];
+                        for (const w of current) {
+                            var _b;
+                            if ((_b = w.name) === null || _b === void 0 ? void 0 : _b.startsWith("lora_")) {
+                                this.removeWidget(this.widgets.indexOf(w));
                             }
-                            for (const it of tpl.items) {
-                                const widget = this.addNewLoraWidget();
-                                widget.value = { ...it };
-                            }
-                            const computed = this.computeSize();
-                            const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
-                            this.size[1] = Math.max(tempHeight, computed[1]);
-                            this.setDirtyCanvas(true, true);
-                        });
-                    }
-                }, null, names.length ? names : ["NONE"]);
+                        }
+                        for (const it of tpl.items) {
+                            const widget = this.addNewLoraWidget();
+                            widget.value = { ...it };
+                        }
+                        const computed = this.computeSize();
+                        const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
+                        this.size[1] = Math.max(tempHeight, computed[1]);
+                        this.setDirtyCanvas(true, true);
+                    });
+                }
             });
             return true;
         }));
