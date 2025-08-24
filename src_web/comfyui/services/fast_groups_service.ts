@@ -1,12 +1,8 @@
-import type {
-  LGraph as TLGraph,
-  LGraphCanvas as TLGraphCanvas,
-  LGraphGroup,
-} from "@comfyorg/frontend";
+import type {LGraphGroup} from "@comfyorg/frontend";
 import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 
 import {app} from "scripts/app.js";
-import {getGroupNodes, reduceNodesDepthFirst} from "../utils.js";
+import {getGraphDependantNodeKey, getGroupNodes, reduceNodesDepthFirst} from "../utils.js";
 
 type Vector4 = [number, number, number, number];
 
@@ -97,19 +93,23 @@ class FastGroupsService {
    */
   getBoundingsForAllNodes() {
     if (!this.cachedNodeBoundings) {
-      this.cachedNodeBoundings = reduceNodesDepthFirst(app.graph._nodes, (node, acc) => {
-        let bounds = node.getBounding();
-        // If the bounds are zero'ed out, then we could be a subgraph that hasn't rendered yet and
-        // need to update them.
-        if (bounds[0] === 0 && bounds[1] === 0 && bounds[2] === 0 && bounds[3] === 0) {
-          const ctx = node.graph?.primaryCanvas?.canvas.getContext('2d');
-          if (ctx) {
-            node.updateArea(ctx);
-            bounds = node.getBounding();
+      this.cachedNodeBoundings = reduceNodesDepthFirst(
+        app.graph._nodes,
+        (node, acc) => {
+          let bounds = node.getBounding();
+          // If the bounds are zero'ed out, then we could be a subgraph that hasn't rendered yet and
+          // need to update them.
+          if (bounds[0] === 0 && bounds[1] === 0 && bounds[2] === 0 && bounds[3] === 0) {
+            const ctx = node.graph?.primaryCanvas?.canvas.getContext("2d");
+            if (ctx) {
+              node.updateArea(ctx);
+              bounds = node.getBounding();
+            }
           }
-        }
-        acc[String(node.id)] = bounds as Vector4;
-      }, {} as {[key: string]: Vector4});
+          acc[getGraphDependantNodeKey(node)] = bounds as Vector4;
+        },
+        {} as {[key: string]: Vector4},
+      );
       setTimeout(() => {
         this.cachedNodeBoundings = null;
       }, 50);
@@ -128,7 +128,7 @@ class FastGroupsService {
     group.nodes.length = 0;
 
     for (const node of nodes) {
-      const nodeBounding = cachedBoundings[String(node.id)];
+      const nodeBounding = cachedBoundings[getGraphDependantNodeKey(node)];
       const nodeCenter =
         nodeBounding &&
         ([nodeBounding[0] + nodeBounding[2] * 0.5, nodeBounding[1] + nodeBounding[3] * 0.5] as [

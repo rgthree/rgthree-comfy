@@ -1061,6 +1061,19 @@ export function getGroupNodes(group: LGraphGroup): TLGraphNode[] {
 }
 
 /**
+ * Gets a node identifier alongside the graph identifier.
+ *
+ * Perhaps a bug, but it appears the same node id _could_ be in different subgraphs (or, at least,
+ * was definitively reported to be in the main graph, and a subgraph). So, if we're trying
+ * identifying a node alongside other nodes (like, a cache map), we need to keep the graph id along
+ * side it as well.
+ */
+export function getGraphDependantNodeKey(node: TLGraphNode): string {
+  const graph = node.graph ?? app.graph;
+  return `${graph.id}:${node.id}`;
+}
+
+/**
  * Gets a full color string, including parsing from the LGraphCanvas data.
  */
 export function getFullColor(

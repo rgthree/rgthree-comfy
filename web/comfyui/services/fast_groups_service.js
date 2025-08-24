@@ -1,5 +1,5 @@
 import { app } from "../../../scripts/app.js";
-import { getGroupNodes, reduceNodesDepthFirst } from "../utils.js";
+import { getGraphDependantNodeKey, getGroupNodes, reduceNodesDepthFirst } from "../utils.js";
 class FastGroupsService {
     constructor() {
         this.msThreshold = 400;
@@ -66,13 +66,13 @@ class FastGroupsService {
                 var _a, _b;
                 let bounds = node.getBounding();
                 if (bounds[0] === 0 && bounds[1] === 0 && bounds[2] === 0 && bounds[3] === 0) {
-                    const ctx = (_b = (_a = node.graph) === null || _a === void 0 ? void 0 : _a.primaryCanvas) === null || _b === void 0 ? void 0 : _b.canvas.getContext('2d');
+                    const ctx = (_b = (_a = node.graph) === null || _a === void 0 ? void 0 : _a.primaryCanvas) === null || _b === void 0 ? void 0 : _b.canvas.getContext("2d");
                     if (ctx) {
                         node.updateArea(ctx);
                         bounds = node.getBounding();
                     }
                 }
-                acc[String(node.id)] = bounds;
+                acc[getGraphDependantNodeKey(node)] = bounds;
             }, {});
             setTimeout(() => {
                 this.cachedNodeBoundings = null;
@@ -86,7 +86,7 @@ class FastGroupsService {
         group._children.clear();
         group.nodes.length = 0;
         for (const node of nodes) {
-            const nodeBounding = cachedBoundings[String(node.id)];
+            const nodeBounding = cachedBoundings[getGraphDependantNodeKey(node)];
             const nodeCenter = nodeBounding &&
                 [nodeBounding[0] + nodeBounding[2] * 0.5, nodeBounding[1] + nodeBounding[3] * 0.5];
             if (nodeCenter) {
