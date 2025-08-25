@@ -112,10 +112,15 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.addCustomWidget(new RgthreeBetterButtonWidget("📂 Load Template", (event, _pos, node) => {
             showTemplateChooser(event, (selected) => {
                 if (typeof selected === "string" && selected !== "NONE") {
+                    console.log('Loading template:', selected);
                     rgthreeApi.getPowerLoraTemplates(selected).then((resp) => {
-                        const tpl = (resp === null || resp === void 0 ? void 0 : resp.items) ? resp : null;
-                        if (!tpl)
+                        console.log('Template response:', resp);
+                        // The response should be the template object directly when fetching by name
+                        const tpl = resp && resp.items ? resp : null;
+                        if (!tpl || !tpl.items) {
+                            console.error('Invalid template response:', resp);
                             return;
+                        }
                         const current = [...this.widgets];
                         for (const w of current) {
                             var _b;
@@ -131,6 +136,8 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                         const tempHeight = (_b = this._tempHeight) !== null && _b !== void 0 ? _b : 15;
                         this.size[1] = Math.max(tempHeight, computed[1]);
                         this.setDirtyCanvas(true, true);
+                    }).catch(error => {
+                        console.error('Failed to load template:', error);
                     });
                 }
             });
