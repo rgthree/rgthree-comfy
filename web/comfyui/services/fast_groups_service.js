@@ -81,6 +81,8 @@ class FastGroupsService {
         return this.cachedNodeBoundings;
     }
     recomputeInsideNodesForGroup(group) {
+        if (app.canvas.isDragging)
+            return;
         const cachedBoundings = this.getBoundingsForAllNodes();
         const nodes = group.graph.nodes;
         group._children.clear();

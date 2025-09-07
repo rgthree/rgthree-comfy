@@ -82,7 +82,7 @@ class PromptService extends EventTarget {
         this.lastQueueRemaining = 0;
         const that = this;
         const queuePrompt = api.queuePrompt;
-        api.queuePrompt = async function (num, prompt) {
+        api.queuePrompt = async function (num, prompt, ...args) {
             let response;
             try {
                 response = await queuePrompt.apply(api, [...arguments]);

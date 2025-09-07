@@ -1,10 +1,12 @@
-import type {LGraphGroup} from "@comfyorg/frontend";
+import type {LGraphGroup as TLGraphGroup} from "@comfyorg/frontend";
 import type {BaseFastGroupsModeChanger} from "../fast_groups_muter.js";
 
 import {app} from "scripts/app.js";
 import {getGraphDependantNodeKey, getGroupNodes, reduceNodesDepthFirst} from "../utils.js";
 
 type Vector4 = [number, number, number, number];
+
+
 
 /**
  * A service that keeps global state that can be shared by multiple FastGroupsMuter or
@@ -16,9 +18,9 @@ class FastGroupsService {
   private msLastAlpha = 0;
   private msLastPosition = 0;
 
-  private groupsUnsorted: LGraphGroup[] = [];
-  private groupsSortedAlpha: LGraphGroup[] = [];
-  private groupsSortedPosition: LGraphGroup[] = [];
+  private groupsUnsorted: TLGraphGroup[] = [];
+  private groupsSortedAlpha: TLGraphGroup[] = [];
+  private groupsSortedPosition: TLGraphGroup[] = [];
 
   private readonly fastGroupNodes: BaseFastGroupsModeChanger[] = [];
 
@@ -118,10 +120,13 @@ class FastGroupsService {
   }
 
   /**
-   * This overrides `LGraphGroup.prototype.recomputeInsideNodes` to be much more efficient when
+   * This overrides `TLGraphGroup.prototype.recomputeInsideNodes` to be much more efficient when
    * calculating for many groups at once (only compute all nodes once in `getBoundingsForAllNodes`).
    */
-  recomputeInsideNodesForGroup(group: LGraphGroup) {
+  recomputeInsideNodesForGroup(group: TLGraphGroup) {
+    // If the canvas is currently being dragged (includes if a group is being dragged around) then
+    // don't recompute anything.
+    if (app.canvas.isDragging) return;
     const cachedBoundings = this.getBoundingsForAllNodes();
     const nodes = group.graph!.nodes;
     group._children.clear();

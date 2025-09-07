@@ -146,7 +146,7 @@ class PromptService extends EventTarget {
 
     // Patch the queuePrompt method so we can capture new data going through.
     const queuePrompt = api.queuePrompt;
-    api.queuePrompt = async function (num: number, prompt: ComfyApiPrompt) {
+    api.queuePrompt = async function (num: number, prompt: ComfyApiPrompt, ...args: any[]) {
       let response;
       try {
         response = await queuePrompt.apply(api, [...arguments]);

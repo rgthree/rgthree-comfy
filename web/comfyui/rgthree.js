@@ -143,6 +143,8 @@ class Rgthree extends EventTarget {
         this.lastCanvasMouseEvent = null;
         this.canvasCurrentlyCopyingToClipboard = false;
         this.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+        this.canvasCurrentlyPastingFromClipboard = false;
+        this.canvasCurrentlyPastingFromClipboardWithMultipleNodes = false;
         this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = null;
         this.isMac = !!(((_a = navigator.platform) === null || _a === void 0 ? void 0 : _a.toLocaleUpperCase().startsWith("MAC")) ||
             ((_c = (_b = navigator.userAgentData) === null || _b === void 0 ? void 0 : _b.platform) === null || _c === void 0 ? void 0 : _c.toLocaleUpperCase().startsWith("MAC")));
@@ -261,6 +263,12 @@ class Rgthree extends EventTarget {
             copyToClipboard.apply(this, [...arguments]);
             rgthree.canvasCurrentlyCopyingToClipboard = false;
             rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+        };
+        const pasteFromClipboard = LGraphCanvas.prototype.pasteFromClipboard;
+        LGraphCanvas.prototype.pasteFromClipboard = function (...args) {
+            rgthree.canvasCurrentlyPastingFromClipboard = true;
+            pasteFromClipboard.apply(this, [...arguments]);
+            rgthree.canvasCurrentlyPastingFromClipboard = false;
         };
         const onGroupAdd = LGraphCanvas.onGroupAdd;
         LGraphCanvas.onGroupAdd = function (...args) {
@@ -431,8 +439,9 @@ class Rgthree extends EventTarget {
             },
         ];
     }
-    async queueOutputNodes(nodeIds) {
+    async queueOutputNodes(nodes) {
         var _a;
+        const nodeIds = nodes.map(n => n.id);
         try {
             this.queueNodeIds = nodeIds;
             await app.queuePrompt(0);
@@ -491,7 +500,7 @@ class Rgthree extends EventTarget {
             return promise;
         };
         const apiQueuePrompt = api.queuePrompt;
-        api.queuePrompt = async function (index, prompt) {
+        api.queuePrompt = async function (index, prompt, ...args) {
             var _a;
             if (((_a = rgthree.queueNodeIds) === null || _a === void 0 ? void 0 : _a.length) && prompt.output) {
                 const oldOutput = prompt.output;
@@ -505,7 +514,7 @@ class Rgthree extends EventTarget {
                 workflow: prompt.workflow,
                 output: prompt.output,
             });
-            const response = apiQueuePrompt.apply(app, [index, prompt]);
+            const response = apiQueuePrompt.apply(app, [index, prompt, ...args]);
             rgthree.dispatchCustomEvent("comfy-api-queue-prompt-end");
             return response;
         };

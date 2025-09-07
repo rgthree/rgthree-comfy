@@ -356,6 +356,18 @@ export function empty(element: HTMLElement) {
   return element;
 }
 
+export function remove(element: HTMLElement) {
+  while (element.parentElement) {
+    element.parentElement.removeChild(element);
+  }
+  return element;
+}
+
+export function replaceChild(oldChildNode: Node, newNode: Node) {
+  oldChildNode.parentNode!.replaceChild(newNode, oldChildNode);
+  return newNode;
+}
+
 type ChildType = HTMLElement | DocumentFragment | Text | string | null;
 export function appendChildren(el: HTMLElement, children: ChildType | ChildType[]) {
   children = !Array.isArray(children) ? [children] : children;

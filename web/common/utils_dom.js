@@ -299,6 +299,16 @@ export function empty(element) {
     }
     return element;
 }
+export function remove(element) {
+    while (element.parentElement) {
+        element.parentElement.removeChild(element);
+    }
+    return element;
+}
+export function replaceChild(oldChildNode, newNode) {
+    oldChildNode.parentNode.replaceChild(newNode, oldChildNode);
+    return newNode;
+}
 export function appendChildren(el, children) {
     children = !Array.isArray(children) ? [children] : children;
     for (let child of children) {
