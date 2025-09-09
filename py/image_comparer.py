@@ -9,6 +9,7 @@ class RgthreeImageComparer(PreviewImage):
   NAME = get_name('Image Comparer')
   CATEGORY = get_category()
   FUNCTION = "compare_images"
+  DESCRIPTION = "Compares two images with a hover slider, or click from properties."
 
   @classmethod
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring

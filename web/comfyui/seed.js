@@ -17,11 +17,19 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.lastSeed = undefined;
         this.serializedCtx = {};
         this.lastSeedValue = null;
-        this.randMax = 1125899906842624;
-        this.randMin = 0;
-        this.randomRange = 1125899906842624;
         this.handleApiHijackingBound = this.handleApiHijacking.bind(this);
+        this.properties["randomMax"] = 1125899906842624;
+        this.properties["randomMin"] = 0;
         rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
+    }
+    onPropertyChanged(prop, value, prevValue) {
+        if (prop === 'randomMax') {
+            this.properties["randomMax"] = Math.min(1125899906842624, Number(value));
+        }
+        else if (prop === 'randomMin') {
+            this.properties["randomMin"] = Math.max(-1125899906842624, Number(value));
+        }
+        return true;
     }
     onRemoved() {
         rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
@@ -44,7 +52,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         }
     }
     onNodeCreated() {
-        var _a, _b, _c;
+        var _a;
         (_a = super.onNodeCreated) === null || _a === void 0 ? void 0 : _a.call(this);
         for (const [i, w] of this.widgets.entries()) {
             if (w.name === "seed") {
@@ -55,16 +63,11 @@ class RgthreeSeed extends RgthreeBaseServerNode {
                 this.widgets.splice(i, 1);
             }
         }
-        let step = this.seedWidget.options.step || 1;
-        this.randMax = Math.min(1125899906842624, (_b = this.seedWidget.options.max) !== null && _b !== void 0 ? _b : 0);
-        this.randMin = Math.max(0, (_c = this.seedWidget.options.min) !== null && _c !== void 0 ? _c : 0);
-        this.randomRange = (this.randMax - Math.max(0, this.randMin)) / (step / 10);
         this.addWidget("button", "🎲 Randomize Each Time", "", () => {
             this.seedWidget.value = SPECIAL_SEED_RANDOM;
         }, { serialize: false });
         this.addWidget("button", "🎲 New Fixed Random", "", () => {
-            this.seedWidget.value =
-                Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
+            this.seedWidget.value = this.generateRandomSeed();
         }, { serialize: false });
         this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, "", () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
@@ -72,6 +75,17 @@ class RgthreeSeed extends RgthreeBaseServerNode {
             this.lastSeedButton.disabled = true;
         }, { width: 50, serialize: false });
         this.lastSeedButton.disabled = true;
+    }
+    generateRandomSeed() {
+        let step = this.seedWidget.options.step || 1;
+        const randomMin = Number(this.properties['randomMin'] || 0);
+        const randomMax = Number(this.properties['randomMax'] || 1125899906842624);
+        const randomRange = (randomMax - randomMin) / (step / 10);
+        let seed = Math.floor(Math.random() * randomRange) * (step / 10) + randomMin;
+        if (SPECIAL_SEEDS.includes(seed)) {
+            seed = 0;
+        }
+        return seed;
     }
     getExtraMenuOptions(canvas, options) {
         var _a;
@@ -154,10 +168,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
                 }
             }
             if (seedToUse == null || SPECIAL_SEEDS.includes(seedToUse)) {
-                seedToUse =
-                    Math.floor(Math.random() * this.randomRange) *
-                        ((this.seedWidget.options.step || 1) / 10) +
-                        this.randMin;
+                seedToUse = this.generateRandomSeed();
             }
         }
         return seedToUse !== null && seedToUse !== void 0 ? seedToUse : inputSeed;
@@ -179,6 +190,8 @@ RgthreeSeed.title = NodeTypesString.SEED;
 RgthreeSeed.type = NodeTypesString.SEED;
 RgthreeSeed.comfyClass = NodeTypesString.SEED;
 RgthreeSeed.exposedActions = ["Randomize Each Time", "Use Last Queued Seed"];
+RgthreeSeed["@randomMax"] = { type: "number" };
+RgthreeSeed["@randomMin"] = { type: "number" };
 app.registerExtension({
     name: "rgthree.Seed",
     async beforeRegisterNodeDef(nodeType, nodeData) {

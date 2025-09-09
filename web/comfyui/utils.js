@@ -699,6 +699,11 @@ export function reduceNodesDepthFirst(nodeOrNodes, reduceFn, reduceTo) {
 export function getGroupNodes(group) {
     return Array.from(group._children).filter((c) => c instanceof LGraphNode);
 }
+export function getGraphDependantNodeKey(node) {
+    var _a;
+    const graph = (_a = node.graph) !== null && _a !== void 0 ? _a : app.graph;
+    return `${graph.id}:${node.id}`;
+}
 export function getFullColor(color, liteGraphKey = "color") {
     if (!color) {
         return "";

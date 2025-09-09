@@ -57,7 +57,7 @@ app.registerExtension({
                             });
                         }
                         else {
-                            rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+                            rgthree.queueOutputNodes(outputNodes);
                         }
                     }
                     else {

@@ -255,6 +255,8 @@ class Rgthree extends EventTarget {
   // Comfy/LiteGraph states so nodes and tell what the hell is going on.
   canvasCurrentlyCopyingToClipboard = false;
   canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+  canvasCurrentlyPastingFromClipboard = false;
+  canvasCurrentlyPastingFromClipboardWithMultipleNodes = false;
   initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff: any = null;
 
   private readonly isMac: boolean = !!(
@@ -417,6 +419,14 @@ class Rgthree extends EventTarget {
       copyToClipboard.apply(this, [...arguments] as any);
       rgthree.canvasCurrentlyCopyingToClipboard = false;
       rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+    };
+
+    // [🤮] Pasting from clipboard.
+    const pasteFromClipboard = LGraphCanvas.prototype.pasteFromClipboard;
+    LGraphCanvas.prototype.pasteFromClipboard = function (...args: any[]) {
+      rgthree.canvasCurrentlyPastingFromClipboard = true;
+      pasteFromClipboard.apply(this, [...arguments] as any);
+      rgthree.canvasCurrentlyPastingFromClipboard = false;
     };
 
     // [⭐] Make it so when we add a group, we get to name it immediately.
@@ -648,7 +658,13 @@ class Rgthree extends EventTarget {
    * Wraps an `app.queuePrompt` call setting a specific node id that we will inspect and change the
    * serialized graph right before being sent (below, in our `api.queuePrompt` override).
    */
-  async queueOutputNodes(nodeIds: NodeId[]) {
+  async queueOutputNodes(nodes: LGraphNode[]) {
+    // We can use just these next two lines when
+    // https://github.com/ltdrdata/ComfyUI-Inspire-Pack/pull/258 is pulled. Until then, we'll keep
+    // our custom logic as ComfyUI-Inspire-Pack would cause it not to work.
+    // app.canvas.selectItems(nodes);
+    // app.extensionManager.command.execute('Comfy.QueueSelectedOutputNodes');
+    const nodeIds = nodes.map(n => n.id);
     try {
       this.queueNodeIds = nodeIds;
       await app.queuePrompt(0);
@@ -729,7 +745,7 @@ class Rgthree extends EventTarget {
     // then we only want to queue those nodes, by rewriting the api format (prompt 'output' field)
     // so only those are evaluated.
     const apiQueuePrompt = api.queuePrompt as Function;
-    api.queuePrompt = async function (index: number, prompt: ComfyApiPrompt) {
+    api.queuePrompt = async function (index: number, prompt: ComfyApiPrompt, ...args: any[]) {
       if (rgthree.queueNodeIds?.length && prompt.output) {
         const oldOutput = prompt.output;
         let newOutput = {};
@@ -742,7 +758,7 @@ class Rgthree extends EventTarget {
         workflow: prompt.workflow,
         output: prompt.output,
       });
-      const response = apiQueuePrompt.apply(app, [index, prompt]);
+      const response = apiQueuePrompt.apply(app, [index, prompt, ...args]);
       rgthree.dispatchCustomEvent("comfy-api-queue-prompt-end");
       return response;
     };

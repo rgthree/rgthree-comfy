@@ -97,7 +97,7 @@ app.registerExtension({
                 message: "No output nodes for group!",
               });
             } else {
-              rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+              rgthree.queueOutputNodes(outputNodes);
             }
           } else {
             const toggleMode = TOGGLE_TO_MODE.get(toggleAction);
