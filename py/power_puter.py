@@ -26,6 +26,20 @@ from .log import log_node_error, log_node_warn, log_node_info
 from .power_lora_loader import RgthreePowerLoraLoader
 
 
+class LoopBreak(Exception):
+  """A special error type that is caught in a loop for correct breaking behavior."""
+
+  def __init__(self):
+    super().__init__('Cannot use "break" outside of a loop.')
+
+
+class LoopContinue(Exception):
+  """A special error type that is caught in a loop for correct continue behavior."""
+
+  def __init__(self):
+    super().__init__('Cannot use "continue" outside of a loop.')
+
+
 @dataclasses.dataclass(frozen=True)  # Note, kw_only=True is only python 3.10+
 class Function():
   """Function data.
@@ -526,8 +540,31 @@ class _Puter:
           for i, elt in enumerate(stmt.target.elts):
             ctx[elt.id] = item[i]
         bodies = stmt.body if isinstance(stmt.body, list) else [stmt.body]
+        breaked = False
         for body in bodies:
-          value = self._eval_statement(body, ctx=ctx)
+          # Catch any breaks or continues and handle inside the loop normally.
+          try:
+            value = self._eval_statement(body, ctx=ctx)
+          except (LoopBreak, LoopContinue) as e:
+            breaked = isinstance(e, LoopBreak)
+            break
+        if breaked:
+          break
+      return None
+
+    if isinstance(stmt, ast.While):
+      while self._eval_statement(stmt.test, ctx=ctx):
+        bodies = stmt.body if isinstance(stmt.body, list) else [stmt.body]
+        breaked = False
+        for body in bodies:
+          # Catch any breaks or continues and handle inside the loop normally.
+          try:
+            value = self._eval_statement(body, ctx=ctx)
+          except (LoopBreak, LoopContinue) as e:
+            breaked = isinstance(e, LoopBreak)
+            break
+        if breaked:
+          break
       return None
 
     if isinstance(stmt, ast.ListComp):
@@ -698,5 +735,16 @@ class _Puter:
       # if condition's body.
       ctx['__returned__'] = value
       return value
+
+    # Raise an error for break or continue, which should be caught and handled inside of loops,
+    # otherwise the error will be raised (which is desired when used outside of a loop).
+    if isinstance(stmt, ast.Break):
+      raise LoopBreak()
+    if isinstance(stmt, ast.Continue):
+      raise LoopContinue()
+
+    # Literally nothing.
+    if isinstance(stmt, ast.Pass):
+      return None
 
     raise TypeError(stmt)

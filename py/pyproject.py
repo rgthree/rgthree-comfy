@@ -63,10 +63,8 @@ async def get_logo_svg():
       }
       async with session.get(LOGO_URL, headers=headers) as resp:
         LOGO_SVG = await resp.text()
-    LOGO_SVG = '<svg></svg>'
     LOGO_SVG = re.sub(r'(id="bg".*fill=)"[^\"]+"', r'\1"{bg}"', LOGO_SVG)
     LOGO_SVG = re.sub(r'(id="fg".*fill=)"[^\"]+"', r'\1"{fg}"', LOGO_SVG)
   except Exception:
     LOGO_SVG = '<svg></svg>'
-  print(LOGO_SVG)
   return LOGO_SVG
