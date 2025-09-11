@@ -11,6 +11,7 @@ from .server.utils_info import get_model_info
 from .log import log_node_warn
 
 NODE_NAME = get_name('Power Lora Loader')
+SUPER_NODE_NAME = get_name('Super Power Lora Loader')
 
 
 class RgthreePowerLoraLoader:
@@ -28,19 +29,16 @@ class RgthreePowerLoraLoader:
       "optional": FlexibleOptionalInputType(type=any_type, data={
         "model": ("MODEL",),
         "clip": ("CLIP",),
-        "text": ("STRING", {"multiline": True, "default": ""}),
       }),
       "hidden": {},
     }
 
-  RETURN_TYPES = ("MODEL", "CLIP", "STRING")
-  RETURN_NAMES = ("MODEL", "CLIP", "TEXT")
+  RETURN_TYPES = ("MODEL", "CLIP")
+  RETURN_NAMES = ("MODEL", "CLIP")
   FUNCTION = "load_loras"
 
-  def load_loras(self, model=None, clip=None, text="", **kwargs):
+  def load_loras(self, model=None, clip=None, **kwargs):
     """Loops over the provided loras in kwargs and applies valid ones."""
-    trigger_words = []
-    
     for key, value in kwargs.items():
       key = key.upper()
       if key.startswith('LORA_') and 'on' in value and 'lora' in value and 'strength' in value:
@@ -58,23 +56,8 @@ class RgthreePowerLoraLoader:
           lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
           if model is not None and lora is not None:
             model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
-          
-          # Collect trigger words from enabled loras
-          if value['on'] and 'triggerWord' in value and value['triggerWord']:
-            trigger_word = value['triggerWord'].strip()
-            if trigger_word:
-              trigger_words.append(trigger_word)
 
-    # Combine input text with trigger words
-    output_text = text
-    if trigger_words:
-      trigger_text = ", ".join(trigger_words)
-      if output_text:
-        output_text = f"{output_text}, {trigger_text}"
-      else:
-        output_text = trigger_text
-
-    return (model, clip, output_text)
+    return (model, clip)
 
   @classmethod
   def get_enabled_loras_from_prompt_node(cls,
@@ -118,3 +101,68 @@ class RgthreePowerLoraLoader:
         continue
       trained_words += [w for wi in info['trainedWords'][:max_each] if (wi and (w := wi['word']))]
     return trained_words
+
+
+class RgthreeSuperPowerLoraLoader(RgthreePowerLoraLoader):
+  """Enhanced Super variant with trigger words and text input/output."""
+
+  NAME = SUPER_NODE_NAME
+  CATEGORY = get_category()
+
+  @classmethod
+  def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
+    return {
+      "required": {
+      },
+      # Since we will pass any number of loras in from the UI, this needs to always allow an
+      "optional": FlexibleOptionalInputType(type=any_type, data={
+        "model": ("MODEL",),
+        "clip": ("CLIP",),
+        "text": ("STRING", {"multiline": True, "default": ""}),
+      }),
+      "hidden": {},
+    }
+
+  RETURN_TYPES = ("MODEL", "CLIP", "STRING")
+  RETURN_NAMES = ("MODEL", "CLIP", "TEXT")
+  FUNCTION = "load_loras"
+
+  def load_loras(self, model=None, clip=None, text="", **kwargs):
+    """Loops over the provided loras in kwargs and applies valid ones."""
+    trigger_words = []
+    
+    for key, value in kwargs.items():
+      key = key.upper()
+      if key.startswith('LORA_') and 'on' in value and 'lora' in value and 'strength' in value:
+        strength_model = value['strength']
+        # If we just passed one strength value, then use it for both, if we passed a strengthTwo
+        # as well, then our `strength` will be for the model, and `strengthTwo` for clip.
+        strength_clip = value['strengthTwo'] if 'strengthTwo' in value else None
+        if clip is None:
+          if strength_clip is not None and strength_clip != 0:
+            log_node_warn(SUPER_NODE_NAME, 'Recieved clip strength eventhough no clip supplied!')
+          strength_clip = 0
+        else:
+          strength_clip = strength_clip if strength_clip is not None else strength_model
+        if value['on'] and (strength_model != 0 or strength_clip != 0):
+          lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
+          if model is not None and lora is not None:
+            model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
+          
+          # Collect trigger words from enabled loras
+          if value['on'] and 'triggerWord' in value and value['triggerWord']:
+            trigger_word = value['triggerWord'].strip()
+            if trigger_word:
+              trigger_words.append(trigger_word)
+
+    # Combine input text with trigger words
+    output_text = text
+    if trigger_words:
+      trigger_text = ", ".join(trigger_words)
+      if output_text:
+        output_text = f"{output_text}, {trigger_text}"
+      else:
+        output_text = trigger_text
+
+    return (model, clip, output_text)
+
