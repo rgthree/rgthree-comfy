@@ -71,34 +71,96 @@ export async function showTemplateChooser(event, callback, parentMenu, templates
         function renderTemplates(filteredTemplates) {
             templateList.innerHTML = "";
             filteredTemplates.forEach(template => {
+                const deleteButton = $el("button", {
+                    text: "🗑️",
+                    style: {
+                        backgroundColor: "#d44",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "3px",
+                        padding: "4px 8px",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        marginLeft: "10px",
+                        float: "right"
+                    },
+                    events: {
+                        click: async (e) => {
+                            e.stopPropagation();
+                            if (confirm(`Delete template "${template.name}"?`)) {
+                                try {
+                                    await rgthreeApi.deletePowerLoraTemplate(template.name);
+                                    // Remove from current templates array
+                                    const index = templates.findIndex(t => t.name === template.name);
+                                    if (index !== -1) {
+                                        templates.splice(index, 1);
+                                    }
+                                    // Re-render with current search
+                                    const searchTerm = searchInput.value.toLowerCase();
+                                    const newFiltered = templates.filter(t => 
+                                        t.name.toLowerCase().includes(searchTerm)
+                                    );
+                                    renderTemplates(newFiltered);
+                                } catch (error) {
+                                    console.error('Failed to delete template:', error);
+                                    alert('Failed to delete template. Please try again.');
+                                }
+                            }
+                        },
+                        mouseenter: (e) => {
+                            e.target.style.backgroundColor = "#f44";
+                        },
+                        mouseleave: (e) => {
+                            e.target.style.backgroundColor = "#d44";
+                        }
+                    }
+                });
+
                 const templateItem = $el("div", {
                     className: "template-item",
                     style: {
                         padding: "10px",
                         borderBottom: "1px solid #333",
                         cursor: "pointer",
-                        backgroundColor: "#2a2a2a"
+                        backgroundColor: "#2a2a2a",
+                        position: "relative",
+                        minHeight: "60px"
                     },
                     children: [
+                        deleteButton,
                         $el("div", { 
                             text: template.name,
-                            style: { fontWeight: "bold", marginBottom: "4px" }
+                            style: { 
+                                fontWeight: "bold", 
+                                marginBottom: "4px",
+                                marginRight: "50px" // Leave space for delete button
+                            }
                         }),
                         $el("div", { 
                             text: `${template.items || 0} loras - Modified: ${template.modified ? new Date(template.modified * 1000).toLocaleDateString() : 'Unknown'}`,
-                            style: { fontSize: "12px", color: "#aaa" }
+                            style: { 
+                                fontSize: "12px", 
+                                color: "#aaa",
+                                marginRight: "50px" // Leave space for delete button
+                            }
                         })
                     ],
                     events: {
-                        click: () => {
+                        click: (e) => {
+                            // Don't trigger if clicking the delete button
+                            if (e.target.closest('button')) return;
                             dialog.close();
                             callback(template.name);
                         },
                         mouseenter: (e) => {
-                            e.target.style.backgroundColor = "#3a3a3a";
+                            if (!e.target.closest('button')) {
+                                e.target.style.backgroundColor = "#3a3a3a";
+                            }
                         },
                         mouseleave: (e) => {
-                            e.target.style.backgroundColor = "#2a2a2a";
+                            if (!e.target.closest('button')) {
+                                e.target.style.backgroundColor = "#2a2a2a";
+                            }
                         }
                     }
                 });

@@ -76,3 +76,25 @@ async def api_post_power_lora_templates(request):
   data['templates'] = templates
   _save_templates(data)
   return web.json_response({"status": 200})
+
+
+@routes.delete('/rgthree/api/power_lora/templates')
+async def api_delete_power_lora_template(request):
+  """Deletes a template by name via ?name="""
+  name = get_param(request, 'name')
+  if not name:
+    return web.json_response({"status": 400, "error": "Missing template name"})
+  
+  data = _load_templates()
+  templates = data.get("templates", [])
+  original_count = len(templates)
+  
+  # Filter out the template with matching name
+  templates = [t for t in templates if t.get('name') != name]
+  
+  if len(templates) == original_count:
+    return web.json_response({"status": 404, "error": f"Template not found: {name}"})
+  
+  data['templates'] = templates
+  _save_templates(data)
+  return web.json_response({"status": 200, "message": f"Template '{name}' deleted successfully"})
