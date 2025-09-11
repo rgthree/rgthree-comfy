@@ -1,7 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { ComfyButtonGroup } from "../../scripts/ui/components/buttonGroup.js";
 import { ComfyButton } from "../../scripts/ui/components/button.js";
-import { iconGear, iconStarFilled, logoRgthree } from "../../rgthree/common/media/svgs.js";
+import { iconGear, iconStarFilled, logoRgthreeAsync } from "../../rgthree/common/media/svgs.js";
 import { createElement, empty } from "../../rgthree/common/utils_dom.js";
 import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
 import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
@@ -30,7 +30,7 @@ function addRgthreeTopBarButtons() {
     });
     buttons.push(rgthreeButton);
     rgthreeButton.iconElement.style.width = "1.2rem";
-    rgthreeButton.iconElement.innerHTML = logoRgthree;
+    logoRgthreeAsync().then((t) => { rgthreeButton.iconElement.innerHTML = t; });
     rgthreeButton.withPopup(new ComfyPopup({ target: rgthreeButton.element, classList: "rgthree-top-menu" }, createElement("menu", {
         children: [
             createElement("li", {

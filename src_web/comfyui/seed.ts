@@ -41,28 +41,38 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
   static override exposedActions = ["Randomize Each Time", "Use Last Queued Seed"];
 
+  static "@randomMax" = {type: "number"};
+  static "@randomMin" = {type: "number"};
+
   lastSeed?: number = undefined;
   serializedCtx: SeedSerializedCtx = {};
   seedWidget!: IWidget;
   lastSeedButton!: IWidget;
   lastSeedValue: IWidget | null = null;
 
-  randMax = 1125899906842624;
-  // We can have a full range of seeds, including negative. But, for the randomRange we'll
-  // only generate positives, since that's what folks assume.
-  // const min = Math.max(-1125899906842624, this.seedWidget.options.min);
-  randMin = 0;
-  randomRange = 1125899906842624;
-
   private handleApiHijackingBound = this.handleApiHijacking.bind(this);
 
   constructor(title = RgthreeSeed.title) {
     super(title);
 
+    this.properties["randomMax"] = 1125899906842624;
+    // We can have a full range of seeds, including negative. But, for the randomRange we'll
+    // only generate positives, since that's what folks assume.
+    this.properties["randomMin"] = 0;
+
     rgthree.addEventListener(
       "comfy-api-queue-prompt-before",
       this.handleApiHijackingBound as EventListener,
     );
+  }
+
+  override onPropertyChanged(prop: string, value: unknown, prevValue?: unknown): boolean {
+    if (prop === 'randomMax') {
+      this.properties["randomMax"] = Math.min(1125899906842624, Number(value as number));
+    } else if (prop === 'randomMin') {
+      this.properties["randomMin"] = Math.max(-1125899906842624, Number(value as number));
+    }
+    return true;
   }
 
   override onRemoved() {
@@ -101,14 +111,6 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       }
     }
 
-    // Update random values in case seed comes down with different options.
-    let step = this.seedWidget.options.step || 1;
-    this.randMax = Math.min(1125899906842624, this.seedWidget.options.max ?? 0);
-    // We can have a full range of seeds, including negative. But, for the randomRange we'll
-    // only generate positives, since that's what folks assume.
-    this.randMin = Math.max(0, this.seedWidget.options.min ?? 0);
-    this.randomRange = (this.randMax - Math.max(0, this.randMin)) / (step / 10);
-
     this.addWidget(
       "button",
       "🎲 Randomize Each Time",
@@ -124,8 +126,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       "🎲 New Fixed Random",
       "",
       () => {
-        this.seedWidget.value =
-          Math.floor(Math.random() * this.randomRange) * (step / 10) + this.randMin;
+        this.seedWidget.value = this.generateRandomSeed();
       },
       {serialize: false},
     );
@@ -142,6 +143,18 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       {width: 50, serialize: false} as any,
     ) as IButtonWidget;
     this.lastSeedButton.disabled = true;
+  }
+
+  generateRandomSeed() {
+    let step = this.seedWidget.options.step || 1;
+    const randomMin = Number(this.properties['randomMin'] || 0);
+    const randomMax = Number(this.properties['randomMax'] || 1125899906842624);
+    const randomRange = (randomMax - randomMin) / (step / 10);
+    let seed = Math.floor(Math.random() * randomRange) * (step / 10) + randomMin;
+    if (SPECIAL_SEEDS.includes(seed)) {
+      seed = 0;
+    }
+    return seed;
   }
 
   override getExtraMenuOptions(canvas: LGraphCanvas, options: IContextMenuValue[]) {
@@ -263,10 +276,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       // If we don't have a seed to use, or it's special seed (like we incremented into one), then
       // we randomize.
       if (seedToUse == null || SPECIAL_SEEDS.includes(seedToUse)) {
-        seedToUse =
-          Math.floor(Math.random() * this.randomRange) *
-            ((this.seedWidget.options.step || 1) / 10) +
-          this.randMin;
+        seedToUse = this.generateRandomSeed();
       }
     }
 

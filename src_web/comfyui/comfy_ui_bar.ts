@@ -1,12 +1,12 @@
 import {app} from "scripts/app.js";
-import { ComfyButtonGroup } from "scripts/ui/components/buttonGroup.js";
-import { ComfyButton } from "scripts/ui/components/button.js";
-import { iconGear, iconStarFilled, logoRgthree } from "rgthree/common/media/svgs.js";
-import { createElement, empty, query } from "rgthree/common/utils_dom.js";
-import { SERVICE as BOOKMARKS_SERVICE } from "./services/bookmarks_services.js";
-import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
-import { ComfyPopup } from "scripts/ui/components/popup.js";
-import { RgthreeConfigDialog } from "./config.js";
+import {ComfyButtonGroup} from "scripts/ui/components/buttonGroup.js";
+import {ComfyButton} from "scripts/ui/components/button.js";
+import {iconGear, iconStarFilled, logoRgthreeAsync} from "rgthree/common/media/svgs.js";
+import {createElement, empty, query} from "rgthree/common/utils_dom.js";
+import {SERVICE as BOOKMARKS_SERVICE} from "./services/bookmarks_services.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
+import {ComfyPopup} from "scripts/ui/components/popup.js";
+import {RgthreeConfigDialog} from "./config.js";
 
 let rgthreeButtonGroup: ComfyButtonGroup | null = null;
 
@@ -33,10 +33,10 @@ function addRgthreeTopBarButtons() {
   });
   buttons.push(rgthreeButton);
   rgthreeButton.iconElement.style.width = "1.2rem";
-  rgthreeButton.iconElement.innerHTML = logoRgthree;
+  logoRgthreeAsync().then((t) => { rgthreeButton.iconElement.innerHTML = t;});
   rgthreeButton.withPopup(
     new ComfyPopup(
-      { target: rgthreeButton.element, classList: "rgthree-top-menu" },
+      {target: rgthreeButton.element, classList: "rgthree-top-menu"},
       createElement("menu", {
         children: [
           createElement("li", {
@@ -61,7 +61,7 @@ function addRgthreeTopBarButtons() {
     const bookmarksListEl = createElement("menu");
     bookmarksListEl.appendChild(
       createElement("li.rgthree-message", {
-        child: createElement("span", { text: "No bookmarks in current workflow." }),
+        child: createElement("span", {text: "No bookmarks in current workflow."}),
       }),
     );
     const bookmarksButton = new ComfyButton({
@@ -70,7 +70,7 @@ function addRgthreeTopBarButtons() {
       app,
     });
     const bookmarksPopup = new ComfyPopup(
-      { target: bookmarksButton.element, classList: "rgthree-top-menu" },
+      {target: bookmarksButton.element, classList: "rgthree-top-menu"},
       bookmarksListEl,
     );
     bookmarksPopup.addEventListener("open", () => {
@@ -92,7 +92,7 @@ function addRgthreeTopBarButtons() {
       } else {
         bookmarksListEl.appendChild(
           createElement("li.rgthree-message", {
-            child: createElement("span", { text: "No bookmarks in current workflow." }),
+            child: createElement("span", {text: "No bookmarks in current workflow."}),
           }),
         );
       }

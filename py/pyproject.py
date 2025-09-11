@@ -1,7 +1,6 @@
 import os
 import re
 import json
-import requests
 
 from .utils import set_dict_value
 
@@ -45,14 +44,29 @@ LOGO_URL: str = _DATA['tool']['comfy']['Icon']
 if not LOGO_URL.endswith('.svg'):
   raise ValueError('Bad logo url.')
 
-# Fetch the logo so we have any updated markup.
-try:
-  LOGO_SVG = requests.get(
-    LOGO_URL,
-    headers={"user-agent": f"rgthree-comfy/{VERSION}"},
-    timeout=10
-  ).text
-  LOGO_SVG = re.sub(r'(id="bg".*fill=)"[^\"]+"', r'\1"{bg}"', LOGO_SVG)
-  LOGO_SVG = re.sub(r'(id="fg".*fill=)"[^\"]+"', r'\1"{fg}"', LOGO_SVG)
-except Exception:
-  LOGO_SVG = '<svg></svg>'
+LOGO_SVG = None
+async def get_logo_svg():
+  import aiohttp
+  global LOGO_SVG
+  if LOGO_SVG is not None:
+    return LOGO_SVG
+  # Fetch the logo so we have any updated markup.
+  try:
+    async with aiohttp.ClientSession(
+      trust_env=True, connector=aiohttp.TCPConnector(verify_ssl=True)
+    ) as session:
+      headers = {
+        "user-agent": f"rgthree-comfy/{VERSION}",
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+      async with session.get(LOGO_URL, headers=headers) as resp:
+        LOGO_SVG = await resp.text()
+    LOGO_SVG = '<svg></svg>'
+    LOGO_SVG = re.sub(r'(id="bg".*fill=)"[^\"]+"', r'\1"{bg}"', LOGO_SVG)
+    LOGO_SVG = re.sub(r'(id="fg".*fill=)"[^\"]+"', r'\1"{fg}"', LOGO_SVG)
+  except Exception:
+    LOGO_SVG = '<svg></svg>'
+  print(LOGO_SVG)
+  return LOGO_SVG

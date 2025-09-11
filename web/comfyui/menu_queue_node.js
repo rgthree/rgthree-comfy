@@ -11,7 +11,7 @@ function showQueueNodesMenuIfOutputNodesAreSelected(existingOptions) {
         content: `Queue Selected Output Nodes (rgthree) &nbsp;`,
         className: "rgthree-contextmenu-item",
         callback: () => {
-            rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+            rgthree.queueOutputNodes(outputNodes);
         },
         disabled: !outputNodes.length,
     };
@@ -31,7 +31,7 @@ function showQueueGroupNodesMenuIfGroupIsSelected(existingOptions) {
         content: `Queue Group Output Nodes (rgthree) &nbsp;`,
         className: "rgthree-contextmenu-item",
         callback: () => {
-            outputNodes && rgthree.queueOutputNodes(outputNodes.map((n) => n.id));
+            outputNodes && rgthree.queueOutputNodes(outputNodes);
         },
         disabled: !(outputNodes === null || outputNodes === void 0 ? void 0 : outputNodes.length),
     };
