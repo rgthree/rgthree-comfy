@@ -118,7 +118,6 @@ class RgthreeSuperPowerLoraLoader(RgthreePowerLoraLoader):
       "optional": FlexibleOptionalInputType(type=any_type, data={
         "model": ("MODEL",),
         "clip": ("CLIP",),
-        "text": ("STRING", {"multiline": True, "default": ""}),
       }),
       "hidden": {},
     }
@@ -127,7 +126,7 @@ class RgthreeSuperPowerLoraLoader(RgthreePowerLoraLoader):
   RETURN_NAMES = ("MODEL", "CLIP", "TEXT")
   FUNCTION = "load_loras"
 
-  def load_loras(self, model=None, clip=None, text="", **kwargs):
+  def load_loras(self, model=None, clip=None, **kwargs):
     """Loops over the provided loras in kwargs and applies valid ones."""
     trigger_words = []
     
@@ -155,14 +154,8 @@ class RgthreeSuperPowerLoraLoader(RgthreePowerLoraLoader):
             if trigger_word:
               trigger_words.append(trigger_word)
 
-    # Combine input text with trigger words
-    output_text = text
-    if trigger_words:
-      trigger_text = ", ".join(trigger_words)
-      if output_text:
-        output_text = f"{output_text}, {trigger_text}"
-      else:
-        output_text = trigger_text
+    # Output just the trigger words
+    output_text = ", ".join(trigger_words) if trigger_words else ""
 
     return (model, clip, output_text)
 
