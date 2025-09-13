@@ -54,11 +54,16 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
         while (this.widgets?.length) this.removeWidget(0);
         this.widgetButtonSpacer = null;
 
-        // Collect LoRA values
+        // Collect LoRA values and preserved header states
         let loraValues = [];
+        let preservedHeaderStates = {};
+        
+        // Extract preserved collapsed states from widget values
         for (const widgetValue of info.widgets_values || []) {
             if (widgetValue?.lora !== undefined) {
                 loraValues.push({ ...widgetValue });
+            } else if (widgetValue?.type === "SuperPowerLoraTagHeaderWidget") {
+                preservedHeaderStates[widgetValue.tag] = widgetValue.collapsed || false;
             }
         }
 
@@ -77,12 +82,14 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
                 sortedTags = sortedTags.sort((a, b) => a === "General" ? -1 : b === "General" ? 1 : a.localeCompare(b));
             }
 
-            // Add headers and LoRAs
+            // Add headers and LoRAs with preserved collapse state
             for (const tag of sortedTags) {
-                // Add header
+                // Add header with preserved collapsed state
                 const header = new SuperPowerLoraTagHeaderWidget(tag);
+                header.value.collapsed = preservedHeaderStates[tag] || false;
                 this.addCustomWidget(header);
-                // Add LoRAs
+                
+                // Add LoRAs (visibility will be handled by getVisibleWidgets method)
                 for (const v of grouped[tag]) {
                     const widget = new SuperPowerLoraLoaderWidget("lora_" + (++this.loraWidgetsCounter));
                     widget.value = v;
@@ -100,6 +107,15 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
 
         this.addNonLoraWidgets();
         this._augmentSuperUI();
+        this.addMasterCollapseControls();
+        
+        // Ensure all widgets have proper node references for collapse state checking
+        this.widgets.forEach(widget => {
+            if (widget instanceof SuperPowerLoraLoaderWidget) {
+                widget.node = this;
+            }
+        });
+        
         this.size[0] = this._tempWidth;
         this.size[1] = Math.max(this._tempHeight, this.computeSize()[1]);
         this._ensureMinWidth();
@@ -137,6 +153,11 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
                 return true;
             }));
         }
+    }
+
+    addMasterCollapseControls() {
+        // This method is called in configure() to ensure master controls are available
+        // The controls are now part of the SuperPowerLoraLoaderHeaderWidget itself
     }
 
     _ensureMinWidth() {
@@ -226,6 +247,13 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
                 this.widgets.splice(insertIndex, 0, header);
             }
             
+            // Ensure General tag is expanded when adding new LoRAs
+            const generalHeader = this.widgets.find(w => w instanceof SuperPowerLoraTagHeaderWidget && w.tag === "General");
+            if (generalHeader && generalHeader.value.collapsed) {
+                generalHeader.value.collapsed = false;
+                generalHeader.updateVisibility(this);
+            }
+            
             // Move to correct group
             this.moveWidgetToCorrectGroup(widget);
             return widget;
@@ -270,6 +298,17 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
                     callback: () => {
                         this.properties[PROP_LABEL_ENABLE_DELETION_STATIC] = !this.properties[PROP_LABEL_ENABLE_DELETION_STATIC];
                         this.setDirtyCanvas(true, true);
+                    }
+                },
+                null, // Separator
+                {
+                    content: `📁 Remember Collapse State`,
+                    callback: () => {
+                        this.properties.rememberCollapseState = !this.properties.rememberCollapseState;
+                        new LiteGraph.ContextMenu([{
+                            content: `Collapse state will be ${this.properties.rememberCollapseState ? "saved" : "forgotten"} between sessions`,
+                            disabled: true
+                        }], { event: event, title: "Collapse State", parentMenu: null });
                     }
                 }
             ];
@@ -459,13 +498,44 @@ class RgthreeSuperPowerLoraLoader extends RgthreeBaseServerNode {
             }
         }
 
+        getVisibleWidgets() {
+            // Return only widgets that should be rendered and take up space
+            return this.widgets.filter(widget => {
+                // Always show non-LoRA widgets
+                if (!widget.name?.startsWith("lora_")) {
+                    return true;
+                }
+                
+                // If tags are disabled, show all LoRA widgets
+                if (!this.properties[PROP_LABEL_ENABLE_TAGS_STATIC]) {
+                    return true;
+                }
+                
+                // For LoRA widgets, check if their tag header is collapsed
+                const tag = widget.value?.tag || "General";
+                const header = this.widgets.find(w => w instanceof SuperPowerLoraTagHeaderWidget && w.tag === tag);
+                return !header || !header.value.collapsed;
+            });
+        }
+
         computeSize() {
             const baseSize = super.computeSize();
             let height = 0;
             for (const widget of this.widgets) {
-                height += widget.computeSize ? widget.computeSize()[1] : 20;
+                const widgetSize = widget.computeSize ? widget.computeSize() : [200, 20];
+                height += widgetSize[1]; // Add widget height (will be 0 for collapsed widgets)
             }
             return [baseSize[0], height];
+        }
+
+        computeWidgetY(index) {
+            let y = 0;
+            for (let i = 0; i < index; i++) {
+                const widget = this.widgets[i];
+                const widgetSize = widget.computeSize ? widget.computeSize() : [200, 20];
+                y += widgetSize[1]; // Add widget height (will be 0 for collapsed widgets)
+            }
+            return y;
         }
 
         static setUp(comfyClass, nodeData) { RgthreeBaseServerNode.registerForOverride(comfyClass, nodeData, NODE_CLASS); }
@@ -485,7 +555,9 @@ class SuperPowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
         this.type = "custom";
         this.hitAreas = {
             toggle: { bounds: [0,0], onDown: this.onToggleDown },
-            triggerToggle: { bounds: [0,0], onDown: this.onTriggerToggleDown }
+            triggerToggle: { bounds: [0,0], onDown: this.onTriggerToggleDown },
+            collapseAll: { bounds: [0,0], onDown: this.onCollapseAllDown },
+            expandAll: { bounds: [0,0], onDown: this.onExpandAllDown }
         };
         this.showModelAndClip = null;
     }
@@ -496,6 +568,24 @@ class SuperPowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
         const allLoraState = node.allLorasState();
         posY += 2; const midY = posY + height * 0.5; let posX = 10;
         ctx.save();
+        
+        // Master collapse controls (left side) - only show if tags are enabled
+        if (!lowQuality && node.properties[PROP_LABEL_ENABLE_TAGS_STATIC]) {
+            ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+            ctx.textAlign = "left";
+            ctx.textBaseline = "middle";
+            
+            // Collapse all button
+            ctx.fillText("📁", posX, midY);
+            this.hitAreas.collapseAll.bounds = [posX, ctx.measureText("📁").width];
+            posX += this.hitAreas.collapseAll.bounds[1] + innerMargin;
+            
+            // Expand all button
+            ctx.fillText("📂", posX, midY);
+            this.hitAreas.expandAll.bounds = [posX, ctx.measureText("📂").width];
+            posX += this.hitAreas.expandAll.bounds[1] + innerMargin;
+        }
+        
         this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: allLoraState });
         if (!lowQuality) {
             posX += this.hitAreas.toggle.bounds[1] + innerMargin;
@@ -521,17 +611,36 @@ class SuperPowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
     }
     onToggleDown(event, pos, node) { node.toggleAllLoras(); this.cancelMouseDown(); return true; }
     onTriggerToggleDown(event, pos, node) { node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS] = !node.properties[PROP_LABEL_SHOW_TRIGGER_WORDS]; node._ensureMinWidth?.(); node.setDirtyCanvas(true,true); this.cancelMouseDown(); return true; }
+    onCollapseAllDown(event, pos, node) {
+        const headers = node.widgets.filter(w => w instanceof SuperPowerLoraTagHeaderWidget);
+        headers.forEach(header => {
+            header.value.collapsed = true;
+            header.updateVisibility(node);
+        });
+        this.cancelMouseDown();
+        return true;
+    }
+    onExpandAllDown(event, pos, node) {
+        const headers = node.widgets.filter(w => w instanceof SuperPowerLoraTagHeaderWidget);
+        headers.forEach(header => {
+            header.value.collapsed = false;
+            header.updateVisibility(node);
+        });
+        this.cancelMouseDown();
+        return true;
+    }
 }
 
 class SuperPowerLoraTagHeaderWidget extends RgthreeBaseWidget {
     constructor(tag) {
         super("tag_header_" + tag);
         this.tag = tag;
-        this.serialize = false;
-        this.value = { type: "SuperPowerLoraTagHeaderWidget", tag: tag };
+        this.serialize = true; // Enable serialization to save collapsed state
+        this.value = { type: "SuperPowerLoraTagHeaderWidget", tag: tag, collapsed: false };
         this.type = "custom";
         this.hitAreas = {
             toggle: { bounds: [0,0], onDown: this.onToggleDown },
+            collapseToggle: { bounds: [0,0], onDown: this.onCollapseToggleDown }
         };
     }
     draw(ctx, node, w, posY, height) {
@@ -545,7 +654,17 @@ class SuperPowerLoraTagHeaderWidget extends RgthreeBaseWidget {
         const lorasInTag = node.widgets.filter(w => w.name?.startsWith("lora_") && w.value?.tag === this.tag);
         const allEnabled = lorasInTag.length > 0 && lorasInTag.every(w => w.value?.on === true);
         
-        // Enable/disable toggle first (consistent with other toggles)
+        // Draw collapse toggle first (left side)
+        const collapsed = this.value.collapsed;
+        const collapseIcon = collapsed ? "▶" : "▼";
+        ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+        ctx.fillText(collapseIcon, posX, midY);
+        this.hitAreas.collapseToggle.bounds = [posX, ctx.measureText(collapseIcon).width];
+        posX += this.hitAreas.collapseToggle.bounds[1] + innerMargin;
+        
+        // Enable/disable toggle next (consistent with other toggles)
         this.hitAreas.toggle.bounds = drawTogglePart(ctx, { posX, posY, height, value: allEnabled });
         posX += this.hitAreas.toggle.bounds[1] + innerMargin;
         
@@ -553,8 +672,9 @@ class SuperPowerLoraTagHeaderWidget extends RgthreeBaseWidget {
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(this.tag, posX, midY);
-        posX += ctx.measureText(this.tag).width + innerMargin;
+        const tagDisplay = `${this.tag} (${lorasInTag.length})`;
+        ctx.fillText(tagDisplay, posX, midY);
+        posX += ctx.measureText(tagDisplay).width + innerMargin;
         
         // Draw separator line
         const availableWidth = node.size[0] - posX - margin;
@@ -596,6 +716,21 @@ class SuperPowerLoraTagHeaderWidget extends RgthreeBaseWidget {
         this.cancelMouseDown();
         return true;
     }
+    onCollapseToggleDown(event, pos, node) {
+        this.value.collapsed = !this.value.collapsed;
+        this.updateVisibility(node);
+        this.cancelMouseDown();
+        return true;
+    }
+    updateVisibility(node) {
+        // No need to set individual widget visibility anymore
+        // The getVisibleWidgets() method handles this logic
+        
+        // Recalculate node size to account for visibility changes
+        const computed = node.computeSize();
+        node.size[1] = Math.max((node._tempHeight ?? 15), computed[1]);
+        node.setDirtyCanvas(true, true);
+    }
 }
 
 const DEFAULT_LORA_WIDGET_DATA = { on: true, lora: null, triggerWord: "", strength: 1, strengthTwo: null, tag: "General" };
@@ -605,6 +740,7 @@ class SuperPowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.type = "custom";
         this.haveMouseMovedStrength = false;
         this.showModelAndClip = null;
+        this.visible = true; // Ensure widgets are visible by default
         this.hitAreas = {
             toggle: { bounds: [0,0], onDown: this.onToggleDown },
             tag: { bounds: [0,0], onClick: this.onTagClick },
@@ -634,7 +770,41 @@ class SuperPowerLoraLoaderWidget extends RgthreeBaseWidget {
     }
     get value() { return this._value; }
     setLora(lora) { this._value.lora = lora; }
+    shouldBeDrawn(node) {
+        // Check if this widget should be drawn (not collapsed)
+        const targetNode = node || this.node;
+        if (!targetNode || !this.name?.startsWith("lora_")) {
+            return true; // Non-LoRA widgets are always drawn
+        }
+        
+        // If tags are disabled, all LoRA widgets are drawn
+        if (!targetNode.properties[PROP_LABEL_ENABLE_TAGS_STATIC]) {
+            return true;
+        }
+        
+        // For LoRA widgets, check if their tag header is collapsed
+        const tag = this.value?.tag || "General";
+        const header = targetNode.widgets.find(w => w instanceof SuperPowerLoraTagHeaderWidget && w.tag === tag);
+        return !header || !header.value.collapsed;
+    }
+
+    computeSize() {
+        // Return 0 size if widget shouldn't be drawn
+        const targetNode = this.node;
+        if (targetNode && !this.shouldBeDrawn(targetNode)) {
+            return [0, 0];
+        }
+        return super.computeSize ? super.computeSize() : [200, 20];
+    }
+
     draw(ctx, node, w, posY, height) {
+        // Check if this widget should be drawn (not collapsed)
+        if (!this.shouldBeDrawn(node)) {
+            return 0; // Return 0 height to indicate this widget takes no space
+        }
+        
+        // Widget drawing logic - no longer needs to check visible property
+        // as visibility is handled at the node level
         this.node = node; // Store reference to node
         const currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
         if (this.showModelAndClip !== currentShowModelAndClip) {
@@ -724,8 +894,9 @@ class SuperPowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.restore();
     }
     serializeValue(node, index) { const v = { ...this.value }; if (!this.showModelAndClip) delete v.strengthTwo; else v.strengthTwo = this.value.strengthTwo ?? 1; return v; }
-    onToggleDown() { this.value.on = !this.value.on; this.cancelMouseDown(); return true; }
+    onToggleDown() { if (!this.shouldBeDrawn(this.node)) return false; this.value.on = !this.value.on; this.cancelMouseDown(); return true; }
     onTagClick(event) {
+        if (!this.shouldBeDrawn(this.node)) return false;
         // Only show tag menu if tags are enabled
         if (!this.node.properties[PROP_LABEL_ENABLE_TAGS_STATIC]) {
             return;
@@ -787,11 +958,12 @@ class SuperPowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.node.moveWidgetToCorrectGroup(this);
         this.node.setDirtyCanvas(true, true);
     }
-        onMoveUpClick(event,pos,node) { node = node || this.node; if(!node) return true; const widgets = node.widgets; const index = widgets.indexOf(this); const canMoveUp = !!(widgets[index-1]?.name?.startsWith("lora_")); if (canMoveUp) { moveArrayItem(widgets, this, index-1); node.setDirtyCanvas(true,true);} this.cancelMouseDown(); return true; }
-        onMoveDownClick(event,pos,node) { node = node || this.node; if(!node) return true; const widgets = node.widgets; const index = widgets.indexOf(this); const canMoveDown = !!(widgets[index+1]?.name?.startsWith("lora_")); if (canMoveDown) { moveArrayItem(widgets, this, index+1); node.setDirtyCanvas(true,true);} this.cancelMouseDown(); return true; }
-        onRemoveClick(event,pos,node) { node = node || this.node; if(!node) return true; const widgets = node.widgets; removeArrayItem(widgets, this); const computed = node.computeSize && node.computeSize(); if (computed) node.size[1] = Math.max((node._tempHeight ?? 15), computed[1]); node.setDirtyCanvas(true,true); this.cancelMouseDown(); return true; }
-    onLoraClick(event) { showLoraChooser(event, (value) => { if (typeof value === "string") { this.value.lora = value; this.node.setDirtyCanvas(true,true);} }); this.cancelMouseDown(); }
+        onMoveUpClick(event,pos,node) { if (!this.shouldBeDrawn(node || this.node)) return false; node = node || this.node; if(!node) return true; const widgets = node.widgets; const index = widgets.indexOf(this); const canMoveUp = !!(widgets[index-1]?.name?.startsWith("lora_")); if (canMoveUp) { moveArrayItem(widgets, this, index-1); node.setDirtyCanvas(true,true);} this.cancelMouseDown(); return true; }
+        onMoveDownClick(event,pos,node) { if (!this.shouldBeDrawn(node || this.node)) return false; node = node || this.node; if(!node) return true; const widgets = node.widgets; const index = widgets.indexOf(this); const canMoveDown = !!(widgets[index+1]?.name?.startsWith("lora_")); if (canMoveDown) { moveArrayItem(widgets, this, index+1); node.setDirtyCanvas(true,true);} this.cancelMouseDown(); return true; }
+        onRemoveClick(event,pos,node) { if (!this.shouldBeDrawn(node || this.node)) return false; node = node || this.node; if(!node) return true; const widgets = node.widgets; removeArrayItem(widgets, this); const computed = node.computeSize && node.computeSize(); if (computed) node.size[1] = Math.max((node._tempHeight ?? 15), computed[1]); node.setDirtyCanvas(true,true); this.cancelMouseDown(); return true; }
+    onLoraClick(event) { if (!this.shouldBeDrawn(this.node)) return false; showLoraChooser(event, (value) => { if (typeof value === "string") { this.value.lora = value; this.node.setDirtyCanvas(true,true);} }); this.cancelMouseDown(); }
         onTriggerWordClick(event,pos,node) {
+            if (!this.shouldBeDrawn(node || this.node)) return false;
             const canvas = app.canvas;
             const parentNode = node || this.node;
             canvas.prompt("Trigger Word", this.value.triggerWord || "", (v)=> {
@@ -800,17 +972,44 @@ class SuperPowerLoraLoaderWidget extends RgthreeBaseWidget {
             }, event);
             this.cancelMouseDown();
         }
-    onStrengthDecDown() { this.stepStrength(-1,false); }
-    onStrengthIncDown() { this.stepStrength(1,false); }
-    onStrengthTwoDecDown() { this.stepStrength(-1,true); }
-    onStrengthTwoIncDown() { this.stepStrength(1,true); }
-    onStrengthAnyMove(event) { this.doOnStrengthAnyMove(event,false); }
-    onStrengthTwoAnyMove(event) { this.doOnStrengthAnyMove(event,true); }
+    onStrengthDecDown() { if (!this.shouldBeDrawn(this.node)) return false; this.stepStrength(-1,false); }
+    onStrengthIncDown() { if (!this.shouldBeDrawn(this.node)) return false; this.stepStrength(1,false); }
+    onStrengthTwoDecDown() { if (!this.shouldBeDrawn(this.node)) return false; this.stepStrength(-1,true); }
+    onStrengthTwoIncDown() { if (!this.shouldBeDrawn(this.node)) return false; this.stepStrength(1,true); }
+    onStrengthAnyMove(event) { if (!this.shouldBeDrawn(this.node)) return false; this.doOnStrengthAnyMove(event,false); }
+    onStrengthTwoAnyMove(event) { if (!this.shouldBeDrawn(this.node)) return false; this.doOnStrengthAnyMove(event,true); }
     doOnStrengthAnyMove(event,isTwo=false) { if (event.deltaX) { const prop = isTwo?"strengthTwo":"strength"; this.haveMouseMovedStrength = true; this.value[prop] = (this.value[prop] ?? 1) + event.deltaX * 0.05; } }
-    onStrengthValUp(event) { this.doOnStrengthValUp(event,false); }
-    onStrengthTwoValUp(event) { this.doOnStrengthValUp(event,true); }
+    onStrengthValUp(event) { if (!this.shouldBeDrawn(this.node)) return false; this.doOnStrengthValUp(event,false); }
+    onStrengthTwoValUp(event) { if (!this.shouldBeDrawn(this.node)) return false; this.doOnStrengthValUp(event,true); }
     doOnStrengthValUp(event,isTwo=false) { if (this.haveMouseMovedStrength) return; const prop = isTwo?"strengthTwo":"strength"; const canvas = app.canvas; canvas.prompt("Value", this.value[prop], (v)=> this.value[prop]=Number(v), event); }
-    onMouseUp(event,pos,node) { super.onMouseUp(event,pos,node); this.haveMouseMovedStrength = false; }
+
+    onMouseDown(event, pos, node) {
+        if (!this.shouldBeDrawn(node)) {
+            return false; // Don't handle events when collapsed
+        }
+        return super.onMouseDown(event, pos, node);
+    }
+
+    onMouseMove(event, pos, node) {
+        if (!this.shouldBeDrawn(node)) {
+            return false; // Don't handle events when collapsed
+        }
+        return super.onMouseMove(event, pos, node);
+    }
+
+    onMouseUp(event, pos, node) {
+        if (!this.shouldBeDrawn(node)) {
+            return false; // Don't handle events when collapsed
+        }
+        return super.onMouseUp(event, pos, node);
+    }
+
+    onClick(event, pos, node) {
+        if (!this.shouldBeDrawn(node)) {
+            return false; // Don't handle events when collapsed
+        }
+        return super.onClick?.(event, pos, node) || false;
+    }
     stepStrength(direction,isTwo=false) { const step=0.05; const prop=isTwo?"strengthTwo":"strength"; const strength=(this.value[prop] ?? 1)+step*direction; this.value[prop]=Math.round(strength*100)/100; }
 }
 
