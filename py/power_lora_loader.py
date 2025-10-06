@@ -1,4 +1,3 @@
-import asyncio
 import folder_paths
 
 from typing import Union
@@ -7,7 +6,7 @@ from nodes import LoraLoader
 from .constants import get_category, get_name
 from .power_prompt_utils import get_lora_by_filename
 from .utils import FlexibleOptionalInputType, any_type
-from .server.utils_info import get_model_info
+from .server.utils_info import get_model_info_file_data
 from .log import log_node_warn
 
 NODE_NAME = get_name('Power Lora Loader')
@@ -83,7 +82,7 @@ class RgthreePowerLoraLoader:
     loras = [l['name'] for l in cls.get_enabled_loras_from_prompt_node(prompt_node)]
     trained_words = []
     for lora in loras:
-      info = asyncio.run(get_model_info(lora, 'loras'))
+      info = get_model_info_file_data(lora, 'loras', default={})
       if not info or not info.keys():
         log_node_warn(
           NODE_NAME,

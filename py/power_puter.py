@@ -25,6 +25,9 @@ from .log import log_node_error, log_node_warn, log_node_info
 
 from .power_lora_loader import RgthreePowerLoraLoader
 
+from nodes import ImageBatch
+from comfy_extras.nodes_latent import LatentBatch
+
 
 class LoopBreak(Exception):
   """A special error type that is caught in a loop for correct breaking behavior."""
@@ -69,6 +72,27 @@ def purge_vram(purge_models=True):
     comfy.model_management.soft_empty_cache()
 
 
+def batch(*args):
+  """Batches multiple image or latents together."""
+
+  def check_is_latent(item) -> bool:
+    return isinstance(item, dict) and 'samples' in item
+
+  args = list(args)
+  result = args.pop(0)
+  is_latent = check_is_latent(result)
+  node = LatentBatch() if is_latent else ImageBatch()
+
+  for arg in args:
+    if is_latent != check_is_latent(arg):
+      raise ValueError(
+        f'batch() error: Expecting "{"LATENT" if is_latent else "IMAGE"}"'
+        f' but got "{"IMAGE" if is_latent else "LATENT"}".'
+      )
+    result = node.batch(result, arg)[0]
+  return result
+
+
 _BUILTIN_FN_PREFIX = '__rgthreefn.'
 
 
@@ -106,13 +130,15 @@ _BUILT_IN_FNS_LIST = [
   Function(name="list", call=list, args=(1, 1)),
   Function(name="tuple", call=tuple, args=(1, 1)),
   # Special
+  Function(name="dir", call=dir, args=(1, 1)),
+  Function(name="type", call=type, args=(1, 1)),
+  Function(name="print", call=print, args=(0, None)),
+  # Comfy Specials
   Function(name="node", call='_get_node', args=(0, 1)),
   Function(name="nodes", call='_get_nodes', args=(0, 1)),
   Function(name="input_node", call='_get_input_node', args=(0, 1)),
   Function(name="purge_vram", call=purge_vram, args=(0, 1)),
-  Function(name="dir", call=dir, args=(1, 1)),
-  Function(name="type", call=type, args=(1, 1)),
-  Function(name="print", call=print, args=(0, None)),
+  Function(name="batch", call=batch, args=(2, None)),
 ]
 
 _BUILT_INS_BY_NAME_AND_KEY = {

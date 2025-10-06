@@ -63,6 +63,14 @@ def get_img_file(file_path: str, force=False):
       return try_path
 
 
+def get_model_info_file_data(file: str, model_type, default=None):
+  """Returns the data from the info file, or a default value if it doesn't exist."""
+  file_path = get_folder_path(file, model_type)
+  if file_path is None:
+    return default
+  return load_json_file(get_info_file(file_path), default=default)
+
+
 async def get_model_info(
   file: str,
   model_type,
@@ -83,7 +91,7 @@ async def get_model_info(
   # basic data
   basic_data = get_file_info(file, model_type)
   # Try to load a rgthree-info.json file next to the file.
-  info_data = load_json_file(get_info_file(file_path), default={})
+  info_data = get_model_info_file_data(file, model_type, default={})
 
   for key in ['file', 'path', 'modified', 'imageLocal', 'hasInfoFile']:
     if key in basic_data and basic_data[key] and (
@@ -403,7 +411,7 @@ def _read_file_metadata_from_header(file_path: str) -> dict:
   return data
 
 
-def get_folder_path(file: str, model_type):
+def get_folder_path(file: str, model_type) -> str | None:
   """Gets the file path ensuring it exists."""
   file_path = folder_paths.get_full_path(model_type, file)
   if file_path and not file_exists(file_path):
@@ -413,7 +421,7 @@ def get_folder_path(file: str, model_type):
   return file_path
 
 
-def _get_sha256_hash(file_path: str):
+def _get_sha256_hash(file_path: str | None):
   """Returns the hash for the file."""
   if not file_path or not file_exists(file_path):
     return None

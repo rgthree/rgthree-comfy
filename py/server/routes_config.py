@@ -48,10 +48,12 @@ async def get_logo(request, as_markup=False):
   resp = svg.format(bg=bg, fg=fg)
   if w is not None:
     resp = re.sub(r'(<svg[^\>]*?)width="[^\"]+"', r'\1', resp)
-    resp = re.sub(r'<svg', f'<svg width="{w}"', resp)
+    if str(w).isnumeric():
+      resp = re.sub(r'<svg', f'<svg width="{w}"', resp)
   if h is not None:
     resp = re.sub(r'(<svg[^\>]*?)height="[^\"]+"', r'\1', resp)
-    resp = re.sub(r'<svg', f'<svg height="{h}"', resp)
+    if str(h).isnumeric():
+      resp = re.sub(r'<svg', f'<svg height="{h}"', resp)
   if css_class is not None:
     resp = re.sub(r'<svg', f'<svg class="{css_class}"', resp)
   if as_markup:
