@@ -15,6 +15,7 @@ import re
 import time
 import operator as op
 import datetime
+import statistics
 
 from typing import Any, Callable, Iterable, Optional, Union
 from types import MappingProxyType
@@ -93,6 +94,29 @@ def batch(*args):
   return result
 
 
+def accumulate(iterable, func=None, initial=None):
+  """A pitiful implementation of itertools.accumulate."""
+  it = iter(iterable)
+  op_func = func if func is not None else op.add
+  results = []
+
+  # Handle initial
+  if initial is not None:
+    total = initial
+    results.append(total)
+  else:
+    try:
+      total = next(it)
+      results.append(total)
+    except StopIteration:
+      return results
+
+  for x in it:
+    total = op_func(total, x)
+    results.append(total)
+  return results
+
+
 _BUILTIN_FN_PREFIX = '__rgthreefn.'
 
 
@@ -113,8 +137,16 @@ _BUILT_IN_FNS_LIST = [
   Function(name="ceil", call=math.ceil, args=(1, 1)),
   Function(name="floor", call=math.floor, args=(1, 1)),
   Function(name="sqrt", call=math.sqrt, args=(1, 1)),
-  Function(name="min", call=min, args=(2, None)),
-  Function(name="max", call=max, args=(2, None)),
+  # Core numeric/list helpers
+  Function(name="min", call=min, args=(1, None)),
+  Function(name="max", call=max, args=(1, None)),
+  Function(name="sum", call=sum, args=(1, 2)),
+  Function(name="abs", call=abs, args=(1, 1)),
+  Function(name="accumulate", call=accumulate, args=(1, 3)),
+  Function(name="mean", call=statistics.mean, args=(1, 1)),
+  Function(name="median", call=statistics.median, args=(1, 1)),
+  Function(name="prod", call=math.prod, args=(1, 1)),
+  # Random
   Function(name=".random_int", call=random.randint, args=(2, 2)),
   Function(name=".random_choice", call=random.choice, args=(1, 1)),
   Function(name=".random_seed", call=random.seed, args=(1, 1)),
