@@ -99,8 +99,8 @@ def accumulate(iterable, func=None, initial=None):
   """Wrapper around itertools.accumulate that returns a list.
 
   - iterable: source iterable
-  - func: optional binary function; defaults to operator.add
-  - initial: optional starting value; included as the first element when provided
+  - func: optional binary function; defaults to operator.add (unused)
+  - initial: optional starting value; included as the first element when provided (unused)
   """
   return list(itertools.accumulate(iterable, func, initial=initial))
 
@@ -130,7 +130,7 @@ _BUILT_IN_FNS_LIST = [
   Function(name="max", call=max, args=(1, None)),
   Function(name="sum", call=sum, args=(1, 2)),
   Function(name="abs", call=abs, args=(1, 1)),
-  Function(name="accumulate", call=accumulate, args=(1, 3)),
+  Function(name="accumulate", call=accumulate, args=(1, 1)),
   Function(name="mean", call=statistics.mean, args=(1, 1)),
   Function(name="median", call=statistics.median, args=(1, 1)),
   Function(name="prod", call=math.prod, args=(1, 1)),
