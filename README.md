@@ -202,6 +202,16 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >      ', '.join(loras)
 >      ```
 >
+>    - Built-in numeric/list helpers available in Power Puter:
+>      - min(...), max(...): accept either multiple values or a single iterable (e.g., `min(1, 3, 2)` or `min([1, 3, 2])`).
+>      - sum(iterable[, start])
+>      - abs(x)
+>      - accumulate(iterable, func=None, initial=None): wrapper around `itertools.accumulate` that returns a list of running totals.
+>      - mean(iterable), median(iterable)
+>      - prod(iterable)
+>
+>    - Note: As of the latest update, `min` and `max` accept a single iterable argument for convenience.
+>
 >    </details>
 
 ## Fast Groups Muter

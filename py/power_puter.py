@@ -16,6 +16,7 @@ import time
 import operator as op
 import datetime
 import statistics
+import itertools
 
 from typing import Any, Callable, Iterable, Optional, Union
 from types import MappingProxyType
@@ -95,26 +96,13 @@ def batch(*args):
 
 
 def accumulate(iterable, func=None, initial=None):
-  """A pitiful implementation of itertools.accumulate."""
-  it = iter(iterable)
-  op_func = func if func is not None else op.add
-  results = []
+  """Wrapper around itertools.accumulate that returns a list.
 
-  # Handle initial
-  if initial is not None:
-    total = initial
-    results.append(total)
-  else:
-    try:
-      total = next(it)
-      results.append(total)
-    except StopIteration:
-      return results
-
-  for x in it:
-    total = op_func(total, x)
-    results.append(total)
-  return results
+  - iterable: source iterable
+  - func: optional binary function; defaults to operator.add
+  - initial: optional starting value; included as the first element when provided
+  """
+  return list(itertools.accumulate(iterable, func, initial=initial))
 
 
 _BUILTIN_FN_PREFIX = '__rgthreefn.'
