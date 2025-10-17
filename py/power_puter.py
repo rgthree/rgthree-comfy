@@ -97,7 +97,14 @@ def batch(*args):
 
 def accumulate(iterable, *args, **kwargs):
   """Wrap itertools.accumulate and return the same type as the input iterable."""
-  result = list(itertools.accumulate(iterable, *args, **kwargs))
+  acc = itertools.accumulate(iterable, *args, **kwargs)
+  # If the user manages to get an exception using strings, then they deserve to receive it
+  if isinstance(iterable, (str, bytes, list, set, tuple)):
+      return type(iterable)(acc)
+
+  # If they pass a dict or bytearray or smth, then it's "best effort", and we need to make
+  # a copy incase it gets eaten during a failed attempt at type conversion.
+  result = list(acc)
   try:
     return type(iterable)(result)
   except Exception:
