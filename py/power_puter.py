@@ -100,7 +100,7 @@ def accumulate(iterable, *args, **kwargs):
   result = list(itertools.accumulate(iterable, *args, **kwargs))
   try:
     return type(iterable)(result)
-  except ValueException:
+  except Exception:
     return tuple(result)
 
 
