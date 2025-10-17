@@ -692,6 +692,7 @@ class _Puter:
         args.append(self._eval_statement(arg, ctx=ctx))
       for kwarg in stmt.keywords:
         kwargs[kwarg.arg] = self._eval_statement(kwarg.value, ctx=ctx)
+      # noinspection PyCallingNonCallable
       return call(*args, **kwargs)
 
     if isinstance(stmt, ast.Compare):
