@@ -386,8 +386,6 @@ class _Puter:
     if self._prompt:
       self._prompt_nodes = [{'id': id} | {**node} for id, node in self._prompt.items()]
     self._prompt_node = [n for n in self._prompt_nodes if n['id'] == unique_id][0]
-    # Unique frame ID to scope returns to this evaluator execution
-    self._frame_id = object()
 
   def execute(self, code=Optional[str]) -> Any:
     """Evaluates a the code block."""
@@ -400,8 +398,6 @@ class _Puter:
       code = code or self._code
       node = ast.parse(self._code)
       ctx = {**self._ctx}
-      # Tag this context with our frame id so returns are scoped to this execution
-      ctx['__frame_id__'] = self._frame_id
       for body in node.body:
         last_value = self._eval_statement(body, ctx)
         # If we got a return, then that's it folks.
@@ -452,7 +448,7 @@ class _Puter:
   def _eval_statement(self, stmt: ast.AST, ctx: dict, prev_stmt: Union[ast.AST, None] = None):
     """Evaluates an ast.stmt."""
 
-    if '__returned__' in ctx and ctx.get('__frame_id__') == getattr(self, '_frame_id', None):
+    if '__returned__' in ctx:
       return ctx['__returned__']
 
     # print('\n\n----: _eval_statement')
@@ -696,21 +692,6 @@ class _Puter:
         args.append(self._eval_statement(arg, ctx=ctx))
       for kwarg in stmt.keywords:
         kwargs[kwarg.arg] = self._eval_statement(kwarg.value, ctx=ctx)
-
-      # Guard against leaked return markers in closures of user-defined functions
-      try:
-        closure = getattr(call, '__closure__', None)
-        if closure:
-          for cell in closure:
-            c = getattr(cell, 'cell_contents', None)
-            if isinstance(c, dict) and '__returned__' in c:
-              try:
-                del c['__returned__']
-              except Exception:
-                pass
-      except Exception:
-        pass
-
       return call(*args, **kwargs)
 
     if isinstance(stmt, ast.Compare):
@@ -826,8 +807,6 @@ class _Puter:
         # Ensure we don't inherit a return marker from the defining context
         if '__returned__' in lctx:
           del lctx['__returned__']
-        # Ensure function body evaluation uses this evaluator's frame for return scoping
-        lctx['__frame_id__'] = self._frame_id
         # Bind parameters
         bindings = {}
 
