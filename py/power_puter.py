@@ -812,11 +812,14 @@ class _Puter:
         bindings = {}
 
         # Positional params first
+        positionally_bound = set()
         for i, pname in enumerate(param_names):
           if i < len(call_args):
             bindings[pname] = call_args[i]
+            positionally_bound.add(pname)
           else:
             if pname in defaults_map:
+              # Tentatively bind default; can be overridden by keyword later
               bindings[pname] = defaults_map[pname]
             else:
               raise TypeError(f"Missing required positional argument: {pname}")
@@ -843,13 +846,18 @@ class _Puter:
           # After consuming known keyword-only args and normal params, pack remaining
           # Also allow passing positional params by keyword
           for pname in param_names:
-            if pname in call_kwargs and pname not in bindings:
+            if pname in call_kwargs:
+              if pname in positionally_bound:
+                raise TypeError(f"Multiple values for argument: {pname}")
               bindings[pname] = call_kwargs.pop(pname)
           bindings[kwarg_name] = {**call_kwargs}
         else:
-          # Consume any keywords that match positional names not already set
+          # Consume any keywords that match positional names
           for pname in param_names:
-            if pname in call_kwargs and pname not in bindings:
+            if pname in call_kwargs:
+              if pname in positionally_bound:
+                raise TypeError(f"Multiple values for argument: {pname}")
+              # Override any default-bound value
               bindings[pname] = call_kwargs.pop(pname)
           if call_kwargs:
             unknown = ', '.join(call_kwargs.keys())
