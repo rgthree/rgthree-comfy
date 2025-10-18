@@ -459,7 +459,8 @@ class _Puter:
       return self._eval_statement(stmt.value, ctx=ctx)
 
     if isinstance(stmt, (ast.Constant, ast.Num)):
-      return stmt.n
+      # ast.Constant (Py>=3.8) uses .value; ast.Num (Py<3.8/compat) uses .n
+      return getattr(stmt, 'value', getattr(stmt, 'n', None))
 
     if isinstance(stmt, ast.BinOp):
       left = self._eval_statement(stmt.left, ctx=ctx)
@@ -667,6 +668,9 @@ class _Puter:
         name = stmt.func.id
         if name in _BUILT_INS:
           call = _BUILT_INS[name]
+        else:
+          # Evaluate the name from the current context to allow calling user-defined functions
+          call = self._eval_statement(stmt.func, ctx=ctx)
 
       if isinstance(call, str) and call.startswith(_BUILTIN_FN_PREFIX):
         fn = _get_built_in_fn_by_key(call)
@@ -681,10 +685,14 @@ class _Puter:
       if not call:
         raise ValueError(f'No call for ast.Call {name}')
 
+      if not callable(call):
+        raise TypeError(f'Attempted to call a non-callable object: {call}')
+
       for arg in stmt.args:
         args.append(self._eval_statement(arg, ctx=ctx))
       for kwarg in stmt.keywords:
         kwargs[kwarg.arg] = self._eval_statement(kwarg.value, ctx=ctx)
+      # noinspection PyCallingNonCallable
       return call(*args, **kwargs)
 
     if isinstance(stmt, ast.Compare):
@@ -751,6 +759,129 @@ class _Puter:
       value = self._eval_statement(stmt.value, ctx=ctx)
       ctx[stmt.target.id] = value
       return value
+
+    if isinstance(stmt, ast.FunctionDef):
+      # Define a user function: store a callable in the current context under the function name.
+      fn_def = stmt
+
+      # Capture outer context by reference for reads; we'll use a new local ctx per invocation.
+      outer_ctx = ctx
+
+      # Prepare parameter metadata
+      posonly = [a.arg for a in getattr(fn_def.args, 'posonlyargs', [])]
+      normal = [a.arg for a in fn_def.args.args]
+      param_names = posonly + normal
+
+      defaults_evaluated = []
+      if fn_def.args.defaults:
+        for d in fn_def.args.defaults:
+          defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
+      # Map defaults to the last N positional params
+      defaults_map = {}
+      if defaults_evaluated:
+        for i, val in enumerate(defaults_evaluated):
+          param = param_names[len(param_names) - len(defaults_evaluated) + i]
+          defaults_map[param] = val
+
+      kwonly_names = [a.arg for a in getattr(fn_def.args, 'kwonlyargs', [])]
+      kw_defaults_evaluated = []
+      if getattr(fn_def.args, 'kw_defaults', None):
+        for d in fn_def.args.kw_defaults:
+          if d is None:
+            kw_defaults_evaluated.append(None)
+          else:
+            kw_defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
+      kw_defaults_map = {}
+      if kwonly_names:
+        for i, name in enumerate(kwonly_names):
+          if i < len(kw_defaults_evaluated):
+            kw_defaults_map[name] = kw_defaults_evaluated[i]
+          else:
+            kw_defaults_map[name] = None
+
+      vararg_name = fn_def.args.vararg.arg if fn_def.args.vararg else None
+      kwarg_name = fn_def.args.kwarg.arg if fn_def.args.kwarg else None
+
+      def _user_fn(*call_args, **call_kwargs):
+        # Local context starts as a shallow copy of the outer context
+        lctx = {**outer_ctx}
+        # Ensure we don't inherit a return marker from the defining context
+        if '__returned__' in lctx:
+          del lctx['__returned__']
+        # Bind parameters
+        bindings = {}
+
+        # Positional params first
+        positionally_bound = set()
+        for i, pname in enumerate(param_names):
+          if i < len(call_args):
+            bindings[pname] = call_args[i]
+            positionally_bound.add(pname)
+          else:
+            if pname in defaults_map:
+              # Tentatively bind default; can be overridden by keyword later
+              bindings[pname] = defaults_map[pname]
+            else:
+              raise TypeError(f"Missing required positional argument: {pname}")
+
+        # varargs
+        if vararg_name:
+          bindings[vararg_name] = tuple(call_args[len(param_names):])
+        else:
+          # If extra positional args given without varargs, error
+          if len(call_args) > len(param_names):
+            raise TypeError("Too many positional arguments")
+
+        # Keyword-only args
+        for kname in kwonly_names:
+          if kname in call_kwargs:
+            bindings[kname] = call_kwargs.pop(kname)
+          elif kname in kw_defaults_map and kw_defaults_map[kname] is not None:
+            bindings[kname] = kw_defaults_map[kname]
+          else:
+            raise TypeError(f"Missing required keyword-only argument: {kname}")
+
+        # Remaining kwargs
+        if kwarg_name:
+          # After consuming known keyword-only args and normal params, pack remaining
+          # Also allow passing positional params by keyword
+          for pname in param_names:
+            if pname in call_kwargs:
+              if pname in positionally_bound:
+                raise TypeError(f"Multiple values for argument: {pname}")
+              bindings[pname] = call_kwargs.pop(pname)
+          bindings[kwarg_name] = {**call_kwargs}
+        else:
+          # Consume any keywords that match positional names
+          for pname in param_names:
+            if pname in call_kwargs:
+              if pname in positionally_bound:
+                raise TypeError(f"Multiple values for argument: {pname}")
+              # Override any default-bound value
+              bindings[pname] = call_kwargs.pop(pname)
+          if call_kwargs:
+            unknown = ', '.join(call_kwargs.keys())
+            raise TypeError(f"Unexpected keyword arguments: {unknown}")
+
+        # Update local context with bound params and function name (for recursion)
+        lctx.update(bindings)
+        lctx[fn_def.name] = _user_fn
+
+        # Execute function body
+        ret_val = None
+        for b in fn_def.body:
+          ret_val = self._eval_statement(b, ctx=lctx)
+          if '__returned__' in lctx:
+            ret_val = lctx['__returned__']
+            break
+        # Clean return marker if present
+        if '__returned__' in lctx:
+          del lctx['__returned__']
+        return ret_val
+
+      # Store function in current context
+      ctx[fn_def.name] = _user_fn
+      return None
 
     if isinstance(stmt, ast.Return):
       if stmt.value is None:
