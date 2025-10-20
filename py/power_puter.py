@@ -445,6 +445,119 @@ class _Puter:
       log_node_warn(_NODE_NAME, f'No input node found for "{input_name}". ')
     return None
 
+  # --- DRY helpers for function/lambda signature handling ---
+  def _prepare_signature(self, args_node, outer_ctx):
+    """Prepare a callable signature from an ast.arguments node.
+
+    Returns a dict with:
+      param_names, defaults_map, kwonly_names, kw_defaults_map, vararg_name, kwarg_name
+    """
+    posonly = [a.arg for a in getattr(args_node, 'posonlyargs', [])]
+    normal = [a.arg for a in args_node.args]
+    param_names = posonly + normal
+
+    # Positional defaults map to last N positional params
+    defaults_evaluated = []
+    if getattr(args_node, 'defaults', None):
+      for d in args_node.defaults:
+        defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
+    defaults_map = {}
+    if defaults_evaluated:
+      for i, val in enumerate(defaults_evaluated):
+        param = param_names[len(param_names) - len(defaults_evaluated) + i]
+        defaults_map[param] = val
+
+    kwonly_names = [a.arg for a in getattr(args_node, 'kwonlyargs', [])]
+    kw_defaults_evaluated = []
+    if getattr(args_node, 'kw_defaults', None):
+      for d in args_node.kw_defaults:
+        if d is None:
+          kw_defaults_evaluated.append(None)
+        else:
+          kw_defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
+    kw_defaults_map = {}
+    if kwonly_names:
+      for i, name in enumerate(kwonly_names):
+        if i < len(kw_defaults_evaluated):
+          kw_defaults_map[name] = kw_defaults_evaluated[i]
+        else:
+          kw_defaults_map[name] = None
+
+    vararg_name = args_node.vararg.arg if args_node.vararg else None
+    kwarg_name = args_node.kwarg.arg if args_node.kwarg else None
+
+    return {
+      'param_names': param_names,
+      'defaults_map': defaults_map,
+      'kwonly_names': kwonly_names,
+      'kw_defaults_map': kw_defaults_map,
+      'vararg_name': vararg_name,
+      'kwarg_name': kwarg_name,
+    }
+
+  def _bind_call(self, signature: dict, call_args, call_kwargs):
+    """Bind provided arguments to a prepared signature, enforcing the same rules
+    as the inlined logic previously used for FunctionDef and Lambda.
+    Returns a dict of bound parameters (including varargs/kwargs names if present).
+    """
+    param_names = signature['param_names']
+    defaults_map = signature['defaults_map']
+    kwonly_names = signature['kwonly_names']
+    kw_defaults_map = signature['kw_defaults_map']
+    vararg_name = signature['vararg_name']
+    kwarg_name = signature['kwarg_name']
+
+    bindings = {}
+    work_kwargs = dict(call_kwargs)
+
+    # Positional parameters
+    positionally_bound = set()
+    for i, pname in enumerate(param_names):
+      if i < len(call_args):
+        bindings[pname] = call_args[i]
+        positionally_bound.add(pname)
+      else:
+        if pname in defaults_map:
+          bindings[pname] = defaults_map[pname]
+        else:
+          raise TypeError(f"Missing required positional argument: {pname}")
+
+    # varargs
+    if vararg_name:
+      bindings[vararg_name] = tuple(call_args[len(param_names):])
+    else:
+      if len(call_args) > len(param_names):
+        raise TypeError("Too many positional arguments")
+
+    # Keyword-only args
+    for kname in kwonly_names:
+      if kname in work_kwargs:
+        bindings[kname] = work_kwargs.pop(kname)
+      elif kname in kw_defaults_map and kw_defaults_map[kname] is not None:
+        bindings[kname] = kw_defaults_map[kname]
+      else:
+        raise TypeError(f"Missing required keyword-only argument: {kname}")
+
+    # Remaining kwargs and positional-by-name
+    if kwarg_name:
+      for pname in param_names:
+        if pname in work_kwargs:
+          if pname in positionally_bound:
+            raise TypeError(f"Multiple values for argument: {pname}")
+          bindings[pname] = work_kwargs.pop(pname)
+      bindings[kwarg_name] = {**work_kwargs}
+    else:
+      for pname in param_names:
+        if pname in work_kwargs:
+          if pname in positionally_bound:
+            raise TypeError(f"Multiple values for argument: {pname}")
+          bindings[pname] = work_kwargs.pop(pname)
+      if work_kwargs:
+        unknown = ', '.join(work_kwargs.keys())
+        raise TypeError(f"Unexpected keyword arguments: {unknown}")
+
+    return bindings
+
   def _eval_statement(self, stmt: ast.AST, ctx: dict, prev_stmt: Union[ast.AST, None] = None):
     """Evaluates an ast.stmt."""
 
@@ -651,6 +764,21 @@ class _Puter:
       handle_gen(generators)
       return final_list
 
+    # Lambda expression support: build a callable that captures current context
+    if isinstance(stmt, ast.Lambda):
+      lam = stmt
+      outer_ctx = ctx
+
+      signature = self._prepare_signature(lam.args, outer_ctx)
+
+      def _lambda_fn(*call_args, **call_kwargs):
+        lctx = {**outer_ctx}
+        bindings = self._bind_call(signature, call_args, call_kwargs)
+        lctx.update(bindings)
+        return self._eval_statement(lam.body, ctx=lctx)
+
+      return _lambda_fn
+
     if isinstance(stmt, ast.Call):
       call = None
       args = []
@@ -767,40 +895,7 @@ class _Puter:
       # Capture outer context by reference for reads; we'll use a new local ctx per invocation.
       outer_ctx = ctx
 
-      # Prepare parameter metadata
-      posonly = [a.arg for a in getattr(fn_def.args, 'posonlyargs', [])]
-      normal = [a.arg for a in fn_def.args.args]
-      param_names = posonly + normal
-
-      defaults_evaluated = []
-      if fn_def.args.defaults:
-        for d in fn_def.args.defaults:
-          defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
-      # Map defaults to the last N positional params
-      defaults_map = {}
-      if defaults_evaluated:
-        for i, val in enumerate(defaults_evaluated):
-          param = param_names[len(param_names) - len(defaults_evaluated) + i]
-          defaults_map[param] = val
-
-      kwonly_names = [a.arg for a in getattr(fn_def.args, 'kwonlyargs', [])]
-      kw_defaults_evaluated = []
-      if getattr(fn_def.args, 'kw_defaults', None):
-        for d in fn_def.args.kw_defaults:
-          if d is None:
-            kw_defaults_evaluated.append(None)
-          else:
-            kw_defaults_evaluated.append(self._eval_statement(d, ctx=outer_ctx))
-      kw_defaults_map = {}
-      if kwonly_names:
-        for i, name in enumerate(kwonly_names):
-          if i < len(kw_defaults_evaluated):
-            kw_defaults_map[name] = kw_defaults_evaluated[i]
-          else:
-            kw_defaults_map[name] = None
-
-      vararg_name = fn_def.args.vararg.arg if fn_def.args.vararg else None
-      kwarg_name = fn_def.args.kwarg.arg if fn_def.args.kwarg else None
+      signature = self._prepare_signature(fn_def.args, outer_ctx)
 
       def _user_fn(*call_args, **call_kwargs):
         # Local context starts as a shallow copy of the outer context
@@ -808,60 +903,8 @@ class _Puter:
         # Ensure we don't inherit a return marker from the defining context
         if '__returned__' in lctx:
           del lctx['__returned__']
-        # Bind parameters
-        bindings = {}
 
-        # Positional params first
-        positionally_bound = set()
-        for i, pname in enumerate(param_names):
-          if i < len(call_args):
-            bindings[pname] = call_args[i]
-            positionally_bound.add(pname)
-          else:
-            if pname in defaults_map:
-              # Tentatively bind default; can be overridden by keyword later
-              bindings[pname] = defaults_map[pname]
-            else:
-              raise TypeError(f"Missing required positional argument: {pname}")
-
-        # varargs
-        if vararg_name:
-          bindings[vararg_name] = tuple(call_args[len(param_names):])
-        else:
-          # If extra positional args given without varargs, error
-          if len(call_args) > len(param_names):
-            raise TypeError("Too many positional arguments")
-
-        # Keyword-only args
-        for kname in kwonly_names:
-          if kname in call_kwargs:
-            bindings[kname] = call_kwargs.pop(kname)
-          elif kname in kw_defaults_map and kw_defaults_map[kname] is not None:
-            bindings[kname] = kw_defaults_map[kname]
-          else:
-            raise TypeError(f"Missing required keyword-only argument: {kname}")
-
-        # Remaining kwargs
-        if kwarg_name:
-          # After consuming known keyword-only args and normal params, pack remaining
-          # Also allow passing positional params by keyword
-          for pname in param_names:
-            if pname in call_kwargs:
-              if pname in positionally_bound:
-                raise TypeError(f"Multiple values for argument: {pname}")
-              bindings[pname] = call_kwargs.pop(pname)
-          bindings[kwarg_name] = {**call_kwargs}
-        else:
-          # Consume any keywords that match positional names
-          for pname in param_names:
-            if pname in call_kwargs:
-              if pname in positionally_bound:
-                raise TypeError(f"Multiple values for argument: {pname}")
-              # Override any default-bound value
-              bindings[pname] = call_kwargs.pop(pname)
-          if call_kwargs:
-            unknown = ', '.join(call_kwargs.keys())
-            raise TypeError(f"Unexpected keyword arguments: {unknown}")
+        bindings = self._bind_call(signature, call_args, call_kwargs)
 
         # Update local context with bound params and function name (for recursion)
         lctx.update(bindings)
