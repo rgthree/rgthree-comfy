@@ -14,12 +14,13 @@ export class Label extends RgthreeBaseVirtualNode {
         this.properties["backgroundColor"] = "transparent";
         this.properties["padding"] = 0;
         this.properties["borderRadius"] = 0;
+        this.properties["angle"] = 0;
         this.color = "#fff0";
         this.bgcolor = "#fff0";
         this.onConstructed();
     }
     draw(ctx) {
-        var _a, _b;
+        var _a, _b, _c, _d;
         this.flags = this.flags || {};
         this.flags.allow_interaction = !this.flags.pinned;
         ctx.save();
@@ -29,10 +30,19 @@ export class Label extends RgthreeBaseVirtualNode {
         const backgroundColor = this.properties["backgroundColor"] || "";
         ctx.font = `${Math.max(this.properties["fontSize"] || 0, 1)}px ${(_a = this.properties["fontFamily"]) !== null && _a !== void 0 ? _a : "Arial"}`;
         const padding = (_b = Number(this.properties["padding"])) !== null && _b !== void 0 ? _b : 0;
-        const lines = this.title.replace(/\n*$/, "").split("\n");
+        const processedTitle = ((_c = this.title) !== null && _c !== void 0 ? _c : "").replace(/\\n/g, "\n").replace(/\n*$/, "");
+        const lines = processedTitle.split("\n");
         const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
         this.size[0] = maxWidth + padding * 2;
         this.size[1] = this.properties["fontSize"] * lines.length + padding * 2;
+        const angleDeg = parseInt(String((_d = this.properties["angle"]) !== null && _d !== void 0 ? _d : 0)) || 0;
+        if (angleDeg) {
+            const cx = this.size[0] / 2;
+            const cy = this.size[1] / 2;
+            ctx.translate(cx, cy);
+            ctx.rotate((angleDeg * Math.PI) / 180);
+            ctx.translate(-cx, -cy);
+        }
         if (backgroundColor) {
             ctx.beginPath();
             const borderRadius = Number(this.properties["borderRadius"]) || 0;
@@ -118,6 +128,7 @@ Label["@textAlign"] = { type: "combo", values: ["left", "center", "right"] };
 Label["@backgroundColor"] = { type: "string" };
 Label["@padding"] = { type: "number" };
 Label["@borderRadius"] = { type: "number" };
+Label["@angle"] = { type: "number" };
 const oldDrawNode = LGraphCanvas.prototype.drawNode;
 LGraphCanvas.prototype.drawNode = function (node, ctx) {
     if (node.constructor === Label.prototype.constructor) {
