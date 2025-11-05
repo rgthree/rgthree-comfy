@@ -7,6 +7,6 @@
     "web-tree-sitter": "0.25.6"
   },
   "scripts": {
-    "build": "./__build__.py || python .\\__build__.py"
+    "build": "python __build__.py -E"
   }
 }
