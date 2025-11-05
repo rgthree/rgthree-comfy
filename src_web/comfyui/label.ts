@@ -31,6 +31,7 @@ export class Label extends RgthreeBaseVirtualNode {
   static "@backgroundColor" = {type: "string"};
   static "@padding" = {type: "number"};
   static "@borderRadius" = {type: "number"};
+  static "@angle" = {type: "number"};
 
   override properties!: RgthreeBaseVirtualNode["properties"] & {
     fontSize: number;
@@ -40,6 +41,7 @@ export class Label extends RgthreeBaseVirtualNode {
     backgroundColor: string;
     padding: number;
     borderRadius: number;
+    angle: number;
   };
 
   override resizable = false;
@@ -53,6 +55,7 @@ export class Label extends RgthreeBaseVirtualNode {
     this.properties["backgroundColor"] = "transparent";
     this.properties["padding"] = 0;
     this.properties["borderRadius"] = 0;
+    this.properties["angle"] = 0;
     this.color = "#fff0";
     this.bgcolor = "#fff0";
 
@@ -72,10 +75,24 @@ export class Label extends RgthreeBaseVirtualNode {
     }`;
     const padding = Number(this.properties["padding"]) ?? 0;
 
-    const lines = this.title.replace(/\n*$/, "").split("\n");
+    // Support literal "\\n" sequences as newlines and trim trailing newlines
+    const processedTitle = (this.title ?? "").replace(/\\n/g, "\n").replace(/\n*$/, "");
+    const lines = processedTitle.split("\n");
+
     const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
     this.size[0] = maxWidth + padding * 2;
     this.size[1] = this.properties["fontSize"] * lines.length + padding * 2;
+
+    // Apply rotation around the center, if angle provided
+    const angleDeg = parseInt(String(this.properties["angle"] ?? 0)) || 0;
+    if (angleDeg) {
+      const cx = this.size[0] / 2;
+      const cy = this.size[1] / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate((angleDeg * Math.PI) / 180);
+      ctx.translate(-cx, -cy);
+    }
+
     if (backgroundColor) {
       ctx.beginPath();
       const borderRadius = Number(this.properties["borderRadius"]) || 0;
