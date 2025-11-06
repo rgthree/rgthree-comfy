@@ -94,9 +94,9 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.widgetButtonSpacer = this.addCustomWidget(new RgthreeDividerWidget({ marginTop: 4, marginBottom: 0, thickness: 0 }));
         this.addCustomWidget(new RgthreeBetterButtonWidget("➕ Add Lora", (event, pos, node) => {
             rgthreeApi.getLoras().then((lorasDetails) => {
-                  const loras = (lorasDetails || [])
-                    .filter((l) => l && l.file)
-                    .map((l) => l.file);
+              const loras = (lorasDetails || [])
+                .filter((l) => l && l.file)
+                  .map((l) => l.file);
                 showLoraChooser(event, (value) => {
                     var _b;
                     if (typeof value === "string") {
