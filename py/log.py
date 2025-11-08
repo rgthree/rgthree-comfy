@@ -1,3 +1,5 @@
+import datetime
+import time
 from .pyproject import NAME
 
 # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
@@ -77,9 +79,19 @@ def _log_node(color, node_name, message, msg_color='RESET'):
   """Logs for a node message."""
   log(message, color=color, prefix=node_name.replace(" (rgthree)", ""), msg_color=msg_color)
 
+LOGGED = {}
 
-def log(message, color=None, msg_color=None, prefix=None):
+def log(message, color=None, msg_color=None, prefix=None, id=None, at_most_secs=None):
   """Basic logging."""
+  now = int(time.time())
+  if id:
+    if at_most_secs is None:
+      raise ValueError('at_most_secs should be set if an id is set.')
+    if id in LOGGED:
+      last_logged = LOGGED[id]
+      if now < last_logged + at_most_secs:
+        return
+    LOGGED[id] = now
   color = COLORS[color] if color is not None and color in COLORS else COLORS["BRIGHT_GREEN"]
   msg_color = COLORS[msg_color] if msg_color is not None and msg_color in COLORS else ''
   prefix = f'[{prefix}]' if prefix is not None else ''

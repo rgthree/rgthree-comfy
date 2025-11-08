@@ -124,5 +124,8 @@ class RgthreeApi {
         options.cache = options.cache || "no-cache";
         return fetch(url, options);
     }
+    print(messageType) {
+        this.fetchApi(`/print?type=${messageType}`, {});
+    }
 }
 export const rgthreeApi = new RgthreeApi();

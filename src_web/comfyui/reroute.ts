@@ -13,12 +13,6 @@ import type {
 } from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import {
-  getWidgetConfig,
-  mergeIfValid,
-  setWidgetConfig,
-  // @ts-ignore
-} from "../../extensions/core/widgetInputs.js";
 // @ts-ignore
 import {rgthreeConfig} from "rgthree/config.js";
 import {rgthree} from "./rgthree.js";
@@ -38,6 +32,8 @@ import {SERVICE as KEY_EVENT_SERVICE} from "./services/key_events_services.js";
 import {wait} from "rgthree/common/shared_utils.js";
 import {RgthreeBaseVirtualNode} from "./base_node.js";
 import {NodeTypesString} from "./constants.js";
+import {rgthreeApi} from "rgthree/common/rgthree_api.js";
+import {getWidgetConfig, mergeIfValid, setWidgetConfig} from "./utils_deprecated_comfyui.js";
 
 const CONFIG_REROUTE = rgthreeConfig?.["nodes"]?.["reroute"] || {};
 
@@ -691,6 +687,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
               outputWidget = null;
               // For primitive nodes, which look at the widget to dsplay themselves.
               if (output?.widget) {
+                rgthreeApi.print("PRIMITIVE_REROUTE");
                 try {
                   const config = getWidgetConfig(output);
                   if (!outputWidgetConfig && config) {
@@ -702,7 +699,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                       );
                     }
                     const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
-                    if (merged.customConfig) {
+                    if (merged?.customConfig) {
                       outputWidgetConfig = merged.customConfig;
                     }
                   }
@@ -747,11 +744,12 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         // For primitive nodes, which look at the widget to dsplay themselves; we get by with just
         // an object with 'name'.
         if (outputWidgetConfig && outputWidget && outputType) {
+          rgthreeApi.print("PRIMITIVE_REROUTE");
           node.inputs[0]!.widget = {name: "value"} as any;
           setWidgetConfig(
             node.inputs[0],
             [outputType ?? displayType, outputWidgetConfig],
-            outputWidget,
+            // outputWidget, // This never existed?
           );
         } else {
           setWidgetConfig(node.inputs[0], null);

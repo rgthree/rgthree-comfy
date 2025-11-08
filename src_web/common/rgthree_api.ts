@@ -197,6 +197,13 @@ class RgthreeApi {
     options.cache = options.cache || "no-cache";
     return fetch(url, options);
   }
+
+  /**
+   * A way to log to the terminal from JS.
+   */
+  print(messageType: string) {
+    this.fetchApi(`/print?type=${messageType}`, {})
+  }
 }
 
 export const rgthreeApi = new RgthreeApi();

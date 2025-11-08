@@ -1,6 +1,5 @@
 var _a, _b;
 import { app } from "../../scripts/app.js";
-import { getWidgetConfig, mergeIfValid, setWidgetConfig, } from "../../extensions/core/widgetInputs.js";
 import { rgthreeConfig } from "../../rgthree/config.js";
 import { rgthree } from "./rgthree.js";
 import { IoDirection, LAYOUT_CLOCKWISE, LAYOUT_LABEL_OPPOSITES, LAYOUT_LABEL_TO_DATA, addConnectionLayoutSupport, addMenuItem, getSlotLinks, isValidConnection, setConnectionsLayout, waitForCanvas, } from "./utils.js";
@@ -8,6 +7,8 @@ import { SERVICE as KEY_EVENT_SERVICE } from "./services/key_events_services.js"
 import { wait } from "../../rgthree/common/shared_utils.js";
 import { RgthreeBaseVirtualNode } from "./base_node.js";
 import { NodeTypesString } from "./constants.js";
+import { rgthreeApi } from "../../rgthree/common/rgthree_api.js";
+import { getWidgetConfig, mergeIfValid, setWidgetConfig } from "./utils_deprecated_comfyui.js";
 const CONFIG_REROUTE = ((_a = rgthreeConfig === null || rgthreeConfig === void 0 ? void 0 : rgthreeConfig["nodes"]) === null || _a === void 0 ? void 0 : _a["reroute"]) || {};
 const CONFIG_FAST_REROUTE = CONFIG_REROUTE["fast_reroute"];
 const CONFIG_FAST_REROUTE_ENABLED = (_b = CONFIG_FAST_REROUTE["enabled"]) !== null && _b !== void 0 ? _b : false;
@@ -458,6 +459,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                             outputWidgetConfig = null;
                             outputWidget = null;
                             if (output === null || output === void 0 ? void 0 : output.widget) {
+                                rgthreeApi.print("PRIMITIVE_REROUTE");
                                 try {
                                     const config = getWidgetConfig(output);
                                     if (!outputWidgetConfig && config) {
@@ -467,7 +469,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                                             outputWidget = (_f = outputNode.widgets) === null || _f === void 0 ? void 0 : _f.find((w) => { var _a; return w.name === ((_a = output === null || output === void 0 ? void 0 : output.widget) === null || _a === void 0 ? void 0 : _a.name); });
                                         }
                                         const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
-                                        if (merged.customConfig) {
+                                        if (merged === null || merged === void 0 ? void 0 : merged.customConfig) {
                                             outputWidgetConfig = merged.customConfig;
                                         }
                                     }
@@ -501,8 +503,9 @@ class RerouteNode extends RgthreeBaseVirtualNode {
             }
             try {
                 if (outputWidgetConfig && outputWidget && outputType) {
+                    rgthreeApi.print("PRIMITIVE_REROUTE");
                     node.inputs[0].widget = { name: "value" };
-                    setWidgetConfig(node.inputs[0], [outputType !== null && outputType !== void 0 ? outputType : displayType, outputWidgetConfig], outputWidget);
+                    setWidgetConfig(node.inputs[0], [outputType !== null && outputType !== void 0 ? outputType : displayType, outputWidgetConfig]);
                 }
                 else {
                     setWidgetConfig(node.inputs[0], null);
