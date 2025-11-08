@@ -1,19 +1,13 @@
 /**
- * ComfyUI started deprecating the use of their legacy JavaScript files. These are ports/shims since
- * we relied on them at one point.
+ * [🤮] ComfyUI started deprecating the use of their legacy JavaScript files. These are ports/shims
+ * since we relied on them at one point.
  *
  * TODO: Should probably remove these all together at some point.
  */
 
 import {app} from "scripts/app.js";
 
-import type {
-  INodeInputSlot,
-  INodeOutputSlot,
-  InputSpec,
-  IWidgetLocator,
-  LGraphNode,
-} from "@comfyorg/frontend";
+import type {INodeInputSlot, INodeOutputSlot, InputSpec, LGraphNode} from "@comfyorg/frontend";
 
 /** Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/extensions/core/widgetInputs.ts#L462 */
 interface PrimitiveNode extends LGraphNode {
@@ -31,10 +25,12 @@ function isPrimitiveNode(node: LGraphNode): node is PrimitiveNode {
  * are not accessible publicly, so we need to look at a slot.widget's symbols and check to see if it
  * matches rather than access it directly. Cool...
  */
-function getWidgetGetConfigSymbols(widget?: IWidgetLocator): {
+function getWidgetGetConfigSymbols(slot: INodeOutputSlot | INodeInputSlot): {
   CONFIG?: symbol;
   GET_CONFIG?: symbol;
 } {
+  const widget = slot?.widget;
+  if (!widget) return {};
   const syms = Object.getOwnPropertySymbols(widget || {});
   for (const sym of syms) {
     const symVal = widget![sym];
@@ -55,9 +51,9 @@ function getWidgetGetConfigSymbols(widget?: IWidgetLocator): {
 /**
  * Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/extensions/core/widgetInputs.ts
  */
-export function getWidgetConfig(slot: INodeInputSlot | INodeOutputSlot): InputSpec {
+export function getWidgetConfig(slot: INodeOutputSlot | INodeInputSlot): InputSpec {
+  const configSyms = getWidgetGetConfigSymbols(slot);
   const widget = slot.widget || ({} as any);
-  const configSyms = getWidgetGetConfigSymbols(widget);
   return (
     (configSyms.CONFIG && widget[configSyms.CONFIG]) ??
     (configSyms.GET_CONFIG && widget[configSyms.GET_CONFIG]?.()) ?? ["*", {}]
@@ -71,13 +67,13 @@ export function getWidgetConfig(slot: INodeInputSlot | INodeOutputSlot): InputSp
  * Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/extensions/core/widgetInputs.ts
  */
 export function setWidgetConfig(
-  slot: INodeInputSlot | INodeOutputSlot | undefined,
+  slot: INodeOutputSlot | INodeInputSlot | undefined,
   config: InputSpec,
 ) {
   if (!slot?.widget) return;
   if (config) {
+    const configSyms = getWidgetGetConfigSymbols(slot);
     const widget = slot.widget || ({} as any);
-    const configSyms = getWidgetGetConfigSymbols(widget);
     if (configSyms.GET_CONFIG) {
       widget[configSyms.GET_CONFIG] = () => config;
     } else if (configSyms.CONFIG) {
@@ -94,7 +90,7 @@ export function setWidgetConfig(
   }
 
   if ("link" in slot) {
-    const link = app.graph.links[slot.link ?? -1];
+    const link = app.graph.links[(slot as INodeInputSlot)?.link ?? -1];
     if (link) {
       const originNode = app.graph.getNodeById(link.origin_id);
       if (originNode && isPrimitiveNode(originNode)) {

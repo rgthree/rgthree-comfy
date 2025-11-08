@@ -26,7 +26,7 @@ declare module "@comfyorg/frontend" {
 
   interface LGraphNode {
     // @rgthree: rgthree-comfy added this before comfyui did and it was a bit more flexible.
-    removeWidget(widget: IBaseWidget|IWidget|number|undefined): void;
+    removeWidget(widget: IBaseWidget | IWidget | number | undefined): void;
 
     // @rgthree (Fix): Implementation allows a falsy value to be returned and it will suppress the
     // menu all together.
@@ -41,6 +41,72 @@ declare module "@comfyorg/frontend" {
     //   canvas: LGraphCanvas,
     //   options: (IContextMenuValue<unknown> | null)[],
     // ): (IContextMenuValue<unknown> | null)[] | void;
+
+    /**
+     * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+     *
+     * Callback invoked when the node is dragged over from an external source, i.e.
+     * a file or another HTML element.
+     * @param e The drag event
+     * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+     */
+    onDragOver?(e: DragEvent): boolean;
+
+    /**
+     * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+     *
+     * Callback invoked when the node is dropped from an external source, i.e.
+     * a file or another HTML element.
+     * @param e The drag event
+     * @returns {boolean} True if the drag event should be handled by this node, false otherwise
+     */
+    onDragDrop?(e: DragEvent): Promise<boolean> | boolean;
+
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    onExecuted?(output: any): void;
+
+    /**
+     * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+     *
+     * Index of the currently selected image on a multi-image node such as Preview Image
+     */
+    imageIndex?: number | null;
+
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    overIndex?: number | null;
+
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    imgs?: HTMLImageElement[];
+
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    refreshComboInNode?(defs: Record<string, ComfyNodeDef>);
+
+    /**
+     * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+     *
+     * widgets_values is set to LGraphNode by `LGraphNode.configure`, but it is not
+     * used by litegraph internally. We should remove the dependency on it later.
+     */
+    widgets_values?: unknown[];
+  }
+
+  /**
+   * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+   *
+   * Only used by the Primitive node. Primitive node is using the widget property
+   * to store/access the widget config.
+   * We should remove this hacky solution once we have a proper solution.
+   *
+   * @rgthree - Changed this to add `widget?: IWidgetLocator` to INodeOutputSlot (which matches
+   *     INodeInputSlot) and then `[key: symbol]: unknown` to IWidgetLocator as that's how it's
+   *     used for CONFIG and GET_CONFIG symbols.
+   */
+  interface INodeOutputSlot {
+    widget?: IWidgetLocator; //{name: string; [key: symbol]: unknown};
+  }
+  // @rgthree - See above.
+  interface IWidgetLocator {
+    [key: symbol]: unknown;
   }
 
   interface LGraphGroup {
@@ -73,8 +139,9 @@ declare module "@comfyorg/frontend" {
   }
 
   interface LGraphNodeConstructor {
-    // @rgthree (Fix): Fixes ComfyUI-Frontend which marks this as required, even through even though
-    // elsewhere it defines it as optional (like for the actual for LGraphNode).
+    // @rgthree (Fix): Fixes ComfyUI-Frontend which marks this as required, even though elsewhere it
+    // defines it as optional (like for the actual for LGraphNode). Our virtual nodes do not have
+    // a comfyClass since there's nothing to tie it back to.
     comfyClass?: string;
 
     // @rgthree: reference the original nodeType data as sometimes extensions clobber it.
@@ -89,6 +156,25 @@ declare module "@/lib/litegraph/src/types/widgets" {
 
     // @rgthree: A status we put on some nodes so we can draw things around it.
     rgthree_lastValue?: any;
+
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    onRemove?(): void;
+    /** Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts */
+    serializeValue?(node: LGraphNode, index: number): Promise<unknown> | unknown;
+  }
+
+  interface IWidgetOptions {
+    /**
+     * Copied from https://github.com/Comfy-Org/ComfyUI_frontend/blob/ba355b543d0b753365c4e2b40ec376e186727c8c/src/types/litegraph-augmentation.d.ts
+     *
+     * Controls whether the widget's value is included in the API workflow/prompt.
+     * - If false, the value will be excluded from the API workflow but still serialized as part of the graph state
+     * - If true or undefined, the value will be included in both the API workflow and graph state     *
+     * @default true
+     * @use {@link IBaseWidget.serialize} if you don't want the widget value to be included in both
+     * the API workflow and graph state.
+     */
+    serialize?: boolean;
   }
 }
 

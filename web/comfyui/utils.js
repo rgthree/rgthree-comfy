@@ -513,34 +513,38 @@ export function getOriginNodeByLink(linkId) {
     return node;
 }
 export function getLinkById(linkId) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c;
     if (linkId == null)
         return null;
     let link = (_a = app.graph.links[linkId]) !== null && _a !== void 0 ? _a : null;
     link = (_c = link !== null && link !== void 0 ? link : (_b = app.canvas.getCurrentGraph()) === null || _b === void 0 ? void 0 : _b.links[linkId]) !== null && _c !== void 0 ? _c : null;
-    const subgraphs = (_d = app.graph.rootGraph.subgraphs) === null || _d === void 0 ? void 0 : _d.values();
-    if (subgraphs) {
-        let subgraph;
-        while (!link && (subgraph = subgraphs.next().value)) {
-            link = (_e = subgraph === null || subgraph === void 0 ? void 0 : subgraph.links[linkId]) !== null && _e !== void 0 ? _e : null;
-        }
-    }
-    return link;
+    return link || findSomethingInAllSubgraphs((subgraph) => { var _a; return (_a = subgraph === null || subgraph === void 0 ? void 0 : subgraph.links[linkId]) !== null && _a !== void 0 ? _a : null; });
 }
 export function getNodeById(id) {
-    var _a, _b, _c, _d;
+    var _a, _b;
     if (id == null)
         return null;
     let node = app.graph.getNodeById(id);
     node = (_b = node !== null && node !== void 0 ? node : (_a = app.canvas.getCurrentGraph()) === null || _a === void 0 ? void 0 : _a.getNodeById(id)) !== null && _b !== void 0 ? _b : null;
-    const subgraphs = (_c = app.graph.rootGraph.subgraphs) === null || _c === void 0 ? void 0 : _c.values();
-    if (subgraphs) {
-        let subgraph;
-        while (!node && (subgraph = subgraphs.next().value)) {
-            node = (_d = subgraph === null || subgraph === void 0 ? void 0 : subgraph.getNodeById(id)) !== null && _d !== void 0 ? _d : null;
-        }
-    }
+    return node || findSomethingInAllSubgraphs((subgraph) => { var _a; return (_a = subgraph === null || subgraph === void 0 ? void 0 : subgraph.getNodeById(id)) !== null && _a !== void 0 ? _a : null; });
+}
+export function findFromNodeForSubgraph(subgraphId) {
+    var _a;
+    const node = (_a = findSomethingInAllSubgraphs((subgraph) => subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .find((node) => node.subgraph.id === subgraphId))) !== null && _a !== void 0 ? _a : null;
     return node;
+}
+function findSomethingInAllSubgraphs(fn) {
+    var _a, _b;
+    const rootGraph = (_a = app.rootGraph) !== null && _a !== void 0 ? _a : app.graph.rootGraph;
+    const subgraphs = [rootGraph, ...(_b = rootGraph.subgraphs) === null || _b === void 0 ? void 0 : _b.values()];
+    for (const subgraph of subgraphs) {
+        const thing = fn(subgraph);
+        if (thing)
+            return thing;
+    }
+    return null;
 }
 export function applyMixins(original, constructors) {
     constructors.forEach((baseCtor) => {

@@ -132,7 +132,7 @@ def build(without_tests = True, fix = False):
 
     filedata, n = re.subn(r'(\s*from [\'"](?!.*[.]js[\'"]).*?)([\'"];)', '\\1.js\\2', filedata)
     if n > 0:
-      filename = os.path.basename(file)
+      filename = file.split('rgthree-comfy')[1]
       log_step_info(
         f'{filename} has {n} import{"s" if n > 1 else ""} that do not end in ".js"', 'warn')
     with open(file, 'w', encoding="utf-8") as f:

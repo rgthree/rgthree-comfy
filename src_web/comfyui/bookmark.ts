@@ -14,6 +14,7 @@ import {SERVICE as BOOKMARKS_SERVICE} from "./services/bookmarks_services.js";
 import {NodeTypesString} from "./constants.js";
 import {getClosestOrSelf, query} from "rgthree/common/utils_dom.js";
 import {wait} from "rgthree/common/shared_utils.js";
+import {findFromNodeForSubgraph} from "./utils.js";
 
 /**
  * A bookmark node. Can be placed anywhere in the workflow, and given a shortcut key that will
@@ -131,7 +132,14 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   async canvasToBookmark() {
     const canvas = app.canvas as LGraphCanvas;
     if (this.graph !== app.canvas.getCurrentGraph()) {
-      canvas.openSubgraph(this.graph as Subgraph);
+      const subgraph = this.graph as Subgraph;
+      // At some point, ComfyUI made a second param for openSubgraph which appears to be the node
+      // that id double-clicked on to open the subgraph. We don't have that in the bookmark, so
+      // we'll look for it. Note, that when opening the root graph, this will be null (since there's
+      // no such node). It seems to still navigate fine, though there's a console error about
+      // proxyWidgets or something..
+      const fromNode = findFromNodeForSubgraph(subgraph.id);
+      canvas.openSubgraph(subgraph, fromNode!);
       await wait(16);
     }
     // ComfyUI seemed to break us again, but couldn't repro. No reason to not check, I guess.

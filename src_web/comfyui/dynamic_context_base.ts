@@ -232,9 +232,10 @@ export class DynamicContextNodeBase extends BaseContextNode {
     wait(500).then(() => {
       LiteGraph.slot_types_default_out["RGTHREE_DYNAMIC_CONTEXT"] =
         LiteGraph.slot_types_default_out["RGTHREE_DYNAMIC_CONTEXT"] || [];
-      LiteGraph.slot_types_default_out["RGTHREE_DYNAMIC_CONTEXT"].push(
-        (comfyClass as LGraphNodeConstructor).comfyClass,
-      );
+      const comfyClassStr = (comfyClass as LGraphNodeConstructor).comfyClass;
+      if (comfyClassStr) {
+        LiteGraph.slot_types_default_out["RGTHREE_DYNAMIC_CONTEXT"].push(comfyClassStr);
+      }
     });
   }
 }

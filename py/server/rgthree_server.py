@@ -33,7 +33,7 @@ async def api_print(request):
   if message_type == 'PRIMITIVE_REROUTE':
     log(
       "You are using rgthree-comfy reroutes with a ComfyUI Primitive node. Unfortunately, ComfyUI "
-      "has removed support for this. While rghtree-comfy has a best-effort support fallback for "
+      "has removed support for this. While rgthree-comfy has a best-effort support fallback for "
       "now, it may no longer work as expected and is strongly recommended you either replace the "
       "Reroute node using ComfyUI's reroute node, or refrain from using the Primitive node "
       "(you can always use the rgthree-comfy \"Power Primitive\" for non-combo primitives).",

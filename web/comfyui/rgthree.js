@@ -256,13 +256,14 @@ class Rgthree extends EventTarget {
             rgthree.lastCanvasMouseEvent = e;
         };
         const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
-        LGraphCanvas.prototype.copyToClipboard = function (nodes) {
+        LGraphCanvas.prototype.copyToClipboard = function (items) {
             rgthree.canvasCurrentlyCopyingToClipboard = true;
             rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes =
-                Object.values(nodes || this.selected_nodes || []).length > 1;
-            copyToClipboard.apply(this, [...arguments]);
+                Object.values(items || this.selected_nodes || []).length > 1;
+            const value = copyToClipboard.apply(this, [...arguments]);
             rgthree.canvasCurrentlyCopyingToClipboard = false;
             rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+            return value;
         };
         const pasteFromClipboard = LGraphCanvas.prototype.pasteFromClipboard;
         LGraphCanvas.prototype.pasteFromClipboard = function (...args) {
@@ -441,7 +442,7 @@ class Rgthree extends EventTarget {
     }
     async queueOutputNodes(nodes) {
         var _a;
-        const nodeIds = nodes.map(n => n.id);
+        const nodeIds = nodes.map((n) => n.id);
         try {
             this.queueNodeIds = nodeIds;
             await app.queuePrompt(0);

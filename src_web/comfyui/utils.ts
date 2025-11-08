@@ -19,6 +19,8 @@ import type {
   ComfyApp,
   LGraphGroup,
   NodeId,
+  Subgraph,
+  SubgraphNode,
 } from "@comfyorg/frontend";
 import type {ComfyNodeDef} from "typings/comfy.js";
 import type {Constructor} from "typings/rgthree";
@@ -787,14 +789,7 @@ export function getLinkById(linkId?: number | null) {
   if (linkId == null) return null;
   let link: LLink | null = app.graph.links[linkId] ?? null;
   link = link ?? app.canvas.getCurrentGraph()?.links[linkId] ?? null;
-  const subgraphs = app.graph.rootGraph.subgraphs?.values();
-  if (subgraphs) {
-    let subgraph;
-    while (!link && (subgraph = subgraphs.next().value)) {
-      link = subgraph?.links[linkId] ?? null;
-    }
-  }
-  return link;
+  return link || findSomethingInAllSubgraphs((subgraph) => subgraph?.links[linkId] ?? null);
 }
 
 /**
@@ -804,14 +799,40 @@ export function getNodeById(id: NodeId) {
   if (id == null) return null;
   let node = app.graph.getNodeById(id);
   node = node ?? app.canvas.getCurrentGraph()?.getNodeById(id) ?? null;
-  const subgraphs = app.graph.rootGraph.subgraphs?.values();
-  if (subgraphs) {
-    let subgraph;
-    while (!node && (subgraph = subgraphs.next().value)) {
-      node = subgraph?.getNodeById(id) ?? null;
-    }
-  }
+  return node || findSomethingInAllSubgraphs((subgraph) => subgraph?.getNodeById(id) ?? null);
+}
+
+/**
+ * [🤮] At some point ComfyUI added a second param for `openSubgraph` which is the node representing
+ * the subgraph in the UI that a user would double click (at least, from what I can tell).
+ * Unfortunately, we sometimes want to open a subgraph without knowing what that node is (like, from
+ * a bookmark).
+ *
+ * While that doesn't break right now, it does throw an error. As a best-attempt to fix their
+ * no longer allowing a subgraph to just open, we can search all nodes for subgraphs for the one
+ * that represents the subgraph itself.
+ */
+export function findFromNodeForSubgraph(subgraphId: string): SubgraphNode | null {
+  const node =
+    findSomethingInAllSubgraphs((subgraph) =>
+      subgraph.nodes
+        .filter((node) => node.isSubgraphNode())
+        .find((node) => node.subgraph.id === subgraphId),
+    ) ?? null;
   return node;
+}
+
+/**
+ * Finds something across all the graphs and subgraphs.
+ */
+function findSomethingInAllSubgraphs<T>(fn: (subgraph: Subgraph) => T | null): T | null {
+  const rootGraph = app.rootGraph ?? app.graph.rootGraph;
+  const subgraphs = [rootGraph, ...rootGraph.subgraphs?.values()] as Subgraph[];
+  for (const subgraph of subgraphs) {
+    const thing = fn(subgraph);
+    if (thing) return thing;
+  }
+  return null;
 }
 
 export function applyMixins(original: Constructor<TLGraphNode>, constructors: any[]) {

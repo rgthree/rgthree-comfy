@@ -9,9 +9,10 @@ import type {
   CanvasPointerExtensions,
   NodeId,
   ISerialisedNode,
+  Positionable,
+  ComfyApp,
 } from "@comfyorg/frontend";
 import type {ComfyApiFormat, ComfyApiPrompt} from "typings/comfy.js";
-import type {ComfyApp} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";
@@ -407,18 +408,19 @@ class Rgthree extends EventTarget {
       rgthree.lastCanvasMouseEvent = e as CanvasMouseEvent;
     };
 
-    // [🤮] Copying to clipboard clones nodes and then manipulats the linking data manually which
+    // [🤮] Copying to clipboard clones nodes and then manipulates the linking data manually which
     // does not allow a node to handle connections. This harms nodes that manually handle inputs,
     // like our any-input nodes that may start with one input, and manually add new ones when one is
     // attached.
     const copyToClipboard = LGraphCanvas.prototype.copyToClipboard;
-    LGraphCanvas.prototype.copyToClipboard = function (nodes: LGraphNode[]) {
+    LGraphCanvas.prototype.copyToClipboard = function (items?: Iterable<Positionable>) {
       rgthree.canvasCurrentlyCopyingToClipboard = true;
       rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes =
-        Object.values(nodes || this.selected_nodes || []).length > 1;
-      copyToClipboard.apply(this, [...arguments] as any);
+        Object.values(items || this.selected_nodes || []).length > 1;
+      const value = copyToClipboard.apply(this, [...arguments] as any);
       rgthree.canvasCurrentlyCopyingToClipboard = false;
       rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes = false;
+      return value;
     };
 
     // [🤮] Pasting from clipboard.
@@ -664,7 +666,7 @@ class Rgthree extends EventTarget {
     // our custom logic as ComfyUI-Inspire-Pack would cause it not to work.
     // app.canvas.selectItems(nodes);
     // app.extensionManager.command.execute('Comfy.QueueSelectedOutputNodes');
-    const nodeIds = nodes.map(n => n.id);
+    const nodeIds = nodes.map((n) => n.id);
     try {
       this.queueNodeIds = nodeIds;
       await app.queuePrompt(0);
@@ -722,7 +724,7 @@ class Rgthree extends EventTarget {
 
     // Keep state for when the app is in the middle of loading from an api JSON file.
     const loadApiJson = app.loadApiJson;
-    app.loadApiJson = async function(apiData: any, fileName: string) {
+    app.loadApiJson = async function (apiData: any, fileName: string) {
       rgthree.loadingApiJson = apiData as ComfyApiFormat;
       try {
         loadApiJson.apply(app, [...arguments] as any);

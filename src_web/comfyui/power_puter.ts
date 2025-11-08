@@ -1,7 +1,6 @@
 import type {
   LGraphNode,
   IWidget,
-  LGraphNodeConstructor,
   Vector2,
   CanvasMouseEvent,
 } from "@comfyorg/frontend";

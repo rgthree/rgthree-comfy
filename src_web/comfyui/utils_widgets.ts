@@ -84,6 +84,10 @@ type NotArray<T> = T extends Array<any> ? never : T;
  * A base widget that handles mouse events more properly.
  */
 export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implements ICustomWidget {
+  // Needed here b/c it was added to ComfyUI's types for IBaseWidget. No idea what they use it for,
+  // or why it's only boolean.
+  [symbol: symbol]: boolean;
+
   // We don't want our value to be an array as a widget will be serialized as an "input" for the API
   // which uses an array value to represent a link. To keep things simpler, we'll avoid using an
   // array at all.
@@ -254,7 +258,11 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
 
   constructor(
     name: string,
-    mouseClickCallback: (event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) => boolean | void,
+    mouseClickCallback: (
+      event: CanvasPointerEvent,
+      pos: Vector2,
+      node: LGraphNode,
+    ) => boolean | void,
     label?: string,
   ) {
     super(name);

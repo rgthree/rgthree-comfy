@@ -2,8 +2,11 @@ import { app } from "../../scripts/app.js";
 function isPrimitiveNode(node) {
     return node.type === "PrimitiveNode";
 }
-function getWidgetGetConfigSymbols(widget) {
+function getWidgetGetConfigSymbols(slot) {
     var _a;
+    const widget = slot === null || slot === void 0 ? void 0 : slot.widget;
+    if (!widget)
+        return {};
     const syms = Object.getOwnPropertySymbols(widget || {});
     for (const sym of syms) {
         const symVal = widget[sym];
@@ -20,8 +23,8 @@ function getWidgetGetConfigSymbols(widget) {
 }
 export function getWidgetConfig(slot) {
     var _a, _b, _c;
+    const configSyms = getWidgetGetConfigSymbols(slot);
     const widget = slot.widget || {};
-    const configSyms = getWidgetGetConfigSymbols(widget);
     return ((_c = (_a = (configSyms.CONFIG && widget[configSyms.CONFIG])) !== null && _a !== void 0 ? _a : (configSyms.GET_CONFIG && ((_b = widget[configSyms.GET_CONFIG]) === null || _b === void 0 ? void 0 : _b.call(widget)))) !== null && _c !== void 0 ? _c : ["*", {}]);
 }
 export function setWidgetConfig(slot, config) {
@@ -29,8 +32,8 @@ export function setWidgetConfig(slot, config) {
     if (!(slot === null || slot === void 0 ? void 0 : slot.widget))
         return;
     if (config) {
+        const configSyms = getWidgetGetConfigSymbols(slot);
         const widget = slot.widget || {};
-        const configSyms = getWidgetGetConfigSymbols(widget);
         if (configSyms.GET_CONFIG) {
             widget[configSyms.GET_CONFIG] = () => config;
         }
@@ -47,7 +50,7 @@ export function setWidgetConfig(slot, config) {
         delete slot.widget;
     }
     if ("link" in slot) {
-        const link = app.graph.links[(_a = slot.link) !== null && _a !== void 0 ? _a : -1];
+        const link = app.graph.links[(_a = slot === null || slot === void 0 ? void 0 : slot.link) !== null && _a !== void 0 ? _a : -1];
         if (link) {
             const originNode = app.graph.getNodeById(link.origin_id);
             if (originNode && isPrimitiveNode(originNode)) {
