@@ -23,6 +23,9 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.___collapsed_width = 0;
         this.isVirtualNode = true;
         this.serialize_widgets = true;
+        this.longPressTimer = null;
+        this.longPressTriggered = false;
+        this.pendingShortcut = false;
         const nextShortcutChar = BOOKMARKS_SERVICE.getNextShortcut();
         this.addWidget("text", "shortcut_key", nextShortcutChar, (value, ...args) => {
             value = value.trim()[0] || "1";
@@ -36,6 +39,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
             precision: 2,
         });
         this.keypressBound = this.onKeypress.bind(this);
+        this.keyupBound = this.onKeyup.bind(this);
         this.title = "🔖";
         this.onConstructed();
     }
@@ -45,9 +49,18 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     onAdded(graph) {
         KEY_EVENT_SERVICE.addEventListener("keydown", this.keypressBound);
+        KEY_EVENT_SERVICE.addEventListener("keyup", this.keyupBound);
     }
     onRemoved() {
         KEY_EVENT_SERVICE.removeEventListener("keydown", this.keypressBound);
+        KEY_EVENT_SERVICE.removeEventListener("keyup", this.keyupBound);
+        this.clearLongPressTimer();
+    }
+    clearLongPressTimer() {
+        if (this.longPressTimer) {
+            clearTimeout(this.longPressTimer);
+            this.longPressTimer = null;
+        }
     }
     onKeypress(event) {
         const originalEvent = event.detail.originalEvent;
@@ -56,9 +69,38 @@ export class Bookmark extends RgthreeBaseVirtualNode {
             return;
         }
         if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0].value, true)) {
-            this.canvasToBookmark();
+            this.pendingShortcut = true;
+            this.longPressTriggered = false;
             originalEvent.preventDefault();
             originalEvent.stopPropagation();
+            if (!this.longPressTimer) {
+                this.longPressTimer = setTimeout(() => {
+                    this.longPressTimer = null;
+                    if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0].value, true)
+                        && this.graph === app.canvas.getCurrentGraph()) {
+                        this.setBookmarkFromCanvas();
+                        this.longPressTriggered = true;
+                        this.pendingShortcut = false;
+                    }
+                }, 1000);
+            }
+        }
+    }
+    onKeyup(event) {
+        const originalEvent = event.detail.originalEvent;
+        const target = originalEvent.target;
+        if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
+            return;
+        }
+        if (this.pendingShortcut) {
+            this.clearLongPressTimer();
+            if (!this.longPressTriggered) {
+                this.canvasToBookmark();
+                originalEvent.preventDefault();
+                originalEvent.stopPropagation();
+            }
+            this.pendingShortcut = false;
+            this.longPressTriggered = false;
         }
     }
     onMouseDown(event, pos, graphCanvas) {
@@ -87,6 +129,23 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         }
         if (((_b = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) != null) {
             canvas.ds.scale = Number(this.widgets[1].value || 1);
+        }
+        canvas.setDirty(true, true);
+    }
+    setBookmarkFromCanvas() {
+        var _a, _b;
+        const canvas = app.canvas;
+        if (this.graph !== canvas.getCurrentGraph())
+            return;
+        const offset = (_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.offset;
+        if (offset) {
+            this.pos[0] = -offset[0] + 16;
+            this.pos[1] = -offset[1] + 40;
+        }
+        if (((_b = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _b === void 0 ? void 0 : _b.scale) != null) {
+            if (this.widgets && this.widgets[1]) {
+                this.widgets[1].value = Number(canvas.ds.scale || 1);
+            }
         }
         canvas.setDirty(true, true);
     }
