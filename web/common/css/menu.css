@@ -43,21 +43,21 @@
   color: var(--content-fg);
   display: flex;
   flex-direction: column;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 .rgthree-top-menu * {
   box-sizing: inherit;
 }
-.rgthree-top-menu menu {
+.rgthree-top-menu > li:not(#fakeid) {
   list-style: none;
   padding: 0;
   margin: 0;
+  position: relative;
+  z-index: 2;
 }
-.rgthree-top-menu menu > li:not(#fakeid) {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.rgthree-top-menu menu > li:not(#fakeid) > button {
+.rgthree-top-menu > li:not(#fakeid) > button {
   cursor: pointer;
   padding: 8px 12px 8px 8px;
   width: 100%;
@@ -67,25 +67,37 @@
   align-items: center;
   justify-content: start;
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button:hover {
+.rgthree-top-menu > li:not(#fakeid) > button:hover {
   background-color: var(--comfy-input-bg);
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button svg {
+.rgthree-top-menu > li:not(#fakeid) > button svg {
   height: 16px;
   width: auto;
   margin-inline-end: 0.6em;
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button svg.github-star {
+.rgthree-top-menu > li:not(#fakeid) > button svg.github-star {
   fill: rgb(227, 179, 65);
 }
-.rgthree-top-menu menu > li:not(#fakeid).rgthree-message {
+.rgthree-top-menu > li:not(#fakeid).rgthree-message {
   min-height: 32px;
 }
-.rgthree-top-menu menu > li:not(#fakeid).rgthree-message > span {
+.rgthree-top-menu > li:not(#fakeid).rgthree-message > span {
   padding: 8px 12px;
   display: block;
   width: 100%;
   text-align: center;
   font-style: italic;
   font-size: 12px;
+}
+.rgthree-top-menu.-modal::after {
+  content: "";
+  display: block;
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.0666666667);
+}
+
+body.rgthree-modal-menu-open > *:not(.rgthree-menu):not(.rgthree-top-messages-container) {
+  filter: blur(2px);
 }

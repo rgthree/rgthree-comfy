@@ -7,8 +7,10 @@
   color: inherit;
   padding: 0;
   margin: 0;
-
 }
+
+$borderRadius:  0.33rem;
+
 :not(#fakeid) .rgthree-button {
   --padding-top: 7px;
   --padding-bottom: 9px;
@@ -16,7 +18,7 @@
   position: relative;
   cursor: pointer;
   border: 0;
-  border-radius: 0.25rem;
+  border-radius: $borderRadius;
   background: rgba(0, 0, 0, 0.5);
   color: white;
   font-family: system-ui, sans-serif;
@@ -39,7 +41,7 @@
     content: "";
     display: block;
     position: absolute;
-    border-radius: 0.25rem;
+    border-radius: $borderRadius;
     left: 0;
     top: 0;
     width: 100%;
@@ -102,5 +104,53 @@
   &[disabled]::before,
   &[disabled]::after {
     display: none;
+  }
+}
+
+:not(#fakeid) .rgthree-comfybar-top-button-group {
+  font-size: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+
+  .rgthree-comfybar-top-button {
+    margin: 0;
+    flex: 1 1;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 0;
+    background: var(--p-button-secondary-background);
+    color: var(--p-button-secondary-color);
+
+    &.-primary {
+      background: var(--p-button-primary-background);
+      color: var(--p-button-primary-color);
+    }
+
+    &::before,
+    &::after {
+      border-radius: 0;
+    }
+
+
+    svg {
+      fill: currentColor;
+      width: 28px;
+      height: 28px;
+    }
+  }
+
+  .rgthree-comfybar-top-button:first-of-type,
+  .rgthree-comfybar-top-button:first-of-type::before,
+  .rgthree-comfybar-top-button:first-of-type::after {
+    border-top-left-radius: 0.33rem;
+    border-bottom-left-radius: 0.33rem;
+
+  }
+  .rgthree-comfybar-top-button:last-of-type,
+  .rgthree-comfybar-top-button:last-of-type::before,
+  .rgthree-comfybar-top-button:last-of-type::after {
+    border-top-right-radius: 0.33rem;
+    border-bottom-right-radius: 0.33rem;
   }
 }

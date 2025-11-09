@@ -139,7 +139,7 @@
   position: relative;
   cursor: pointer;
   border: 0;
-  border-radius: 0.25rem;
+  border-radius: 0.33rem;
   background: rgba(0, 0, 0, 0.5);
   color: white;
   font-family: system-ui, sans-serif;
@@ -161,7 +161,7 @@
   content: "";
   display: block;
   position: absolute;
-  border-radius: 0.25rem;
+  border-radius: 0.33rem;
   left: 0;
   top: 0;
   width: 100%;
@@ -210,6 +210,46 @@
 }
 :not(#fakeid) .rgthree-button[disabled]::before, :not(#fakeid) .rgthree-button[disabled]::after {
   display: none;
+}
+
+:not(#fakeid) .rgthree-comfybar-top-button-group {
+  font-size: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button {
+  margin: 0;
+  flex: 1 1;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 0;
+  background: var(--p-button-secondary-background);
+  color: var(--p-button-secondary-color);
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button.-primary {
+  background: var(--p-button-primary-background);
+  color: var(--p-button-primary-color);
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::before, :not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::after {
+  border-radius: 0;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button svg {
+  fill: currentColor;
+  width: 28px;
+  height: 28px;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type::before,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type::after {
+  border-top-left-radius: 0.33rem;
+  border-bottom-left-radius: 0.33rem;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type::before,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type::after {
+  border-top-right-radius: 0.33rem;
+  border-bottom-right-radius: 0.33rem;
 }
 
 .rgthree-dialog {
@@ -381,21 +421,21 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   color: var(--content-fg);
   display: flex;
   flex-direction: column;
+  list-style: none;
+  padding: 0;
+  margin: 0;
 }
 .rgthree-top-menu * {
   box-sizing: inherit;
 }
-.rgthree-top-menu menu {
+.rgthree-top-menu > li:not(#fakeid) {
   list-style: none;
   padding: 0;
   margin: 0;
+  position: relative;
+  z-index: 2;
 }
-.rgthree-top-menu menu > li:not(#fakeid) {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.rgthree-top-menu menu > li:not(#fakeid) > button {
+.rgthree-top-menu > li:not(#fakeid) > button {
   cursor: pointer;
   padding: 8px 12px 8px 8px;
   width: 100%;
@@ -405,27 +445,39 @@ body.rgthree-dialog-open > *:not(.rgthree-dialog):not(.rgthree-top-messages-cont
   align-items: center;
   justify-content: start;
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button:hover {
+.rgthree-top-menu > li:not(#fakeid) > button:hover {
   background-color: var(--comfy-input-bg);
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button svg {
+.rgthree-top-menu > li:not(#fakeid) > button svg {
   height: 16px;
   width: auto;
   margin-inline-end: 0.6em;
 }
-.rgthree-top-menu menu > li:not(#fakeid) > button svg.github-star {
+.rgthree-top-menu > li:not(#fakeid) > button svg.github-star {
   fill: rgb(227, 179, 65);
 }
-.rgthree-top-menu menu > li:not(#fakeid).rgthree-message {
+.rgthree-top-menu > li:not(#fakeid).rgthree-message {
   min-height: 32px;
 }
-.rgthree-top-menu menu > li:not(#fakeid).rgthree-message > span {
+.rgthree-top-menu > li:not(#fakeid).rgthree-message > span {
   padding: 8px 12px;
   display: block;
   width: 100%;
   text-align: center;
   font-style: italic;
   font-size: 12px;
+}
+.rgthree-top-menu.-modal::after {
+  content: "";
+  display: block;
+  position: fixed;
+  z-index: 1;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.0666666667);
+}
+
+body.rgthree-modal-menu-open > *:not(.rgthree-menu):not(.rgthree-top-messages-container) {
+  filter: blur(2px);
 }
 
 .rgthree-dialog.-settings {

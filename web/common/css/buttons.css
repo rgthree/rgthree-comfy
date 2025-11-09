@@ -16,7 +16,7 @@
   position: relative;
   cursor: pointer;
   border: 0;
-  border-radius: 0.25rem;
+  border-radius: 0.33rem;
   background: rgba(0, 0, 0, 0.5);
   color: white;
   font-family: system-ui, sans-serif;
@@ -38,7 +38,7 @@
   content: "";
   display: block;
   position: absolute;
-  border-radius: 0.25rem;
+  border-radius: 0.33rem;
   left: 0;
   top: 0;
   width: 100%;
@@ -87,4 +87,44 @@
 }
 :not(#fakeid) .rgthree-button[disabled]::before, :not(#fakeid) .rgthree-button[disabled]::after {
   display: none;
+}
+
+:not(#fakeid) .rgthree-comfybar-top-button-group {
+  font-size: 0;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: stretch;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button {
+  margin: 0;
+  flex: 1 1;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 0;
+  background: var(--p-button-secondary-background);
+  color: var(--p-button-secondary-color);
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button.-primary {
+  background: var(--p-button-primary-background);
+  color: var(--p-button-primary-color);
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::before, :not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::after {
+  border-radius: 0;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button svg {
+  fill: currentColor;
+  width: 28px;
+  height: 28px;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type::before,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:first-of-type::after {
+  border-top-left-radius: 0.33rem;
+  border-bottom-left-radius: 0.33rem;
+}
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type::before,
+:not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button:last-of-type::after {
+  border-top-right-radius: 0.33rem;
+  border-bottom-right-radius: 0.33rem;
 }
