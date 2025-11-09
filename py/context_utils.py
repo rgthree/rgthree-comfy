@@ -30,6 +30,7 @@ _all_context_input_output_data = {
   "text_neg_l": ("text_neg_l", "STRING", "TEXT_NEG_L"),
   "mask": ("mask", "MASK", "MASK"),
   "control_net": ("control_net", "CONTROL_NET", "CONTROL_NET"),
+  "denoise": ("denoise", "FLOAT", "DENOISE"),
 }
 
 force_input_types = ["INT", "STRING", "FLOAT"]
