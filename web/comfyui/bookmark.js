@@ -39,6 +39,23 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.title = "🔖";
         this.onConstructed();
     }
+    clone() {
+        var _a, _b, _c, _d, _e, _f;
+        const cloned = super.clone();
+        try {
+            const existing = BOOKMARKS_SERVICE.getExistingShortcuts();
+            const current = (_e = (_d = (_c = (_b = (_a = cloned.widgets) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.value) === null || _c === void 0 ? void 0 : _c.toLowerCase) === null || _d === void 0 ? void 0 : _d.call(_c)) !== null && _e !== void 0 ? _e : "";
+            if (!current || existing.has(current)) {
+                const next = BOOKMARKS_SERVICE.getNextShortcut();
+                if ((_f = cloned.widgets) === null || _f === void 0 ? void 0 : _f[0]) {
+                    cloned.widgets[0].value = next;
+                }
+            }
+        }
+        catch (e) {
+        }
+        return cloned;
+    }
     get shortcutKey() {
         var _a, _b, _c;
         return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : "";

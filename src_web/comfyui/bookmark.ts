@@ -76,6 +76,26 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     this.onConstructed();
   }
 
+  /**
+   * Override clone for, at the least, deep-copying properties.
+   */
+  override clone() {
+    const cloned = super.clone()!;
+    try {
+      // If the cloned bookmark's shortcut is already in use, assign the next available one.
+      const existing = BOOKMARKS_SERVICE.getExistingShortcuts();
+      const current = (cloned.widgets?.[0]?.value as string)?.toLowerCase?.() ?? "";
+      if (!current || existing.has(current)) {
+        const next = BOOKMARKS_SERVICE.getNextShortcut();
+        if (cloned.widgets?.[0]) {
+          cloned.widgets[0].value = next;
+        }
+      }
+    } catch (e) {
+      // No-op: in case services are unavailable during clone in some contexts.
+    }
+    return cloned;
+  }
   // override computeSize(out?: Vector2 | undefined): Vector2 {
   //   super.computeSize(out);
   //   const minHeight = (this.widgets?.length || 0) * (LiteGraph.NODE_WIDGET_HEIGHT + 4) + 16;
@@ -85,6 +105,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   get shortcutKey(): string {
     return (this.widgets[0]?.value as string)?.toLocaleLowerCase() ?? "";
   }
+
 
   override onAdded(graph: LGraph): void {
     KEY_EVENT_SERVICE.addEventListener("keydown", this.keypressBound as EventListener);
