@@ -40,7 +40,7 @@ async def api_print(request):
       prefix="Reroute",
       color="YELLOW",
       id=message_type,
-      at_most_secs=20 # 5 minutes
+      at_most_secs=20
     )
   else:
     log("Unknown log type from api", prefix="rgthree-comfy",color ="YELLOW")
