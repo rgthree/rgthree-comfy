@@ -6,7 +6,7 @@ from ..log import log
 from server import PromptServer
 import folder_paths
 
-from ..utils import path_exists
+from ..utils import abspath, path_exists
 from .utils_server import get_param, is_param_falsy
 from .utils_info import delete_model_info, get_model_info, set_model_info_partial, get_file_info
 
@@ -159,8 +159,7 @@ async def api_get_models_info_img(request):
   file_param = get_param(request, 'file')
   file_path = folder_paths.get_full_path(model_type, file_param)
   if not path_exists(file_path):
-    file_path = os.path.abspath(file_path)
-
+    file_path = abspath(file_path)
   img_path = None
   for ext in ['jpg', 'png', 'jpeg']:
     try_path = f'{os.path.splitext(file_path)[0]}.{ext}'

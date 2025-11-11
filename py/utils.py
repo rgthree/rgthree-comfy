@@ -150,6 +150,12 @@ def remove_path(path):
     return True
   return False
 
+def abspath(file_path: str):
+  """Resolves the abspath of a file, resolving symlinks and user dirs."""
+  if not path_exists(file_path):
+    maybe_path = os.path.abspath(os.path.realpath(os.path.expanduser(file_path)))
+    file_path = maybe_path if path_exists(maybe_path) else file_path
+  return file_path
 
 class ByPassTypeTuple(tuple):
   """A special class that will return additional "AnyType" strings beyond defined values.

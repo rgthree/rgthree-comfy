@@ -9,7 +9,7 @@ import requests
 from server import PromptServer
 import folder_paths
 
-from ..utils import get_dict_value, load_json_file, file_exists, remove_path, save_json_file
+from ..utils import abspath, get_dict_value, load_json_file, file_exists, remove_path, save_json_file
 from ..utils_userdata import read_userdata_json, save_userdata_json, delete_userdata_file
 
 
@@ -414,8 +414,8 @@ def _read_file_metadata_from_header(file_path: str) -> dict:
 def get_folder_path(file: str, model_type) -> str | None:
   """Gets the file path ensuring it exists."""
   file_path = folder_paths.get_full_path(model_type, file)
-  if file_path and not file_exists(file_path):
-    file_path = os.path.abspath(file_path)
+  if not file_exists(file_path):
+    filepath = abspath(file_path)
   if not file_exists(file_path):
     file_path = None
   return file_path
