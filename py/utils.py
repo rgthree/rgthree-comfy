@@ -152,7 +152,7 @@ def remove_path(path):
 
 def abspath(file_path: str):
   """Resolves the abspath of a file, resolving symlinks and user dirs."""
-  if not path_exists(file_path):
+  if file_path and not path_exists(file_path):
     maybe_path = os.path.abspath(os.path.realpath(os.path.expanduser(file_path)))
     file_path = maybe_path if path_exists(maybe_path) else file_path
   return file_path

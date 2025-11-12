@@ -415,7 +415,7 @@ def get_folder_path(file: str, model_type) -> str | None:
   """Gets the file path ensuring it exists."""
   file_path = folder_paths.get_full_path(model_type, file)
   if not file_exists(file_path):
-    filepath = abspath(file_path)
+    file_path = abspath(file_path)
   if not file_exists(file_path):
     file_path = None
   return file_path
