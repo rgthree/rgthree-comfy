@@ -15,6 +15,8 @@ import re
 import time
 import operator as op
 import datetime
+import statistics
+import itertools
 
 from typing import Any, Callable, Iterable, Optional, Union
 from types import MappingProxyType
@@ -93,6 +95,22 @@ def batch(*args):
   return result
 
 
+def accumulate(iterable, *args, **kwargs):
+  """Wrap itertools.accumulate and return the same type as the input iterable."""
+  acc = itertools.accumulate(iterable, *args, **kwargs)
+  # If the user manages to get an exception using strings, then they deserve to receive it
+  if isinstance(iterable, (str, bytes, list, set, tuple)):
+      return type(iterable)(acc)
+
+  # If they pass a dict or bytearray or smth, then it's "best effort", and we need to make
+  # a copy incase it gets eaten during a failed attempt at type conversion.
+  result = list(acc)
+  try:
+    return type(iterable)(result)
+  except Exception:
+    return tuple(result)
+
+
 _BUILTIN_FN_PREFIX = '__rgthreefn.'
 
 
@@ -113,8 +131,16 @@ _BUILT_IN_FNS_LIST = [
   Function(name="ceil", call=math.ceil, args=(1, 1)),
   Function(name="floor", call=math.floor, args=(1, 1)),
   Function(name="sqrt", call=math.sqrt, args=(1, 1)),
-  Function(name="min", call=min, args=(2, None)),
-  Function(name="max", call=max, args=(2, None)),
+  # Core numeric/list helpers
+  Function(name="min", call=min, args=(1, None)),
+  Function(name="max", call=max, args=(1, None)),
+  Function(name="sum", call=sum, args=(1, 2)),
+  Function(name="abs", call=abs, args=(1, 1)),
+  Function(name="accumulate", call=accumulate, args=(1, 3)),
+  Function(name="mean", call=statistics.mean, args=(1, 1)),
+  Function(name="median", call=statistics.median, args=(1, 1)),
+  Function(name="prod", call=math.prod, args=(1, 1)),
+  # Random
   Function(name=".random_int", call=random.randint, args=(2, 2)),
   Function(name=".random_choice", call=random.choice, args=(1, 1)),
   Function(name=".random_seed", call=random.seed, args=(1, 1)),

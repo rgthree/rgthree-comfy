@@ -202,6 +202,18 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >      ', '.join(loras)
 >      ```
 >
+>    - Built-in numeric/list helpers available in Power Puter:
+>      - min(...), max(...): accept either multiple values or a single iterable (e.g., `min(1, 3, 2)` or `min([1, 3, 2])`).
+>      - sum(iterable[, start])
+>      - abs(x)
+>      - accumulate(iterable, func=None, initial=None): wrapper around `itertools.accumulate`.
+>        - Returns the same type as the input iterable when possible; otherwise, a tuple of results.
+>        - The `initial` argument must be specified as a keyword (per Python's itertools.accumulate).
+>      - mean(iterable), median(iterable)
+>      - prod(iterable)
+>
+>    - Note: As of the latest update, `min` and `max` accept a single iterable argument for convenience.
+>
 >    </details>
 
 ## Fast Groups Muter
@@ -411,7 +423,7 @@ rgthree-comfy adds several improvements, features, and optimizations to ComfyUI 
 > Allows dragging and dropping an image/JSON workflow from a previous generation and overriding the same node's widgets
 > (that match with the same id & type). This is useful if you have several generations using the same general workflow
 > and would like to import just some data, like a previous generation's seed, or prompt, etc.
-
+> </details>
 
 
 ## "Copy Image" in right-click menu
