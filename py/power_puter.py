@@ -468,11 +468,17 @@ class _Puter:
 
     if isinstance(stmt, ast.BoolOp):
       left = self._eval_statement(stmt.values[0], ctx=ctx)
-      # If we're an AND and already false, then don't even evaluate the right.
-      if isinstance(stmt.op, ast.And) and not left:
-        return left
-      right = self._eval_statement(stmt.values[1], ctx=ctx)
-      return _OPERATORS[type(stmt.op)](left, right)
+      # Implement Python short-circuit semantics and return actual operand values.
+      if isinstance(stmt.op, ast.And):
+        if not left:
+          return left
+        right = self._eval_statement(stmt.values[1], ctx=ctx)
+        return right
+      elif isinstance(stmt.op, ast.Or):
+        if left:
+          return left
+        right = self._eval_statement(stmt.values[1], ctx=ctx)
+        return right
 
     if isinstance(stmt, ast.UnaryOp):
       return _OPERATORS[type(stmt.op)](self._eval_statement(stmt.operand, ctx=ctx))
