@@ -121,6 +121,14 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    - from the properties, change the `Show Strengths` to choose between showing a single, simple
 >      strength value (which will be used for both model and clip), or a more advanced view with
 >      both model and clip strengths being modifiable.
+>    - Now includes an `lora_info_text` output port that provides a formatted string listing all enabled Loras with their filenames and strengths.
+>      Example output format:
+>      ```
+>      FLUX_test1.safetensors: 0.83
+>      FLUX_test2.safetensors: 0.46
+>      FLUX_test3.safetensors: 0.74
+>      FLUX_test4-000016.safetensors: 0.48
+>      ```
 >    </details>
 
 
