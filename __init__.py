@@ -110,3 +110,17 @@ print()
 adjs = ['exciting', 'extraordinary', 'epic', 'fantastic', 'magnificent']
 log(f'Loaded {len(nodes)} {random.choice(adjs)} nodes. 🎉', color='BRIGHT_GREEN')
 print()
+
+if get_config_value('announcements.comfy-nodes-20.incompatible', True):
+  message = (
+    "ComfyUI's new Node 2.0 rendering may be incompatible with some rgthree-comfy nodes "
+    "and features, breaking some rendering as well as losing the ability to "
+    "access a node's properties (a vital part of many nodes). It also appears to run MUCH more "
+    "slowly spiking CPU usage and causing jankiness and unresponsiveness, especially with large "
+    "workflows. Personally I am not planning to use the new Nodes 2.0 and, unfortunately, am not "
+    "able to invest the time to investigate and overhaul rgthree-comfy where needed. "
+    "If you have issues when Nodes 2.0 is enabled, I'd urge you to switch it off as well and "
+    "join me in hoping ComfyUI is not planning to deprecate the existing, stable canvas rendering "
+    "all together.\n"
+  )
+  log(message, color='YELLOW', id='announcements.comfy-nodes-20.incompatible', at_most_secs=60)

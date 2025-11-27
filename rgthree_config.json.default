@@ -56,5 +56,10 @@
         "key_connections_output": "Shift + D"
       }
     }
+  },
+  "announcements": {
+    "comfy-nodes-20": {
+      "incompatible": true
+    }
   }
 }

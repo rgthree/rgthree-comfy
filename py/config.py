@@ -5,8 +5,8 @@ from .utils import get_dict_value, set_dict_value, dict_has_key, load_json_file
 from .pyproject import VERSION
 
 
-def get_config_value(key):
-  return get_dict_value(RGTHREE_CONFIG, key)
+def get_config_value(key, default=None):
+  return get_dict_value(RGTHREE_CONFIG, key, default)
 
 
 def extend_config(default_config, user_config):
