@@ -7,6 +7,7 @@ from ..log import log
 from .utils_server import set_default_page_resources, set_default_page_routes, get_param
 from .routes_config import *
 from .routes_model_info import *
+from .routes_power_lora import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/')
