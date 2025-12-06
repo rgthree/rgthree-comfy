@@ -15,6 +15,7 @@ import re
 import time
 import operator as op
 import datetime
+import numpy as np
 
 from typing import Any, Callable, Iterable, Optional, Union
 from types import MappingProxyType
@@ -96,16 +97,16 @@ def batch(*args):
 _BUILTIN_FN_PREFIX = '__rgthreefn.'
 
 
-def _get_built_in_fn_key(fn: Function):
+def _get_built_in_fn_key(fn: Function) -> str:
   """Returns a key for a built-in function."""
   return f'{_BUILTIN_FN_PREFIX}{hash(fn.name)}'
 
 
-def _get_built_in_fn_by_key(key: str):
+def _get_built_in_fn_by_key(fn_key: str):
   """Returns the `Function` for the provided key (purposefully, not name)."""
-  if not key.startswith(_BUILTIN_FN_PREFIX) or key not in _BUILT_INS_BY_NAME_AND_KEY:
+  if not fn_key.startswith(_BUILTIN_FN_PREFIX) or fn_key not in _BUILT_INS_BY_NAME_AND_KEY:
     raise ValueError('No built in function found.')
-  return _BUILT_INS_BY_NAME_AND_KEY[key]
+  return _BUILT_INS_BY_NAME_AND_KEY[fn_key]
 
 
 _BUILT_IN_FNS_LIST = [
@@ -157,6 +158,17 @@ _BUILT_INS = MappingProxyType(
       }),
   }
 )
+
+# A dict of types to blocked attributes/methods. Used to disallow file system access or other
+# invocations we may want to block. Necessary for any instance type that is possible to create from
+# the code or standard ComfyUI inputs.
+#
+# For instance, a user does not have access to the numpy module directly, so they cannot invoke
+# `numpy.save`. However, a user can access a numpy.ndarray instance from a tensor and, from there,
+# an attempt to call `tofile` or `dump` etc. would need to be blocked.
+_BLOCKED_METHODS_OR_ATTRS = MappingProxyType({
+  np.ndarray: ['tofile', 'dump']
+})
 
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
@@ -241,6 +253,7 @@ class RgthreePowerPuter:
         "unique_id": "UNIQUE_ID",
         "extra_pnginfo": "EXTRA_PNGINFO",
         "prompt": "PROMPT",
+        "dynprompt": "DYNPROMPT"
       },
     }
 
@@ -299,6 +312,7 @@ class RgthreePowerPuter:
     pnginfo = kwargs['extra_pnginfo']
     workflow = pnginfo["workflow"] if "workflow" in pnginfo else {"nodes": []}
     prompt = kwargs['prompt']
+    dynprompt = kwargs['dynprompt']
 
     outputs = get_dict_value(kwargs, 'outputs.outputs', None)
     if not outputs:
@@ -314,7 +328,14 @@ class RgthreePowerPuter:
 
     code = _update_code(kwargs['code'], unique_id=kwargs['unique_id'], log=True)
 
-    eva = _Puter(code=code, ctx=ctx, workflow=workflow, prompt=prompt, unique_id=unique_id)
+    eva = _Puter(
+      code=code,
+      ctx=ctx,
+      workflow=workflow,
+      prompt=prompt,
+      dynprompt=dynprompt,
+      unique_id=unique_id
+    )
     values = eva.execute()
 
     # Check if we have multiple outputs that the returned value is a tuple and raise if not.
@@ -376,12 +397,13 @@ class _Puter:
   See https://www.basicexamples.com/example/python/ast for examples.
   """
 
-  def __init__(self, *, code: str, ctx: dict[str, Any], workflow, prompt, unique_id):
+  def __init__(self, *, code: str, ctx: dict[str, Any], workflow, prompt, dynprompt, unique_id):
     ctx = ctx or {}
     self._ctx = {**ctx}
     self._code = code
     self._workflow = workflow
     self._prompt = prompt
+    self._dynprompt = dynprompt
     self._prompt_nodes = []
     if self._prompt:
       self._prompt_nodes = [{'id': id} | {**node} for id, node in self._prompt.items()]
@@ -488,6 +510,12 @@ class _Puter:
       else:
         # Slice could be a name or a constant; evaluate it
         attr = self._eval_statement(stmt.slice, ctx=ctx)
+      if not isinstance(attr, str):
+        raise ValueError(f'Disallowed access to "{attr}"')
+      # Check if we're blocking access to this attribute/method on this item type.
+      for typ, names in _BLOCKED_METHODS_OR_ATTRS.items():
+        if isinstance(item, typ) and attr in names:
+          raise ValueError(f'Disallowed access to "{attr}" for type {typ}.')
       try:
         val = item[attr]
       except (TypeError, IndexError, KeyError):
@@ -704,6 +732,10 @@ class _Puter:
         return 1 if l <= r else 0
       if isinstance(stmt.ops[0], ast.In):
         return 1 if l in r else 0
+      if isinstance(stmt.ops[0], ast.Is):
+        return 1 if l is r else 0
+      if isinstance(stmt.ops[0], ast.IsNot):
+        return 1 if l is not r else 0
       raise NotImplementedError("Operator " + stmt.ops[0].__class__.__name__ + " not supported.")
 
     if isinstance(stmt, (ast.If, ast.IfExp)):
