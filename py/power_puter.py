@@ -510,11 +510,9 @@ class _Puter:
       else:
         # Slice could be a name or a constant; evaluate it
         attr = self._eval_statement(stmt.slice, ctx=ctx)
-      if not isinstance(attr, str):
-        raise ValueError(f'Disallowed access to "{attr}"')
       # Check if we're blocking access to this attribute/method on this item type.
       for typ, names in _BLOCKED_METHODS_OR_ATTRS.items():
-        if isinstance(item, typ) and attr in names:
+        if isinstance(item, typ) and isinstance(attr, str) and attr in names:
           raise ValueError(f'Disallowed access to "{attr}" for type {typ}.')
       try:
         val = item[attr]

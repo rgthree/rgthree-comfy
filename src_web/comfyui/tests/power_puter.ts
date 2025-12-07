@@ -3,16 +3,17 @@ import type {LGraphNode} from "@comfyorg/frontend";
 import {NodeTypesString} from "../constants";
 import {ComfyUITestEnvironment} from "../testing/comfyui_env";
 import {describe, should, beforeEach, expect, describeRun} from "../testing/runner.js";
+import {pasteImageToLoadImageNode, PNG_1x1, PNG_1x2, PNG_2x1} from "../testing/utils_test.js";
 
 const env = new ComfyUITestEnvironment();
 
 function setPowerPuterValue(node: LGraphNode, outputType: string, value: string) {
   // Strip as much whitespace on first non-empty line from all lines.
-  if (value.includes('\n')) {
-    value = value.replace(/^\n/gm, '')
+  if (value.includes("\n")) {
+    value = value.replace(/^\n/gm, "");
     const strip = value.match(/^(.*?)\S/)?.[1]?.length;
     if (strip) {
-      value = value.replace(new RegExp(`^.{${strip}}`, 'mg'), '')
+      value = value.replace(new RegExp(`^.{${strip}}`, "mg"), "");
     }
   }
   node.widgets![1]!.value = value;
@@ -106,5 +107,24 @@ describe("TestPowerPuter", async () => {
     );
     await env.queuePrompt();
     expect(displayAny.widgets![0]!.value).toBe("(4, 2, 0)");
+  });
+
+  await should("disallow calls to some methods", async () => {
+    const imageNode = await pasteImageToLoadImageNode(env);
+    imageNode.connect(0, powerPuter, 0);
+    setPowerPuterValue(
+      powerPuter,
+      "STRING",
+      `a.numpy().tofile('/tmp/test')
+      `,
+    );
+    await env.queuePrompt();
+
+    // Check to see if there's an error.
+    expect(document.querySelector(".p-dialog-mask .p-card-body")!.textContent).toContain(
+      "error message",
+      "Disallowed access to \"tofile\" for type <class 'numpy.ndarray'>",
+    );
+    (document.querySelector(".p-dialog-mask .p-dialog-close-button")! as HTMLButtonElement).click();
   });
 });

@@ -86,6 +86,7 @@ function log(msg: string, styles: string) {
 class Expectation {
   private propertyLabel: string | null = "";
   private expectedLabel: string | null = "";
+  private verbLabel: string | null = "be";
   private expectedFn!: (v: any) => boolean;
   private value: any;
 
@@ -124,9 +125,17 @@ class Expectation {
     this.expectedLabel = "a number";
     return this.toBeEval();
   }
+  toContain(labelOrExpected: any, maybeExpected?: any) {
+    const expected = maybeExpected !== undefined ? maybeExpected : labelOrExpected;
+    this.propertyLabel = maybeExpected !== undefined ? labelOrExpected : null;
+    this.verbLabel = 'contain';
+    this.expectedLabel = JSON.stringify(expected);
+    this.expectedFn = (v) => v.includes(expected);
+    return this.toBeEval();
+  }
   toBeEval(strict = false) {
     let evaluation = this.expectedFn(this.value);
-    let msg = `Expected ${this.propertyLabel ? this.propertyLabel + " to be " : ""}${
+    let msg = `Expected ${this.propertyLabel ? this.propertyLabel + ` to ${this.verbLabel} ` : ""}${
       this.expectedLabel
     }`;
     msg += evaluation ? "." : `, but was ${JSON.stringify(this.value)}`;
