@@ -166,9 +166,7 @@ _BUILT_INS = MappingProxyType(
 # For instance, a user does not have access to the numpy module directly, so they cannot invoke
 # `numpy.save`. However, a user can access a numpy.ndarray instance from a tensor and, from there,
 # an attempt to call `tofile` or `dump` etc. would need to be blocked.
-_BLOCKED_METHODS_OR_ATTRS = MappingProxyType({
-  np.ndarray: ['tofile', 'dump']
-})
+_BLOCKED_METHODS_OR_ATTRS = MappingProxyType({np.ndarray: ['tofile', 'dump']})
 
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
@@ -403,11 +401,11 @@ class _Puter:
     self._code = code
     self._workflow = workflow
     self._prompt = prompt
+    self._unique_id = unique_id
     self._dynprompt = dynprompt
-    self._prompt_nodes = []
-    if self._prompt:
-      self._prompt_nodes = [{'id': id} | {**node} for id, node in self._prompt.items()]
-    self._prompt_node = [n for n in self._prompt_nodes if n['id'] == unique_id][0]
+    # These are now expanded lazily when needed.
+    self._prompt_nodes = None
+    self._prompt_node = None
 
   def execute(self, code=Optional[str]) -> Any:
     """Evaluates a the code block."""
@@ -431,9 +429,26 @@ class _Puter:
     random.setstate(initial_random_state)
     return last_value
 
+  def _get_prompt_nodes(self):
+    """Expands the prompt nodes lazily from the dynamic prompt.
+
+    https://github.com/comfyanonymous/ComfyUI/blob/fc657f471a29d07696ca16b566000e8e555d67d1/comfy_execution/graph.py#L22
+    """
+    if self._prompt_nodes is None:
+      self._prompt_nodes = []
+      if self._dynprompt:
+        all_ids = self._dynprompt.all_node_ids()
+        self._prompt_nodes = [{'id': k} | {**self._dynprompt.get_node(k)} for k in all_ids]
+    return self._prompt_nodes
+
+  def _get_prompt_node(self):
+    if self._prompt_nodes is None:
+      self._prompt_node = [n for n in self._get_prompt_nodes() if n['id'] == self._unique_id][0]
+    return self._prompt_node
+
   def _get_nodes(self, node_id: Union[int, str, re.Pattern, None] = None) -> list[Any]:
     """Get a list of the nodes that match the node_id, or all the nodes in the prompt."""
-    nodes = self._prompt_nodes.copy()
+    nodes = self._get_prompt_nodes().copy()
     if not node_id:
       return nodes
 
@@ -451,7 +466,7 @@ class _Puter:
   def _get_node(self, node_id: Union[int, str, re.Pattern, None] = None) -> Union[Any, None]:
     """Returns a prompt-node from the hidden prompt."""
     if node_id is None:
-      return self._prompt_node
+      return self._get_prompt_node()
     nodes = self._get_nodes(node_id)
     if nodes and len(nodes) > 1:
       log_node_warn(_NODE_NAME, f"More than one node found for '{node_id}'. Returning first.")
@@ -459,10 +474,10 @@ class _Puter:
 
   def _get_input_node(self, input_name, node=None):
     """Gets the (non-muted) node of an input connection from a node (default to the power puter)."""
-    node = node if node else self._prompt_node
+    node = node if node else self._get_prompt_node()
     try:
       connected_node_id = node['inputs'][input_name][0]
-      return [n for n in self._prompt_nodes if n['id'] == connected_node_id][0]
+      return [n for n in self._get_prompt_nodes() if n['id'] == connected_node_id][0]
     except (TypeError, IndexError, KeyError):
       log_node_warn(_NODE_NAME, f'No input node found for "{input_name}". ')
     return None
