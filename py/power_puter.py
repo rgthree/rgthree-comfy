@@ -185,23 +185,39 @@ _SPECIAL_FUNCTIONS = {
 _NON_DETERMINISTIC_FUNCTION_CHECKS = [r'(?<!input_)(nodes?)\(',]
 
 _OPERATORS = {
+  # operator
   ast.Add: op.add,
   ast.Sub: op.sub,
   ast.Mult: op.mul,
+  ast.MatMult: op.matmul,
   ast.Div: op.truediv,
-  ast.FloorDiv: op.floordiv,
-  ast.Pow: op.pow,
-  ast.BitXor: op.xor,
-  ast.USub: op.neg,
   ast.Mod: op.mod,
-  ast.BitAnd: op.and_,
-  ast.BitOr: op.or_,
-  ast.Invert: op.invert,
-  ast.And: lambda a, b: 1 if a and b else 0,
-  ast.Or: lambda a, b: 1 if a or b else 0,
-  ast.Not: lambda a: 0 if a else 1,
+  ast.Pow: op.pow,
   ast.RShift: op.rshift,
-  ast.LShift: op.lshift
+  ast.LShift: op.lshift,
+  ast.BitOr: op.or_,
+  ast.BitXor: op.xor,
+  ast.BitAnd: op.and_,
+  ast.FloorDiv: op.floordiv,
+  # boolop
+  ast.And: lambda a, b: a and b,
+  ast.Or: lambda a, b: a or b,
+  # unaryop
+  ast.Invert: op.invert,
+  ast.Not: lambda a: 0 if a else 1,
+  ast.USub: op.neg,
+  # cmpop
+  ast.Eq: op.eq,
+  ast.NotEq: op.ne,
+  ast.Lt: op.lt,
+  ast.LtE: op.le,
+  ast.Gt: op.gt,
+  ast.GtE: op.ge,
+  ast.Is: op.is_,
+  ast.IsNot: op.is_not,
+  ast.In: lambda a, b: a in b,
+  ast.NotIn: lambda a, b: a not in b,
+
 }
 
 _NODE_NAME = get_name("Power Puter")
@@ -504,12 +520,17 @@ class _Puter:
       return _OPERATORS[type(stmt.op)](left, right)
 
     if isinstance(stmt, ast.BoolOp):
-      left = self._eval_statement(stmt.values[0], ctx=ctx)
-      # If we're an AND and already false, then don't even evaluate the right.
-      if isinstance(stmt.op, ast.And) and not left:
-        return left
-      right = self._eval_statement(stmt.values[1], ctx=ctx)
-      return _OPERATORS[type(stmt.op)](left, right)
+      is_and = isinstance(stmt.op, ast.And)
+      is_or = isinstance(stmt.op, ast.Or)
+      stmt_value_eval = None
+      for stmt_value in stmt.values:
+        stmt_value_eval = self._eval_statement(stmt_value, ctx=ctx)
+        # If we're an and operator and have a falsyt value, then we stop and return. Likewise, if
+        # we're an or operator and have a truthy value, we can stop and return.
+        if (is_and and not stmt_value_eval) or (is_or and stmt_value_eval):
+          return stmt_value_eval
+      # Always return the last if we made it here w/o success.
+      return stmt_value_eval
 
     if isinstance(stmt, ast.UnaryOp):
       return _OPERATORS[type(stmt.op)](self._eval_statement(stmt.operand, ctx=ctx))

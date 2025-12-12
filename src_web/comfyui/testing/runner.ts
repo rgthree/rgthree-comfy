@@ -101,6 +101,13 @@ class Expectation {
     this.expectedFn = (v) => v == expected;
     return this.toBeEval();
   }
+  toMatchJson(labelOrExpected: any, maybeExpected?: any) {
+    const expected = maybeExpected !== undefined ? maybeExpected : labelOrExpected;
+    this.propertyLabel = maybeExpected !== undefined ? labelOrExpected : null;
+    this.expectedLabel = JSON.stringify(expected);
+    this.expectedFn = (v) => JSON.stringify(JSON.parse(v)) == JSON.stringify(JSON.parse(expected));
+    return this.toBeEval();
+  }
   toBeUndefined(propertyLabel: string) {
     this.expectedFn = (v) => v === undefined;
     this.propertyLabel = propertyLabel || "";

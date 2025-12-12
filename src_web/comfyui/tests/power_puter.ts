@@ -127,4 +127,36 @@ describe("TestPowerPuter", async () => {
     );
     (document.querySelector(".p-dialog-mask .p-dialog-close-button")! as HTMLButtonElement).click();
   });
+
+  await should("handle boolean operators correctly", async () => {
+    const checks: Array<[string, string, string, ('toMatchJson'|'toBe')?]> = [
+      // And operator all success
+      ["1 and 42", "42", "STRING"],
+      ["True and [42]", "[42]", "STRING", "toMatchJson"],
+      ["a = 42\nTrue and [a]", "[42]", "STRING", "toMatchJson"],
+      ["1 and 3 and True and [1] and 42", "42", "STRING"],
+      // And operator w/ a failure
+      ["1 and 3 and True and [] and 42", "[]", "STRING", "toMatchJson"],
+      ["1 and 0 and True and [] and 42", "0", "STRING"],
+      ["1 and 2 and False and [] and 42", "False", "STRING"],
+      ["b = None\n1 and 2 and True and b and 42", "None", "STRING"],
+      // Or operator
+      ["1 or 42", "1", "STRING"],
+      ["0 or 42", "42", "STRING"],
+      ["0 or None or False or [] or 42", "42", "STRING"],
+      ["b=42\n0 or None or False or [] or b", "42", "STRING"],
+      ["b=42\n0 or None or False or [b] or b", "[42]", "STRING", "toMatchJson"],
+      ["b=42\n0 or None or True or [b] or b", "True", "STRING"],
+      // Mix
+      ["1 and 2 and 0 or 5", "5", "STRING"],
+      ["None and 1 or True", "True", "STRING"],
+      ["0 or False and True", "False", "STRING"],
+
+    ];
+    for (const data of checks) {
+      setPowerPuterValue(powerPuter, data[2], data[0]);
+      await env.queuePrompt();
+      expect(displayAny.widgets![0]!.value)[data[3] || 'toBe'](data[0], data[1]);
+    }
+  });
 });
