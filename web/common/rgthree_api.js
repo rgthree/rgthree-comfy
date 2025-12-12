@@ -117,6 +117,19 @@ class RgthreeApi {
     async saveCheckpointsInfo(file, data) {
         return this.saveModelInfo("checkpoints", file, data);
     }
+        async savePowerLoraTemplate(name, items) {
+            return await this.postJson('/power_lora/templates', { name, items });
+        }
+        async getPowerLoraTemplates(name) {
+            const params = name ? `?name=${encodeURIComponent(name)}` : '';
+            return await this.fetchJson(`/power_lora/templates${params}`, { cache: 'no-store' });
+        }
+        async deletePowerLoraTemplate(name) {
+            return await this.fetchJson(`/power_lora/templates?name=${encodeURIComponent(name)}`, { 
+                method: 'DELETE', 
+                cache: 'no-store' 
+            });
+        }
     fetchComfyApi(route, options) {
         const url = this.comfyBaseUrl + "/api" + route;
         options = options || {};
