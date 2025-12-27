@@ -253,6 +253,10 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   private selected: [ComfyImageData?, ComfyImageData?] = [];
 
+  // Store grouped A and B image lists.
+  private aImages: ComfyImageData[] = [];
+  private bImages: ComfyImageData[] = [];
+
   constructor(name: string, node: RgthreeImageComparer) {
     super(name);
     this.node = node;
@@ -300,6 +304,10 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
     this._value.images = cleanedVal;
 
+    // Group A and B images.
+    this.aImages = cleanedVal.filter((d) => d.name.startsWith("A"));
+    this.bImages = cleanedVal.filter((d) => d.name.startsWith("B"));
+
     selected = cleanedVal.filter((d) => d.selected);
     this.setSelected(selected as [ComfyImageData, ComfyImageData]);
   }
@@ -324,36 +332,97 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   draw(ctx: CanvasRenderingContext2D, node: RgthreeImageComparer, width: number, y: number) {
     this.hitAreas = {};
+    // When more than 2 images, show dropdown selectors and navigation buttons.
     if (this.value.images.length > 2) {
-      ctx.textAlign = "left";
-      ctx.textBaseline = "top";
-      ctx.font = `14px Arial`;
-      // Let's calculate the widths of all the labels.
-      const drawData: any = [];
-      const spacing = 5;
-      let x = 0;
-      for (const img of this.value.images) {
-        const width = measureText(ctx, img.name);
-        drawData.push({
-          img,
-          text: img.name,
-          x,
-          width: measureText(ctx, img.name),
-        });
-        x += width + spacing;
-      }
-      x = (node.size[0] - (x - spacing)) / 2;
-      for (const d of drawData) {
-        ctx.fillStyle = d.img.selected ? "rgba(180, 180, 180, 1)" : "rgba(180, 180, 180, 0.5)";
-        ctx.fillText(d.text, x, y);
-        this.hitAreas[d.text] = {
-          bounds: [x, y, d.width, 14],
-          data: d.img,
-          onDown: this.onSelectionDown,
-        };
-        x += d.width + spacing;
-      }
-      y += 20;
+      const dropdownHeight = 20;
+      const btnWidth = 20;        // Single arrow button width.
+      const groupBtnWidth = 24;   // Double arrow button width.
+      const btnSpacing = 2;       // Spacing between buttons.
+      const groupSpacing = 8;     // Spacing between A and B groups.
+      const margin = 10;
+
+      // Calculate dropdown width.
+      // Layout: [◀◀] [◀] [A dropdown] [▶] | [◀] [B dropdown] [▶] [▶▶]
+      const totalBtnWidth = groupBtnWidth * 2 + btnWidth * 4 + btnSpacing * 6 + groupSpacing;
+      const availableWidth = width - margin * 2 - totalBtnWidth;
+      const dropdownWidth = availableWidth / 2;
+
+      let x = margin;
+
+      // Draw previous group button (◀◀).
+      this.drawArrowButton(ctx, x, y, groupBtnWidth, dropdownHeight, "prev_group");
+      this.hitAreas["prev_group"] = {
+        bounds: [x, y, groupBtnWidth, dropdownHeight],
+        data: { action: "prev_group" },
+        onDown: this.onNavButtonClick,
+      };
+      x += groupBtnWidth + btnSpacing;
+
+      // Draw A previous button (◀).
+      this.drawArrowButton(ctx, x, y, btnWidth, dropdownHeight, "prev");
+      this.hitAreas["prev_a"] = {
+        bounds: [x, y, btnWidth, dropdownHeight],
+        data: { action: "prev", type: "A" },
+        onDown: this.onNavButtonClick,
+      };
+      x += btnWidth + btnSpacing;
+
+      // Draw A dropdown.
+      const selectedA = this.selected[0];
+      this.drawDropdown(ctx, x, y, dropdownWidth, dropdownHeight, "A", selectedA?.name || "A");
+      this.hitAreas["dropdown_a"] = {
+        bounds: [x, y, dropdownWidth, dropdownHeight],
+        data: { type: "A", images: this.aImages },
+        onDown: this.onDropdownClick,
+      };
+      x += dropdownWidth + btnSpacing;
+
+      // Draw A next button (▶).
+      this.drawArrowButton(ctx, x, y, btnWidth, dropdownHeight, "next");
+      this.hitAreas["next_a"] = {
+        bounds: [x, y, btnWidth, dropdownHeight],
+        data: { action: "next", type: "A" },
+        onDown: this.onNavButtonClick,
+      };
+      x += btnWidth + groupSpacing;
+
+      // Draw B previous button (◀).
+      this.drawArrowButton(ctx, x, y, btnWidth, dropdownHeight, "prev");
+      this.hitAreas["prev_b"] = {
+        bounds: [x, y, btnWidth, dropdownHeight],
+        data: { action: "prev", type: "B" },
+        onDown: this.onNavButtonClick,
+      };
+      x += btnWidth + btnSpacing;
+
+      // Draw B dropdown.
+      const selectedB = this.selected[1];
+      this.drawDropdown(ctx, x, y, dropdownWidth, dropdownHeight, "B", selectedB?.name || "B");
+      this.hitAreas["dropdown_b"] = {
+        bounds: [x, y, dropdownWidth, dropdownHeight],
+        data: { type: "B", images: this.bImages },
+        onDown: this.onDropdownClick,
+      };
+      x += dropdownWidth + btnSpacing;
+
+      // Draw B next button (▶).
+      this.drawArrowButton(ctx, x, y, btnWidth, dropdownHeight, "next");
+      this.hitAreas["next_b"] = {
+        bounds: [x, y, btnWidth, dropdownHeight],
+        data: { action: "next", type: "B" },
+        onDown: this.onNavButtonClick,
+      };
+      x += btnWidth + btnSpacing;
+
+      // Draw next group button (▶▶).
+      this.drawArrowButton(ctx, x, y, groupBtnWidth, dropdownHeight, "next_group");
+      this.hitAreas["next_group"] = {
+        bounds: [x, y, groupBtnWidth, dropdownHeight],
+        data: { action: "next_group" },
+        onDown: this.onNavButtonClick,
+      };
+
+      y += dropdownHeight + 4;
     }
 
     if (node.properties?.["comparer_mode"] === "Click") {
@@ -379,6 +448,231 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
       selected[1] = bounds.data;
     }
     this.setSelected(selected as [ComfyImageData, ComfyImageData]);
+  }
+
+  /**
+   * Draws an arrow navigation button.
+   * @param ctx Canvas rendering context.
+   * @param x X coordinate.
+   * @param y Y coordinate.
+   * @param width Button width.
+   * @param height Button height.
+   * @param type Button type: prev, next, prev_group, next_group.
+   */
+  private drawArrowButton(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    type: "prev" | "next" | "prev_group" | "next_group",
+  ) {
+    ctx.save();
+    // Draw button background.
+    ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR;
+    ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, [4]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw arrow.
+    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+    const centerX = x + width / 2;
+    const centerY = y + height / 2;
+    const arrowSize = 5;
+
+    if (type === "prev" || type === "prev_group") {
+      // Left arrow ◀
+      ctx.beginPath();
+      ctx.moveTo(centerX + arrowSize / 2, centerY - arrowSize);
+      ctx.lineTo(centerX - arrowSize / 2, centerY);
+      ctx.lineTo(centerX + arrowSize / 2, centerY + arrowSize);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw second arrow for double arrow button.
+      if (type === "prev_group") {
+        ctx.beginPath();
+        ctx.moveTo(centerX + arrowSize / 2 + 5, centerY - arrowSize);
+        ctx.lineTo(centerX - arrowSize / 2 + 5, centerY);
+        ctx.lineTo(centerX + arrowSize / 2 + 5, centerY + arrowSize);
+        ctx.closePath();
+        ctx.fill();
+      }
+    } else {
+      // Right arrow ▶
+      ctx.beginPath();
+      ctx.moveTo(centerX - arrowSize / 2, centerY - arrowSize);
+      ctx.lineTo(centerX + arrowSize / 2, centerY);
+      ctx.lineTo(centerX - arrowSize / 2, centerY + arrowSize);
+      ctx.closePath();
+      ctx.fill();
+
+      // Draw second arrow for double arrow button.
+      if (type === "next_group") {
+        ctx.beginPath();
+        ctx.moveTo(centerX - arrowSize / 2 - 5, centerY - arrowSize);
+        ctx.lineTo(centerX + arrowSize / 2 - 5, centerY);
+        ctx.lineTo(centerX - arrowSize / 2 - 5, centerY + arrowSize);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  /**
+   * Handles navigation button click events.
+   */
+  private onNavButtonClick(
+    event: CanvasMouseEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds?: RgthreeBaseWidgetBounds,
+  ) {
+    if (!bounds?.data) return;
+
+    const { action, type } = bounds.data as {
+      action: "prev" | "next" | "prev_group" | "next_group";
+      type?: "A" | "B";
+    };
+
+    const selected = [...this.selected] as [ComfyImageData, ComfyImageData];
+
+    if (action === "prev_group" || action === "next_group") {
+      // Switch both A and B.
+      const aIndex = this.aImages.findIndex((img) => img.name === selected[0]?.name);
+      const bIndex = this.bImages.findIndex((img) => img.name === selected[1]?.name);
+
+      if (action === "prev_group") {
+        // Previous group.
+        if (aIndex > 0) selected[0] = this.aImages[aIndex - 1]!;
+        if (bIndex > 0) selected[1] = this.bImages[bIndex - 1]!;
+      } else {
+        // Next group.
+        if (aIndex < this.aImages.length - 1) selected[0] = this.aImages[aIndex + 1]!;
+        if (bIndex < this.bImages.length - 1) selected[1] = this.bImages[bIndex + 1]!;
+      }
+    } else if (type === "A") {
+      // Switch A.
+      const index = this.aImages.findIndex((img) => img.name === selected[0]?.name);
+      if (action === "prev" && index > 0) {
+        selected[0] = this.aImages[index - 1]!;
+      } else if (action === "next" && index < this.aImages.length - 1) {
+        selected[0] = this.aImages[index + 1]!;
+      }
+    } else if (type === "B") {
+      // Switch B.
+      const index = this.bImages.findIndex((img) => img.name === selected[1]?.name);
+      if (action === "prev" && index > 0) {
+        selected[1] = this.bImages[index - 1]!;
+      } else if (action === "next" && index < this.bImages.length - 1) {
+        selected[1] = this.bImages[index + 1]!;
+      }
+    }
+
+    this.setSelected(selected);
+    this.node.setDirtyCanvas(true, false);
+  }
+
+  /**
+   * Draws a dropdown selector.
+   * @param ctx Canvas rendering context.
+   * @param x X coordinate.
+   * @param y Y coordinate.
+   * @param width Dropdown width.
+   * @param height Dropdown height.
+   * @param label Label (A or B).
+   * @param selectedText Currently selected item text.
+   */
+  private drawDropdown(
+    ctx: CanvasRenderingContext2D,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    label: string,
+    selectedText: string,
+  ) {
+    // Draw dropdown background.
+    ctx.save();
+    ctx.fillStyle = LiteGraph.WIDGET_BGCOLOR;
+    ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR;
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, [4]);
+    ctx.fill();
+    ctx.stroke();
+
+    // Draw label and selected text.
+    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
+    ctx.font = "12px Arial";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
+    const textY = y + height / 2;
+    const displayText = `${label}: ${selectedText}`;
+    ctx.fillText(displayText, x + 8, textY);
+
+    // Draw dropdown arrow.
+    const arrowX = x + width - 15;
+    const arrowY = textY;
+    ctx.beginPath();
+    ctx.moveTo(arrowX, arrowY - 3);
+    ctx.lineTo(arrowX + 6, arrowY - 3);
+    ctx.lineTo(arrowX + 3, arrowY + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  /**
+   * Handles dropdown click events, shows context menu.
+   */
+  private onDropdownClick(
+    event: CanvasMouseEvent,
+    pos: Vector2,
+    node: LGraphNode,
+    bounds?: RgthreeBaseWidgetBounds,
+  ) {
+    if (!bounds?.data) return;
+
+    const { type, images } = bounds.data as { type: "A" | "B"; images: ComfyImageData[] };
+    if (!images || images.length === 0) return;
+
+    // Build menu items.
+    const menuItems = images.map((img) => ({
+      content: img.name,
+      callback: () => {
+        const selected = [...this.selected];
+        if (type === "A") {
+          selected[0] = img;
+        } else {
+          selected[1] = img;
+        }
+        this.setSelected(selected as [ComfyImageData, ComfyImageData]);
+        this.node.setDirtyCanvas(true, false);
+      },
+    }));
+
+    // Calculate menu position (convert to screen coordinates).
+    const canvas = app.canvas;
+    const rect = canvas.canvas.getBoundingClientRect();
+    const nodePos = node.pos;
+    const scale = canvas.ds?.scale || 1;
+    const offset = canvas.ds?.offset || [0, 0];
+
+    // Calculate menu screen position.
+    const screenX = rect.left + (nodePos[0] + bounds.bounds[0]) * scale + offset[0] * scale;
+    const screenY = rect.top + (nodePos[1] + bounds.bounds[1] + (bounds.bounds[3] || 20)) * scale + offset[1] * scale;
+
+    // Show context menu.
+    new LiteGraph.ContextMenu(menuItems, {
+      event: event,
+      left: screenX,
+      top: screenY,
+    });
   }
 
   private drawImage(
