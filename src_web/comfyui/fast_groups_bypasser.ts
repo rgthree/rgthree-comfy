@@ -5,7 +5,8 @@ import {NodeTypesString} from "./constants.js";
 import {BaseFastGroupsModeChanger} from "./fast_groups_muter.js";
 
 /**
- * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to mute them.
+ * Fast Bypasser implementation that looks for groups in the workflow and adds toggles to bypass them.
+ * Includes an option to completely hide bypassed groups from the canvas.
  */
 export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
   static override type = NodeTypesString.FAST_GROUPS_BYPASSER;
@@ -19,8 +20,11 @@ export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
   override readonly modeOn = LiteGraph.ALWAYS;
   override readonly modeOff = 4; // Used by Comfy for "bypass"
 
+  static "@hideBypassedGroups" = {type: "boolean"};
+
   constructor(title = FastGroupsBypasser.title) {
     super(title);
+    this.properties["hideBypassedGroups"] = false;
     this.onConstructed();
   }
 }
