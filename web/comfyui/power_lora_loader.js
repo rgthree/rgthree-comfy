@@ -147,6 +147,12 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
                         widget.showLoraInfoDialog();
                     },
                 },
+                {
+                    content: `📝 Editor's Note`,
+                    callback: () => {
+                        widget.editNote();
+                    },
+                },
                 null,
                 {
                     content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
@@ -321,6 +327,7 @@ const DEFAULT_LORA_WIDGET_DATA = {
     lora: null,
     strength: 1,
     strengthTwo: null,
+    note: "",
 };
 class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     constructor(name) {
@@ -347,10 +354,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             lora: null,
             strength: 1,
             strengthTwo: null,
+            note: "",
         };
     }
     set value(v) {
-        this._value = v;
+        this._value = { ...DEFAULT_LORA_WIDGET_DATA, ...(typeof v === "object" ? v : {}) };
         if (typeof this._value !== "object") {
             this._value = { ...DEFAULT_LORA_WIDGET_DATA };
             if (this.showModelAndClip) {
@@ -363,8 +371,23 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         return this._value;
     }
     setLora(lora) {
+        const hasChanged = this._value.lora !== lora;
         this._value.lora = lora;
+        if (hasChanged) {
+            this._value.note = "";
+        }
+        this.loraInfo = null;
+        this.loraInfoPromise = null;
         this.getLoraInfo();
+    }
+    getDisplayText(ctx, text, maxWidth) {
+        if (maxWidth <= 4) {
+            return "";
+        }
+        return fitString(ctx, text, maxWidth);
+    }
+    getNoteText() {
+        return (this.value.note || "").trim().replace(/\s+/g, " ");
     }
     draw(ctx, node, w, posY, height) {
         var _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
@@ -469,7 +492,35 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
         const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
-        ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
+        const noteText = this.getNoteText();
+        if (!noteText) {
+            ctx.fillText(this.getDisplayText(ctx, loraLabel, loraWidth), posX, midY);
+        }
+        else {
+            const oldFont = ctx.font;
+            const oldAlpha = ctx.globalAlpha;
+            const noteGap = innerMargin * 2;
+            let noteFont = oldFont;
+            const noteFontMatch = oldFont.match(/(\d+)px/);
+            if (noteFontMatch) {
+                noteFont = oldFont.replace(noteFontMatch[1], `${Math.max(Number(noteFontMatch[1]) - 2, 9)}`);
+            }
+            ctx.font = noteFont;
+            const maxNoteWidth = Math.min(Math.max(loraWidth * 0.45, 60), 180, Math.max(loraWidth, 0));
+            const noteLabel = this.getDisplayText(ctx, `· ${noteText}`, maxNoteWidth);
+            const noteLabelWidth = noteLabel ? ctx.measureText(noteLabel).width : 0;
+            const noteX = posX + Math.max(loraWidth - noteLabelWidth, 0);
+            const labelWidth = Math.max(noteX - posX - (noteLabelWidth ? noteGap : 0), 0);
+            ctx.font = oldFont;
+            ctx.fillText(this.getDisplayText(ctx, loraLabel, noteLabelWidth ? labelWidth : loraWidth), posX, midY);
+            if (noteLabelWidth) {
+                ctx.font = noteFont;
+                ctx.globalAlpha = oldAlpha * 0.65;
+                ctx.fillText(noteLabel, noteX, midY);
+                ctx.font = oldFont;
+                ctx.globalAlpha = oldAlpha;
+            }
+        }
         this.hitAreas.lora.bounds = [posX, loraWidth];
         posX += loraWidth + innerMargin;
         ctx.globalAlpha = app.canvas.editor_alpha;
@@ -498,9 +549,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     onLoraClick(event, pos, node) {
         showLoraChooser(event, (value) => {
             if (typeof value === "string") {
-                this.value.lora = value;
-                this.loraInfo = null;
-                this.getLoraInfo();
+                this.setLora(value);
             }
             node.setDirtyCanvas(true, true);
         });
@@ -559,6 +608,15 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
                 this.getLoraInfo(true);
             }
         }));
+    }
+    editNote() {
+        const currentNote = this.value.note || "";
+        const nextNote = window.prompt("Please enter the note for this LoRA.", currentNote);
+        if (nextNote === null) {
+            return;
+        }
+        this.value.note = nextNote.trim();
+        app.graph.setDirtyCanvas(true, true);
     }
     stepStrength(direction, isTwo = false) {
         var _b;
