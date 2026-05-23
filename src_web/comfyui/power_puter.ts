@@ -71,6 +71,14 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
     removeUnusedInputsFromEnd(this, 1);
     this.addAnyInput();
     this.setOutputs();
+    // In the Vue renderer (Nodes 2.0), the mini-canvas widget only redraws
+    // via triggerDraw (not the continuous LiteGraph repaint loop), and
+    // output slot property mutations (type, name, label) on the shallowReactive
+    // outputs array are not tracked.  Trigger both explicitly.
+    this.outputTypeWidget?.triggerDraw?.();
+    if (this.outputs?.length) {
+      this.outputs.splice(0, this.outputs.length, ...this.outputs);
+    }
   }
 
   private addInitialWidgets() {
@@ -107,6 +115,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
       const outputLabel =
         output.label === "*" || output.label === output.type ? null : output.label;
       output.type = String(desired);
+      output.name = outputLabel || output.type;
       output.label = outputLabel || output.type;
     }
   }
