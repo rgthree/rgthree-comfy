@@ -2,6 +2,8 @@
 import random
 from datetime import datetime
 
+from .utils_graph import get_worflow_node
+
 from .constants import get_category, get_name
 from .log import log_node_warn, log_node_info
 
@@ -67,40 +69,48 @@ class RgthreeSeed:
     # sending, then users _could_ pass in "-1" and get a random seed used and added to the metadata.
     # Though, this should likely be discouraged for several reasons (thus, a lot of logging).
     if seed in (-1, -2, -3):
-      log_node_warn(self.NAME,
-                    f'Got "{seed}" as passed seed. ' +
-                    'This shouldn\'t happen when queueing from the ComfyUI frontend.',
-                    msg_color="YELLOW")
+      log_node_warn(
+        self.NAME,
+        f'Got "{seed}" as passed seed. ' +
+        'This shouldn\'t happen when queueing from the ComfyUI frontend.',
+        msg_color="YELLOW"
+      )
       if seed in (-2, -3):
-        log_node_warn(self.NAME,
-                      f'Cannot {"increment" if seed == -2 else "decrement"} seed from ' +
-                      'server, but will generate a new random seed.',
-                      msg_color="YELLOW")
+        log_node_warn(
+          self.NAME,
+          f'Cannot {"increment" if seed == -2 else "decrement"} seed from ' +
+          'server, but will generate a new random seed.',
+          msg_color="YELLOW"
+        )
 
       original_seed = seed
       seed = new_random_seed()
       log_node_info(self.NAME, f'Server-generated random seed {seed} and saving to workflow.')
       log_node_warn(
         self.NAME,
-        'NOTE: Re-queues passing in "{seed}" and server-generated random seed won\'t be cached.',
-        msg_color="YELLOW")
+        f'NOTE: Re-queues passing in "{seed}" and server-generated random seed won\'t be cached.',
+        msg_color="YELLOW"
+      )
 
       if unique_id is None:
         log_node_warn(
           self.NAME, 'Cannot save server-generated seed to image metadata because ' +
-          'the node\'s id was not provided.')
+          'the node\'s id was not provided.'
+        )
       else:
         if extra_pnginfo is None:
           log_node_warn(
             self.NAME, 'Cannot save server-generated seed to image workflow ' +
-            'metadata because workflow was not provided.')
+            'metadata because workflow was not provided.'
+          )
         else:
-          workflow_node = next(
-            (x for x in extra_pnginfo['workflow']['nodes'] if str(x['id']) == str(unique_id)), None)
+          log_node_info(self.NAME, f'Looking for Seed node with id "{unique_id}"')
+          workflow_node = get_worflow_node(extra_pnginfo, str(unique_id))
           if workflow_node is None or 'widgets_values' not in workflow_node:
             log_node_warn(
               self.NAME, 'Cannot save server-generated seed to image workflow ' +
-              'metadata because node was not found in the provided workflow.')
+              'metadata because node was not found in the provided workflow.'
+            )
           else:
             for index, widget_value in enumerate(workflow_node['widgets_values']):
               if widget_value == original_seed:
@@ -109,14 +119,16 @@ class RgthreeSeed:
         if prompt is None:
           log_node_warn(
             self.NAME, 'Cannot save server-generated seed to image API prompt ' +
-            'metadata because prompt was not provided.')
+            'metadata because prompt was not provided.'
+          )
         else:
           prompt_node = prompt[str(unique_id)]
           if prompt_node is None or 'inputs' not in prompt_node or 'seed' not in prompt_node[
-              'inputs']:
+            'inputs']:
             log_node_warn(
               self.NAME, 'Cannot save server-generated seed to image workflow ' +
-              'metadata because node was not found in the provided workflow.')
+              'metadata because node was not found in the provided workflow.'
+            )
           else:
             prompt_node['inputs']['seed'] = seed
 

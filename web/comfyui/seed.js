@@ -2,7 +2,7 @@ import { app } from "../../scripts/app.js";
 import { ComfyWidgets } from "../../scripts/widgets.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
-import { addConnectionLayoutSupport } from "./utils.js";
+import { addConnectionLayoutSupport, getFullNodeIdFromApiPrompt, getNodeByIdFromApiPrompt, } from "./utils.js";
 import { NodeTypesString } from "./constants.js";
 const LAST_SEED_BUTTON_LABEL = "♻️ (Use Last Queued Seed)";
 const SPECIAL_SEED_RANDOM = -1;
@@ -21,18 +21,23 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.properties["randomMax"] = 1125899906842624;
         this.properties["randomMin"] = 0;
         rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
+        console.log("SEED NODE STARTED!");
     }
     onPropertyChanged(prop, value, prevValue) {
-        if (prop === 'randomMax') {
+        if (prop === "randomMax") {
             this.properties["randomMax"] = Math.min(1125899906842624, Number(value));
         }
-        else if (prop === 'randomMin') {
+        else if (prop === "randomMin") {
             this.properties["randomMin"] = Math.max(-1125899906842624, Number(value));
         }
         return true;
     }
     onRemoved() {
-        rgthree.addEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
+        console.log("SEED NODE onRemoved!");
+        rgthree.removeEventListener("comfy-api-queue-prompt-before", this.handleApiHijackingBound);
+    }
+    onExecuted(output) {
+        console.log(`SEED ON EXECUTED. #${this.id}.`, output);
     }
     configure(info) {
         var _a;
@@ -69,17 +74,18 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.addWidget("button", "🎲 New Fixed Random", "", () => {
             this.seedWidget.value = this.generateRandomSeed();
         }, { serialize: false });
-        this.lastSeedButton = this.addWidget("button", LAST_SEED_BUTTON_LABEL, "", () => {
+        this.lastSeedButton = this.addWidget("button", 'USE_LAST_SEED', "okay", () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
-            this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
+            this.lastSeedButton.label = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
         }, { width: 50, serialize: false });
+        this.lastSeedButton.label = LAST_SEED_BUTTON_LABEL;
         this.lastSeedButton.disabled = true;
     }
     generateRandomSeed() {
         let step = this.seedWidget.options.step || 1;
-        const randomMin = Number(this.properties['randomMin'] || 0);
-        const randomMax = Number(this.properties['randomMax'] || 1125899906842624);
+        const randomMin = Number(this.properties["randomMin"] || 0);
+        const randomMax = Number(this.properties["randomMax"] || 1125899906842624);
         const randomRange = (randomMax - randomMin) / (step / 10);
         let seed = Math.floor(Math.random() * randomRange) * (step / 10) + randomMin;
         if (SPECIAL_SEEDS.includes(seed)) {
@@ -122,20 +128,20 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.computeSize();
     }
     handleApiHijacking(e) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
         if (this.mode === LiteGraph.NEVER || this.mode === 4) {
             return;
         }
-        const workflow = e.detail.workflow;
         const output = e.detail.output;
-        let workflowNode = (_b = (_a = workflow === null || workflow === void 0 ? void 0 : workflow.nodes) === null || _a === void 0 ? void 0 : _a.find((n) => n.id === this.id)) !== null && _b !== void 0 ? _b : null;
-        let outputInputs = (_c = output === null || output === void 0 ? void 0 : output[this.id]) === null || _c === void 0 ? void 0 : _c.inputs;
+        const fullId = (_a = getFullNodeIdFromApiPrompt(e.detail, this.id)) !== null && _a !== void 0 ? _a : "";
+        let workflowNode = getNodeByIdFromApiPrompt(e.detail, fullId);
+        let outputInputs = (_b = output === null || output === void 0 ? void 0 : output[fullId]) === null || _b === void 0 ? void 0 : _b.inputs;
         if (!workflowNode ||
             !outputInputs ||
             outputInputs[this.seedWidget.name || "seed"] === undefined) {
-            const [n, v] = this.logger.warnParts(`Node ${this.id} not found in prompt data sent to server. This may be fine if only ` +
+            const [n, v] = this.logger.warnParts(`Node ${fullId} not found in prompt data sent to server. This may be fine if only ` +
                 `queuing part of the workflow. If not, then this could be a bug.`);
-            (_d = console[n]) === null || _d === void 0 ? void 0 : _d.call(console, ...v);
+            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
             return;
         }
         const seedToUse = this.getSeedToUse();
@@ -144,11 +150,11 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         outputInputs[this.seedWidget.name || "seed"] = seedToUse;
         this.lastSeed = seedToUse;
         if (seedToUse != this.seedWidget.value) {
-            this.lastSeedButton.name = `♻️ ${this.lastSeed}`;
+            this.lastSeedButton.label = `♻️ ${this.lastSeed}`;
             this.lastSeedButton.disabled = false;
         }
         else {
-            this.lastSeedButton.name = LAST_SEED_BUTTON_LABEL;
+            this.lastSeedButton.label = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;
         }
         if (this.lastSeedValue) {

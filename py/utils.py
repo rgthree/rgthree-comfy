@@ -152,10 +152,19 @@ def remove_path(path):
 
 def abspath(file_path: str):
   """Resolves the abspath of a file, resolving symlinks and user dirs."""
-  if file_path and not path_exists(file_path):
+  abs_path = os.path.abspath(file_path) if file_path else file_path
+  if abs_path and not path_exists(abs_path):
     maybe_path = os.path.abspath(os.path.realpath(os.path.expanduser(file_path)))
-    file_path = maybe_path if path_exists(maybe_path) else file_path
-  return file_path
+    abs_path = maybe_path if path_exists(maybe_path) else abs_path
+  return abs_path
+
+def sub_abspath(parent_dir: str, rel_path: str):
+  """Resolves the abspath under a parent directory ensuring it exists and is contained within."""
+  rel_path = os.path.join(parent_dir, rel_path)
+  abs_path = abspath(rel_path)
+  if not path_exists(abs_path) or not abs_path.startswith(parent_dir):
+    return None
+  return abs_path
 
 class ByPassTypeTuple(tuple):
   """A special class that will return additional "AnyType" strings beyond defined values.

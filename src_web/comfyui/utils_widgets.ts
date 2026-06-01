@@ -98,6 +98,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   options: IWidgetOptions = {};
   y: number = 0;
   last_y: number = 0;
+  disabled: boolean = false;
 
   protected mouseDowned: Vector2 | null = null;
   protected isMouseDownedAndOver: boolean = false;

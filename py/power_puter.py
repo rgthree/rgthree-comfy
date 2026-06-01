@@ -16,6 +16,7 @@ import time
 import operator as op
 import datetime
 import numpy as np
+import hashlib
 
 from typing import Any, Callable, Iterable, Optional, Union
 from types import MappingProxyType
@@ -108,6 +109,10 @@ def _get_built_in_fn_by_key(fn_key: str):
     raise ValueError('No built in function found.')
   return _BUILT_INS_BY_NAME_AND_KEY[fn_key]
 
+def sha264(message: str):
+  if isinstance(message, str):
+    return hashlib.sha256(message.encode()).hexdigest()
+  return None
 
 _BUILT_IN_FNS_LIST = [
   Function(name="round", call=round, args=(1, 2)),
@@ -134,6 +139,7 @@ _BUILT_IN_FNS_LIST = [
   Function(name="dir", call=dir, args=(1, 1)),
   Function(name="type", call=type, args=(1, 1)),
   Function(name="print", call=print, args=(0, None)),
+  Function(name="sha264", call=sha264, args=(1, 1)),
   # Comfy Specials
   Function(name="node", call='_get_node', args=(0, 1)),
   Function(name="nodes", call='_get_nodes', args=(0, 1)),

@@ -129,13 +129,24 @@ export function drawTogglePart(ctx, options) {
     ctx.restore();
     return [posX, toggleBgWidth];
 }
-export function drawInfoIcon(ctx, x, y, size = 12) {
+export function drawInfoIcon(ctx, x, y, size = 12, treatment = 'GRAYED') {
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x, y, size, size, [size * 0.1]);
-    ctx.fillStyle = "#2f82ec";
-    ctx.strokeStyle = "#0f2a5e";
-    ctx.fill();
+    if (treatment === 'GRAYED') {
+        ctx.fillStyle = "#aaa";
+        ctx.strokeStyle = "#aaa";
+    }
+    else {
+        ctx.fillStyle = "#2f82ec";
+        ctx.strokeStyle = "#2f82ec";
+    }
+    if (treatment === 'FILLED') {
+        ctx.fill();
+    }
+    else {
+        ctx.stroke();
+    }
     ctx.strokeStyle = "#FFF";
     ctx.lineWidth = 2;
     const midX = x + size / 2;

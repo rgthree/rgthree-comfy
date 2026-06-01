@@ -145,6 +145,14 @@ const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
       ],
     },
   ],
+  power_lora_loader: [
+    {
+      key: "nodes.power_lora_loader.show_info_badge",
+      type: ConfigType.BOOLEAN,
+      label: "Show info badge/button",
+      description: "Show an info badge/button on each lora row to signal and open lora details.",
+    },
+  ],
   advanced: [
     {
       key: "features.show_alerts_for_corrupt_workflows",
@@ -268,6 +276,7 @@ export class RgthreeConfigDialog extends RgthreeDialog {
     content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["features"]!, "Features"));
     content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["menus"]!, "Menus"));
     content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["groups"]!, "Groups"));
+    content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["power_lora_loader"]!, "Power Lora Loader"));
     content.appendChild(RgthreeConfigDialog.buildFieldset(CONFIGURABLE["advanced"]!, "Advanced"));
 
     content.addEventListener("input", (e) => {

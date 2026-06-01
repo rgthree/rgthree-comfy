@@ -7,16 +7,24 @@ import os
 from subprocess import Popen, PIPE, STDOUT
 
 
-def pull_path(path):
-  p = Popen(["git", "-C", path, "pull"], stdout=PIPE, stderr=STDOUT)
+def pull_path(path, origin = None, restore = False):
+  if restore:
+    p = Popen(["git", "-C", path, "restore", "."], stdout=PIPE, stderr=STDOUT)
+    output, error = p.communicate()
+
+  args = ["git", "-C", path, "pull"]
+  if origin is not None:
+    args.append('origin')
+    args.append(origin)
+  p = Popen(args, stdout=PIPE, stderr=STDOUT)
   output, error = p.communicate()
   return output.decode()
 
 THIS_DIR=os.path.dirname(os.path.abspath(__file__))
 
 def show_output(output):
-  if output.startswith('Already up to date'):
-    print(f' \33[32m🗸 {output}\33[0m', end ='')
+  if 'Already up to date' in output:
+    print(f' \33[32m🗸 Already up to date\33[0m', end ='')
   elif output.startswith('error:'):
     print(f' \33[31m🞫 Error.\33[0m \n {output}')
   else:
@@ -45,7 +53,7 @@ else:
 # Update ComfyUI itself.
 label = "{0:.<{max}}".format('Updating ComfyUI ', max=custom_extensions_name_max)
 print(label, end = '')
-show_output(pull_path('../'))
+show_output(pull_path('../', origin='master', restore=True))
 
 # If we have custom nodes, update them as well.
 if len(custom_extensions) > 0:

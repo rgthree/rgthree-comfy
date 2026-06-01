@@ -10,6 +10,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot,
   IContextMenuValue,
+  ISerialisedNode,
   ISlotType,
   LGraphNodeConstructor,
   LGraphEventMode,
@@ -22,7 +23,7 @@ import type {
   Subgraph,
   SubgraphNode,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyApiPrompt, ComfyNodeDef} from "typings/comfy";
 import type {Constructor} from "typings/rgthree";
 
 import {app} from "scripts/app.js";
@@ -800,6 +801,50 @@ export function getNodeById(id: NodeId) {
   let node = app.graph.getNodeById(id);
   node = node ?? app.canvas.getCurrentGraph()?.getNodeById(id) ?? null;
   return node || findSomethingInAllSubgraphs((subgraph) => subgraph?.getNodeById(id) ?? null);
+}
+
+/**
+ * Given a serialized workflow, get the mutable node data.
+ *
+ * Should be kept up to date with `py/utils_graph#get_worflow_node`
+ */
+export function getNodeByIdFromApiPrompt(apiPrompt: ComfyApiPrompt, id: string | number) {
+  const fullId = getFullNodeIdFromApiPrompt(apiPrompt, id);
+  const workflow = apiPrompt.workflow ?? {};
+  const nodeIds = String(fullId).split(":");
+  const workflowNodes = workflow?.["nodes"] ?? [];
+  const workflowSubgraphs = workflow?.["definitions"]?.["subgraphs"] ?? [];
+
+  let nodesList = workflowNodes;
+  let found: ISerialisedNode | null = null;
+
+  for (const nodeId of nodeIds) {
+    found = nodesList.find((n: ISerialisedNode) => String(n.id) === String(nodeId)) || null;
+    if (found?.["type"]) {
+      const subgraph =
+        workflowSubgraphs.find((n: ISerialisedNode) => n.id === found!["type"]) || null;
+      if (subgraph?.["nodes"]) {
+        nodesList = subgraph["nodes"];
+      }
+    }
+  }
+  return found;
+}
+
+/**
+ * Finds the correct "full id" of a node (that is, with subgraph prefixes like "5:12:5"). This is
+ * really only important when attempting to modify the prompt sent to the backend, like the seed
+ * node does to generate a new seed on the client.
+ *
+ * Because the prompt `output` is an object keyed by full id, we can look to see if it has either
+ * the id passed in (either a single id, or an already-full id), or ends with the id passed in.
+ *
+ * NOTE: This does NOT find subgraph nodes since they do not exist in `apiPrompt.output`.
+ * TODO: We could search for subgraph nodes in the `apiPrompt.workflow.definitions.subgraphs`.
+ */
+export function getFullNodeIdFromApiPrompt(apiPrompt: ComfyApiPrompt, id: string | number) {
+  const output = apiPrompt.output ?? {};
+  return output[id] ? id : Object.keys(output).find((i) => i.endsWith(`:${id}`));
 }
 
 /**

@@ -24,6 +24,7 @@ export class RgthreeBaseWidget {
         this.options = {};
         this.y = 0;
         this.last_y = 0;
+        this.disabled = false;
         this.mouseDowned = null;
         this.isMouseDownedAndOver = false;
         this.hitAreas = {};

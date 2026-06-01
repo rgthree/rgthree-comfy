@@ -55,6 +55,9 @@
         "key_connections_input": "Shift + S",
         "key_connections_output": "Shift + D"
       }
+    },
+    "power_lora_loader": {
+      "show_info_badge": true
     }
   },
   "announcements": {

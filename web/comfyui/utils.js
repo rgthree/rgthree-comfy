@@ -528,6 +528,31 @@ export function getNodeById(id) {
     node = (_b = node !== null && node !== void 0 ? node : (_a = app.canvas.getCurrentGraph()) === null || _a === void 0 ? void 0 : _a.getNodeById(id)) !== null && _b !== void 0 ? _b : null;
     return node || findSomethingInAllSubgraphs((subgraph) => { var _a; return (_a = subgraph === null || subgraph === void 0 ? void 0 : subgraph.getNodeById(id)) !== null && _a !== void 0 ? _a : null; });
 }
+export function getNodeByIdFromApiPrompt(apiPrompt, id) {
+    var _a, _b, _c, _d;
+    const fullId = getFullNodeIdFromApiPrompt(apiPrompt, id);
+    const workflow = (_a = apiPrompt.workflow) !== null && _a !== void 0 ? _a : {};
+    const nodeIds = String(fullId).split(":");
+    const workflowNodes = (_b = workflow === null || workflow === void 0 ? void 0 : workflow["nodes"]) !== null && _b !== void 0 ? _b : [];
+    const workflowSubgraphs = (_d = (_c = workflow === null || workflow === void 0 ? void 0 : workflow["definitions"]) === null || _c === void 0 ? void 0 : _c["subgraphs"]) !== null && _d !== void 0 ? _d : [];
+    let nodesList = workflowNodes;
+    let found = null;
+    for (const nodeId of nodeIds) {
+        found = nodesList.find((n) => String(n.id) === String(nodeId)) || null;
+        if (found === null || found === void 0 ? void 0 : found["type"]) {
+            const subgraph = workflowSubgraphs.find((n) => n.id === found["type"]) || null;
+            if (subgraph === null || subgraph === void 0 ? void 0 : subgraph["nodes"]) {
+                nodesList = subgraph["nodes"];
+            }
+        }
+    }
+    return found;
+}
+export function getFullNodeIdFromApiPrompt(apiPrompt, id) {
+    var _a;
+    const output = (_a = apiPrompt.output) !== null && _a !== void 0 ? _a : {};
+    return output[id] ? id : Object.keys(output).find((i) => i.endsWith(`:${id}`));
+}
 export function findFromNodeForSubgraph(subgraphId) {
     var _a;
     const node = (_a = findSomethingInAllSubgraphs((subgraph) => subgraph.nodes

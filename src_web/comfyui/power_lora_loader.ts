@@ -32,6 +32,7 @@ import {
   RgthreeDividerWidget,
 } from "./utils_widgets.js";
 import {rgthreeApi} from "rgthree/common/rgthree_api.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 import {showLoraChooser} from "./utils_menu.js";
 import {moveArrayItem, removeArrayItem} from "rgthree/common/shared_utils.js";
 import {RgthreeLoraInfoDialog} from "./dialog_info.js";
@@ -40,6 +41,8 @@ import {LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
 
 const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
+const PROP_LABEL_LORA_MATCH = "Match";
+const PROP_LABEL_LORA_MATCH_STATIC = `@${PROP_LABEL_LORA_MATCH}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
 
@@ -61,6 +64,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     values: [PROP_VALUE_SHOW_STRENGTHS_SINGLE, PROP_VALUE_SHOW_STRENGTHS_SEPARATE],
   };
 
+  static [PROP_LABEL_LORA_MATCH_STATIC] = {
+    type: "string",
+  };
+
   /** Counts the number of lora widgets. This is used to give unique names.  */
   private loraWidgetsCounter = 0;
 
@@ -71,6 +78,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     super(title);
 
     this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
+    this.properties[PROP_LABEL_LORA_MATCH] = "";
 
     // Prefetch loras list.
     rgthreeApi.getLoras();
@@ -183,31 +191,57 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       new RgthreeBetterButtonWidget(
         "➕ Add Lora",
         (event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) => {
-          rgthreeApi.getLoras().then((lorasDetails) => {
-            const loras = lorasDetails.map((l) => l.file);
-            showLoraChooser(
-              event as MouseEvent,
-              (value: IContextMenuValue | string) => {
-                if (typeof value === "string") {
-                  if (value.includes("Power Lora Chooser")) {
-                    // new RgthreePowerLoraChooserDialog().show();
-                  } else if (value !== "NONE") {
-                    this.addNewLoraWidget(value);
-                    const computed = this.computeSize();
-                    const tempHeight = (this as any)._tempHeight ?? 15;
-                    this.size[1] = Math.max(tempHeight, computed[1]);
-                    this.setDirtyCanvas(true, true);
-                  }
-                }
-                // }, null, ["⚡️ Power Lora Chooser", ...loras]);
-              },
-              null,
-              [...loras],
-            );
+          this.showLoraChooser(event, (value: string) => {
+            if (value.includes("Power Lora Chooser")) {
+              // new RgthreePowerLoraChooserDialog().show();
+            } else if (value !== "NONE") {
+              this.addNewLoraWidget(value);
+              const computed = this.computeSize();
+              const tempHeight = (this as any)._tempHeight ?? 15;
+              this.size[1] = Math.max(tempHeight, computed[1]);
+              this.setDirtyCanvas(true, true);
+            }
+            // }, null, ["⚡️ Power Lora Chooser", ...loras]);
           });
           return true;
         },
       ),
+    );
+  }
+
+  async showLoraChooser(event: CanvasMouseEvent, onChoose: (value: string) => void) {
+    const lorasDetails = await rgthreeApi.getLoras();
+    let loras = lorasDetails.map((l) => l.file);
+    let prefix = "";
+    if (this.properties[PROP_LABEL_LORA_MATCH]) {
+      const rgx = new RegExp(this.properties[PROP_LABEL_LORA_MATCH] as string);
+      loras = loras.filter((l) => l.match(rgx));
+      if (loras[0]) {
+        prefix = loras[0];
+        for (const lora of loras) {
+          let similar = "";
+          let i = 0;
+          while (prefix[i] && prefix[i] === lora[i]) {
+            similar += prefix[i++];
+          }
+          prefix = similar;
+          if (!prefix) break;
+        }
+        if (prefix) {
+          loras = loras.map((l) => l.replace(prefix!, ""));
+        }
+      }
+    }
+    showLoraChooser(
+      event as MouseEvent,
+      (value: IContextMenuValue | string) => {
+        if (typeof value === "string") {
+          onChoose(prefix + value);
+        }
+        this.setDirtyCanvas(true, true);
+      },
+      null,
+      [...loras],
     );
   }
 
@@ -516,7 +550,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   protected override hitAreas: RgthreeBaseHitAreas<
     | "toggle"
     | "lora"
-    // | "info"
+    | "info"
     | "strengthDec"
     | "strengthVal"
     | "strengthInc"
@@ -528,7 +562,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   > = {
     toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
     lora: {bounds: [0, 0] as Vector2, onClick: this.onLoraClick},
-    // info: { bounds: [0, 0] as Vector2, onDown: this.onInfoDown },
+    info: {bounds: [0, 0] as Vector2, onDown: this.onInfoDown},
 
     strengthDec: {bounds: [0, 0] as Vector2, onClick: this.onStrengthDecDown},
     strengthVal: {bounds: [0, 0] as Vector2, onClick: this.onStrengthValUp},
@@ -695,12 +729,20 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     const infoIconSize = height * 0.66;
     const infoWidth = infoIconSize + innerMargin + innerMargin;
     // Draw an info emoji; if checks if it's enabled (to quickly turn it on or off)
-    if ((this.hitAreas as any)["info"]) {
+    if (CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.show_info_badge")) {
       rposX -= innerMargin;
-      drawInfoIcon(ctx, rposX - infoIconSize, posY + (height - infoIconSize) / 2, infoIconSize);
+      drawInfoIcon(
+        ctx,
+        rposX - infoIconSize,
+        posY + (height - infoIconSize) / 2,
+        infoIconSize,
+        this.loraInfo?.raw?.civitai ? "FILLED" : this.loraInfo?.hasInfoFile ? "OUTLINED" : "GRAYED",
+      );
       // ctx.fillText('ℹ', posX, midY);
       (this.hitAreas as any).info.bounds = [rposX - infoIconSize, infoWidth];
       rposX = rposX - infoIconSize - innerMargin;
+    } else {
+      (this.hitAreas as any).info.bounds = [0, 0];
     }
 
     // Draw lora label
@@ -743,14 +785,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     this.showLoraInfoDialog();
   }
 
-  onLoraClick(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
-    showLoraChooser(event, (value: IContextMenuValue) => {
-      if (typeof value === "string") {
-        this.value.lora = value;
-        this.loraInfo = null;
-        this.getLoraInfo();
-      }
-      node.setDirtyCanvas(true, true);
+  onLoraClick(event: CanvasMouseEvent, pos: Vector2, node: RgthreePowerLoraLoader) {
+    node.showLoraChooser(event, (value: string) => {
+      this.value.lora = value;
+      this.loraInfo = null;
+      this.getLoraInfo();
     });
     this.cancelMouseDown();
   }

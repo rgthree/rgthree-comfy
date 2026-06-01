@@ -1,6 +1,8 @@
 import os
 from aiohttp import web
 
+from ..utils import sub_abspath
+
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/')
 
@@ -23,18 +25,25 @@ def is_param_truthy(request, param):
 
 
 def set_default_page_resources(path, routes):
-  """ Sets up routes for handling static files under a path."""
+  """Sets up routes for handling static files under a path."""
 
   @routes.get(f'/rgthree/{path}/{{file}}')
   async def get_resource(request):
-    """ Returns a resource file. """
-    return web.FileResponse(os.path.join(DIR_WEB, path, request.match_info['file']))
+    """Returns a resource file."""
+    filepath = request.match_info['file']
+    abspath = sub_abspath(os.path.join(DIR_WEB, path), filepath)
+    if abspath is None:
+      return web.HTTPNotFound()
+    return web.FileResponse(abspath)
 
   @routes.get(f'/rgthree/{path}/{{subdir}}/{{file}}')
   async def get_resource_subdir(request):
-    """ Returns a resource file. """
-    return web.FileResponse(
-      os.path.join(DIR_WEB, path, request.match_info['subdir'], request.match_info['file']))
+    """Returns a resource file."""
+    filepath = os.path.join(request.match_info['subdir'], request.match_info['file'])
+    abspath = sub_abspath(os.path.join(DIR_WEB, path), filepath)
+    if abspath is None:
+      return web.HTTPNotFound()
+    return web.FileResponse(abspath)
 
 
 def set_default_page_routes(path, routes):
