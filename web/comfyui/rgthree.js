@@ -188,11 +188,15 @@ class Rgthree extends EventTarget {
                     LiteGraph.closeAllContextMenus();
                     if (e.button == 2) {
                         const canvas = await waitForCanvas();
-                        new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
-                            title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
+                        const menu = new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
+                            title: "rgthree-comfy",
                             left: e.clientX,
                             top: 5,
                         });
+                        const titleEl = query(".litemenu-title", menu.root);
+                        if (titleEl) {
+                            titleEl.innerHTML = `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`;
+                        }
                         return;
                     }
                     if (e.button == 0) {

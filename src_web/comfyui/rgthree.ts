@@ -320,11 +320,18 @@ class Rgthree extends EventTarget {
           LiteGraph.closeAllContextMenus();
           if (e.button == 2) {
             const canvas = await waitForCanvas();
-            new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
-              title: `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`,
+            // Newer ComfyUI frontends render the ContextMenu title with textContent (no HTML
+            // parsing), which would show an HTML title as raw markup. Pass a plain-text title,
+            // then swap in our logo markup afterwards.
+            const menu = new LiteGraph.ContextMenu(this.getRgthreeIContextMenuValues(), {
+              title: "rgthree-comfy",
               left: e.clientX,
               top: 5,
             });
+            const titleEl = query<HTMLDivElement>(".litemenu-title", menu.root);
+            if (titleEl) {
+              titleEl.innerHTML = `<div class="rgthree-contextmenu-item rgthree-contextmenu-title-rgthree-comfy">${logoRgthree} rgthree-comfy</div>`;
+            }
             return;
           }
           if (e.button == 0) {
