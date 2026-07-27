@@ -1,4 +1,4 @@
-var _a, _b;
+var _a, _b, _c;
 import { app } from "../../scripts/app.js";
 import { RgthreeBaseServerNode } from "./base_node.js";
 import { rgthree } from "./rgthree.js";
@@ -16,6 +16,8 @@ const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
 const PROP_LABEL_LORA_MATCH = "Match";
 const PROP_LABEL_LORA_MATCH_STATIC = `@${PROP_LABEL_LORA_MATCH}`;
+const PROP_LABEL_STRENGTH_STEP = "Strength Step";
+const PROP_LABEL_STRENGTH_STEP_STATIC = `@${PROP_LABEL_STRENGTH_STEP}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
 class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
@@ -27,6 +29,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.widgetButtonSpacer = null;
         this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
         this.properties[PROP_LABEL_LORA_MATCH] = "";
+        this.properties[PROP_LABEL_STRENGTH_STEP] = 0.05;
         rgthreeApi.getLoras();
         if (rgthree.loadingApiJson) {
             const fullApiJson = rgthree.loadingApiJson;
@@ -285,12 +288,16 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
               strength (which will be used for both model and clip), or a more advanced view with
               both model and clip strengths being modifiable.
             </p></li>
+            <li><p>
+              <code>${PROP_LABEL_STRENGTH_STEP}</code> - The increment used when clicking the
+              +/- strength buttons. Defaults to 0.05.
+            </p></li>
           </ul>
         </li>
       </ul>`;
     }
 }
-_a = PROP_LABEL_SHOW_STRENGTHS_STATIC, _b = PROP_LABEL_LORA_MATCH_STATIC;
+_a = PROP_LABEL_SHOW_STRENGTHS_STATIC, _b = PROP_LABEL_LORA_MATCH_STATIC, _c = PROP_LABEL_STRENGTH_STEP_STATIC;
 RgthreePowerLoraLoader.title = NodeTypesString.POWER_LORA_LOADER;
 RgthreePowerLoraLoader.type = NodeTypesString.POWER_LORA_LOADER;
 RgthreePowerLoraLoader.comfyClass = NodeTypesString.POWER_LORA_LOADER;
@@ -300,6 +307,9 @@ RgthreePowerLoraLoader[_a] = {
 };
 RgthreePowerLoraLoader[_b] = {
     type: "string",
+};
+RgthreePowerLoraLoader[_c] = {
+    type: "number",
 };
 class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget {
     constructor(name = "PowerLoraLoaderHeaderWidget") {
@@ -541,16 +551,16 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.cancelMouseDown();
     }
     onStrengthDecDown(event, pos, node) {
-        this.stepStrength(-1, false);
+        this.stepStrength(-1, false, node);
     }
     onStrengthIncDown(event, pos, node) {
-        this.stepStrength(1, false);
+        this.stepStrength(1, false, node);
     }
     onStrengthTwoDecDown(event, pos, node) {
-        this.stepStrength(-1, true);
+        this.stepStrength(-1, true, node);
     }
     onStrengthTwoIncDown(event, pos, node) {
-        this.stepStrength(1, true);
+        this.stepStrength(1, true, node);
     }
     onStrengthAnyMove(event, pos, node) {
         this.doOnStrengthAnyMove(event, false);
@@ -594,11 +604,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             }
         }));
     }
-    stepStrength(direction, isTwo = false) {
-        var _c;
-        let step = 0.05;
+    stepStrength(direction, isTwo = false, node) {
+        var _c, _d, _e;
+        let step = (_d = (_c = node === null || node === void 0 ? void 0 : node.properties) === null || _c === void 0 ? void 0 : _c[PROP_LABEL_STRENGTH_STEP]) !== null && _d !== void 0 ? _d : 0.05;
         let prop = isTwo ? "strengthTwo" : "strength";
-        let strength = ((_c = this.value[prop]) !== null && _c !== void 0 ? _c : 1) + step * direction;
+        let strength = ((_e = this.value[prop]) !== null && _e !== void 0 ? _e : 1) + step * direction;
         this.value[prop] = Math.round(strength * 100) / 100;
     }
     getLoraInfo(force = false) {

@@ -43,6 +43,8 @@ const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
 const PROP_LABEL_LORA_MATCH = "Match";
 const PROP_LABEL_LORA_MATCH_STATIC = `@${PROP_LABEL_LORA_MATCH}`;
+const PROP_LABEL_STRENGTH_STEP = "Strength Step";
+const PROP_LABEL_STRENGTH_STEP_STATIC = `@${PROP_LABEL_STRENGTH_STEP}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
 
@@ -68,6 +70,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     type: "string",
   };
 
+  static [PROP_LABEL_STRENGTH_STEP_STATIC] = {
+    type: "number",
+  };
+
   /** Counts the number of lora widgets. This is used to give unique names.  */
   private loraWidgetsCounter = 0;
 
@@ -79,6 +85,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
     this.properties[PROP_LABEL_SHOW_STRENGTHS] = PROP_VALUE_SHOW_STRENGTHS_SINGLE;
     this.properties[PROP_LABEL_LORA_MATCH] = "";
+    this.properties[PROP_LABEL_STRENGTH_STEP] = 0.05;
 
     // Prefetch loras list.
     rgthreeApi.getLoras();
@@ -435,6 +442,10 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
               <code>${PROP_LABEL_SHOW_STRENGTHS}</code> - Change between showing a single, simple
               strength (which will be used for both model and clip), or a more advanced view with
               both model and clip strengths being modifiable.
+            </p></li>
+            <li><p>
+              <code>${PROP_LABEL_STRENGTH_STEP}</code> - The increment used when clicking the
+              +/- strength buttons. Defaults to 0.05.
             </p></li>
           </ul>
         </li>
@@ -795,16 +806,16 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   }
 
   onStrengthDecDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.stepStrength(-1, false);
+    this.stepStrength(-1, false, node);
   }
   onStrengthIncDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.stepStrength(1, false);
+    this.stepStrength(1, false, node);
   }
   onStrengthTwoDecDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.stepStrength(-1, true);
+    this.stepStrength(-1, true, node);
   }
   onStrengthTwoIncDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
-    this.stepStrength(1, true);
+    this.stepStrength(1, true, node);
   }
 
   onStrengthAnyMove(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
@@ -855,8 +866,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     }) as EventListener);
   }
 
-  private stepStrength(direction: -1 | 1, isTwo = false) {
-    let step = 0.05;
+  private stepStrength(direction: -1 | 1, isTwo = false, node?: TLGraphNode) {
+    let step = (node?.properties?.[PROP_LABEL_STRENGTH_STEP] as number) ?? 0.05;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     let strength = (this.value[prop] ?? 1) + step * direction;
     this.value[prop] = Math.round(strength * 100) / 100;
