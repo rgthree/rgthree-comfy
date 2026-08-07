@@ -11,9 +11,6 @@ class RgthreeImageComparer(PreviewImage):
   FUNCTION = "compare_images"
   DESCRIPTION = "Compares two images with a hover slider, or click from properties."
 
-  RETURN_TYPES = ("IMAGE",)
-  RETURN_NAMES = ("image_a",)
-
   @classmethod
   def INPUT_TYPES(cls):  # pylint: disable = invalid-name, missing-function-docstring
     return {
@@ -42,7 +39,4 @@ class RgthreeImageComparer(PreviewImage):
     if image_b is not None and len(image_b) > 0:
       result['ui']['b_images'] = self.save_images(image_b, filename_prefix, prompt, extra_pnginfo)['ui']['images']
 
-    return {
-      "ui": result["ui"],
-      "result": (image_a,)
-    }
+    return result
