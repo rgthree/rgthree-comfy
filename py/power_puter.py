@@ -336,7 +336,7 @@ class RgthreePowerPuter:
     code = kwargs['code']
     unique_id = kwargs['unique_id']
     pnginfo = kwargs['extra_pnginfo']
-    workflow = pnginfo["workflow"] if "workflow" in pnginfo else {"nodes": []}
+    workflow = pnginfo["workflow"] if pnginfo and "workflow" in pnginfo else {"nodes": []}
     prompt = kwargs['prompt']
     dynprompt = kwargs['dynprompt']
 
