@@ -1,7 +1,8 @@
 import { RgthreeDialog } from "../../rgthree/common/dialog.js";
 import { createElement as $el, empty, appendChildren, getClosestOrSelf, query, queryAll, setAttributes, } from "../../rgthree/common/utils_dom.js";
-import { logoCivitai, link, pencilColored, diskColored, dotdotdot, } from "../../rgthree/common/media/svgs.js";
+import { logoCivitai, link, pencilColored, diskColored, dotdotdot, play, pause, volumeHigh, volumeMute, } from "../../rgthree/common/media/svgs.js";
 import { CHECKPOINT_INFO_SERVICE, LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
+import { SERVICE as CONFIG_SERVICE } from "./services/config_service.js";
 import { rgthree } from "./rgthree.js";
 import { MenuButton } from "../../rgthree/common/menu.js";
 import { generateId, injectCss } from "../../rgthree/common/shared_utils.js";
@@ -166,9 +167,16 @@ class RgthreeInfoDialog extends RgthreeDialog {
 
       <ul class="rgthree-info-images">${(_y = (_x = info.images) === null || _x === void 0 ? void 0 : _x.map((img) => `
         <li>
-          <figure>${img.type === 'video'
-            ? `<video src="${img.url}" autoplay loop></video>`
+          <figure>${img.type === "video"
+            ? `<video src="${img.url}"
+                        ${(CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.info_autoplay_video") && "autoplay") || ""}
+                        loop
+                        ></video>`
             : `<img src="${img.url}" />`}
+            <menu>
+              <button class="rgthree-button-reset rgthree-info-btn-play-pause" data-action="video-play-pause">${play}${pause}</button>
+              <button class="rgthree-button-reset rgthree-info-btn-mute" data-action="video-toggle-mute">${volumeHigh}${volumeMute}</button>
+            </menu>
             <figcaption><!--
               -->${imgInfoField("", img.civitaiUrl
             ? `<a href="${img.civitaiUrl}" target="_blank">civitai${link}</a>`
@@ -185,6 +193,41 @@ class RgthreeInfoDialog extends RgthreeDialog {
         </li>`).join("")) !== null && _y !== void 0 ? _y : ""}</ul>
     `;
         const div = $el("div", { html });
+        for (const fig of queryAll("figure", div)) {
+            const video = query("video", fig);
+            if (!video)
+                continue;
+            video.addEventListener("play", () => {
+                video.classList.add("-rgthree-is-playing");
+            });
+            video.addEventListener("pause", () => {
+                video.classList.remove("-rgthree-is-playing");
+            });
+            query('[data-action="video-play-pause"]', fig).addEventListener("click", () => {
+                const isPlaying = !!(video.currentTime > 0 &&
+                    !video.paused &&
+                    !video.ended &&
+                    video.readyState > 2);
+                if (isPlaying) {
+                    video.pause();
+                }
+                else {
+                    video.play();
+                }
+            });
+            video.volume = 0;
+            video.classList.add("-rgthree-is-muted");
+            query('[data-action="video-toggle-mute"]', fig).addEventListener("click", () => {
+                if (!video.volume) {
+                    video.volume = 0.66;
+                    video.classList.remove("-rgthree-is-muted");
+                }
+                else {
+                    video.volume = 0;
+                    video.classList.add("-rgthree-is-muted");
+                }
+            });
+        }
         if (rgthree.isDevMode()) {
             setAttributes(query('[stub="menu"]', div), {
                 children: [
@@ -197,7 +240,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
                                 callback: async (e) => {
                                     var _a;
                                     if ((_a = this.modelInfo) === null || _a === void 0 ? void 0 : _a.file) {
-                                        window.open(`rgthree/api/loras/info?file=${encodeURIComponent(this.modelInfo.file)}`);
+                                        window.open(`rgthree/api/loras/info?files=${encodeURIComponent(this.modelInfo.file)}`);
                                     }
                                 },
                             },

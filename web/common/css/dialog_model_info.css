@@ -149,7 +149,7 @@
   margin: 2px;
 }
 .rgthree-info-dialog .rgthree-info-table tr[data-field-name=userNote] td > span:first-child {
-  white-space: pre;
+  white-space: pre-wrap;
 }
 .rgthree-info-dialog .rgthree-info-table tr.rgthree-info-table-break-row td {
   border: 0;
@@ -268,6 +268,44 @@
 .rgthree-info-dialog .rgthree-info-images > li figure video, .rgthree-info-dialog .rgthree-info-images > li figure img {
   max-height: 45vh;
 }
+.rgthree-info-dialog .rgthree-info-images > li figure menu {
+  display: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu {
+  display: block;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu button {
+  position: absolute;
+  top: 8px;
+  width: 24px;
+  height: 24px;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu svg {
+  position: absolute;
+  inset: 0;
+  filter: drop-shadow(1px 1px 3px black);
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu svg + svg {
+  display: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu .rgthree-info-btn-play-pause {
+  left: 8px;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid) ~ menu .rgthree-info-btn-mute {
+  right: 8px;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid).-rgthree-is-playing ~ menu .rgthree-info-btn-play-pause svg {
+  display: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid).-rgthree-is-playing ~ menu .rgthree-info-btn-play-pause svg + svg {
+  display: block;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid).-rgthree-is-muted ~ menu .rgthree-info-btn-mute svg {
+  display: none;
+}
+.rgthree-info-dialog .rgthree-info-images > li figure video:not(#fakeid).-rgthree-is-muted ~ menu .rgthree-info-btn-mute svg + svg {
+  display: block;
+}
 .rgthree-info-dialog .rgthree-info-images > li figure figcaption {
   position: absolute;
   left: 0;
@@ -277,8 +315,10 @@
   font-size: 12px;
   background: rgba(0, 0, 0, 0.85);
   opacity: 0;
+  max-height: 90%;
+  overflow: auto;
   transform: translateY(50px);
-  transition: all 0.25s ease-in-out;
+  transition: transform 0.25s ease-in-out, opacity 0.25s ease-in-out;
 }
 .rgthree-info-dialog .rgthree-info-images > li figure figcaption > span {
   display: inline-block;

@@ -152,6 +152,12 @@ const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
       label: "Show info badge/button",
       description: "Show an info badge/button on each lora row to signal and open lora details.",
     },
+    {
+      key: "nodes.power_lora_loader.info_autoplay_video",
+      type: ConfigType.BOOLEAN,
+      label: "Autoplay video previews in info dialog.",
+      description: "In the info dialog, autoplay video preview images.",
+    },
   ],
   advanced: [
     {

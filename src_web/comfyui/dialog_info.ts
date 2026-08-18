@@ -14,9 +14,14 @@ import {
   pencilColored,
   diskColored,
   dotdotdot,
+  play,
+  pause,
+  volumeHigh,
+  volumeMute,
 } from "rgthree/common/media/svgs.js";
 import {RgthreeModelInfo} from "typings/rgthree.js";
 import {CHECKPOINT_INFO_SERVICE, LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
+import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 import {rgthree} from "./rgthree.js";
 import {MenuButton} from "rgthree/common/menu.js";
 import {generateId, injectCss} from "rgthree/common/shared_utils.js";
@@ -257,10 +262,17 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
             (img) => `
         <li>
           <figure>${
-            img.type === 'video'
-              ? `<video src="${img.url}" autoplay loop></video>`
+            img.type === "video"
+              ? `<video src="${img.url}"
+                        ${(CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.info_autoplay_video") && "autoplay") || ""}
+                        loop
+                        ></video>`
               : `<img src="${img.url}" />`
-            }
+          }
+            <menu>
+              <button class="rgthree-button-reset rgthree-info-btn-play-pause" data-action="video-play-pause">${play}${pause}</button>
+              <button class="rgthree-button-reset rgthree-info-btn-mute" data-action="video-toggle-mute">${volumeHigh}${volumeMute}</button>
+            </menu>
             <figcaption><!--
               -->${imgInfoField(
                 "",
@@ -302,6 +314,42 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
 
     const div = $el("div", {html});
 
+    // Add functionality to the videos to play/pause and toggle mute.
+    for (const fig of queryAll("figure", div)) {
+      const video = query("video", fig);
+      if (!video) continue;
+      video.addEventListener("play", () => {
+        video.classList.add("-rgthree-is-playing");
+      });
+      video.addEventListener("pause", () => {
+        video.classList.remove("-rgthree-is-playing");
+      });
+      query('[data-action="video-play-pause"]', fig)!.addEventListener("click", () => {
+        const isPlaying = !!(
+          video.currentTime > 0 &&
+          !video.paused &&
+          !video.ended &&
+          video.readyState > 2
+        );
+        if (isPlaying) {
+          video.pause();
+        } else {
+          video.play();
+        }
+      });
+      video.volume = 0;
+      video.classList.add("-rgthree-is-muted");
+      query('[data-action="video-toggle-mute"]', fig)!.addEventListener("click", () => {
+        if (!video.volume) {
+          video.volume = 0.66;
+          video.classList.remove("-rgthree-is-muted");
+        } else {
+          video.volume = 0;
+          video.classList.add("-rgthree-is-muted");
+        }
+      });
+    }
+
     if (rgthree.isDevMode()) {
       setAttributes(query('[stub="menu"]', div)!, {
         children: [
@@ -314,7 +362,7 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
                 callback: async (e: PointerEvent) => {
                   if (this.modelInfo?.file) {
                     window.open(
-                      `rgthree/api/loras/info?file=${encodeURIComponent(this.modelInfo.file)}`,
+                      `rgthree/api/loras/info?files=${encodeURIComponent(this.modelInfo.file)}`,
                     );
                   }
                 },

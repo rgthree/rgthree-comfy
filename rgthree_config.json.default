@@ -57,7 +57,8 @@
       }
     },
     "power_lora_loader": {
-      "show_info_badge": true
+      "show_info_badge": true,
+      "info_autoplay_video": true
     }
   },
   "announcements": {

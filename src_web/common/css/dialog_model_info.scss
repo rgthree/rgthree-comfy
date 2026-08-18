@@ -183,7 +183,7 @@
     }
 
     tr[data-field-name="userNote"] td > span:first-child {
-      white-space: pre;
+      white-space: pre-wrap;
     }
 
     tr.rgthree-info-table-break-row td {
@@ -317,6 +317,43 @@
           max-height: 45vh;
         }
 
+        menu {display: none;}
+
+        video:not(#fakeid) {
+          ~ menu {
+            display: block;
+
+            button {
+              position: absolute;
+              top: 8px;
+              width: 24px;
+              height: 24px;
+            }
+            svg {
+              position: absolute;
+              inset: 0;
+              filter: drop-shadow(1px 1px 3px black);
+            }
+            svg + svg {
+              display: none;
+            }
+            .rgthree-info-btn-play-pause {
+              left: 8px;
+            }
+            .rgthree-info-btn-mute {
+              right: 8px;
+            }
+          }
+          &.-rgthree-is-playing ~ menu {
+            .rgthree-info-btn-play-pause svg {display: none;}
+            .rgthree-info-btn-play-pause svg + svg {display: block;}
+          }
+          &.-rgthree-is-muted ~ menu {
+            .rgthree-info-btn-mute svg {display: none;}
+            .rgthree-info-btn-mute svg + svg {display: block;}
+          }
+        }
+
         figcaption {
           position: absolute;
           left: 0;
@@ -326,8 +363,10 @@
           font-size: 12px;
           background: rgba(0,0,0,0.85);
           opacity: 0;
+          max-height: 90%;
+          overflow: auto;
           transform: translateY(50px);
-          transition: all 0.25s ease-in-out;
+          transition: transform 0.25s ease-in-out, opacity 0.25s ease-in-out;
 
           > span {
             display: inline-block;
