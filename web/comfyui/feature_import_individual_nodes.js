@@ -40,7 +40,7 @@ export async function importIndividualNodesInnerOnDragDrop(node, e) {
     const { workflow, prompt } = await tryToGetWorkflowDataFromEvent(e);
     const exact = ((workflow === null || workflow === void 0 ? void 0 : workflow.nodes) || []).find((n) => {
         var _a, _b;
-        return n.id === node.id &&
+        return n.id == node.id &&
             n.type === node.type &&
             (dynamicWidgetLengthNodes.includes(node.type) ||
                 ((_a = n.widgets_values) === null || _a === void 0 ? void 0 : _a.length) === ((_b = node.widgets_values) === null || _b === void 0 ? void 0 : _b.length));

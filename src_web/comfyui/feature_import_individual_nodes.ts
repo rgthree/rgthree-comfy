@@ -51,7 +51,7 @@ export async function importIndividualNodesInnerOnDragDrop(node: LGraphNode, e: 
   const {workflow, prompt} = await tryToGetWorkflowDataFromEvent(e);
   const exact = (workflow?.nodes || []).find(
     (n: any) =>
-      n.id === node.id &&
+      n.id == node.id && // Loose equality check to capture both number and strings.
       n.type === node.type &&
       (dynamicWidgetLengthNodes.includes(node.type) ||
         n.widgets_values?.length === node.widgets_values?.length),
