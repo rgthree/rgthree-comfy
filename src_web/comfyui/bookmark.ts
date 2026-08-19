@@ -29,7 +29,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   // counteract it's computeSize calculation by offsetting the start.
   static slot_start_y = -20;
 
-  // LiteGraph adds mroe spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
+  // LiteGraph adds more spacing than we want when calculating a nodes' `_collapsed_width`, so we'll
   // override it with a setter and re-set it measured exactly as we want.
   ___collapsed_width: number = 0;
 
@@ -51,6 +51,11 @@ export class Bookmark extends RgthreeBaseVirtualNode {
   }
 
   readonly keypressBound;
+  readonly keyupBound;
+
+  private longPressTimer: any = null;
+  private longPressTriggered: boolean = false;
+  private pendingShortcut: boolean = false;
 
   constructor(title = Bookmark.title) {
     super(title);
@@ -73,6 +78,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
       precision: 2,
     });
     this.keypressBound = this.onKeypress.bind(this);
+    this.keyupBound = this.onKeyup.bind(this);
     this.title = "🔖";
     this.onConstructed();
   }
@@ -89,10 +95,20 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
   override onAdded(graph: LGraph): void {
     KEY_EVENT_SERVICE.addEventListener("keydown", this.keypressBound as EventListener);
+    KEY_EVENT_SERVICE.addEventListener("keyup", this.keyupBound as EventListener);
   }
 
   override onRemoved(): void {
     KEY_EVENT_SERVICE.removeEventListener("keydown", this.keypressBound as EventListener);
+    KEY_EVENT_SERVICE.removeEventListener("keyup", this.keyupBound as EventListener);
+    this.clearLongPressTimer();
+  }
+
+  private clearLongPressTimer() {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
   }
 
   onKeypress(event: CustomEvent<{originalEvent: KeyboardEvent}>) {
@@ -104,9 +120,46 @@ export class Bookmark extends RgthreeBaseVirtualNode {
 
     // Only the shortcut keys are held down, optionally including "shift".
     if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0]!.value as string, true)) {
-      this.canvasToBookmark();
+      // Start tracking a potential long-press. Only set bookmark when on the current visible graph.
+      this.pendingShortcut = true;
+      this.longPressTriggered = false;
+
+      // Always prevent default once we recognize the shortcut sequence.
       originalEvent.preventDefault();
       originalEvent.stopPropagation();
+
+      if (!this.longPressTimer) {
+        this.longPressTimer = setTimeout(() => {
+          this.longPressTimer = null;
+          // Ensure keys are still held and we're on the current graph before setting.
+          if (KEY_EVENT_SERVICE.areOnlyKeysDown(this.widgets[0]!.value as string, true)
+              && this.graph === (app.canvas as LGraphCanvas).getCurrentGraph()) {
+            this.setBookmarkFromCanvas();
+            this.longPressTriggered = true;
+            this.pendingShortcut = false;
+          }
+        }, 1000);
+      }
+    }
+  }
+
+  onKeyup(event: CustomEvent<{originalEvent: KeyboardEvent}>) {
+    const originalEvent = event.detail.originalEvent;
+    const target = (originalEvent.target as HTMLElement)!;
+    if (getClosestOrSelf(target, 'input,textarea,[contenteditable="true"]')) {
+      return;
+    }
+
+    // If we were pending and long-press did not trigger, treat as a tap: recall bookmark.
+    if (this.pendingShortcut) {
+      this.clearLongPressTimer();
+      if (!this.longPressTriggered) {
+        this.canvasToBookmark();
+        originalEvent.preventDefault();
+        originalEvent.stopPropagation();
+      }
+      this.pendingShortcut = false;
+      this.longPressTriggered = false;
     }
   }
 
@@ -150,6 +203,26 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     }
     if (canvas?.ds?.scale != null) {
       canvas.ds.scale = Number(this.widgets[1]!.value || 1);
+    }
+    canvas.setDirty(true, true);
+  }
+
+  /** Sets this bookmark's position and zoom based on the current canvas viewport. */
+  setBookmarkFromCanvas() {
+    const canvas = app.canvas as LGraphCanvas;
+    // Only set when our node is in the current graph.
+    if (this.graph !== canvas.getCurrentGraph()) return;
+    const offset = canvas?.ds?.offset;
+    if (offset) {
+      // Inverse of canvasToBookmark padding logic.
+      this.pos[0] = -offset[0] + 16;
+      this.pos[1] = -offset[1] + 40;
+    }
+    if (canvas?.ds?.scale != null) {
+      // store zoom in widget index 1
+      if (this.widgets && this.widgets[1]) {
+        this.widgets[1]!.value = Number(canvas.ds.scale || 1);
+      }
     }
     canvas.setDirty(true, true);
   }
