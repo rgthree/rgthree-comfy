@@ -113,4 +113,3 @@ print()
 
 if get_config_value('announcements.comfy-nodes-20.incompatible', True):
   log_known_message('NODES2.0')
-log_known_message('COMFYUI_SWWAN')
