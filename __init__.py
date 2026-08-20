@@ -14,7 +14,7 @@ import random
 
 import execution
 
-from .py.log import log
+from .py.log import log, log_known_message
 from .py.config import get_config_value
 from .py.server.rgthree_server import *
 
@@ -79,13 +79,13 @@ if get_config_value('unreleased.dynamic_context.enabled') is True:
 WEB_DIRECTORY = "./web/comfyui"
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DIR_WEB = os.path.abspath(f'{THIS_DIR}/{WEB_DIRECTORY}')
-DIR_PY = os.path.abspath(f'{THIS_DIR}/py')
+DIR_WEB = os.path.abspath(os.path.join(THIS_DIR, WEB_DIRECTORY))
+DIR_PY = os.path.abspath(os.path.join(THIS_DIR, 'py'))
 
 # remove old directories
 OLD_DIRS = [
-  os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree'),
-  os.path.abspath(f'{THIS_DIR}/../../web/extensions/rgthree-comfy'),
+  os.path.abspath(os.path.join(THIS_DIR, '..', '..', 'web', 'extensions', 'rgthree')),
+  os.path.abspath(os.path.join(THIS_DIR, '..', '..', 'web', 'extensions', 'rgthree-comfy')),
 ]
 for old_dir in OLD_DIRS:
   if os.path.exists(old_dir):
@@ -112,15 +112,5 @@ log(f'Loaded {len(nodes)} {random.choice(adjs)} nodes. 🎉', color='BRIGHT_GREE
 print()
 
 if get_config_value('announcements.comfy-nodes-20.incompatible', True):
-  message = (
-    "ComfyUI's new Node 2.0 rendering may be incompatible with some rgthree-comfy nodes "
-    "and features, breaking some rendering as well as losing the ability to "
-    "access a node's properties (a vital part of many nodes). It also appears to run MUCH more "
-    "slowly spiking CPU usage and causing jankiness and unresponsiveness, especially with large "
-    "workflows. Personally I am not planning to use the new Nodes 2.0 and, unfortunately, am not "
-    "able to invest the time to investigate and overhaul rgthree-comfy where needed. "
-    "If you have issues when Nodes 2.0 is enabled, I'd urge you to switch it off as well and "
-    "join me in hoping ComfyUI is not planning to deprecate the existing, stable canvas rendering "
-    "all together.\n"
-  )
-  log(message, color='YELLOW', id='announcements.comfy-nodes-20.incompatible', at_most_secs=60)
+  log_known_message('NODES2.0')
+log_known_message('COMFYUI_SWWAN')

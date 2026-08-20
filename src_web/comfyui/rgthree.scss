@@ -19,6 +19,8 @@
   opacity: 0;
   transition: all 0.33s ease-in-out;
   z-index: 3;
+  width: 90vw;
+  max-width: 800px;
 }
 .rgthree-top-messages-container > div:last-child {
   z-index: 2;
@@ -73,7 +75,7 @@
   display: inline-block;
   flex: 0 0 auto;
   font-size: 18px;
-  margin-right: 4px;
+  margin-right: 8px;
   line-height: 1;
 }
 .rgthree-top-messages-container [type="success"]::before {

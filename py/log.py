@@ -79,7 +79,9 @@ def _log_node(color, node_name, message, msg_color='RESET'):
   """Logs for a node message."""
   log(message, color=color, prefix=node_name.replace(" (rgthree)", ""), msg_color=msg_color)
 
+
 LOGGED = {}
+
 
 def log(message, color=None, msg_color=None, prefix=None, id=None, at_most_secs=None):
   """Basic logging."""
@@ -98,3 +100,49 @@ def log(message, color=None, msg_color=None, prefix=None, id=None, at_most_secs=
   msg = f'{color}[{NAME}]{prefix}'
   msg += f'{msg_color} {message}{COLORS["RESET"]}'
   print(msg)
+
+
+def log_known_message(message_type):
+  """A central place to log known alerts or messages."""
+  if message_type == 'NODES2.0':
+    log(
+      "ComfyUI's new Node 2.0 rendering may be incompatible with some rgthree-comfy nodes "
+      "and features, breaking some rendering as well as losing the ability to "
+      "access a node's properties (a vital part of many nodes). It also appears to run MUCH more "
+      "slowly spiking CPU usage and causing jankiness and unresponsiveness, especially with large "
+      "workflows. Personally I am not planning to use the new Nodes 2.0 and, unfortunately, am not "
+      "able to invest the time to investigate and overhaul rgthree-comfy where needed. "
+      "If you have issues when Nodes 2.0 is enabled, I'd urge you to switch it off as well and "
+      "join me in hoping ComfyUI is not planning to deprecate the existing, stable canvas "
+      "rendering all together.\n",
+      color="YELLOW",
+      id="announcements.comfy-nodes-20.incompatible",
+      at_most_secs=60
+    )
+  elif message_type == 'PRIMITIVE_REROUTE':
+    log(
+      "You are using rgthree-comfy reroutes with a ComfyUI Primitive node. Unfortunately, ComfyUI "
+      "has removed support for this. While rgthree-comfy has a best-effort support fallback for "
+      "now, it may no longer work as expected and is strongly recommended you either replace the "
+      "Reroute node using ComfyUI's reroute node, or refrain from using the Primitive node "
+      "(you can always use the rgthree-comfy \"Power Primitive\" for non-combo primitives).",
+      prefix="Reroute",
+      color="YELLOW",
+      id=message_type,
+      at_most_secs=20
+    )
+  elif message_type == 'COMFYUI_SWWAN':
+    log(
+      "The installed custom node \"ComfyUI_Swwan\" conflicts with \"rgthree-comfy\" by crudely "
+      "copying its code causing it to no longer function correctly when both are installed. To "
+      "restore \"rgthree-comfy\" you may need to remove \"ComfyUI_Swwan,\" restart your server and "
+      "refresh the browser.\n",
+      prefix="Conflict",
+      color="YELLOW",
+      msg_color="RESET",
+      id=message_type,
+      at_most_secs=60
+    )
+  else:
+    return False
+  return True

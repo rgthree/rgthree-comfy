@@ -3,13 +3,13 @@ from aiohttp import web
 from server import PromptServer
 
 from ..config import get_config_value
-from ..log import log
+from ..log import log, log_known_message
 from .utils_server import set_default_page_resources, set_default_page_routes, get_param
 from .routes_config import *
 from .routes_model_info import *
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-DIR_WEB = os.path.abspath(f'{THIS_DIR}/../../web/')
+DIR_EXTENSIONS = os.path.abspath(os.path.join(THIS_DIR, '..', '..', '..'))
 
 routes = PromptServer.instance.routes
 
@@ -30,19 +30,17 @@ async def api_print(request):
   """Logs a user message to the terminal."""
 
   message_type = get_param(request, 'type')
-  if message_type == 'PRIMITIVE_REROUTE':
-    log(
-      "You are using rgthree-comfy reroutes with a ComfyUI Primitive node. Unfortunately, ComfyUI "
-      "has removed support for this. While rgthree-comfy has a best-effort support fallback for "
-      "now, it may no longer work as expected and is strongly recommended you either replace the "
-      "Reroute node using ComfyUI's reroute node, or refrain from using the Primitive node "
-      "(you can always use the rgthree-comfy \"Power Primitive\" for non-combo primitives).",
-      prefix="Reroute",
-      color="YELLOW",
-      id=message_type,
-      at_most_secs=20
-    )
-  else:
-    log("Unknown log type from api", prefix="rgthree-comfy",color ="YELLOW")
-
+  if log_known_message(message_type) is False:
+    log("Unknown log type from api", prefix="rgthree-comfy", color="YELLOW")
   return web.json_response({})
+
+
+@routes.get('/rgthree/api/incompatible-extensions')
+async def api_incompatible_extensions(request):
+  """Checks if the extensions folder contains any bad folders known to cause conflict."""
+  data = {'extensions': []}
+  # There's probably a better way to check, but for now we'll assume we can check the parent
+  # directory for the existance of bad folders.
+  if os.path.isdir(os.path.join(DIR_EXTENSIONS, 'ComfyUI_Swwan')):
+    data['extensions'].append('ComfyUI_Swwan')
+  return web.json_response(data)
