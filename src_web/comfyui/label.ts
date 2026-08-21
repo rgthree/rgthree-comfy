@@ -75,8 +75,21 @@ export class Label extends RgthreeBaseVirtualNode {
     }`;
     const padding = Number(this.properties["padding"]) ?? 0;
 
-    // Support literal "\\n" sequences as newlines and trim trailing newlines
-    const processedTitle = (this.title ?? "").replace(/\\n/g, "\n").replace(/\n*$/, "");
+    // Interpret backslashes before "n" using parity so users can write:
+    // - "\\n" → literal "\\n" (backslash + letter n), not a newline
+    // - "\\\n" → a single "\\" followed by an actual newline
+    // We do this by matching one-or-more backslashes before "n" (/\\+n/g),
+    // counting how many backslashes there are, and then:
+    //   - if the count is odd: emit floor(count/2) backslashes + newline
+    //   - if the count is even: emit (count/2) backslashes + literal "n"
+    // Finally, trim any trailing newlines so the label height stays stable.
+    const processedTitle = (this.title ?? "")
+      .replace(
+        /\\+n/g,
+        (m) =>
+          "\\".repeat((m.length - 1) >> 1) + (((m.length - 1) % 2) ? "\n" : "n"),
+      )
+      .replace(/\n*$/, "");
     const lines = processedTitle.split("\n");
 
     const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
