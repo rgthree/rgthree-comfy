@@ -1,5 +1,7 @@
 import type {LGraphNode} from "@comfyorg/frontend";
 
+import {api} from "scripts/api.js";
+import {app} from "scripts/app.js";
 import {NodeTypesString} from "../constants";
 import {ComfyUITestEnvironment} from "../testing/comfyui_env";
 import {describe, should, beforeEach, expect, describeRun} from "../testing/runner.js";
@@ -53,6 +55,57 @@ describe("TestPowerPuter", async () => {
       await env.queuePrompt();
       expect(displayAny.widgets![0]!.value).toBe(data[0], data[1]);
     }
+  });
+
+  await should("handle API prompts without workflow metadata", async () => {
+    setPowerPuterValue(powerPuter, "STRING", '"power" + " puter"');
+    const prompt = await app.graphToPrompt();
+    let promptId: string | undefined;
+    const completedPromptIds = new Set<string>();
+    const failedPrompts = new Map<string, string>();
+    let resolveExecution!: () => void;
+    let rejectExecution!: (reason: Error) => void;
+    const execution = new Promise<void>((resolve, reject) => {
+      resolveExecution = resolve;
+      rejectExecution = reject;
+    });
+    const onExecuted = (event: Event) => {
+      const detail = (event as CustomEvent<{node: string; prompt_id: string}>).detail;
+      if (detail.node !== String(displayAny.id)) return;
+      if (detail.prompt_id === promptId) {
+        resolveExecution();
+      } else {
+        completedPromptIds.add(detail.prompt_id);
+      }
+    };
+    const onExecutionError = (event: Event) => {
+      const detail = (event as CustomEvent<{prompt_id: string; exception_message: string}>).detail;
+      if (detail.prompt_id === promptId) {
+        rejectExecution(new Error(detail.exception_message));
+      } else {
+        failedPrompts.set(detail.prompt_id, detail.exception_message);
+      }
+    };
+    api.addEventListener("executed", onExecuted);
+    api.addEventListener("execution_error", onExecutionError);
+
+    try {
+      const response = await api.fetchApi("/prompt", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({prompt: prompt.output}),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      promptId = ((await response.json()) as {prompt_id: string}).prompt_id;
+      if (completedPromptIds.has(promptId)) resolveExecution();
+      if (failedPrompts.has(promptId)) rejectExecution(new Error(failedPrompts.get(promptId)));
+      await execution;
+    } finally {
+      api.removeEventListener("executed", onExecuted);
+      api.removeEventListener("execution_error", onExecutionError);
+    }
+
+    expect(displayAny.widgets![0]!.value).toBe("power puter");
   });
 
   await should("handle inputs", async () => {
