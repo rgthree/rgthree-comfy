@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   LGraphNode as TLGraphNode,
   LGraphCanvas,
   Vector2,
@@ -9,7 +10,7 @@ import type {
   ICustomWidget,
   CanvasPointerEvent,
 } from "@comfyorg/frontend";
-import type {ComfyApiFormat, ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyApiFormat} from "typings/comfy.js";
 import type {RgthreeModelInfo} from "typings/rgthree.js";
 
 import {app} from "scripts/app.js";

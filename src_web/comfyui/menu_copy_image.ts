@@ -1,5 +1,4 @@
-import type {IContextMenuValue, LGraphCanvas} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {IContextMenuValue, LGraphCanvas, ComfyNodeDef} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 
@@ -42,7 +41,7 @@ app.registerExtension({
           options = getExtraMenuOptions?.call(this, canvas, options) ?? options;
           // If we already have a copy image somehow, then let's skip ours.
           if (this.imgs?.length) {
-            let img =
+            const img =
               this.imgs[this.imageIndex || 0] || this.imgs[this.overIndex || 0] || this.imgs[0];
             const foundIdx = options.findIndex((option) => option?.content?.includes("Copy Image"));
             if (img && foundIdx === -1) {

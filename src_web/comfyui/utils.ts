@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   Vector2,
   LGraphCanvas as TLGraphCanvas,
   LLink,
@@ -23,7 +24,7 @@ import type {
   Subgraph,
   SubgraphNode,
 } from "@comfyorg/frontend";
-import type {ComfyApiPrompt, ComfyNodeDef} from "typings/comfy";
+import type {ComfyApiPrompt} from "typings/comfy";
 import type {Constructor} from "typings/rgthree";
 
 import {app} from "scripts/app.js";
@@ -51,10 +52,7 @@ export enum IoDirection {
 const PADDING = 0;
 
 type LiteGraphDir =
-  | typeof LiteGraph.LEFT
-  | typeof LiteGraph.RIGHT
-  | typeof LiteGraph.UP
-  | typeof LiteGraph.DOWN;
+  typeof LiteGraph.LEFT | typeof LiteGraph.RIGHT | typeof LiteGraph.UP | typeof LiteGraph.DOWN;
 export const LAYOUT_LABEL_TO_DATA: {[label: string]: [LiteGraphDir, Vector2, Vector2]} = {
   Left: [LiteGraph.LEFT, [0, 0.5], [PADDING, 0]],
   Right: [LiteGraph.RIGHT, [1, 0.5], [-PADDING, 0]],
@@ -933,7 +931,7 @@ export async function matchLocalSlotsToServer(
   const serverSlotNames =
     direction == IoDirection.INPUT
       ? Object.keys(serverNodeData.input?.optional || {})
-      : serverNodeData.output_name;
+      : (serverNodeData.output_name ?? []);
   const serverSlotTypes =
     direction == IoDirection.INPUT
       ? (Object.values(serverNodeData.input?.optional || {}).map((i) => i[0]) as string[])

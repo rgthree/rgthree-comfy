@@ -1,10 +1,11 @@
 import type {
+  ComfyNodeDef,
   LGraphNode,
   IWidget,
+  IContextMenuValue,
   Vector2,
   CanvasMouseEvent,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";

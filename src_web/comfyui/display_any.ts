@@ -1,6 +1,9 @@
-import type {LGraphNodeConstructor, LGraphNode as TLGraphNode} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
-import type {ComfyApp} from "@comfyorg/frontend";
+import type {
+  ComfyApp,
+  ComfyNodeDef,
+  LGraphNodeConstructor,
+  LGraphNode as TLGraphNode,
+} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {ComfyWidgets} from "scripts/widgets.js";

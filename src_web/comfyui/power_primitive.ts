@@ -1,16 +1,14 @@
 import type {
+  ComfyNodeDef,
   IWidget,
   INodeInputSlot,
   LGraphCanvas as TLGraphCanvas,
-  LGraphNodeConstructor,
   IContextMenuValue,
   INodeOutputSlot,
   ISlotType,
   ISerialisedNode,
   LLink,
-  IBaseWidget,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";
@@ -34,7 +32,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
 
   private outputTypeWidget!: IWidget;
   private valueWidget!: IWidget;
-  private typeState: string = '';
+  private typeState: string = "";
 
   static "@hideTypeSelector" = {type: "boolean"};
 
@@ -66,8 +64,8 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
   override configure(info: ISerialisedNode): void {
     super.configure(info);
     // Update BOOL to BOOLEAN due to a bug using BOOL instead of BOOLEAN.
-    if (this.outputTypeWidget.value === 'BOOL') {
-      this.outputTypeWidget.value = 'BOOLEAN';
+    if (this.outputTypeWidget.value === "BOOL") {
+      this.outputTypeWidget.value = "BOOLEAN";
     }
     setTimeout(() => {
       this.setTypedData();
@@ -143,7 +141,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     this.typeState = newTypeState;
 
     let value = this.valueWidget?.value ?? null;
-    let newWidget: IWidget | null= null;
+    let newWidget: IWidget | null = null;
     // If we're linked, then set the UI to an empty string widget input, since the ComfyUI is rather
     // confusing by showing a value that is not the actual value used (from the input).
     if (linked) {
@@ -154,7 +152,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       newWidget.value = value ? "" : String(value);
     } else if (type === "INT" || type === "FLOAT") {
       const isFloat = type === "FLOAT";
-      newWidget = this.addWidget("number", name, value ?? 1 as any, undefined, {
+      newWidget = this.addWidget("number", name, value ?? (1 as any), undefined, {
         precision: isFloat ? 1 : 0,
         step2: isFloat ? 0.1 : 0,
       }) as IWidget;

@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   INodeInputSlot,
   INodeOutputSlot,
   LGraphCanvas as TLGraphCanvas,
@@ -7,7 +8,6 @@ import type {
   ISlotType,
   ConnectByTypeOptions,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {

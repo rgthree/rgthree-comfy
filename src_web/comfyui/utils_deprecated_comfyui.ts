@@ -68,7 +68,7 @@ export function getWidgetConfig(slot: INodeOutputSlot | INodeInputSlot): InputSp
  */
 export function setWidgetConfig(
   slot: INodeOutputSlot | INodeInputSlot | undefined,
-  config: InputSpec,
+  config: InputSpec | null,
 ) {
   if (!slot?.widget) return;
   if (config) {
@@ -150,7 +150,7 @@ const mergeInputSpec = (spec1: InputSpec, spec2: InputSpec): InputSpec | null =>
  * Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/schemas/nodeDefSchema.ts
  */
 function getInputSpecType(inputSpec: InputSpec): string {
-  return isComboInputSpec(inputSpec) ? "COMBO" : inputSpec[0];
+  return isComboInputSpec(inputSpec) ? "COMBO" : (inputSpec[0] as string);
 }
 
 /**
@@ -196,7 +196,7 @@ const getRange = (options: any) => {
 };
 
 /** Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/utils/nodeDefUtil.ts */
-const mergeNumericInputSpec = <T extends any>(spec1: any, spec2: any): T | null => {
+const mergeNumericInputSpec = <T extends InputSpec>(spec1: any, spec2: any): T | null => {
   const type = spec1[0];
   const options1 = spec1[1] ?? {};
   const options2 = spec2[1] ?? {};
@@ -222,11 +222,11 @@ const mergeNumericInputSpec = <T extends any>(spec1: any, spec2: any): T | null 
   return mergeCommonInputSpec(
     [type, {...options1, ...mergedOptions}] as T,
     [type, {...options2, ...mergedOptions}] as T,
-  );
+  ) as T;
 };
 
 /** Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/utils/nodeDefUtil.ts */
-const mergeComboInputSpec = <T extends any>(spec1: any, spec2: any): T | null => {
+const mergeComboInputSpec = <T extends InputSpec>(spec1: any, spec2: any): T | null => {
   const options1 = spec1[1] ?? {};
   const options2 = spec2[1] ?? {};
 
@@ -243,7 +243,7 @@ const mergeComboInputSpec = <T extends any>(spec1: any, spec2: any): T | null =>
   return mergeCommonInputSpec(
     ["COMBO", {...options1, options: intersection}] as T,
     ["COMBO", {...options2, options: intersection}] as T,
-  );
+  ) as T;
 };
 
 /** Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/utils/nodeDefUtil.ts */

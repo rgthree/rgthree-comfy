@@ -1,9 +1,9 @@
 import type {
+  ComfyNodeDef,
   IContextMenuValue,
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {rgthree} from "./rgthree.js";

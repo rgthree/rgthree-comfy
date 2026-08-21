@@ -58,27 +58,6 @@ export type getWebpMetadata = (file: File | Blob) => {
 // }
 
 
-/**
- * ComfyUI-Frontend defines a ComfyNodeDef from Zod, but doesn't expose it. This is a shim.
- */
-export type ComfyNodeDef = {
-	name: string;
-	display_name?: string;
-	description?: string;
-	category: string;
-	input?: {
-		required?: Record<string, [string | any[]] | [string | any[], any]>;
-		optional?: Record<string, [string | any[]] | [string | any[], any]>;
-		hidden?: Record<string, [string | any[]] | [string | any[], any]>;
-	};
-	output?: string[];
-	output_name: string[];
-	// @rgthree
-	output_node?: boolean;
-};
-
-
-
 // Below are types derived from the formats for the ComfyAPI.
 
 // @rgthree

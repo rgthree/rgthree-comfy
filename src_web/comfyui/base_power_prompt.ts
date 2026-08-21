@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   LLink,
   LGraphNode,
   INodeOutputSlot,
@@ -7,7 +8,6 @@ import type {
   IComboWidget,
   IBaseWidget,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {api} from "scripts/api.js";
 import {wait} from "rgthree/common/shared_utils.js";

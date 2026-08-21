@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   IContextMenuOptions,
   ContextMenu,
   LGraphNode as TLGraphNode,
@@ -9,7 +10,7 @@ import type {
   ISerialisedNode,
   IButtonWidget,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef, ComfyApiPrompt} from "typings/comfy.js";
+import type {ComfyApiPrompt} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {ComfyWidgets} from "scripts/widgets.js";
@@ -147,7 +148,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
 
     this.lastSeedButton = this.addWidget(
       "button",
-      'USE_LAST_SEED',
+      "USE_LAST_SEED",
       "okay",
       () => {
         this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;

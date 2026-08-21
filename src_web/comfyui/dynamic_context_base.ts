@@ -1,5 +1,4 @@
-import type {INodeInputSlot, LGraphNodeConstructor} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyNodeDef, INodeInputSlot, LGraphNodeConstructor} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {BaseContextNode} from "./context.js";

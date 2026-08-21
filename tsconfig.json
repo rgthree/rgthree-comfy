@@ -5,22 +5,23 @@
     // "typeRoots": [
     //   "./ts/typings",
     // ],
-    "baseUrl": "./",
+    // "baseUrl": "./",
+    "rootDir": "./src_web/",
     "paths": {
       // Main comfyui typedefs.
-      "@comfyorg/frontend": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@comfyorg/frontend": ["./node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
       // ComfyUI augments old litegraph types with these module names, so we need to map them back
       // to itself to "see" these augmentations in our code.
-      "@/lib/litegraph/src/types/widgets": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
-      "@/lib/litegraph/src/interfaces": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
-      "@/lib/litegraph/src/litegraph": ["node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@/lib/litegraph/src/types/widgets": ["./node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@/lib/litegraph/src/interfaces": ["./node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
+      "@/lib/litegraph/src/litegraph": ["./node_modules/@comfyorg/comfyui-frontend-types/index.d.ts"],
       // Tree Sitter, for parsing python in js.
-      "web-tree-sitter": ["node_modules/web-tree-sitter/web-tree-sitter.d.ts"],
-      "typings/*": ["src_web/typings/*"],
-      "rgthree/common/*": ["src_web/common/*"],
-      "rgthree/lib/*": ["src_web/lib/*"],
-      "node_modules": ["node_modules/*"],
-      "scripts/*":  ["src_web/scripts_comfy/*"],
+      "web-tree-sitter": ["./node_modules/web-tree-sitter/web-tree-sitter.d.ts"],
+      "typings/*": ["./src_web/typings/*"],
+      "rgthree/common/*": ["./src_web/common/*"],
+      "rgthree/lib/*": ["./src_web/lib/*"],
+      "node_modules": ["./node_modules/*"],
+      "scripts/*":  ["./src_web/scripts_comfy/*"],
     },
     "outDir": "web/",
     "removeComments": true,

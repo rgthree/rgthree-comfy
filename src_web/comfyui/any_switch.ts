@@ -1,11 +1,11 @@
 import type {
   ComfyApp,
+  ComfyNodeDef,
   INodeInputSlot,
   INodeOutputSlot,
   LGraphNode,
   LLink,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {IoDirection, addConnectionLayoutSupport, followConnectionUntilType} from "./utils.js";

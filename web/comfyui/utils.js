@@ -603,12 +603,12 @@ export function getSlotLinks(inputOrOutput) {
     return links;
 }
 export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const serverSlotNames = direction == IoDirection.INPUT
         ? Object.keys(((_a = serverNodeData.input) === null || _a === void 0 ? void 0 : _a.optional) || {})
-        : serverNodeData.output_name;
+        : ((_b = serverNodeData.output_name) !== null && _b !== void 0 ? _b : []);
     const serverSlotTypes = direction == IoDirection.INPUT
-        ? Object.values(((_b = serverNodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}).map((i) => i[0])
+        ? Object.values(((_c = serverNodeData.input) === null || _c === void 0 ? void 0 : _c.optional) || {}).map((i) => i[0])
         : serverNodeData.output;
     const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
     let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
@@ -658,7 +658,7 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
                     else {
                         linkData.link.origin_slot = currentNodeSlot;
                         const nextNode = app.graph.getNodeById(linkData.link.target_id);
-                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
+                        if (nextNode && ((_d = nextNode.constructor) === null || _d === void 0 ? void 0 : _d.type.includes("Reroute"))) {
                             nextNode.stabilize && nextNode.stabilize();
                         }
                     }

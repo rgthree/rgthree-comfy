@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   LGraphNode,
   LLink,
   LGraphCanvas,
@@ -6,7 +7,6 @@ import type {
   INodeOutputSlot,
   ISlotType,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {DynamicContextNodeBase, InputLike} from "./dynamic_context_base.js";

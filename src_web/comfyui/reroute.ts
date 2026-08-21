@@ -699,8 +699,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                       );
                     }
                     const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
-                    if (merged?.customConfig) {
-                      outputWidgetConfig = merged.customConfig;
+                    if (merged?.["customConfig"]) {
+                      outputWidgetConfig = merged["customConfig"];
                     }
                   }
                 } catch (e) {
@@ -720,7 +720,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
       }
     }
 
-    const displayType = inputType || outputType || "*";
+    const displayType = String(inputType || outputType || "*");
     const color = LGraphCanvas.link_type_colors[displayType];
 
     // Update the types of each node
@@ -748,7 +748,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
           node.inputs[0]!.widget = {name: "value"} as any;
           setWidgetConfig(
             node.inputs[0],
-            [outputType ?? displayType, outputWidgetConfig],
+            [String(outputType ?? displayType), outputWidgetConfig as any],
             // outputWidget, // This never existed?
           );
         } else {

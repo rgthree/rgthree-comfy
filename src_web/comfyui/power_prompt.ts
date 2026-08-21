@@ -1,5 +1,4 @@
-import type {LGraphNode, LGraphNodeConstructor} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyNodeDef, LGraphNode, LGraphNodeConstructor} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {addConnectionLayoutSupport} from "./utils.js";

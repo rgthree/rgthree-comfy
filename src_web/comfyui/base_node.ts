@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   IWidget,
   LGraphCanvas,
   IContextMenuValue,
@@ -8,7 +9,6 @@ import type {
   ISerialisedNode,
   IBaseWidget,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 import type {RgthreeBaseServerNodeConstructor} from "typings/rgthree.js";
 
 import {app} from "scripts/app.js";
@@ -200,7 +200,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     // TODO: Actually, scratch that. The ComfyUI impl doesn't call widtget.onRemove?.() and so
     // we shouldn't switch to it yet. See: https://github.com/Comfy-Org/ComfyUI_frontend/issues/5090
     const canUseComfyUIRemoveWidget = false;
-    if (canUseComfyUIRemoveWidget && typeof super.removeWidget === 'function') {
+    if (canUseComfyUIRemoveWidget && typeof super.removeWidget === "function") {
       super.removeWidget(widget as IBaseWidget);
     } else {
       const index = this.widgets.indexOf(widget as IWidget);

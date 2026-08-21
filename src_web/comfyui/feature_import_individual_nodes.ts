@@ -1,5 +1,4 @@
-import type {INodeSlot, LGraphNode, LGraphNodeConstructor} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyNodeDef, LGraphNode} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {tryToGetWorkflowDataFromEvent} from "rgthree/common/utils_workflow.js";

@@ -1,14 +1,13 @@
 import {
+  ComfyNodeDef,
   LGraphCanvas,
   LGraphNode,
   Vector2,
-  LGraphNodeConstructor,
   CanvasMouseEvent,
   ISerialisedNode,
   Point,
   CanvasPointerEvent,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {api} from "scripts/api.js";

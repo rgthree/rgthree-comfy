@@ -1,5 +1,4 @@
-import type {LGraph, LGraphNodeConstructor, ISerialisedNode} from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
+import type {ComfyNodeDef, LGraph, ISerialisedNode} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {RgthreeBaseServerNode} from "./base_node.js";

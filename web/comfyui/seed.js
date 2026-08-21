@@ -74,7 +74,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.addWidget("button", "🎲 New Fixed Random", "", () => {
             this.seedWidget.value = this.generateRandomSeed();
         }, { serialize: false });
-        this.lastSeedButton = this.addWidget("button", 'USE_LAST_SEED', "okay", () => {
+        this.lastSeedButton = this.addWidget("button", "USE_LAST_SEED", "okay", () => {
             this.seedWidget.value = this.lastSeed != null ? this.lastSeed : this.seedWidget.value;
             this.lastSeedButton.label = LAST_SEED_BUTTON_LABEL;
             this.lastSeedButton.disabled = true;

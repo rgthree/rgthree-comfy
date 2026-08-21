@@ -469,8 +469,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                                             outputWidget = (_f = outputNode.widgets) === null || _f === void 0 ? void 0 : _f.find((w) => { var _a; return w.name === ((_a = output === null || output === void 0 ? void 0 : output.widget) === null || _a === void 0 ? void 0 : _a.name); });
                                         }
                                         const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
-                                        if (merged === null || merged === void 0 ? void 0 : merged.customConfig) {
-                                            outputWidgetConfig = merged.customConfig;
+                                        if (merged === null || merged === void 0 ? void 0 : merged["customConfig"]) {
+                                            outputWidgetConfig = merged["customConfig"];
                                         }
                                     }
                                 }
@@ -487,7 +487,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
             else {
             }
         }
-        const displayType = inputType || outputType || "*";
+        const displayType = String(inputType || outputType || "*");
         const color = LGraphCanvas.link_type_colors[displayType];
         for (const node of updateNodes) {
             node.outputs[0].type = inputType || "*";
@@ -505,7 +505,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                 if (outputWidgetConfig && outputWidget && outputType) {
                     rgthreeApi.print("PRIMITIVE_REROUTE");
                     node.inputs[0].widget = { name: "value" };
-                    setWidgetConfig(node.inputs[0], [outputType !== null && outputType !== void 0 ? outputType : displayType, outputWidgetConfig]);
+                    setWidgetConfig(node.inputs[0], [String(outputType !== null && outputType !== void 0 ? outputType : displayType), outputWidgetConfig]);
                 }
                 else {
                     setWidgetConfig(node.inputs[0], null);

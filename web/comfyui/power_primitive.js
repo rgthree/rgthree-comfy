@@ -13,7 +13,7 @@ const PRIMITIVES = {
 class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
         super(title);
-        this.typeState = '';
+        this.typeState = "";
         this.properties[PROPERTY_HIDE_TYPE_SELECTOR] = false;
     }
     static setUp(comfyClass, nodeData) {
@@ -26,8 +26,8 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     }
     configure(info) {
         super.configure(info);
-        if (this.outputTypeWidget.value === 'BOOL') {
-            this.outputTypeWidget.value = 'BOOLEAN';
+        if (this.outputTypeWidget.value === "BOOL") {
+            this.outputTypeWidget.value = "BOOLEAN";
         }
         setTimeout(() => {
             this.setTypedData();

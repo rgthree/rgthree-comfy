@@ -1,4 +1,5 @@
 import type {
+  ComfyNodeDef,
   IContextMenuValue,
   IFoundSlot,
   INodeInputSlot,
@@ -7,7 +8,6 @@ import type {
   LGraphNode,
   LLink,
 } from "@comfyorg/frontend";
-import type {ComfyNodeDef} from "typings/comfy.js";
 
 import {app} from "scripts/app.js";
 import {
