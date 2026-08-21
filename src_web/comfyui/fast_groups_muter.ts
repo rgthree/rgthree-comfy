@@ -24,6 +24,7 @@ const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
 const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
+const PROPERTY_HIDE_BYPASSED = "hideBypassedGroups";
 
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
@@ -167,7 +168,9 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     let index = 0;
     for (const group of groups) {
       if (filterColors.length) {
-        let groupColor = group.color?.replace("#", "").trim().toLocaleLowerCase();
+        // Use original color if group is hidden (its visible color is "transparent").
+        const rawColor = (group as any).rgthree_hidden ? (group as any).rgthree_origColor : group.color;
+        let groupColor = rawColor?.replace("#", "").trim().toLocaleLowerCase();
         if (!groupColor) {
           continue;
         }
@@ -231,6 +234,19 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     // Everything should now be in order, so let's remove all remaining widgets.
     while ((this.widgets || [])[index]) {
       this.removeWidget(index++);
+    }
+
+    // Sync group visibility for bypasser nodes with hideBypassedGroups enabled.
+    const shouldHide = this.properties?.[PROPERTY_HIDE_BYPASSED] === true;
+    for (const widget of this.widgets) {
+      if (widget instanceof FastGroupsToggleRowWidget) {
+        if (shouldHide && !widget.toggled) {
+          setGroupVisibility(widget.group, false);
+        } else if (!shouldHide && (widget.group as any).rgthree_hidden) {
+          // Property was turned off, restore hidden groups.
+          setGroupVisibility(widget.group, true);
+        }
+      }
     }
   }
 
@@ -375,6 +391,133 @@ export class FastGroupsMuter extends BaseFastGroupsModeChanger {
 }
 
 /**
+ * Sets the visibility of a group and all its nodes. When `visible` is false, the group
+ * and all its contained nodes will be hidden from the canvas. When `visible` is true,
+ * they are restored.
+ */
+// Patch LGraphCanvas.drawNode once to skip hidden nodes.
+// Patch LGraph.getNodeOnPos once to prevent mouse interaction with hidden nodes.
+let _drawNodePatched = false;
+function ensureDrawNodePatch() {
+  if (_drawNodePatched) return;
+  _drawNodePatched = true;
+  
+  const origDrawNode = LGraphCanvas.prototype.drawNode;
+  LGraphCanvas.prototype.drawNode = function(this: any, node: any, ctx: CanvasRenderingContext2D) {
+    if (node.rgthree_bypasser_hidden) return;
+    return origDrawNode.apply(this, arguments as any);
+  };
+
+  const origGetGroupOnPos = LGraph.prototype.getGroupOnPos;
+  if (origGetGroupOnPos) {
+    LGraph.prototype.getGroupOnPos = function(this: any, x: number, y: number) {
+      const group = origGetGroupOnPos.apply(this, arguments as any);
+      if (group && (group as any).rgthree_hidden) return null;
+      return group;
+    };
+  }
+  
+  // Also hide links connecting to hidden nodes
+  function hookLink(methodName: string) {
+    const origMethod = (LGraphCanvas.prototype as any)[methodName];
+    if (origMethod) {
+      (LGraphCanvas.prototype as any)[methodName] = function(this: any) {
+        let linkObj = Array.from(arguments).find((arg: any) => arg && arg.origin_id !== undefined && arg.target_id !== undefined) as any;
+        if (linkObj) {
+          let n1 = this.graph.getNodeById(linkObj.origin_id);
+          let n2 = this.graph.getNodeById(linkObj.target_id);
+          if ((n1 && n1.rgthree_bypasser_hidden) || (n2 && n2.rgthree_bypasser_hidden)) {
+            return; // do not draw link
+          }
+        }
+        return origMethod.apply(this, arguments as any);
+      };
+    }
+  }
+  hookLink('renderLink');
+  hookLink('drawLink');
+
+  const origGetNodeOnPos = LGraph.prototype.getNodeOnPos;
+  LGraph.prototype.getNodeOnPos = function(this: any, x: number, y: number, nodes_list?: any[], margin?: number) {
+    let list = nodes_list || this._nodes_in_order;
+    if (list) {
+      list = list.filter((n: any) => !n.rgthree_bypasser_hidden);
+    }
+    return origGetNodeOnPos.call(this, x, y, list, margin);
+  };
+}
+
+function setGroupVisibility(group: LGraphGroup, visible: boolean) {
+  ensureDrawNodePatch();
+  if (!visible && !(group as any).rgthree_hidden) {
+    (group as any).rgthree_hidden = true;
+    const nodes = getGroupNodes(group);
+    (group as any).rgthree_hiddenNodes = nodes;
+    
+    for (const node of nodes as any[]) {
+      node.rgthree_bypasser_hidden = true;
+      
+      // Hook serialize to safely hide without affecting workflow saves
+      if (!node.rgthree_origSerialize) {
+        node.rgthree_origSerialize = node.serialize;
+        node.serialize = function(this: any) {
+          let data = this.rgthree_origSerialize.apply(this, arguments as any);
+          if (this.rgthree_bypasser_hidden) {
+            if (this.rgthree_origFlags) data.flags = Object.assign({}, this.rgthree_origFlags);
+          }
+          return data;
+        };
+      }
+      
+      // Store original state
+      node.rgthree_origFlags = Object.assign({}, node.flags);
+      
+      // Apply native hiding strategies
+      node.flags = node.flags || {};
+      node.flags.collapsed = true;
+    }
+
+    // Hide Group Box
+    (group as any).rgthree_origColor = group.color;
+    (group as any).rgthree_origFontSize = group.font_size;
+    (group as any).rgthree_origSize = [...group._size];
+    group.color = "transparent";
+    group.font_size = 0;
+    group._size = [0, 0] as any;
+    
+    // Override group draw just in case
+    (group as any).rgthree_origDraw = group.draw;
+    group.draw = function() {};
+    
+  } else if (visible && (group as any).rgthree_hidden) {
+    (group as any).rgthree_hidden = false;
+    
+    // Restore Group Box
+    if ((group as any).rgthree_origColor !== undefined) group.color = (group as any).rgthree_origColor;
+    if ((group as any).rgthree_origFontSize !== undefined) group.font_size = (group as any).rgthree_origFontSize;
+    if ((group as any).rgthree_origSize !== undefined) group._size = (group as any).rgthree_origSize;
+    if ((group as any).rgthree_origDraw) {
+      group.draw = (group as any).rgthree_origDraw;
+      delete (group as any).rgthree_origDraw;
+    } else {
+      delete (group as any).draw;
+    }
+    
+    // Restore nodes
+    const nodes = ((group as any).rgthree_hiddenNodes || []);
+    for (const node of nodes) {
+      delete node.rgthree_bypasser_hidden;
+      
+      if (node.rgthree_origFlags) {
+        node.flags = node.rgthree_origFlags;
+        delete node.rgthree_origFlags;
+      }
+    }
+    delete (group as any).rgthree_hiddenNodes;
+  }
+}
+
+/**
  * The PowerLoraLoaderHeaderWidget that renders a toggle all switch, as well as some title info
  * (more necessary for the double model & clip strengths to label them).
  */
@@ -394,9 +537,21 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   }
 
   doModeChange(force?: boolean, skipOtherNodeCheck?: boolean) {
-    this.group.recomputeInsideNodes();
-    const hasAnyActiveNodes = getGroupNodes(this.group).some((n) => n.mode === LiteGraph.ALWAYS);
+    // If the group is currently hidden, we need to check stored state instead.
+    const isHidden = (this.group as any).rgthree_hidden === true;
+    const shouldHide = this.node.properties?.[PROPERTY_HIDE_BYPASSED] === true;
+
+    // Determine new value based on current state.
+    let hasAnyActiveNodes: boolean;
+    if (isHidden) {
+      // When hidden, all nodes are off-screen so we use the toggled state.
+      hasAnyActiveNodes = this.toggled;
+    } else {
+      this.group.recomputeInsideNodes();
+      hasAnyActiveNodes = getGroupNodes(this.group).some((n) => n.mode === LiteGraph.ALWAYS);
+    }
     let newValue = force != null ? force : !hasAnyActiveNodes;
+
     if (skipOtherNodeCheck !== true) {
       // TODO: This work should probably live in BaseFastGroupsModeChanger instead of the widgets.
       if (newValue && this.node.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
@@ -409,9 +564,26 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
         newValue = this.node.widgets.every((w) => !w.value || w === this);
       }
     }
+
+    // If enabling and group is hidden, restore visibility first so nodes can be found.
+    if (newValue && isHidden) {
+      setGroupVisibility(this.group, true);
+      this.group.recomputeInsideNodes();
+    }
+
+    // Change the mode of the group's nodes.
     changeModeOfNodes(getGroupNodes(this.group), (newValue ? this.node.modeOn : this.node.modeOff));
     this.group.rgthree_hasAnyActiveNode = newValue;
     this.toggled = newValue;
+
+    // If bypassing and hide is enabled, hide the group after setting modes.
+    if (shouldHide && !newValue) {
+      setGroupVisibility(this.group, false);
+    } else if (!shouldHide && (this.group as any).rgthree_hidden) {
+      // Property was turned off; restore any hidden group.
+      setGroupVisibility(this.group, true);
+    }
+
     this.group.graph?.setDirtyCanvas(true, false);
   }
 
