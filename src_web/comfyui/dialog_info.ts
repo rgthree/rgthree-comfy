@@ -33,23 +33,48 @@ import {rgthreeApi} from "rgthree/common/rgthree_api.js";
 abstract class RgthreeInfoDialog extends RgthreeDialog {
   private modifiedModelData = false;
   private modelInfo: RgthreeModelInfo | null = null;
+  private readonly pendingModelDataSaves = new Set<Promise<unknown>>();
 
   constructor(file: string) {
     const dialogOptions: RgthreeDialogOptions = {
       class: "rgthree-info-dialog",
       title: `<h2>Loading...</h2>`,
       content: "<center>Loading..</center>",
-      onBeforeClose: () => {
-        return true;
-      },
     };
     super(dialogOptions);
+    this.options.onBeforeClose = () => this.waitForPendingModelDataSaves();
     this.init(file);
   }
 
   abstract getModelInfo(file: string): Promise<RgthreeModelInfo | null>;
   abstract refreshModelInfo(file: string): Promise<RgthreeModelInfo | null>;
   abstract clearModelInfo(file: string): Promise<RgthreeModelInfo | null>;
+  abstract savePartialModelInfo(
+    file: string,
+    data: Partial<RgthreeModelInfo>,
+  ): Promise<RgthreeModelInfo | null>;
+  protected showDisplayNameField() {
+    return false;
+  }
+
+  private async waitForPendingModelDataSaves() {
+    await Promise.all([...this.pendingModelDataSaves].map((promise) => promise.catch(() => null)));
+    return true;
+  }
+
+  private async savePartialModelInfoWithPending(file: string, data: Partial<RgthreeModelInfo>) {
+    const promise = this.savePartialModelInfo(file, data);
+    this.pendingModelDataSaves.add(promise);
+    try {
+      const info = await promise;
+      if (info) {
+        this.modelInfo = info;
+      }
+      return info;
+    } finally {
+      this.pendingModelDataSaves.delete(promise);
+    }
+  }
 
   private async init(file: string) {
     const cssPromise = injectCss("rgthree/common/css/dialog_model_info.css");
@@ -125,23 +150,38 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
         const input = $el(`${isTextarea ? "textarea" : 'input[type="text"]'}`, {
           value: td.textContent,
         });
-        input.addEventListener("keydown", (e) => {
+        input.addEventListener("keydown", async (e) => {
           if (!isTextarea && e.key === "Enter") {
-            const modified = saveEditableRow(info!, tr, true);
-            this.modifiedModelData = this.modifiedModelData || modified;
             e.stopPropagation();
             e.preventDefault();
+            const modified = await saveEditableRow(
+              info!,
+              tr,
+              true,
+              this.savePartialModelInfoWithPending.bind(this),
+            );
+            this.modifiedModelData = this.modifiedModelData || modified;
           } else if (e.key === "Escape") {
-            const modified = saveEditableRow(info!, tr, false);
-            this.modifiedModelData = this.modifiedModelData || modified;
             e.stopPropagation();
             e.preventDefault();
+            const modified = await saveEditableRow(
+              info!,
+              tr,
+              false,
+              this.savePartialModelInfoWithPending.bind(this),
+            );
+            this.modifiedModelData = this.modifiedModelData || modified;
           }
         });
         appendChildren(empty(td), [input]);
         input.focus();
       } else if (target!.nodeName.toLowerCase() === "button") {
-        const modified = saveEditableRow(info!, tr, true);
+        const modified = await saveEditableRow(
+          info!,
+          tr,
+          true,
+          this.savePartialModelInfoWithPending.bind(this),
+        );
         this.modifiedModelData = this.modifiedModelData || modified;
       }
       e?.preventDefault();
@@ -201,6 +241,16 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
           "The name for display.",
           "name",
         )}
+        ${
+          this.showDisplayNameField()
+            ? infoTableRow(
+                "Display Name",
+                info.displayName ?? "",
+                "The optional name shown in the Power Lora Loader instead of the file name.",
+                "displayName",
+              )
+            : ""
+        }
 
         ${
           !info.baseModelFile && !info.baseModelFile
@@ -390,6 +440,9 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
 }
 
 export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
+  protected override showDisplayNameField() {
+    return true;
+  }
   override async getModelInfo(file: string) {
     return LORA_INFO_SERVICE.getInfo(file, false, false);
   }
@@ -398,6 +451,9 @@ export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
   }
   override async clearModelInfo(file: string) {
     return LORA_INFO_SERVICE.clearFetchedInfo(file);
+  }
+  override async savePartialModelInfo(file: string, data: Partial<RgthreeModelInfo>) {
+    return LORA_INFO_SERVICE.savePartialInfo(file, data);
   }
 }
 
@@ -410,6 +466,9 @@ export class RgthreeCheckpointInfoDialog extends RgthreeInfoDialog {
   }
   override async clearModelInfo(file: string) {
     return CHECKPOINT_INFO_SERVICE.clearFetchedInfo(file);
+  }
+  override async savePartialModelInfo(file: string, data: Partial<RgthreeModelInfo>) {
+    return CHECKPOINT_INFO_SERVICE.savePartialInfo(file, data);
   }
 }
 
@@ -456,13 +515,21 @@ function getTrainedWordsMarkup(words: RgthreeModelInfo["trainedWords"]) {
 /**
  * Saves / cancels an editable row. Returns a boolean if the data was modified.
  */
-function saveEditableRow(info: RgthreeModelInfo, tr: HTMLElement, saving = true): boolean {
-  const fieldName = tr.dataset["fieldName"] as "file";
+async function saveEditableRow(
+  info: RgthreeModelInfo,
+  tr: HTMLElement,
+  saving = true,
+  savePartialInfo: (
+    file: string,
+    data: Partial<RgthreeModelInfo>,
+  ) => Promise<RgthreeModelInfo | null>,
+): Promise<boolean> {
+  const fieldName = tr.dataset["fieldName"] as keyof RgthreeModelInfo;
   const input = query<HTMLInputElement>("input,textarea", tr)!;
-  let newValue = info[fieldName] ?? "";
+  let newValue = String(info[fieldName] ?? "");
   let modified = false;
   if (saving) {
-    newValue = input!.value;
+    newValue = fieldName === "displayName" ? input!.value.trim() : input!.value;
     if (fieldName.startsWith("strength")) {
       if (Number.isNaN(Number(newValue))) {
         alert(`You must enter a number into the ${fieldName} field.`);
@@ -470,7 +537,12 @@ function saveEditableRow(info: RgthreeModelInfo, tr: HTMLElement, saving = true)
       }
       newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
     }
-    LORA_INFO_SERVICE.savePartialInfo(info.file!, {[fieldName]: newValue});
+    try {
+      await savePartialInfo(info.file!, {[fieldName]: newValue} as Partial<RgthreeModelInfo>);
+    } catch (e) {
+      console.error("[rgthree] Failed to save model info.", e);
+      return false;
+    }
     modified = true;
   }
   tr.classList.remove("-rgthree-editing");

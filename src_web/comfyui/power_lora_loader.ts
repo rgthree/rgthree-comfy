@@ -588,6 +588,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   };
 
   set value(v) {
+    const previousLora = this._value?.lora;
     this._value = v;
     // In case widgets are messed up, we can correct course here.
     if (typeof this._value !== "object") {
@@ -595,6 +596,9 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
       if (this.showModelAndClip) {
         this._value.strengthTwo = this._value.strength;
       }
+    }
+    if (previousLora !== this._value.lora) {
+      this.resetLoraInfo();
     }
     this.getLoraInfo();
   }
@@ -604,8 +608,16 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   }
 
   setLora(lora: string) {
+    if (this._value.lora !== lora) {
+      this.resetLoraInfo();
+    }
     this._value.lora = lora;
     this.getLoraInfo();
+  }
+
+  private resetLoraInfo() {
+    this.loraInfo = null;
+    this.loraInfoPromise = null;
   }
 
   /** Draws our widget with a toggle, lora selector, and number selector all in a single row. */
@@ -750,7 +762,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     const loraWidth = rposX - posX;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const loraLabel = String(this.value?.lora || "None");
+    const loraLabel = String(this.loraInfo?.displayName || this.value?.lora || "None");
     ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
 
     this.hitAreas.lora.bounds = [posX, loraWidth];
@@ -788,9 +800,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
 
   onLoraClick(event: CanvasMouseEvent, pos: Vector2, node: RgthreePowerLoraLoader) {
     node.showLoraChooser(event, (value: string) => {
-      this.value.lora = value;
-      this.loraInfo = null;
-      this.getLoraInfo();
+      this.setLora(value);
     });
     this.cancelMouseDown();
   }
@@ -866,12 +876,19 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   private getLoraInfo(force = false) {
     if (!this.loraInfoPromise || force == true) {
       let promise;
-      if (this.value.lora && this.value.lora != "None") {
-        promise = LORA_INFO_SERVICE.getInfo(this.value.lora, force, true);
+      const requestedLora = this.value.lora;
+      if (requestedLora && requestedLora != "None") {
+        promise = LORA_INFO_SERVICE.getInfo(requestedLora, force, true);
       } else {
         promise = Promise.resolve(null);
       }
-      this.loraInfoPromise = promise.then((v) => (this.loraInfo = v));
+      this.loraInfoPromise = promise.then((v) => {
+        if (requestedLora === this.value.lora) {
+          this.loraInfo = v;
+          app.graph?.setDirtyCanvas(true, true);
+        }
+        return this.loraInfo;
+      });
     }
     return this.loraInfoPromise;
   }

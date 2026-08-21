@@ -12,13 +12,12 @@ class RgthreeInfoDialog extends RgthreeDialog {
             class: "rgthree-info-dialog",
             title: `<h2>Loading...</h2>`,
             content: "<center>Loading..</center>",
-            onBeforeClose: () => {
-                return true;
-            },
         };
         super(dialogOptions);
         this.modifiedModelData = false;
         this.modelInfo = null;
+        this.pendingModelDataSaves = new Set();
+        this.options.onBeforeClose = () => this.waitForPendingModelDataSaves();
         this.init(file);
     }
     async init(file) {
@@ -35,6 +34,27 @@ class RgthreeInfoDialog extends RgthreeDialog {
             dirty: this.modifiedModelData,
         };
         return { detail };
+    }
+    showDisplayNameField() {
+        return false;
+    }
+    async waitForPendingModelDataSaves() {
+        await Promise.all([...this.pendingModelDataSaves].map((promise) => promise.catch(() => null)));
+        return true;
+    }
+    async savePartialModelInfoWithPending(file, data) {
+        const promise = this.savePartialModelInfo(file, data);
+        this.pendingModelDataSaves.add(promise);
+        try {
+            const info = await promise;
+            if (info) {
+                this.modelInfo = info;
+            }
+            return info;
+        }
+        finally {
+            this.pendingModelDataSaves.delete(promise);
+        }
     }
     attachEvents() {
         this.contentElement.addEventListener("click", async (e) => {
@@ -94,25 +114,25 @@ class RgthreeInfoDialog extends RgthreeDialog {
                 const input = $el(`${isTextarea ? "textarea" : 'input[type="text"]'}`, {
                     value: td.textContent,
                 });
-                input.addEventListener("keydown", (e) => {
+                input.addEventListener("keydown", async (e) => {
                     if (!isTextarea && e.key === "Enter") {
-                        const modified = saveEditableRow(info, tr, true);
-                        this.modifiedModelData = this.modifiedModelData || modified;
                         e.stopPropagation();
                         e.preventDefault();
+                        const modified = await saveEditableRow(info, tr, true, this.savePartialModelInfoWithPending.bind(this));
+                        this.modifiedModelData = this.modifiedModelData || modified;
                     }
                     else if (e.key === "Escape") {
-                        const modified = saveEditableRow(info, tr, false);
-                        this.modifiedModelData = this.modifiedModelData || modified;
                         e.stopPropagation();
                         e.preventDefault();
+                        const modified = await saveEditableRow(info, tr, false, this.savePartialModelInfoWithPending.bind(this));
+                        this.modifiedModelData = this.modifiedModelData || modified;
                     }
                 });
                 appendChildren(empty(td), [input]);
                 input.focus();
             }
             else if (target.nodeName.toLowerCase() === "button") {
-                const modified = saveEditableRow(info, tr, true);
+                const modified = await saveEditableRow(info, tr, true, this.savePartialModelInfoWithPending.bind(this));
                 this.modifiedModelData = this.modifiedModelData || modified;
             }
             e === null || e === void 0 ? void 0 : e.preventDefault();
@@ -120,7 +140,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
         }
     }
     getInfoContent() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y, _z, _0;
         const info = this.modelInfo || {};
         const civitaiLink = (_a = info.links) === null || _a === void 0 ? void 0 : _a.find((i) => i.includes("civitai.com/models"));
         const html = `
@@ -145,27 +165,30 @@ class RgthreeInfoDialog extends RgthreeDialog {
                         : ""}
 
         ${infoTableRow("Name", info.name || ((_k = (_j = info.raw) === null || _j === void 0 ? void 0 : _j.metadata) === null || _k === void 0 ? void 0 : _k.ss_output_name) || "", "The name for display.", "name")}
+        ${this.showDisplayNameField()
+            ? infoTableRow("Display Name", (_l = info.displayName) !== null && _l !== void 0 ? _l : "", "The optional name shown in the Power Lora Loader instead of the file name.", "displayName")
+            : ""}
 
         ${!info.baseModelFile && !info.baseModelFile
             ? ""
             : infoTableRow("Base Model", (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""))}
 
 
-        ${!((_l = info.trainedWords) === null || _l === void 0 ? void 0 : _l.length)
+        ${!((_m = info.trainedWords) === null || _m === void 0 ? void 0 : _m.length)
             ? ""
-            : infoTableRow("Trained Words", (_m = getTrainedWordsMarkup(info.trainedWords)) !== null && _m !== void 0 ? _m : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
+            : infoTableRow("Trained Words", (_o = getTrainedWordsMarkup(info.trainedWords)) !== null && _o !== void 0 ? _o : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
 
-        ${!((_p = (_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata) === null || _p === void 0 ? void 0 : _p.ss_clip_skip) || ((_r = (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata) === null || _r === void 0 ? void 0 : _r.ss_clip_skip) == "None"
+        ${!((_q = (_p = info.raw) === null || _p === void 0 ? void 0 : _p.metadata) === null || _q === void 0 ? void 0 : _q.ss_clip_skip) || ((_t = (_s = info.raw) === null || _s === void 0 ? void 0 : _s.metadata) === null || _t === void 0 ? void 0 : _t.ss_clip_skip) == "None"
             ? ""
-            : infoTableRow("Clip Skip", (_t = (_s = info.raw) === null || _s === void 0 ? void 0 : _s.metadata) === null || _t === void 0 ? void 0 : _t.ss_clip_skip)}
-        ${infoTableRow("Strength Min", (_u = info.strengthMin) !== null && _u !== void 0 ? _u : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
-        ${infoTableRow("Strength Max", (_v = info.strengthMax) !== null && _v !== void 0 ? _v : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
+            : infoTableRow("Clip Skip", (_v = (_u = info.raw) === null || _u === void 0 ? void 0 : _u.metadata) === null || _v === void 0 ? void 0 : _v.ss_clip_skip)}
+        ${infoTableRow("Strength Min", (_w = info.strengthMin) !== null && _w !== void 0 ? _w : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
+        ${infoTableRow("Strength Max", (_x = info.strengthMax) !== null && _x !== void 0 ? _x : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
         ${""}
-        ${infoTableRow("Additional Notes", (_w = info.userNote) !== null && _w !== void 0 ? _w : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
+        ${infoTableRow("Additional Notes", (_y = info.userNote) !== null && _y !== void 0 ? _y : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
 
       </table>
 
-      <ul class="rgthree-info-images">${(_y = (_x = info.images) === null || _x === void 0 ? void 0 : _x.map((img) => `
+      <ul class="rgthree-info-images">${(_0 = (_z = info.images) === null || _z === void 0 ? void 0 : _z.map((img) => `
         <li>
           <figure>${img.type === "video"
             ? `<video src="${img.url}"
@@ -190,7 +213,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
               -->${imgInfoField("negative", img.negative)}<!--
             --><!--${""}--></figcaption>
           </figure>
-        </li>`).join("")) !== null && _y !== void 0 ? _y : ""}</ul>
+        </li>`).join("")) !== null && _0 !== void 0 ? _0 : ""}</ul>
     `;
         const div = $el("div", { html });
         for (const fig of queryAll("figure", div)) {
@@ -264,6 +287,9 @@ class RgthreeInfoDialog extends RgthreeDialog {
     }
 }
 export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
+    showDisplayNameField() {
+        return true;
+    }
     async getModelInfo(file) {
         return LORA_INFO_SERVICE.getInfo(file, false, false);
     }
@@ -272,6 +298,9 @@ export class RgthreeLoraInfoDialog extends RgthreeInfoDialog {
     }
     async clearModelInfo(file) {
         return LORA_INFO_SERVICE.clearFetchedInfo(file);
+    }
+    async savePartialModelInfo(file, data) {
+        return LORA_INFO_SERVICE.savePartialInfo(file, data);
     }
 }
 export class RgthreeCheckpointInfoDialog extends RgthreeInfoDialog {
@@ -283,6 +312,9 @@ export class RgthreeCheckpointInfoDialog extends RgthreeInfoDialog {
     }
     async clearModelInfo(file) {
         return CHECKPOINT_INFO_SERVICE.clearFetchedInfo(file);
+    }
+    async savePartialModelInfo(file, data) {
+        return CHECKPOINT_INFO_SERVICE.savePartialInfo(file, data);
     }
 }
 function infoTableRow(name, value, help = "", editableFieldName = "") {
@@ -307,14 +339,14 @@ function getTrainedWordsMarkup(words) {
     markup += `</ul>`;
     return markup;
 }
-function saveEditableRow(info, tr, saving = true) {
+async function saveEditableRow(info, tr, saving = true, savePartialInfo) {
     var _a;
     const fieldName = tr.dataset["fieldName"];
     const input = query("input,textarea", tr);
-    let newValue = (_a = info[fieldName]) !== null && _a !== void 0 ? _a : "";
+    let newValue = String((_a = info[fieldName]) !== null && _a !== void 0 ? _a : "");
     let modified = false;
     if (saving) {
-        newValue = input.value;
+        newValue = fieldName === "displayName" ? input.value.trim() : input.value;
         if (fieldName.startsWith("strength")) {
             if (Number.isNaN(Number(newValue))) {
                 alert(`You must enter a number into the ${fieldName} field.`);
@@ -322,7 +354,13 @@ function saveEditableRow(info, tr, saving = true) {
             }
             newValue = (Math.round(Number(newValue) * 100) / 100).toFixed(2);
         }
-        LORA_INFO_SERVICE.savePartialInfo(info.file, { [fieldName]: newValue });
+        try {
+            await savePartialInfo(info.file, { [fieldName]: newValue });
+        }
+        catch (e) {
+            console.error("[rgthree] Failed to save model info.", e);
+            return false;
+        }
         modified = true;
     }
     tr.classList.remove("-rgthree-editing");
