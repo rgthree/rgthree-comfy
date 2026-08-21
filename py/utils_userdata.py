@@ -3,7 +3,18 @@ import os
 from .utils import load_json_file, path_exists, save_json_file
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
-USERDATA = os.path.join(THIS_DIR, '..', 'userdata')
+
+# Resolve ComfyUI's standard user directory (e.g., ComfyUI/user)
+try:
+  import folder_paths  # Provided by ComfyUI
+  base_path = getattr(folder_paths, 'base_path', None)
+  if not base_path:
+    # Derive base from module location if attribute missing
+    base_path = os.path.abspath(os.path.join(os.path.dirname(folder_paths.__file__), '..'))
+  USERDATA = os.path.join(base_path, 'user')
+except Exception:
+  # Fallback: navigate up to ComfyUI root from this file: custom_nodes/rgthree-comfy/py -> ../../..
+  USERDATA = os.path.abspath(os.path.join(THIS_DIR, '..', '..', '..', 'user'))
 
 
 def read_userdata_file(rel_path: str):
