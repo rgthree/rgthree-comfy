@@ -1,3 +1,5 @@
+import hashlib
+
 from nodes import PreviewImage
 
 from .constants import get_category, get_name
@@ -24,6 +26,15 @@ class RgthreeImageComparer(PreviewImage):
         "extra_pnginfo": "EXTRA_PNGINFO"
       },
     }
+
+  @classmethod
+  def IS_CHANGED(cls, image_a=None, image_b=None, **kwargs):
+    m = hashlib.sha256()
+    if image_a is not None:
+      m.update(image_a.cpu().numpy().tobytes())
+    if image_b is not None:
+      m.update(image_b.cpu().numpy().tobytes())
+    return m.hexdigest()
 
   def compare_images(self,
                      image_a=None,
