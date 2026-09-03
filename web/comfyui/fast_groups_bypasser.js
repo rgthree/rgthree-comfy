@@ -8,12 +8,14 @@ export class FastGroupsBypasser extends BaseFastGroupsModeChanger {
         this.helpActions = "bypass and enable";
         this.modeOn = LiteGraph.ALWAYS;
         this.modeOff = 4;
+        this.properties["hideBypassedGroups"] = false;
         this.onConstructed();
     }
 }
 FastGroupsBypasser.type = NodeTypesString.FAST_GROUPS_BYPASSER;
 FastGroupsBypasser.title = NodeTypesString.FAST_GROUPS_BYPASSER;
 FastGroupsBypasser.exposedActions = ["Bypass all", "Enable all", "Toggle all"];
+FastGroupsBypasser["@hideBypassedGroups"] = { type: "boolean" };
 app.registerExtension({
     name: "rgthree.FastGroupsBypasser",
     registerCustomNodes() {
