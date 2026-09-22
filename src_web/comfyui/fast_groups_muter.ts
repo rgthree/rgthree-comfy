@@ -401,12 +401,12 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
       // TODO: This work should probably live in BaseFastGroupsModeChanger instead of the widgets.
       if (newValue && this.node.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
         for (const widget of this.node.widgets) {
-          if (widget instanceof FastGroupsToggleRowWidget) {
+          if ("doModeChange" in widget && typeof widget.doModeChange === "function") {
             widget.doModeChange(false, true);
           }
         }
       } else if (!newValue && this.node.properties?.[PROPERTY_RESTRICTION] === "always one") {
-        newValue = this.node.widgets.every((w) => !w.value || w === this);
+        newValue = this.node.widgets.every((w) => w === this || !("toggled" in w && w.toggled));
       }
     }
     changeModeOfNodes(getGroupNodes(this.group), (newValue ? this.node.modeOn : this.node.modeOff));
