@@ -28,7 +28,7 @@ class RgthreeImageComparer(PreviewImage):
   def compare_images(self,
                      image_a=None,
                      image_b=None,
-                     filename_prefix="rgthree.compare.",
+                     filename_prefix="rgthree/rgthree.compare.",
                      prompt=None,
                      extra_pnginfo=None):
 
