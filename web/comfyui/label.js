@@ -30,7 +30,9 @@ export class Label extends RgthreeBaseVirtualNode {
         const backgroundColor = this.properties["backgroundColor"] || "";
         ctx.font = `${Math.max(this.properties["fontSize"] || 0, 1)}px ${(_a = this.properties["fontFamily"]) !== null && _a !== void 0 ? _a : "Arial"}`;
         const padding = (_b = Number(this.properties["padding"])) !== null && _b !== void 0 ? _b : 0;
-        const processedTitle = ((_c = this.title) !== null && _c !== void 0 ? _c : "").replace(/\\n/g, "\n").replace(/\n*$/, "");
+        const processedTitle = ((_c = this.title) !== null && _c !== void 0 ? _c : "")
+            .replace(/\\+n/g, (m) => "\\".repeat((m.length - 1) >> 1) + (((m.length - 1) % 2) ? "\n" : "n"))
+            .replace(/\n*$/, "");
         const lines = processedTitle.split("\n");
         const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
         this.size[0] = maxWidth + padding * 2;
