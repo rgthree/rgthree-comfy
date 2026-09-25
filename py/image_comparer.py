@@ -39,4 +39,7 @@ class RgthreeImageComparer(PreviewImage):
     if image_b is not None and len(image_b) > 0:
       result['ui']['b_images'] = self.save_images(image_b, filename_prefix, prompt, extra_pnginfo)['ui']['images']
 
+    # RETURN_TYPES is inherited from SaveImage, so the node advertises an IMAGE
+    # output. Without a 'result' key it stays empty and any link from it fails.
+    result['result'] = (image_a if image_a is not None else image_b,)
     return result
