@@ -341,7 +341,9 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         return this.value.toggled;
     }
     set toggled(value) {
+        var _a;
         this.value.toggled = value;
+        (_a = this.triggerDraw) === null || _a === void 0 ? void 0 : _a.call(this);
     }
     toggle(value) {
         value = value == null ? !this.toggled : value;
