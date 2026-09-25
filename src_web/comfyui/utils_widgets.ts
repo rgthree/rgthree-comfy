@@ -108,6 +108,8 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   private downedHitAreasForMove: RgthreeBaseWidgetBounds[] = [];
   private downedHitAreasForClick: RgthreeBaseWidgetBounds[] = [];
 
+  declare triggerDraw?: () => void;
+
   constructor(name: string) {
     this.name = name;
   }
@@ -127,9 +129,17 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   }
 
   mouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
+    const handled = this.handleMouse(event, pos, node);
+    this.triggerDraw?.();
+    return handled;
+  }
+
+  private handleMouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
     const canvas = app.canvas as TLGraphCanvas;
 
     if (event.type == "pointerdown") {
+      // Only the primary button interacts. Nodes 2.0 also forwards right-clicks to widgets.
+      if (event.button !== 0) return false;
       this.mouseDowned = [...pos] as Vector2;
       this.isMouseDownedAndOver = true;
       this.downedHitAreasForMove.length = 0;

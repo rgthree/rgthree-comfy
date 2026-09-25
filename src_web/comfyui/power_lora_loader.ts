@@ -60,6 +60,9 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
 
   private logger = rgthree.newLogSession(`[Power Lora Stack]`);
 
+  /** The lora row last right-clicked in Nodes 2.0, used to build the node context menu. */
+  private contextMenuWidget?: PowerLoraLoaderWidget | null;
+
   static [PROP_LABEL_SHOW_STRENGTHS_STATIC] = {
     type: "combo",
     values: [PROP_VALUE_SHOW_STRENGTHS_SINGLE, PROP_VALUE_SHOW_STRENGTHS_SEPARATE],
@@ -298,45 +301,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     // define a custom menu to begin with... wtf?). So, we'll return null so the default is not
     // triggered and then we'll just show one ourselves because.. yea.
     if (slot?.widget?.name?.startsWith("lora_")) {
-      const widget = slot.widget as PowerLoraLoaderWidget;
-      const index = this.widgets.indexOf(widget);
-      const canMoveUp = !!this.widgets[index - 1]?.name?.startsWith("lora_");
-      const canMoveDown = !!this.widgets[index + 1]?.name?.startsWith("lora_");
-      const menuItems: (IContextMenuValue | null)[] = [
-        {
-          content: `ℹ️ Show Info`,
-          callback: () => {
-            widget.showLoraInfoDialog();
-          },
-        },
-        null, // Divider
-        {
-          content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
-          callback: () => {
-            widget.value.on = !widget.value.on;
-          },
-        },
-        {
-          content: `⬆️ Move Up`,
-          disabled: !canMoveUp,
-          callback: () => {
-            moveArrayItem(this.widgets, widget, index - 1);
-          },
-        },
-        {
-          content: `⬇️ Move Down`,
-          disabled: !canMoveDown,
-          callback: () => {
-            moveArrayItem(this.widgets, widget, index + 1);
-          },
-        },
-        {
-          content: `🗑️ Remove`,
-          callback: () => {
-            removeArrayItem(this.widgets, widget);
-          },
-        },
-      ];
+      const menuItems = this.getLoraWidgetMenuItems(slot.widget as PowerLoraLoaderWidget);
       new LiteGraph.ContextMenu(menuItems, {
         title: "LORA WIDGET",
         event: rgthree.lastCanvasMouseEvent!,
@@ -347,6 +312,77 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       return undefined as any;
     }
     return this.defaultGetSlotMenuOptions(slot);
+  }
+
+  /** The context menu items for a lora row, shared by the legacy and Nodes 2.0 menus. */
+  private getLoraWidgetMenuItems(widget: PowerLoraLoaderWidget): (IContextMenuValue | null)[] {
+    const index = this.widgets.indexOf(widget);
+    const canMoveUp = !!this.widgets[index - 1]?.name?.startsWith("lora_");
+    const canMoveDown = !!this.widgets[index + 1]?.name?.startsWith("lora_");
+    return [
+      {
+        content: `ℹ️ Show Info`,
+        callback: () => {
+          widget.showLoraInfoDialog();
+        },
+      },
+      null, // Divider
+      {
+        content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
+        callback: () => {
+          widget.value.on = !widget.value.on;
+          this.redrawWidgets();
+        },
+      },
+      {
+        content: `⬆️ Move Up`,
+        disabled: !canMoveUp,
+        callback: () => {
+          moveArrayItem(this.widgets, widget, index - 1);
+          this.redrawWidgets();
+        },
+      },
+      {
+        content: `⬇️ Move Down`,
+        disabled: !canMoveDown,
+        callback: () => {
+          moveArrayItem(this.widgets, widget, index + 1);
+          this.redrawWidgets();
+        },
+      },
+      {
+        content: `🗑️ Remove`,
+        callback: () => {
+          removeArrayItem(this.widgets, widget);
+          this.redrawWidgets();
+        },
+      },
+    ];
+  }
+
+  /** Remembers the right-clicked lora row until the next pointer down anywhere. */
+  setContextMenuWidget(widget: PowerLoraLoaderWidget) {
+    this.contextMenuWidget = widget;
+    window.addEventListener("pointerdown", () => (this.contextMenuWidget = null), {
+      capture: true,
+      once: true,
+    });
+  }
+
+  /**
+   * Nodes 2.0 shows its own node menu and never calls `getSlotMenuOptions`, so the lora row items
+   * are added here when a row was right-clicked.
+   */
+  override getExtraMenuOptions(
+    canvas: LGraphCanvas,
+    options: (IContextMenuValue<unknown> | null)[],
+  ): (IContextMenuValue<unknown> | null)[] {
+    const result = super.getExtraMenuOptions(canvas, options);
+    const widget = this.contextMenuWidget;
+    if (widget && this.widgets.includes(widget)) {
+      options.push(null, ...this.getLoraWidgetMenuItems(widget));
+    }
+    return result;
   }
 
   /**
@@ -393,6 +429,14 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       if (widget.name?.startsWith("lora_") && (widget.value as any)?.on != null) {
         (widget.value as any).on = toggledTo;
       }
+    }
+    this.redrawWidgets();
+  }
+
+  /** Repaints widgets rendered on their own canvases (Nodes 2.0); a no-op otherwise. */
+  redrawWidgets() {
+    for (const widget of this.widgets || []) {
+      (widget as any).triggerDraw?.();
     }
   }
 
@@ -496,7 +540,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
       ctx.textBaseline = "middle";
       ctx.fillText("Toggle All", posX, midY);
 
-      let rposX = node.size[0] - margin - innerMargin - innerMargin;
+      let rposX = w - margin - innerMargin - innerMargin;
       ctx.textAlign = "center";
       ctx.fillText(
         this.showModelAndClip ? "Clip" : "Strength",
@@ -641,7 +685,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     let posX = margin;
 
     // Draw the background.
-    drawRoundedRectangle(ctx, {pos: [posX, posY], size: [node.size[0] - margin * 2, height]});
+    drawRoundedRectangle(ctx, {pos: [posX, posY], size: [w - margin * 2, height]});
 
     // Draw the toggle
     this.hitAreas.toggle.bounds = drawTogglePart(ctx, {posX, posY, height, value: this.value.on});
@@ -662,7 +706,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
 
     // Now, we draw the strength number part on the right, so we know the width of it to draw the
     // lora label as flexible.
-    let rposX = node.size[0] - margin - innerMargin - innerMargin;
+    let rposX = w - margin - innerMargin - innerMargin;
 
     const strengthValue = this.showModelAndClip
       ? (this.value.strengthTwo ?? 1)
@@ -676,7 +720,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     }
 
     const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
-      posX: node.size[0] - margin - innerMargin - innerMargin,
+      posX: w - margin - innerMargin - innerMargin,
       posY,
       height,
       value: strengthValue,
@@ -791,6 +835,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
       this.value.lora = value;
       this.loraInfo = null;
       this.getLoraInfo();
+      this.triggerDraw?.();
     });
     this.cancelMouseDown();
   }
@@ -836,12 +881,22 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     if (this.haveMouseMovedStrength) return;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     const canvas = app.canvas as LGraphCanvas;
-    canvas.prompt("Value", this.value[prop], (v: string) => (this.value[prop] = Number(v)), event);
+    canvas.prompt("Value", this.value[prop], (v: string) => {
+      this.value[prop] = Number(v);
+      this.triggerDraw?.();
+    }, event);
   }
 
   override onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode): boolean | void {
     super.onMouseUp(event, pos, node);
     this.haveMouseMovedStrength = false;
+  }
+
+  override mouse(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode) {
+    if (event.type == "pointerdown" && event.button === 2) {
+      (node as RgthreePowerLoraLoader).setContextMenuWidget(this);
+    }
+    return super.mouse(event, pos, node);
   }
 
   showLoraInfoDialog() {
@@ -871,7 +926,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
       } else {
         promise = Promise.resolve(null);
       }
-      this.loraInfoPromise = promise.then((v) => (this.loraInfo = v));
+      this.loraInfoPromise = promise.then((v) => {
+        this.loraInfo = v;
+        this.triggerDraw?.();
+        return v;
+      });
     }
     return this.loraInfoPromise;
   }
