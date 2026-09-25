@@ -45,9 +45,17 @@ export class RgthreeBaseWidget {
         return clickedX && pos[1] >= bounds[1] && pos[1] <= bounds[1] + bounds[3];
     }
     mouse(event, pos, node) {
+        var _a;
+        const handled = this.handleMouse(event, pos, node);
+        (_a = this.triggerDraw) === null || _a === void 0 ? void 0 : _a.call(this);
+        return handled;
+    }
+    handleMouse(event, pos, node) {
         var _a, _b, _c;
         const canvas = app.canvas;
         if (event.type == "pointerdown") {
+            if (event.button !== 0)
+                return false;
             this.mouseDowned = [...pos];
             this.isMouseDownedAndOver = true;
             this.downedHitAreasForMove.length = 0;
