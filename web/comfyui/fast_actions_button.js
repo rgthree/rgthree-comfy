@@ -3,6 +3,7 @@ import { BaseAnyInputConnectedNode } from "./base_any_input_connected_node.js";
 import { NodeTypesString } from "./constants.js";
 import { addMenuItem, changeModeOfNodes } from "./utils.js";
 import { rgthree } from "./rgthree.js";
+import { SERVICE as FAST_GROUPS_SERVICE } from "./services/fast_groups_service.js";   
 const MODE_ALWAYS = 0;
 const MODE_MUTE = 2;
 const MODE_BYPASS = 4;
@@ -191,20 +192,44 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                 continue;
             }
             if (node) {
-                if (action === "Mute") {
-                    changeModeOfNodes(node, MODE_MUTE);
-                }
-                else if (action === "Bypass") {
-                    changeModeOfNodes(node, MODE_BYPASS);
-                }
-                else if (action === "Enable") {
-                    changeModeOfNodes(node, MODE_ALWAYS);
-                }
+                // If the connected node implements handleAction, let it handle the action
+                // (it knows how to enforce any "only one" restriction etc).
+                // Otherwise fall back to the generic changeModeOfNodes behavior.
                 if (node.handleAction) {
                     if (typeof action !== "string") {
                         throw new Error("Fast Actions Button action should be a string: " + action);
                     }
                     await node.handleAction(action);
+
+                    // Make sure the node/widget view refreshes immediately so subsequent
+                    // Toggle/Enable/Bypass decisions read fresh widget.state values.
+                    try {
+                        if (typeof node.refreshWidgets === "function") {
+                            node.refreshWidgets();
+                        }
+                    }
+                    catch (e) {
+                        // ignore refresh errors
+                        console.warn("refreshWidgets failed:", e);
+                    }
+                    // schedule the global fast-groups service to recompute group membership & widget state
+                    try {
+                        FAST_GROUPS_SERVICE && FAST_GROUPS_SERVICE.scheduleRun && FAST_GROUPS_SERVICE.scheduleRun(8);
+                    }
+                    catch (e) {
+                        console.warn("FAST_GROUPS_SERVICE scheduleRun failed:", e);
+                    }
+                }
+                else {
+                    if (action === "Mute") {
+                        changeModeOfNodes(node, MODE_MUTE);
+                    }
+                    else if (action === "Bypass") {
+                        changeModeOfNodes(node, MODE_BYPASS);
+                    }
+                    else if (action === "Enable") {
+                        changeModeOfNodes(node, MODE_ALWAYS);
+                    }
                 }
                 (_b = this.graph) === null || _b === void 0 ? void 0 : _b.change();
                 continue;
