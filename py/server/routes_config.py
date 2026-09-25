@@ -45,7 +45,12 @@ async def get_logo(request, as_markup=False):
   h = get_param(request, 'h')
   css_class = get_param(request, 'cssClass')
   svg = await get_logo_svg()
-  resp = svg.format(bg=bg, fg=fg)
+  # `str.format` raises on any stray `{` in the markup, which turns a cached
+  # non-SVG response into a 500 for the whole route. Substitute the two
+  # placeholders directly, and never serve non-SVG content.
+  if '<svg' not in svg.lower():
+    svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"></svg>'
+  resp = svg.replace('{bg}', bg).replace('{fg}', fg)
   if w is not None:
     resp = re.sub(r'(<svg[^\>]*?)width="[^\"]+"', r'\1', resp)
     if str(w).isnumeric():

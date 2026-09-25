@@ -45,6 +45,19 @@ if not LOGO_URL.endswith('.svg'):
   raise ValueError('Bad logo url.')
 
 LOGO_SVG = None
+
+
+def _local_logo_svg():
+  """The logo bundled with this repository, used when the remote one is unavailable."""
+  import os
+  try:
+    path = os.path.join(_THIS_DIR, '..', 'web', 'common', 'media', 'rgthree.svg')
+    with open(path, 'r', encoding='utf-8') as f:
+      return f.read()
+  except Exception:
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"></svg>'
+
+
 async def get_logo_svg():
   import aiohttp
   global LOGO_SVG
@@ -62,9 +75,16 @@ async def get_logo_svg():
         'Expires': '0'
       }
       async with session.get(LOGO_URL, headers=headers) as resp:
-        LOGO_SVG = await resp.text()
+        fetched = await resp.text()
+    # The response is not guaranteed to be our SVG: a proxy, a captive portal or a
+    # CDN error page answers with HTML (Cloudflare pages contain `{` in their CSS,
+    # which later blows up `str.format` in the route). Only accept real SVG markup
+    # and otherwise fall back to the bundled logo below.
+    if '<svg' not in fetched.lower():
+      raise ValueError('remote logo is not SVG')
+    LOGO_SVG = fetched
     LOGO_SVG = re.sub(r'(id="bg".*fill=)"[^\"]+"', r'\1"{bg}"', LOGO_SVG)
     LOGO_SVG = re.sub(r'(id="fg".*fill=)"[^\"]+"', r'\1"{fg}"', LOGO_SVG)
   except Exception:
-    LOGO_SVG = '<svg></svg>'
+    LOGO_SVG = _local_logo_svg()
   return LOGO_SVG
