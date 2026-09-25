@@ -18,7 +18,7 @@ A collection of nodes and improvements created while messing around with ComfyUI
 ## Install
 
 1. Install the great [ComfyUi](https://github.com/comfyanonymous/ComfyUI).
-2. Clone this repo into `custom_modules`:
+2. Clone this repo into `custom_nodes`:
     ```
     cd ComfyUI/custom_nodes
     git clone https://github.com/rgthree/rgthree-comfy.git
