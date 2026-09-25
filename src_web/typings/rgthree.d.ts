@@ -38,6 +38,7 @@ export type RgthreeModelInfoDetails = {
 
 export type RgthreeModelInfo = RgthreeModelInfoDetails & {
   name?: string;
+  displayName?: string;
   type?: string;
   baseModel?: string;
   baseModelFile?: string;

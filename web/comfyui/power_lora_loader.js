@@ -384,6 +384,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         };
     }
     set value(v) {
+        var _a;
+        const previousLora = (_a = this._value) === null || _a === void 0 ? void 0 : _a.lora;
         this._value = v;
         if (typeof this._value !== "object") {
             this._value = { ...DEFAULT_LORA_WIDGET_DATA };
@@ -391,17 +393,27 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
                 this._value.strengthTwo = this._value.strength;
             }
         }
+        if (previousLora !== this._value.lora) {
+            this.resetLoraInfo();
+        }
         this.getLoraInfo();
     }
     get value() {
         return this._value;
     }
     setLora(lora) {
+        if (this._value.lora !== lora) {
+            this.resetLoraInfo();
+        }
         this._value.lora = lora;
         this.getLoraInfo();
     }
+    resetLoraInfo() {
+        this.loraInfo = null;
+        this.loraInfoPromise = null;
+    }
     draw(ctx, node, w, posY, height) {
-        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
         let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
         if (this.showModelAndClip !== currentShowModelAndClip) {
             let oldShowModelAndClip = this.showModelAndClip;
@@ -505,7 +517,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const loraWidth = rposX - posX;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        const loraLabel = String(((_t = this.value) === null || _t === void 0 ? void 0 : _t.lora) || "None");
+        const loraLabel = String(((_t = this.loraInfo) === null || _t === void 0 ? void 0 : _t.displayName) || ((_u = this.value) === null || _u === void 0 ? void 0 : _u.lora) || "None");
         ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
         this.hitAreas.lora.bounds = [posX, loraWidth];
         posX += loraWidth + innerMargin;
@@ -534,9 +546,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     }
     onLoraClick(event, pos, node) {
         node.showLoraChooser(event, (value) => {
-            this.value.lora = value;
-            this.loraInfo = null;
-            this.getLoraInfo();
+            this.setLora(value);
         });
         this.cancelMouseDown();
     }
@@ -604,13 +614,21 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     getLoraInfo(force = false) {
         if (!this.loraInfoPromise || force == true) {
             let promise;
-            if (this.value.lora && this.value.lora != "None") {
-                promise = LORA_INFO_SERVICE.getInfo(this.value.lora, force, true);
+            const requestedLora = this.value.lora;
+            if (requestedLora && requestedLora != "None") {
+                promise = LORA_INFO_SERVICE.getInfo(requestedLora, force, true);
             }
             else {
                 promise = Promise.resolve(null);
             }
-            this.loraInfoPromise = promise.then((v) => (this.loraInfo = v));
+            this.loraInfoPromise = promise.then((v) => {
+                var _a;
+                if (requestedLora === this.value.lora) {
+                    this.loraInfo = v;
+                    (_a = app.graph) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
+                }
+                return this.loraInfo;
+            });
         }
         return this.loraInfoPromise;
     }
