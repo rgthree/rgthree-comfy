@@ -169,11 +169,15 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
         }
         part.wasMouseClickedAndIsOver = false;
       }
+      // Skip bounds re-check for onClick handlers: they were already validated
+      // on pointerdown when added to downedHitAreasForClick.  In the Vue
+      // renderer (Nodes 2.0), WidgetLegacy wraps custom widgets in a
+      // mini-canvas and the pointerup coordinates arrive in node-local space
+      // (offset by title bar + widgets above) instead of mini-canvas-local
+      // space, so a re-check here would always fail.
       for (const part of this.downedHitAreasForClick) {
-        if (this.clickWasWithinBounds(pos, part.bounds)) {
-          const thisHandled = part.onClick!.apply(this, [event, pos, node, part]);
-          anyHandled = anyHandled || thisHandled == true;
-        }
+        const thisHandled = part.onClick!.apply(this, [event, pos, node, part]);
+        anyHandled = anyHandled || thisHandled == true;
       }
       this.downedHitAreasForClick.length = 0;
       if (wasMouseDownedAndOver) {
