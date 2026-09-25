@@ -323,13 +323,13 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         if (skipOtherNodeCheck !== true) {
             if (newValue && ((_b = (_a = this.node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(" one"))) {
                 for (const widget of this.node.widgets) {
-                    if (widget instanceof FastGroupsToggleRowWidget) {
+                    if ("doModeChange" in widget && typeof widget.doModeChange === "function") {
                         widget.doModeChange(false, true);
                     }
                 }
             }
             else if (!newValue && ((_c = this.node.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION]) === "always one") {
-                newValue = this.node.widgets.every((w) => !w.value || w === this);
+                newValue = this.node.widgets.every((w) => w === this || !("toggled" in w && w.toggled));
             }
         }
         changeModeOfNodes(getGroupNodes(this.group), (newValue ? this.node.modeOn : this.node.modeOff));
