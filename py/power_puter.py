@@ -525,7 +525,7 @@ class _Puter:
       return self._eval_statement(stmt.value, ctx=ctx)
 
     if isinstance(stmt, AstNumConstantClasses):
-      return stmt.n
+      return stmt.n if hasattr(stmt, "n") else stmt.value
 
     if isinstance(stmt, ast.BinOp):
       left = self._eval_statement(stmt.left, ctx=ctx)
