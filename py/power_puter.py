@@ -30,6 +30,7 @@ from .power_lora_loader import RgthreePowerLoraLoader
 from nodes import ImageBatch
 from comfy_extras.nodes_latent import LatentBatch
 
+AstNumConstantClasses = (ast.Num, ast.Constant) if hasattr(ast, "Num") else (ast.Constant)
 
 class LoopBreak(Exception):
   """A special error type that is caught in a loop for correct breaking behavior."""
@@ -523,7 +524,7 @@ class _Puter:
     if isinstance(stmt, (ast.FormattedValue, ast.Expr)):
       return self._eval_statement(stmt.value, ctx=ctx)
 
-    if isinstance(stmt, (ast.Constant, ast.Num)):
+    if isinstance(stmt, AstNumConstantClasses):
       return stmt.n
 
     if isinstance(stmt, ast.BinOp):
