@@ -523,7 +523,7 @@ class _Puter:
     if isinstance(stmt, (ast.FormattedValue, ast.Expr)):
       return self._eval_statement(stmt.value, ctx=ctx)
 
-    if isinstance(stmt, (ast.Constant, ast.Num)):
+    if isinstance(stmt, ast.Constant):
       return stmt.n
 
     if isinstance(stmt, ast.BinOp):
