@@ -25,7 +25,7 @@ import {rgthree} from "./rgthree.js";
 
 type Vector4 = [number, number, number, number];
 
-const ALPHABET = "abcdefghijklmnopqrstuv".split("");
+const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 
 const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOLEAN", "*"];
 
@@ -89,7 +89,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
   }
 
   private addAnyInput(num = 1) {
-    for (let i = 0; i < num; i++) {
+    for (let i = 0; i < num && this.inputs.length < ALPHABET.length; i++) {
       this.addInput(ALPHABET[this.inputs.length]!, "*" as string);
     }
   }
