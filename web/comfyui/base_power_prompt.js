@@ -201,7 +201,8 @@ export class PowerPrompt {
     }
     addAndHandleKeyboardLoraEditWeight() {
         this.promptEl.addEventListener("keydown", (event) => {
-            var _a, _b;
+            var _a;
+            var _b;
             if (!(event.key === "ArrowUp" || event.key === "ArrowDown"))
                 return;
             if (!event.ctrlKey && !event.metaKey)

@@ -219,15 +219,16 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
         return ComfyWidgets;
     }
     async setupFromServerNodeData() {
-        var _a, _b, _c, _d, _e;
-        const nodeData = this.constructor.nodeData;
-        if (!nodeData) {
+        var _a, _b, _c;
+        var _d, _e;
+        const nodeDef = this.constructor.nodeDef || this.constructor.nodeData;
+        if (!nodeDef) {
             throw Error("No node data");
         }
-        this.comfyClass = nodeData.name;
-        let inputs = nodeData["input"]["required"];
-        if (nodeData["input"]["optional"] != undefined) {
-            inputs = Object.assign({}, inputs, nodeData["input"]["optional"]);
+        this.comfyClass = nodeDef.name;
+        let inputs = nodeDef["input"]["required"];
+        if (nodeDef["input"]["optional"] != undefined) {
+            inputs = Object.assign({}, inputs, nodeDef["input"]["optional"]);
         }
         const WIDGETS = this.getWidgets();
         const config = {
@@ -268,12 +269,12 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
                 }
             }
         }
-        for (const o in nodeData["output"]) {
-            let output = nodeData["output"][o];
+        for (const o in nodeDef["output"]) {
+            let output = nodeDef["output"][o];
             if (output instanceof Array)
                 output = "COMBO";
-            const outputName = nodeData["output_name"][o] || output;
-            const outputShape = nodeData["output_is_list"][o]
+            const outputName = nodeDef["output_name"][o] || output;
+            const outputShape = nodeDef["output_is_list"][o]
                 ? LiteGraph.GRID_SHAPE
                 : LiteGraph.CIRCLE_SHAPE;
             this.addOutput(outputName, output, { shape: outputShape });
@@ -293,6 +294,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
             rgthreeClass.__registeredForOverride__ = true;
             rgthreeClass.nodeType = comfyClass;
             rgthreeClass.nodeData = nodeData;
+            rgthreeClass.nodeDef = nodeData;
             rgthreeClass.onRegisteredForOverride(comfyClass, rgthreeClass);
         }
     }
@@ -300,7 +302,7 @@ export class RgthreeBaseServerNode extends RgthreeBaseNode {
     }
 }
 RgthreeBaseServerNode.nodeType = null;
-RgthreeBaseServerNode.nodeData = null;
+RgthreeBaseServerNode.nodeDef = null;
 RgthreeBaseServerNode.__registeredForOverride__ = false;
 const OVERRIDDEN_SERVER_NODES = new Map();
 const oldregisterNodeType = LiteGraph.registerNodeType;

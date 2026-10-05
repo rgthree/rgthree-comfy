@@ -186,7 +186,8 @@ function getValueForBinding(bindingPropName, context) {
         : value;
 }
 function getValueForBindingPropName(bindingPropName, context) {
-    var _a, _b, _c;
+    var _a, _b;
+    var _c;
     const data = context.data;
     let negate = getNegates(bindingPropName);
     if (negate != null) {
@@ -213,7 +214,7 @@ function getValueForBindingPropName(bindingPropName, context) {
         console.log(bindingPropName);
         let matches = RGX_BIND_FN_CALL.exec(bindingPropName);
         const functionName = matches[1];
-        const maybeDataName = (_a = matches[2]) !== null && _a !== void 0 ? _a : null;
+        const maybeDataName = (_c = matches[2]) !== null && _c !== void 0 ? _c : null;
         value = getPrimitiveOrObjValue(maybeDataName, data);
         console.log(functionName, maybeDataName, value);
         if (typeof (value === null || value === void 0 ? void 0 : value[functionName]) === "function") {
@@ -222,10 +223,10 @@ function getValueForBindingPropName(bindingPropName, context) {
         else if (typeof (data === null || data === void 0 ? void 0 : data[functionName]) === "function") {
             value = data[functionName](value, data, context.currentElement, context.contextElement);
         }
-        else if (typeof ((_b = context.currentElement) === null || _b === void 0 ? void 0 : _b[functionName]) === "function") {
+        else if (typeof ((_a = context.currentElement) === null || _a === void 0 ? void 0 : _a[functionName]) === "function") {
             value = context.currentElement[functionName](value, data, context.currentElement, context.contextElement);
         }
-        else if (typeof ((_c = context.contextElement) === null || _c === void 0 ? void 0 : _c[functionName]) === "function") {
+        else if (typeof ((_b = context.contextElement) === null || _b === void 0 ? void 0 : _b[functionName]) === "function") {
             value = context.contextElement[functionName](value, data, context.currentElement, context.contextElement);
         }
         else {

@@ -70,7 +70,8 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
         this.setTypedData();
     }
     setTypedData() {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c, _d;
+        var _e;
         const name = "value";
         const type = this.outputTypeWidget.value;
         const linked = !!((_b = (_a = this.inputs) === null || _a === void 0 ? void 0 : _a[0]) === null || _b === void 0 ? void 0 : _b.link);
@@ -78,7 +79,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
         if (this.typeState == newTypeState)
             return;
         this.typeState = newTypeState;
-        let value = (_d = (_c = this.valueWidget) === null || _c === void 0 ? void 0 : _c.value) !== null && _d !== void 0 ? _d : null;
+        let value = (_e = (_c = this.valueWidget) === null || _c === void 0 ? void 0 : _c.value) !== null && _e !== void 0 ? _e : null;
         let newWidget = null;
         if (linked) {
             newWidget = ComfyWidgets["STRING"](this, name, ["STRING"], app).widget;
@@ -121,7 +122,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
             moveArrayItem(this.widgets, newWidget, 1);
         }
         this.valueWidget = newWidget;
-        if (!((_e = this.inputs) === null || _e === void 0 ? void 0 : _e.length)) {
+        if (!((_d = this.inputs) === null || _d === void 0 ? void 0 : _d.length)) {
             this.addInput("value", "*", { widget: this.valueWidget });
         }
         else {

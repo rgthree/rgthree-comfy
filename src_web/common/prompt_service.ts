@@ -10,7 +10,7 @@ import type {
   ComfyApiPrompt,
 } from "typings/comfy.js";
 import { api } from "scripts/api.js";
-import type { LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "@comfyorg/frontend";
+import type { NodeId, LGraph as TLGraph, LGraphCanvas as TLGraphCanvas } from "@comfyorg/frontend";
 import { Resolver, getResolver } from "./shared_utils.js";
 
 /**
@@ -61,7 +61,7 @@ export class PromptExecution {
     const apiNode = this.getApiNode(nodeId);
     let label = apiNode?._meta?.title || apiNode?.class_type || undefined;
     if (!label) {
-      const graphNode = this.maybeGetComfyGraph()?.getNodeById(Number(nodeId));
+      const graphNode = this.maybeGetComfyGraph()?.getNodeById(String(nodeId) as NodeId);
       label = graphNode?.title || graphNode?.type || undefined;
     }
     return label;

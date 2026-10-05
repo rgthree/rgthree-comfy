@@ -93,7 +93,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         this.executingFromShortcut = false;
     }
     onPropertyChanged(property, value, prevValue) {
-        var _a, _b;
+        var _a;
+        var _b;
         if (property == "buttonText" && typeof value === "string") {
             this.buttonWidget.name = value;
         }
@@ -177,13 +178,14 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
         super.removeWidget(widget);
     }
     async executeConnectedNodes() {
-        var _a, _b;
+        var _a;
+        var _b;
         for (const widget of this.widgets) {
             if (widget == this.buttonWidget) {
                 continue;
             }
             const action = widget.value;
-            const { comfy, node } = (_a = this.widgetToData.get(widget)) !== null && _a !== void 0 ? _a : {};
+            const { comfy, node } = (_b = this.widgetToData.get(widget)) !== null && _b !== void 0 ? _b : {};
             if (comfy) {
                 if (action === "Queue Prompt") {
                     await comfy.queuePrompt(0);
@@ -206,7 +208,7 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
                     }
                     await node.handleAction(action);
                 }
-                (_b = this.graph) === null || _b === void 0 ? void 0 : _b.change();
+                (_a = this.graph) === null || _a === void 0 ? void 0 : _a.change();
                 continue;
             }
             console.warn("Fast Actions Button has a widget without correct data.");

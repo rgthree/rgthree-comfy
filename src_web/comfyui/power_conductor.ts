@@ -1,5 +1,5 @@
 import type {Parser, Node, Tree} from "web-tree-sitter";
-import type {IStringWidget, IWidget} from "@comfyorg/frontend";
+import type {IStringWidget, IWidget, NodeId} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {Exposed, execute, PyTuple} from "rgthree/common/py_parser.js";
@@ -14,7 +14,7 @@ const BUILT_INS = {
   node: {
     fn: (query: string | number) => {
       if (typeof query === "number" || /^\d+(\.\d+)?/.exec(query)) {
-        return new ComfyNodeWrapper(Number(query));
+        return new ComfyNodeWrapper(String(query) as NodeId);
       }
       return null;
     },
@@ -40,7 +40,7 @@ class RgthreePowerConductor extends RgthreeBaseVirtualNode {
     (this.buttonWidget = new RgthreeBetterButtonWidget("Run", (...args: any[]) => {
       this.execute();
     })),
-      this.addCustomWidget(this.buttonWidget);
+    this.addCustomWidget(this.buttonWidget);
 
     this.onConstructed();
   }
@@ -56,9 +56,9 @@ const NODE_CLASS = RgthreePowerConductor;
  * A wrapper around nodes to add helpers and control the exposure of properties and methods.
  */
 class ComfyNodeWrapper {
-  #id: number;
+  #id: NodeId;
 
-  constructor(id: number) {
+  constructor(id: NodeId) {
     this.#id = id;
   }
 

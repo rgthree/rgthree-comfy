@@ -209,7 +209,8 @@ class OutputsWidget extends RgthreeBaseWidget {
         };
     }
     draw(ctx, node, w, posY, height) {
-        var _a, _b;
+        var _a;
+        var _b;
         ctx.save();
         height = this.neededHeight;
         const margin = 10;

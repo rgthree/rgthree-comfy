@@ -22,10 +22,11 @@ function getWidgetGetConfigSymbols(slot) {
     return {};
 }
 export function getWidgetConfig(slot) {
-    var _a, _b, _c;
+    var _a;
+    var _b, _c;
     const configSyms = getWidgetGetConfigSymbols(slot);
     const widget = slot.widget || {};
-    return ((_c = (_a = (configSyms.CONFIG && widget[configSyms.CONFIG])) !== null && _a !== void 0 ? _a : (configSyms.GET_CONFIG && ((_b = widget[configSyms.GET_CONFIG]) === null || _b === void 0 ? void 0 : _b.call(widget)))) !== null && _c !== void 0 ? _c : ["*", {}]);
+    return ((_c = (_b = (configSyms.CONFIG && widget[configSyms.CONFIG])) !== null && _b !== void 0 ? _b : (configSyms.GET_CONFIG && ((_a = widget[configSyms.GET_CONFIG]) === null || _a === void 0 ? void 0 : _a.call(widget)))) !== null && _c !== void 0 ? _c : ["*", {}]);
 }
 export function setWidgetConfig(slot, config) {
     var _a;
@@ -166,7 +167,8 @@ const IGNORE_KEYS = new Set([
     "dynamicPrompts",
 ]);
 function getComboSpecComboOptions(inputSpec) {
-    var _a, _b;
+    var _a;
+    var _b;
     return (_b = (isComboInputSpecV2(inputSpec) ? (_a = inputSpec[1]) === null || _a === void 0 ? void 0 : _a.options : inputSpec[0])) !== null && _b !== void 0 ? _b : [];
 }
 const lcm = (a, b) => {

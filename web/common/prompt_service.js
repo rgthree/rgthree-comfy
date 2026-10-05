@@ -24,7 +24,7 @@ export class PromptExecution {
         const apiNode = this.getApiNode(nodeId);
         let label = ((_a = apiNode === null || apiNode === void 0 ? void 0 : apiNode._meta) === null || _a === void 0 ? void 0 : _a.title) || (apiNode === null || apiNode === void 0 ? void 0 : apiNode.class_type) || undefined;
         if (!label) {
-            const graphNode = (_b = this.maybeGetComfyGraph()) === null || _b === void 0 ? void 0 : _b.getNodeById(Number(nodeId));
+            const graphNode = (_b = this.maybeGetComfyGraph()) === null || _b === void 0 ? void 0 : _b.getNodeById(String(nodeId));
             label = (graphNode === null || graphNode === void 0 ? void 0 : graphNode.title) || (graphNode === null || graphNode === void 0 ? void 0 : graphNode.type) || undefined;
         }
         return label;

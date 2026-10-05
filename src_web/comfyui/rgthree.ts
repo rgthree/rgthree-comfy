@@ -375,7 +375,7 @@ class Rgthree extends EventTarget {
             const nodeId = this.progressBarEl?.currentNodeId;
             if (nodeId) {
               const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
-              const node = graph.getNodeById(Number(nodeId));
+              const node = graph.getNodeById(String(nodeId) as NodeId);
               if (node) {
                 canvas.centerOnNode(node);
                 e.stopPropagation();

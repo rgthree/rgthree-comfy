@@ -7,7 +7,7 @@
 
 import {app} from "scripts/app.js";
 
-import type {INodeInputSlot, INodeOutputSlot, InputSpec, LGraphNode} from "@comfyorg/frontend";
+import type {INodeInputSlot, INodeOutputSlot, InputSpec, LGraphNode, LinkId} from "@comfyorg/frontend";
 
 /** Derived from https://github.com/Comfy-Org/ComfyUI_frontend/blob/1f3fb90b1b79c4190b3faa7928b05a8ba3671307/src/extensions/core/widgetInputs.ts#L462 */
 interface PrimitiveNode extends LGraphNode {
@@ -90,7 +90,7 @@ export function setWidgetConfig(
   }
 
   if ("link" in slot) {
-    const link = app.graph.links[(slot as INodeInputSlot)?.link ?? -1];
+    const link = app.graph.links[(slot as INodeInputSlot)?.link ?? -1 as LinkId];
     if (link) {
       const originNode = app.graph.getNodeById(link.origin_id);
       if (originNode && isPrimitiveNode(originNode)) {

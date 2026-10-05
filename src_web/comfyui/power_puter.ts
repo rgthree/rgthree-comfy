@@ -230,7 +230,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
       event: event,
       title: "Add an output",
       className: "rgthree-dark",
-      callback: (value) => {
+      callback: (value: any) => {
         if (isLowQuality()) return;
         if (typeof value === "string" && OUTPUT_TYPES.includes(value)) {
           this._value.outputs.push(value);
@@ -259,7 +259,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
       event: event,
       title: `Edit output #${bounds.data.index + 1}`,
       className: "rgthree-dark",
-      callback: (value) => {
+      callback: (value: any) => {
         const index = bounds.data.index;
         if (typeof value !== "string" || value === this._value.outputs[index] || isLowQuality()) {
           return;

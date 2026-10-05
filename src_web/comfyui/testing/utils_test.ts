@@ -26,6 +26,7 @@ export async function pasteImageToLoadImageNode(
   if (!node) {
     node = await env.addNode("LoadImage");
   }
+  if (!node) throw new Error('No LoadImage node.');
   await (node as any).pasteFiles([file]);
   let i = 0;
   let good = false;
