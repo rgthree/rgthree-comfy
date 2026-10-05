@@ -5,23 +5,7 @@ import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
-import { defineProperty, moveArrayItem } from "../../rgthree/common/shared_utils.js";
-/**
- * Finds the `mode` accessor on the prototype chain. Newer ComfyUI frontends track `mode` as shell
- * state through an accessor on LGraphNode (backed by `_state.mode`), so our instance-level override
- * must delegate to it. Otherwise `_state.mode` (used when serializing) never sees the change.
- * Returns null on legacy frontends, where `mode` is a plain data property.
- */
-function findPrototypeModeDescriptor(node) {
-    let proto = Object.getPrototypeOf(node);
-    while (proto) {
-        const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
-        if (descriptor && (descriptor.get || descriptor.set))
-            return descriptor;
-        proto = Object.getPrototypeOf(proto);
-    }
-    return null;
-}
+import { defineProperty, findPrototypePropertyDescriptor, moveArrayItem, } from "../../rgthree/common/shared_utils.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
@@ -48,18 +32,16 @@ export class RgthreeBaseNode extends LGraphNode {
             }
             this.checkAndRunOnConstructed();
         });
-        const protoMode = findPrototypeModeDescriptor(this);
+        const protoMode = findPrototypePropertyDescriptor(this, "mode");
         const readMode = () => (protoMode === null || protoMode === void 0 ? void 0 : protoMode.get) ? protoMode.get.call(this) : this.rgthree_mode;
         defineProperty(this, "mode", {
             get: () => readMode(),
             set: (mode) => {
                 const oldMode = readMode();
                 if (protoMode === null || protoMode === void 0 ? void 0 : protoMode.set) {
-                    // Newer frontends: write through so `_state.mode` (used by serialization) stays in sync.
                     protoMode.set.call(this, mode);
                 }
                 else {
-                    // Legacy frontends: keep the original behavior.
                     this.rgthree_mode = mode;
                 }
                 if (oldMode != mode) {

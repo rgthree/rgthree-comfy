@@ -21,23 +21,11 @@ import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
-import {defineProperty, moveArrayItem} from "rgthree/common/shared_utils.js";
-
-/**
- * Finds the `mode` accessor on the prototype chain. Newer ComfyUI frontends track `mode` as shell
- * state through an accessor on LGraphNode (backed by `_state.mode`), so our instance-level override
- * must delegate to it. Otherwise `_state.mode` (used when serializing) never sees the change.
- * Returns null on legacy frontends, where `mode` is a plain data property.
- */
-function findPrototypeModeDescriptor(node: object): PropertyDescriptor | null {
-  let proto = Object.getPrototypeOf(node);
-  while (proto) {
-    const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
-    if (descriptor && (descriptor.get || descriptor.set)) return descriptor;
-    proto = Object.getPrototypeOf(proto);
-  }
-  return null;
-}
+import {
+  defineProperty,
+  findPrototypePropertyDescriptor,
+  moveArrayItem,
+} from "rgthree/common/shared_utils.js";
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -109,7 +97,10 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       this.checkAndRunOnConstructed();
     });
 
-    const protoMode = findPrototypeModeDescriptor(this);
+    // Newer ComfyUI frontends track `mode` through an accessor on LGraphNode (backed by
+    // `_state.mode`, which is what gets serialized), so our override must delegate to it.
+    // On legacy frontends `mode` is a plain data property and this is null.
+    const protoMode = findPrototypePropertyDescriptor(this, "mode");
     const readMode = (): LGraphEventMode | undefined =>
       protoMode?.get ? protoMode.get.call(this) : this.rgthree_mode;
 

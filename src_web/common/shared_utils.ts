@@ -236,6 +236,25 @@ export function defineProperty(instance: any, property: string, desc: PropertyDe
 }
 
 /**
+ * Finds the accessor (getter and/or setter) for `property` on the prototype chain of `instance`,
+ * skipping `instance`'s own properties. Useful when an instance-level property override needs to
+ * delegate to an accessor defined by a parent class. Returns null if no accessor is found, e.g.
+ * when the property is a plain data property.
+ */
+export function findPrototypePropertyDescriptor(
+  instance: any,
+  property: string,
+): PropertyDescriptor | null {
+  let proto = Object.getPrototypeOf(instance);
+  while (proto) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, property);
+    if (descriptor && (descriptor.get || descriptor.set)) return descriptor;
+    proto = Object.getPrototypeOf(proto);
+  }
+  return null;
+}
+
+/**
  * Determines if two DataViews are equal.
  */
 export function areDataViewsEqual(a: DataView, b: DataView) {
