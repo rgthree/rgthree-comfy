@@ -59,13 +59,26 @@ export async function tryToGetWorkflowDataFromFile(
   if (file.type === "application/json" || (file as File).name?.endsWith(".json")) {
     const resolver = getResolver<{workflow: any; prompt: any}>();
     const reader = new FileReader();
-    reader.onload = async () => {
-      const json = parseWorkflowJson(reader.result as string);
-      const isApiJson = Object.values(json).every((v: any) => v.class_type);
-      const prompt = isApiJson ? json : null;
-      const workflow = !isApiJson && !json?.templates ? json : null;
-      return {workflow, prompt};
+
+    reader.onload = () => {
+      try {
+        const json = parseWorkflowJson(reader.result as string);
+        const isApiJson = Object.values(json).every((v: any) => v.class_type);
+        const prompt = isApiJson ? json : null;
+        const workflow = !isApiJson && !json?.templates ? json : null;
+
+        resolver.resolve({workflow, prompt});
+      } catch (error) {
+        resolver.reject(error instanceof Error ? error : new Error(String(error)));
+      }
     };
+
+    reader.onerror = () => {
+      resolver.reject(reader.error ?? new Error("Failed to read JSON file"));
+    };
+
+    reader.readAsText(file);
+
     return resolver.promise;
   }
   return {workflow: null, prompt: null};
