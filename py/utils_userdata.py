@@ -1,6 +1,7 @@
 import os
 
 from .utils import load_json_file, path_exists, save_json_file
+from .utils_metadata import get_metadata_directory
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 USERDATA = os.path.join(THIS_DIR, '..', 'userdata')
@@ -18,6 +19,7 @@ def read_userdata_file(rel_path: str, default=None):
 def save_userdata_file(rel_path: str, content: str):
   """Saves a file from the userdata directory."""
   file_path = clean_path(rel_path)
+  os.makedirs(os.path.dirname(file_path), exist_ok=True)
   with open(file_path, 'w+', encoding='UTF-8') as file:
     file.write(content)
 
@@ -43,7 +45,8 @@ def save_userdata_json(rel_path: str, data: dict):
 
 def clean_path(rel_path: str):
   """Cleans a relative path by splitting on forward slash and os.path.joining."""
-  cleaned = USERDATA
+  metadata_directory = get_metadata_directory()
+  cleaned = os.path.join(metadata_directory, 'userdata') if metadata_directory else USERDATA
   paths = rel_path.split('/')
   for path in paths:
     cleaned = os.path.join(cleaned, path)

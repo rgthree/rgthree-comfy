@@ -35,6 +35,34 @@ _(Note, settings are stored in an `rgthree_config.json` in the `rgthree-comfy` d
 
 <br>
 
+## Read-only model storage
+
+To use model info (including **Fetch info from Civitai**) with read-only model
+directories, set `RGTHREE_METADATA_DIR` to an absolute, writable directory before
+starting ComfyUI. For example, a container can use
+`RGTHREE_METADATA_DIR=/app/user/rgthree` with its persistent user volume mounted
+at `/app/user`. Keep model mounts read-only; rgthree writes model info under
+`model-info/` and Civitai/header caches under `userdata/` in this directory.
+The directory must be private to the trusted ComfyUI instance and its operating
+user. It can contain personal notes, paths, and fetched model information.
+
+Without this environment variable, existing storage behavior is unchanged.
+Existing adjacent `.rgthree-info.json` files are read as a fallback until an
+external record is saved, but are never changed in external mode. Clearing info
+writes an empty external record so old adjacent info does not reappear; it does
+not delete the original sidecar. Existing node-local caches are not migrated;
+they can be fetched again. Adjacent preview images remain readable in place.
+
+External info filenames use a hash of the model category and absolute resolved
+model path, not the model's contents. Equal basenames in different directories
+do not collide. Moving a model, changing mount paths, or switching its resolved
+storage root gives it a new identity; existing external records are retained,
+not automatically moved or deleted. Keep paths stable if preserving edits and
+notes across restarts is important.
+
+Offline backend storage tests can be run with
+`uv run --no-project --with pytest --with requests pytest --rootdir=tests --confcutdir=tests --import-mode=importlib tests/test_metadata_storage.py`.
+
 # ✴️ The Nodes
 
 Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟 Node Help` menu item for in-app help when available.

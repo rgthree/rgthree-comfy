@@ -11,6 +11,7 @@ import folder_paths
 
 from ..utils import abspath, get_dict_value, load_json_file, file_exists, remove_path, save_json_file
 from ..utils_userdata import read_userdata_json, save_userdata_json, delete_userdata_file
+from ..utils_metadata import get_external_info_path
 
 
 def _get_info_cache_file(data_type: str, file_hash: str):
@@ -25,7 +26,13 @@ async def delete_model_info(
   if file_path is None:
     return
   if del_info:
-    remove_path(get_info_file(file_path))
+    external_path = get_external_info_path(file_path, model_type)
+    if external_path:
+      # An empty external record clears info without changing read-only legacy files
+      # or allowing their contents to reappear on the next read.
+      save_json_file(external_path, {})
+    else:
+      remove_path(get_info_file(file_path, model_type=model_type))
   if del_civitai or del_metadata:
     file_hash = _get_sha256_hash(file_path)
     if del_civitai:
@@ -46,14 +53,17 @@ def get_file_info(file: str, model_type):
     'path': file_path,
     'modified': os.path.getmtime(file_path) * 1000,  # millis
     'imageLocal': f'/rgthree/api/{model_type}/img?file={file}' if get_img_file(file_path) else None,
-    'hasInfoFile': get_info_file(file_path) is not None,
+    'hasInfoFile': get_info_file(file_path, model_type=model_type) is not None,
   }
 
 
-def get_info_file(file_path: str, force=False):
+def get_info_file(file_path: str, force=False, model_type=None):
+  external_path = get_external_info_path(file_path, model_type)
+  if external_path and (force or file_exists(external_path)):
+    return external_path
   # Try to load a rgthree-info.json file next to the file.
   info_path = f'{file_path}.rgthree-info.json'
-  return info_path if file_exists(info_path) or force else None
+  return info_path if file_exists(info_path) or (force and not external_path) else None
 
 
 def get_img_file(file_path: str, force=False):
@@ -68,7 +78,7 @@ def get_model_info_file_data(file: str, model_type, default=None):
   file_path = get_folder_path(file, model_type)
   if file_path is None:
     return default
-  return load_json_file(get_info_file(file_path), default=default)
+  return load_json_file(get_info_file(file_path, model_type=model_type), default=default)
 
 
 async def get_model_info(
@@ -444,9 +454,9 @@ async def set_model_info_partial(file: str, model_type: str, info_data_partial):
 
 
 def save_model_info(file: str, info_data, model_type):
-  """Saves the model info alongside the model itself."""
+  """Save model info externally when configured, otherwise alongside the model."""
   file_path = get_folder_path(file, model_type)
   if file_path is None:
     return
-  info_path = get_info_file(file_path, force=True)
+  info_path = get_info_file(file_path, force=True, model_type=model_type)
   save_json_file(info_path, info_data)
