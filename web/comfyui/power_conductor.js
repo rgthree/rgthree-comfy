@@ -28,7 +28,7 @@ const BUILT_INS = {
     node: {
         fn: (query) => {
             if (typeof query === "number" || /^\d+(\.\d+)?/.exec(query)) {
-                return new ComfyNodeWrapper(Number(query));
+                return new ComfyNodeWrapper(String(query));
             }
             return null;
         },

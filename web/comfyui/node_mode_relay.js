@@ -92,7 +92,8 @@ class NodeModeRelay extends BaseCollectorNode {
         return size;
     }
     onConnectOutput(outputIndex, inputType, inputSlot, inputNode, inputIndex) {
-        var _a, _b;
+        var _a;
+        var _b;
         let canConnect = (_a = super.onConnectOutput) === null || _a === void 0 ? void 0 : _a.call(this, outputIndex, inputType, inputSlot, inputNode, inputIndex);
         let nextNode = (_b = getConnectedOutputNodesAndFilterPassThroughs(this, inputNode)[0]) !== null && _b !== void 0 ? _b : inputNode;
         return canConnect && nextNode.type === NodeTypesString.NODE_MODE_REPEATER;

@@ -199,7 +199,7 @@ export class PowerPrompt {
     }
 
     // Add the combo for hidden inputs of nodeData
-    let data = Object.assign(
+    let data: {[key: string]: string[]} = Object.assign(
       {},
       this.nodeData.input?.optional || {},
       this.nodeData.input?.hidden || {},
@@ -223,7 +223,7 @@ export class PowerPrompt {
                 "combo",
                 key,
                 values[0]!,
-                (selected) => {
+                (selected: string) => {
                   if (selected !== values[0] && !selected.match(/^disable\s[a-z]/i)) {
                     // We wait a frame because if we use a keydown event to call, it'll wipe out
                     // the selection.

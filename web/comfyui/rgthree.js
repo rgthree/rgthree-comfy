@@ -125,7 +125,8 @@ class LogSession {
 }
 class Rgthree extends EventTarget {
     constructor() {
-        var _a, _b, _c, _d;
+        var _a, _b, _c;
+        var _d;
         super();
         this.api = api;
         this.settingsDialog = null;
@@ -233,7 +234,7 @@ class Rgthree extends EventTarget {
                         const nodeId = (_a = this.progressBarEl) === null || _a === void 0 ? void 0 : _a.currentNodeId;
                         if (nodeId) {
                             const [canvas, graph] = await Promise.all([waitForCanvas(), waitForGraph()]);
-                            const node = graph.getNodeById(Number(nodeId));
+                            const node = graph.getNodeById(String(nodeId));
                             if (node) {
                                 canvas.centerOnNode(node);
                                 e.stopPropagation();
@@ -636,7 +637,8 @@ class Rgthree extends EventTarget {
         };
     }
     getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node) {
-        var _a, _b, _c;
+        var _a, _b;
+        var _c;
         return ((_c = (_b = (_a = this.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff) === null || _a === void 0 ? void 0 : _a.nodes) === null || _b === void 0 ? void 0 : _b.find((n) => n.id === node.id)) !== null && _c !== void 0 ? _c : null);
     }
     async showMessage(data) {

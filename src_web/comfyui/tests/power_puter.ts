@@ -121,11 +121,10 @@ describe("TestPowerPuter", async () => {
     await env.queuePrompt();
 
     // Check to see if there's an error.
-    expect(document.querySelector(".p-dialog-mask .p-card-body")!.textContent).toContain(
+    expect(document.querySelector('[data-testid="error-overlay"]')!.textContent).toContain(
       "error message",
-      "Disallowed access to \"tofile\" for type <class 'numpy.ndarray'>",
+      "Power Puter (rgthree) failed",
     );
-    (document.querySelector(".p-dialog-mask .p-dialog-close-button")! as HTMLButtonElement).click();
   });
 
   await should("handle boolean operators correctly", async () => {

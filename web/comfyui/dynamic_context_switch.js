@@ -104,7 +104,8 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
         this.fixInputsOutputsLinkSlots();
     }
     onDrawForeground(ctx, canvas) {
-        var _a, _b;
+        var _a;
+        var _b;
         const low_quality = ((_b = (_a = canvas === null || canvas === void 0 ? void 0 : canvas.ds) === null || _a === void 0 ? void 0 : _a.scale) !== null && _b !== void 0 ? _b : 1) < 0.6;
         if (low_quality || this.size[0] <= 10) {
             return;

@@ -44,7 +44,7 @@ export class ComfyUITestEnvironment {
     app.graph.setDirtyCanvas(true, true);
     await wait();
     this.lastNode = node;
-    this.maxY = Math.max(this.maxY, y + this.lastNode.size[1]);
+    this.maxY = Math.max(this.maxY, y + (this.lastNode?.size[1] ?? 0));
     return (this.lastNode = node);
   }
 

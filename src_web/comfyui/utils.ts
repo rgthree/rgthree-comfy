@@ -23,6 +23,7 @@ import type {
   NodeId,
   Subgraph,
   SubgraphNode,
+  LinkId,
 } from "@comfyorg/frontend";
 import type {ComfyApiPrompt} from "typings/comfy";
 import type {Constructor} from "typings/rgthree";
@@ -552,7 +553,7 @@ export function getConnectedNodesInfo(
   currentNode = currentNode || startNode;
   let rootNodes: ConnectedNodeInfo[] = [];
   if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
-    let linkIds: Array<number | undefined | null>;
+    let linkIds: Array<LinkId | undefined | null>;
 
     slot = slot != null && slot > -1 ? slot : undefined;
     if (dir == IoDirection.OUTPUT) {
@@ -772,7 +773,7 @@ export async function replaceNode(
   return newNode;
 }
 
-export function getOriginNodeByLink(linkId?: number | null) {
+export function getOriginNodeByLink(linkId?: LinkId | null) {
   let node: TLGraphNode | null = null;
   if (linkId != null) {
     const link = getLinkById(linkId);
@@ -784,7 +785,7 @@ export function getOriginNodeByLink(linkId?: number | null) {
 /**
  * Gets a link by id across all graphs and subgraphs.
  */
-export function getLinkById(linkId?: number | null) {
+export function getLinkById(linkId?: LinkId | null) {
   if (linkId == null) return null;
   let link: LLink | null = app.graph.links[linkId] ?? null;
   link = link ?? app.canvas.getCurrentGraph()?.links[linkId] ?? null;
@@ -934,7 +935,7 @@ export async function matchLocalSlotsToServer(
       : (serverNodeData.output_name ?? []);
   const serverSlotTypes =
     direction == IoDirection.INPUT
-      ? (Object.values(serverNodeData.input?.optional || {}).map((i) => i[0]) as string[])
+      ? (Object.values(serverNodeData.input?.optional || {}).map((i: any) => i[0]) as string[])
       : serverNodeData.output;
   const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
 

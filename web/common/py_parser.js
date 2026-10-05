@@ -60,7 +60,7 @@ const DEFAULT_BUILT_INS = {
     round: { fn: (n) => Math.round(Number(n)) },
     ceil: { fn: (n) => Math.ceil(Number(n)) },
     floor: { fn: (n) => Math.floor(Number(n)) },
-    len: { fn: (n) => { var _a, _b; return (_b = (_a = n === null || n === void 0 ? void 0 : n.__len__) === null || _a === void 0 ? void 0 : _a.call(n)) !== null && _b !== void 0 ? _b : n === null || n === void 0 ? void 0 : n.length; } },
+    len: { fn: (n) => { var _a; var _b; return (_b = (_a = n === null || n === void 0 ? void 0 : n.__len__) === null || _a === void 0 ? void 0 : _a.call(n)) !== null && _b !== void 0 ? _b : n === null || n === void 0 ? void 0 : n.length; } },
     int: { fn: (n) => Math.floor(Number(n)) },
     float: { fn: (n) => Number(n) },
     str: { fn: (n) => String(n) },
@@ -73,7 +73,8 @@ const DEFAULT_BUILT_INS = {
     log: { fn: (...args) => console.log(...__unwrap__(...args)) },
 };
 export async function execute(code, ctx, additionalBuiltins) {
-    var _a, _b;
+    var _a;
+    var _b;
     const builtIns = deepFreeze({ ...DEFAULT_BUILT_INS, ...(additionalBuiltins !== null && additionalBuiltins !== void 0 ? additionalBuiltins : {}) });
     ctx = new InitialExecuteContext(ctx);
     const root = (await parse(code)).rootNode;
@@ -118,7 +119,8 @@ async function handleReturn(node, ctx, builtIns) {
     return value;
 }
 async function handleIdentifier(node, ctx, builtIns) {
-    var _a, _b;
+    var _a;
+    var _b;
     let value = ctx[node.text];
     if (value === undefined) {
         value = (_b = (_a = builtIns[node.text]) === null || _a === void 0 ? void 0 : _a.fn) !== null && _b !== void 0 ? _b : undefined;
@@ -674,17 +676,18 @@ function __unwrap__(...args) {
     return args;
 }
 function checkAttributeAccessibility(inst, attr) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b;
+    var _c, _d, _e, _f;
     const instType = typeof inst;
     check(instType === "object" || instType === "function", `Instance of type ${instType} does not have attributes.`);
     check(!attr.startsWith("__") && !attr.endsWith("__"), `"${attr}" is not accessible.`);
     const attrType = typeof inst[attr];
     if (attrType === "function") {
-        const allowedMethods = (_c = (_b = (_a = inst.constructor) === null || _a === void 0 ? void 0 : _a.__ALLOWED_METHODS__) !== null && _b !== void 0 ? _b : inst.__ALLOWED_METHODS__) !== null && _c !== void 0 ? _c : [];
+        const allowedMethods = (_d = (_c = (_a = inst.constructor) === null || _a === void 0 ? void 0 : _a.__ALLOWED_METHODS__) !== null && _c !== void 0 ? _c : inst.__ALLOWED_METHODS__) !== null && _d !== void 0 ? _d : [];
         check(allowedMethods.includes(attr), `Method ${attr} is not accessible.`);
     }
     else {
-        const allowedProps = (_f = (_e = (_d = inst.constructor) === null || _d === void 0 ? void 0 : _d.__ALLOWED_PROPERTIES__) !== null && _e !== void 0 ? _e : inst.__ALLOWED_PROPERTIES__) !== null && _f !== void 0 ? _f : [];
+        const allowedProps = (_f = (_e = (_b = inst.constructor) === null || _b === void 0 ? void 0 : _b.__ALLOWED_PROPERTIES__) !== null && _e !== void 0 ? _e : inst.__ALLOWED_PROPERTIES__) !== null && _f !== void 0 ? _f : [];
         check(allowedProps.includes(attr), `Property ${attr} is not accessible.`);
     }
 }

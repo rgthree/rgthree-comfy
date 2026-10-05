@@ -174,13 +174,14 @@ export function setConnectionsCollapse(node, collapseConnections = null) {
     node.properties["collapse_connections"] = collapseConnections;
 }
 export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
-    var _a, _b, _c;
+    var _a, _b;
+    var _c;
     out = out || new Float32Array(2);
     node.properties = node.properties || {};
     const layout = node.properties["connections_layout"] ||
         node.defaultConnectionsLayout || ["Left", "Right"];
     const collapseConnections = node.properties["collapse_connections"] || false;
-    const offset = (_a = node.constructor.layout_slot_offset) !== null && _a !== void 0 ? _a : LiteGraph.NODE_SLOT_HEIGHT * 0.5;
+    const offset = (_c = node.constructor.layout_slot_offset) !== null && _c !== void 0 ? _c : LiteGraph.NODE_SLOT_HEIGHT * 0.5;
     let side = isInput ? layout[0] : layout[1];
     const otherSide = isInput ? layout[1] : layout[0];
     let data = LAYOUT_LABEL_TO_DATA[side];
@@ -223,7 +224,7 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
         else {
             toggleConnectionLabel(cxn, !isInput || collapseConnections || !!node.hideSlotLabels);
             out[0] = node.pos[0] + offset;
-            if ((_b = node.constructor) === null || _b === void 0 ? void 0 : _b.type.includes("Reroute")) {
+            if ((_a = node.constructor) === null || _a === void 0 ? void 0 : _a.type.includes("Reroute")) {
                 out[1] = node.pos[1] + node.size[1] * 0.5;
             }
             else {
@@ -243,7 +244,7 @@ export function getConnectionPosForLayout(node, isInput, slotNumber, out) {
         else {
             toggleConnectionLabel(cxn, isInput || collapseConnections || !!node.hideSlotLabels);
             out[0] = node.pos[0] + node.size[0] + 1 - offset;
-            if ((_c = node.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute")) {
+            if ((_b = node.constructor) === null || _b === void 0 ? void 0 : _b.type.includes("Reroute")) {
                 out[1] = node.pos[1] + node.size[1] * 0.5;
             }
             else {
@@ -338,7 +339,8 @@ export function getConnectedOutputNodesAndFilterPassThroughs(startNode, currentN
     return filterOutPassthroughNodes(getConnectedNodesInfo(startNode, IoDirection.OUTPUT, currentNode, slot, passThroughFollowing), passThroughFollowing).map((n) => n.node);
 }
 export function getConnectedNodesInfo(startNode, dir = IoDirection.INPUT, currentNode, slot, passThroughFollowing = PassThroughFollowing.ALL, originTravelFromSlot) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f;
+    var _g, _h;
     currentNode = currentNode || startNode;
     let rootNodes = [];
     if (startNode === currentNode || shouldPassThrough(currentNode, passThroughFollowing)) {
@@ -513,15 +515,17 @@ export function getOriginNodeByLink(linkId) {
     return node;
 }
 export function getLinkById(linkId) {
-    var _a, _b, _c;
+    var _a;
+    var _b, _c;
     if (linkId == null)
         return null;
-    let link = (_a = app.graph.links[linkId]) !== null && _a !== void 0 ? _a : null;
-    link = (_c = link !== null && link !== void 0 ? link : (_b = app.canvas.getCurrentGraph()) === null || _b === void 0 ? void 0 : _b.links[linkId]) !== null && _c !== void 0 ? _c : null;
+    let link = (_b = app.graph.links[linkId]) !== null && _b !== void 0 ? _b : null;
+    link = (_c = link !== null && link !== void 0 ? link : (_a = app.canvas.getCurrentGraph()) === null || _a === void 0 ? void 0 : _a.links[linkId]) !== null && _c !== void 0 ? _c : null;
     return link || findSomethingInAllSubgraphs((subgraph) => { var _a; return (_a = subgraph === null || subgraph === void 0 ? void 0 : subgraph.links[linkId]) !== null && _a !== void 0 ? _a : null; });
 }
 export function getNodeById(id) {
-    var _a, _b;
+    var _a;
+    var _b;
     if (id == null)
         return null;
     let node = app.graph.getNodeById(id);
@@ -529,12 +533,13 @@ export function getNodeById(id) {
     return node || findSomethingInAllSubgraphs((subgraph) => { var _a; return (_a = subgraph === null || subgraph === void 0 ? void 0 : subgraph.getNodeById(id)) !== null && _a !== void 0 ? _a : null; });
 }
 export function getNodeByIdFromApiPrompt(apiPrompt, id) {
-    var _a, _b, _c, _d;
+    var _a;
+    var _b, _c, _d;
     const fullId = getFullNodeIdFromApiPrompt(apiPrompt, id);
-    const workflow = (_a = apiPrompt.workflow) !== null && _a !== void 0 ? _a : {};
+    const workflow = (_b = apiPrompt.workflow) !== null && _b !== void 0 ? _b : {};
     const nodeIds = String(fullId).split(":");
-    const workflowNodes = (_b = workflow === null || workflow === void 0 ? void 0 : workflow["nodes"]) !== null && _b !== void 0 ? _b : [];
-    const workflowSubgraphs = (_d = (_c = workflow === null || workflow === void 0 ? void 0 : workflow["definitions"]) === null || _c === void 0 ? void 0 : _c["subgraphs"]) !== null && _d !== void 0 ? _d : [];
+    const workflowNodes = (_c = workflow === null || workflow === void 0 ? void 0 : workflow["nodes"]) !== null && _c !== void 0 ? _c : [];
+    const workflowSubgraphs = (_d = (_a = workflow === null || workflow === void 0 ? void 0 : workflow["definitions"]) === null || _a === void 0 ? void 0 : _a["subgraphs"]) !== null && _d !== void 0 ? _d : [];
     let nodesList = workflowNodes;
     let found = null;
     for (const nodeId of nodeIds) {
@@ -561,9 +566,10 @@ export function findFromNodeForSubgraph(subgraphId) {
     return node;
 }
 function findSomethingInAllSubgraphs(fn) {
-    var _a, _b;
-    const rootGraph = (_a = app.rootGraph) !== null && _a !== void 0 ? _a : app.graph.rootGraph;
-    const subgraphs = [rootGraph, ...(_b = rootGraph.subgraphs) === null || _b === void 0 ? void 0 : _b.values()];
+    var _a;
+    var _b;
+    const rootGraph = (_b = app.rootGraph) !== null && _b !== void 0 ? _b : app.graph.rootGraph;
+    const subgraphs = [rootGraph, ...(_a = rootGraph.subgraphs) === null || _a === void 0 ? void 0 : _a.values()];
     for (const subgraph of subgraphs) {
         const thing = fn(subgraph);
         if (thing)
@@ -603,12 +609,13 @@ export function getSlotLinks(inputOrOutput) {
     return links;
 }
 export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c;
+    var _d;
     const serverSlotNames = direction == IoDirection.INPUT
         ? Object.keys(((_a = serverNodeData.input) === null || _a === void 0 ? void 0 : _a.optional) || {})
-        : ((_b = serverNodeData.output_name) !== null && _b !== void 0 ? _b : []);
+        : ((_d = serverNodeData.output_name) !== null && _d !== void 0 ? _d : []);
     const serverSlotTypes = direction == IoDirection.INPUT
-        ? Object.values(((_c = serverNodeData.input) === null || _c === void 0 ? void 0 : _c.optional) || {}).map((i) => i[0])
+        ? Object.values(((_b = serverNodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}).map((i) => i[0])
         : serverNodeData.output;
     const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
     let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
@@ -658,7 +665,7 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
                     else {
                         linkData.link.origin_slot = currentNodeSlot;
                         const nextNode = app.graph.getNodeById(linkData.link.target_id);
-                        if (nextNode && ((_d = nextNode.constructor) === null || _d === void 0 ? void 0 : _d.type.includes("Reroute"))) {
+                        if (nextNode && ((_c = nextNode.constructor) === null || _c === void 0 ? void 0 : _c.type.includes("Reroute"))) {
                             nextNode.stabilize && nextNode.stabilize();
                         }
                     }

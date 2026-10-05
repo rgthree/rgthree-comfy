@@ -41,7 +41,8 @@ export class Bookmark extends RgthreeBaseVirtualNode {
         this.onConstructed();
     }
     get shortcutKey() {
-        var _a, _b, _c;
+        var _a, _b;
+        var _c;
         return (_c = (_b = (_a = this.widgets[0]) === null || _a === void 0 ? void 0 : _a.value) === null || _b === void 0 ? void 0 : _b.toLocaleLowerCase()) !== null && _c !== void 0 ? _c : "";
     }
     onAdded(graph) {

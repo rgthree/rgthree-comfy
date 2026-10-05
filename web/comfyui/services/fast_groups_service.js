@@ -104,13 +104,14 @@ class FastGroupsService {
         }
     }
     getGroupsUnsorted(now) {
-        var _a, _b, _c;
+        var _a;
+        var _b, _c;
         const canvas = app.canvas;
-        const graph = (_a = canvas.getCurrentGraph()) !== null && _a !== void 0 ? _a : app.graph;
+        const graph = (_b = canvas.getCurrentGraph()) !== null && _b !== void 0 ? _b : app.graph;
         if (!canvas.selected_group_moving &&
             (!this.groupsUnsorted.length || now - this.msLastUnsorted > this.msThreshold)) {
             this.groupsUnsorted = [...graph._groups];
-            const subgraphs = (_b = graph.subgraphs) === null || _b === void 0 ? void 0 : _b.values();
+            const subgraphs = (_a = graph.subgraphs) === null || _a === void 0 ? void 0 : _a.values();
             if (subgraphs) {
                 let s;
                 while ((s = subgraphs.next().value))

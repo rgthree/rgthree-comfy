@@ -37,7 +37,7 @@ interface PatchedNodeSlots {
     outputs?: {
       [slots: number]: {
         links: number[];
-        changes: {[linkId: number]: "ADD" | "REMOVE"};
+        changes: {[linkId: LinkId]: "ADD" | "REMOVE"};
       };
     };
   };
@@ -81,10 +81,10 @@ function getLinksData(
     return data;
   }
   return links.map((link: SerialisedLLinkArray) => ({
-    id: link[0],
-    origin_id: link[1],
+    id: link[0] as LinkId,
+    origin_id: link[1] as NodeId,
     origin_slot: link[2],
-    target_id: link[3],
+    target_id: link[3] as NodeId,
     target_slot: link[4],
     type: link[5],
   }));
@@ -96,14 +96,14 @@ interface WorkflowLinkFixerNodeInstruction {
   op: "REMOVE" | "ADD";
   dir: IoDirection;
   slot: number;
-  linkId: number;
-  linkIdToUse: number | null;
+  linkId: LinkId;
+  linkIdToUse: LinkId | null;
 }
 
 /** The instruction data for fixing a link from a workflow links. */
 interface WorkflowLinkFixerLinksInstruction {
   op: "DELETE";
-  linkId: number;
+  linkId: LinkId;
   reason: string;
 }
 
@@ -193,7 +193,7 @@ export abstract class WorkflowLinkFixer<
           );
           if (targetHasLink()) {
             this.log(` > [PATCH] ${targetLog} does have link, will remove the inputs' link first.`);
-            instructions.push(patchTarget("REMOVE", -1));
+            instructions.push(patchTarget("REMOVE", -1 as LinkId));
           }
         } else if (!targetNode && originNode) {
           this.log(
@@ -367,7 +367,7 @@ export abstract class WorkflowLinkFixer<
     node: N,
     ioDir: IoDirection,
     slot: number,
-    linkId: number,
+    linkId: LinkId,
     op: "ADD" | "REMOVE",
   ): WorkflowLinkFixerNodeInstruction | null {
     const nodeId = node.id;
@@ -419,7 +419,7 @@ export abstract class WorkflowLinkFixer<
   }
 
   /** Checks if a node (or patched data) has a linkId. */
-  private nodeHasLinkId(node: N, ioDir: IoDirection, slot: number, linkId: number) {
+  private nodeHasLinkId(node: N, ioDir: IoDirection, slot: number, linkId: LinkId) {
     const nodeId = node.id;
     let has = false;
     if (ioDir === IoDirection.INPUT) {
@@ -477,7 +477,7 @@ class WorkflowLinkFixerSerialized extends WorkflowLinkFixer<ISerialisedGraph, IS
   }
 
   getNodeById(id: NodeId) {
-    return this.graph.nodes.find((node) => Number(node.id) === id) ?? null;
+    return this.graph.nodes.find((node) => String(node.id) === String(id)) ?? null;
   }
 
   override fix(force: boolean = false, times?: number) {

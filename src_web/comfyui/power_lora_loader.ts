@@ -836,7 +836,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     if (this.haveMouseMovedStrength) return;
     let prop: "strengthTwo" | "strength" = isTwo ? "strengthTwo" : "strength";
     const canvas = app.canvas as LGraphCanvas;
-    canvas.prompt("Value", this.value[prop], (v: string) => (this.value[prop] = Number(v)), event);
+    canvas.prompt("Value", this.value[prop]!, (v: string) => (this.value[prop] = Number(v)), event);
   }
 
   override onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode): boolean | void {

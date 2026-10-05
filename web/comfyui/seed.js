@@ -128,20 +128,21 @@ class RgthreeSeed extends RgthreeBaseServerNode {
         this.computeSize();
     }
     handleApiHijacking(e) {
-        var _a, _b, _c;
+        var _a, _b;
+        var _c;
         if (this.mode === LiteGraph.NEVER || this.mode === 4) {
             return;
         }
         const output = e.detail.output;
-        const fullId = (_a = getFullNodeIdFromApiPrompt(e.detail, this.id)) !== null && _a !== void 0 ? _a : "";
+        const fullId = (_c = getFullNodeIdFromApiPrompt(e.detail, this.id)) !== null && _c !== void 0 ? _c : "";
         let workflowNode = getNodeByIdFromApiPrompt(e.detail, fullId);
-        let outputInputs = (_b = output === null || output === void 0 ? void 0 : output[fullId]) === null || _b === void 0 ? void 0 : _b.inputs;
+        let outputInputs = (_a = output === null || output === void 0 ? void 0 : output[fullId]) === null || _a === void 0 ? void 0 : _a.inputs;
         if (!workflowNode ||
             !outputInputs ||
             outputInputs[this.seedWidget.name || "seed"] === undefined) {
             const [n, v] = this.logger.warnParts(`Node ${fullId} not found in prompt data sent to server. This may be fine if only ` +
                 `queuing part of the workflow. If not, then this could be a bug.`);
-            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
+            (_b = console[n]) === null || _b === void 0 ? void 0 : _b.call(console, ...v);
             return;
         }
         const seedToUse = this.getSeedToUse();

@@ -24,7 +24,10 @@ export interface RgthreeBaseVirtualNodeConstructor extends Constructor<RgthreeBa
 
 export interface RgthreeBaseServerNodeConstructor extends Constructor<RgthreeBaseServerNode> {
 	static nodeType: ComfyNodeConstructor;
-	static nodeData: ComfyObjectInfo;
+	static nodeData?: ComfyObjectInfo;
+  // At some point, ComfyUI defined a `nodeData` that may or may not be the nodeDef. I think
+  // it's just lazily typed, but just in case, we'll compy the nodeData to our own field to use.
+	static nodeDef: ComfyObjectInfo;
 	static __registeredForOverride__: boolean;
   onRegisteredForOverride(comfyClass: any, rgthreeClass: any) : void;
 }

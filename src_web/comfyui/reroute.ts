@@ -10,6 +10,7 @@ import type {
   ISerialisedNode,
   Point,
   Size,
+  LinkId,
 } from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
@@ -595,10 +596,10 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     let inputNodeOutputSlot = null;
     while (currentNode) {
       updateNodes.unshift(currentNode);
-      const linkId: number | null = currentNode.inputs[0]!.link;
+      const linkId: LinkId | null = currentNode.inputs[0]!.link;
       if (linkId !== null) {
-        const link: LLink = (app.graph as TLGraph).links[linkId]!;
-        const node: TLGraphNode = (app.graph as TLGraph).getNodeById(link.origin_id)!;
+        const link: LLink = app.graph.links[linkId]!;
+        const node: TLGraphNode = app.graph.getNodeById(link.origin_id)!;
         if (!node) {
           // Bummer, somthing happened.. should we cleanup?
           app.graph.removeLink(linkId);

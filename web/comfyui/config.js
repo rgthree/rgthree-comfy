@@ -359,26 +359,27 @@ export class RgthreeConfigDialog extends RgthreeDialog {
         }, {});
     }
 }
-app.ui.settings.addSetting({
-    id: "rgthree.config",
-    defaultValue: null,
-    name: "Open rgthree-comfy config",
-    type: () => {
-        return $el("tr.rgthree-comfyui-settings-row", {
-            children: [
-                $el("td", {
-                    child: `<div>${logoRgthree} [rgthree-comfy] configuration / settings</div>`,
-                }),
-                $el("td", {
-                    child: $el('button.rgthree-button.-blue[text="rgthree-comfy settings"]', {
-                        events: {
-                            click: (e) => {
-                                new RgthreeConfigDialog().show();
-                            },
-                        },
-                    }),
-                }),
-            ],
-        });
-    },
+app.registerExtension({
+    name: 'rgthree.Config',
+    settings: [{
+            id: "rgthree.config",
+            defaultValue: null,
+            name: "Open rgthree-comfy config",
+            type: () => {
+                return $el("div.rgthree-comfyui-settings-row", {
+                    children: [
+                        $el("div", {
+                            child: $el('button.rgthree-button.-blue', {
+                                html: `${logoRgthree} rgthree-comfy settings`,
+                                events: {
+                                    click: (e) => {
+                                        new RgthreeConfigDialog().show();
+                                    },
+                                },
+                            }),
+                        }),
+                    ],
+                });
+            },
+        }]
 });

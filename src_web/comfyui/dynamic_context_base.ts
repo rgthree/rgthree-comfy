@@ -1,4 +1,4 @@
-import type {ComfyNodeDef, INodeInputSlot, LGraphNodeConstructor} from "@comfyorg/frontend";
+import type {ComfyNodeDef, INodeInputSlot, LGraphNodeConstructor, LinkId} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 import {BaseContextNode} from "./context.js";
@@ -20,7 +20,7 @@ export type InputLike = {
   name: string;
   type: number | string;
   label?: string;
-  link: number | null;
+  link: LinkId | null;
   removable?: boolean;
   boundingRect: any;
 };
@@ -204,8 +204,8 @@ export class DynamicContextNodeBase extends BaseContextNode {
       const inputs = this.getContextInputsList();
       for (let index = inputs.length - 1; index > 0; index--) {
         const input = inputs[index]!;
-        if ((input === null || input === void 0 ? void 0 : input.link) != null) {
-          app.graph.links[input.link!]!.target_slot = index;
+        if (input?.link != null) {
+          app.graph.links[input.link]!.target_slot = index;
         }
       }
     }

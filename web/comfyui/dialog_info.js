@@ -120,7 +120,8 @@ class RgthreeInfoDialog extends RgthreeDialog {
         }
     }
     getInfoContent() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u, _v, _w, _x, _y;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+        var _u, _v, _w, _x, _y;
         const info = this.modelInfo || {};
         const civitaiLink = (_a = info.links) === null || _a === void 0 ? void 0 : _a.find((i) => i.includes("civitai.com/models"));
         const html = `
@@ -153,19 +154,19 @@ class RgthreeInfoDialog extends RgthreeDialog {
 
         ${!((_l = info.trainedWords) === null || _l === void 0 ? void 0 : _l.length)
             ? ""
-            : infoTableRow("Trained Words", (_m = getTrainedWordsMarkup(info.trainedWords)) !== null && _m !== void 0 ? _m : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
+            : infoTableRow("Trained Words", (_u = getTrainedWordsMarkup(info.trainedWords)) !== null && _u !== void 0 ? _u : "", "Trained words from the metadata and/or civitai. Click to select for copy.")}
 
-        ${!((_p = (_o = info.raw) === null || _o === void 0 ? void 0 : _o.metadata) === null || _p === void 0 ? void 0 : _p.ss_clip_skip) || ((_r = (_q = info.raw) === null || _q === void 0 ? void 0 : _q.metadata) === null || _r === void 0 ? void 0 : _r.ss_clip_skip) == "None"
+        ${!((_o = (_m = info.raw) === null || _m === void 0 ? void 0 : _m.metadata) === null || _o === void 0 ? void 0 : _o.ss_clip_skip) || ((_q = (_p = info.raw) === null || _p === void 0 ? void 0 : _p.metadata) === null || _q === void 0 ? void 0 : _q.ss_clip_skip) == "None"
             ? ""
-            : infoTableRow("Clip Skip", (_t = (_s = info.raw) === null || _s === void 0 ? void 0 : _s.metadata) === null || _t === void 0 ? void 0 : _t.ss_clip_skip)}
-        ${infoTableRow("Strength Min", (_u = info.strengthMin) !== null && _u !== void 0 ? _u : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
-        ${infoTableRow("Strength Max", (_v = info.strengthMax) !== null && _v !== void 0 ? _v : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
+            : infoTableRow("Clip Skip", (_s = (_r = info.raw) === null || _r === void 0 ? void 0 : _r.metadata) === null || _s === void 0 ? void 0 : _s.ss_clip_skip)}
+        ${infoTableRow("Strength Min", (_v = info.strengthMin) !== null && _v !== void 0 ? _v : "", "The recommended minimum strength, In the Power Lora Loader node, strength will signal when it is below this threshold.", "strengthMin")}
+        ${infoTableRow("Strength Max", (_w = info.strengthMax) !== null && _w !== void 0 ? _w : "", "The recommended maximum strength. In the Power Lora Loader node, strength will signal when it is above this threshold.", "strengthMax")}
         ${""}
-        ${infoTableRow("Additional Notes", (_w = info.userNote) !== null && _w !== void 0 ? _w : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
+        ${infoTableRow("Additional Notes", (_x = info.userNote) !== null && _x !== void 0 ? _x : "", "Additional notes you'd like to keep and reference in the info dialog.", "userNote")}
 
       </table>
 
-      <ul class="rgthree-info-images">${(_y = (_x = info.images) === null || _x === void 0 ? void 0 : _x.map((img) => `
+      <ul class="rgthree-info-images">${(_y = (_t = info.images) === null || _t === void 0 ? void 0 : _t.map((img) => `
         <li>
           <figure>${img.type === "video"
             ? `<video src="${img.url}"

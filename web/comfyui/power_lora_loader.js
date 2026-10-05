@@ -401,14 +401,15 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.getLoraInfo();
     }
     draw(ctx, node, w, posY, height) {
-        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t;
+        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+        var _q, _r, _s, _t;
         let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
         if (this.showModelAndClip !== currentShowModelAndClip) {
             let oldShowModelAndClip = this.showModelAndClip;
             this.showModelAndClip = currentShowModelAndClip;
             if (this.showModelAndClip) {
                 if (oldShowModelAndClip != null) {
-                    this.value.strengthTwo = (_c = this.value.strength) !== null && _c !== void 0 ? _c : 1;
+                    this.value.strengthTwo = (_q = this.value.strength) !== null && _q !== void 0 ? _q : 1;
                 }
             }
             else {
@@ -438,13 +439,13 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         let rposX = node.size[0] - margin - innerMargin - innerMargin;
         const strengthValue = this.showModelAndClip
-            ? ((_d = this.value.strengthTwo) !== null && _d !== void 0 ? _d : 1)
-            : ((_e = this.value.strength) !== null && _e !== void 0 ? _e : 1);
+            ? ((_r = this.value.strengthTwo) !== null && _r !== void 0 ? _r : 1)
+            : ((_s = this.value.strength) !== null && _s !== void 0 ? _s : 1);
         let textColor = undefined;
-        if (((_f = this.loraInfo) === null || _f === void 0 ? void 0 : _f.strengthMax) != null && strengthValue > ((_g = this.loraInfo) === null || _g === void 0 ? void 0 : _g.strengthMax)) {
+        if (((_c = this.loraInfo) === null || _c === void 0 ? void 0 : _c.strengthMax) != null && strengthValue > ((_d = this.loraInfo) === null || _d === void 0 ? void 0 : _d.strengthMax)) {
             textColor = "#c66";
         }
-        else if (((_h = this.loraInfo) === null || _h === void 0 ? void 0 : _h.strengthMin) != null && strengthValue < ((_j = this.loraInfo) === null || _j === void 0 ? void 0 : _j.strengthMin)) {
+        else if (((_e = this.loraInfo) === null || _e === void 0 ? void 0 : _e.strengthMin) != null && strengthValue < ((_f = this.loraInfo) === null || _f === void 0 ? void 0 : _f.strengthMin)) {
             textColor = "#c66";
         }
         const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
@@ -467,18 +468,18 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
             this.hitAreas.strengthTwoInc.bounds = this.hitAreas.strengthInc.bounds;
             this.hitAreas.strengthTwoAny.bounds = this.hitAreas.strengthAny.bounds;
             let textColor = undefined;
-            if (((_k = this.loraInfo) === null || _k === void 0 ? void 0 : _k.strengthMax) != null && this.value.strength > ((_l = this.loraInfo) === null || _l === void 0 ? void 0 : _l.strengthMax)) {
+            if (((_g = this.loraInfo) === null || _g === void 0 ? void 0 : _g.strengthMax) != null && this.value.strength > ((_h = this.loraInfo) === null || _h === void 0 ? void 0 : _h.strengthMax)) {
                 textColor = "#c66";
             }
-            else if (((_m = this.loraInfo) === null || _m === void 0 ? void 0 : _m.strengthMin) != null &&
-                this.value.strength < ((_o = this.loraInfo) === null || _o === void 0 ? void 0 : _o.strengthMin)) {
+            else if (((_j = this.loraInfo) === null || _j === void 0 ? void 0 : _j.strengthMin) != null &&
+                this.value.strength < ((_k = this.loraInfo) === null || _k === void 0 ? void 0 : _k.strengthMin)) {
                 textColor = "#c66";
             }
             const [leftArrow, text, rightArrow] = drawNumberWidgetPart(ctx, {
                 posX: rposX,
                 posY,
                 height,
-                value: (_p = this.value.strength) !== null && _p !== void 0 ? _p : 1,
+                value: (_t = this.value.strength) !== null && _t !== void 0 ? _t : 1,
                 direction: -1,
                 textColor,
             });
@@ -495,7 +496,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const infoWidth = infoIconSize + innerMargin + innerMargin;
         if (CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.show_info_badge")) {
             rposX -= innerMargin;
-            drawInfoIcon(ctx, rposX - infoIconSize, posY + (height - infoIconSize) / 2, infoIconSize, ((_r = (_q = this.loraInfo) === null || _q === void 0 ? void 0 : _q.raw) === null || _r === void 0 ? void 0 : _r.civitai) ? "FILLED" : ((_s = this.loraInfo) === null || _s === void 0 ? void 0 : _s.hasInfoFile) ? "OUTLINED" : "GRAYED");
+            drawInfoIcon(ctx, rposX - infoIconSize, posY + (height - infoIconSize) / 2, infoIconSize, ((_m = (_l = this.loraInfo) === null || _l === void 0 ? void 0 : _l.raw) === null || _m === void 0 ? void 0 : _m.civitai) ? "FILLED" : ((_o = this.loraInfo) === null || _o === void 0 ? void 0 : _o.hasInfoFile) ? "OUTLINED" : "GRAYED");
             this.hitAreas.info.bounds = [rposX - infoIconSize, infoWidth];
             rposX = rposX - infoIconSize - innerMargin;
         }
@@ -505,7 +506,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const loraWidth = rposX - posX;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        const loraLabel = String(((_t = this.value) === null || _t === void 0 ? void 0 : _t.lora) || "None");
+        const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
         ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
         this.hitAreas.lora.bounds = [posX, loraWidth];
         posX += loraWidth + innerMargin;
