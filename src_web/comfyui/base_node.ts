@@ -21,7 +21,11 @@ import {
   importIndividualNodesInnerOnDragDrop,
   importIndividualNodesInnerOnDragOver,
 } from "./feature_import_individual_nodes.js";
-import {defineProperty, moveArrayItem} from "rgthree/common/shared_utils.js";
+import {
+  defineProperty,
+  findPrototypePropertyDescriptor,
+  moveArrayItem,
+} from "rgthree/common/shared_utils.js";
 
 /**
  * A base node with standard methods, directly extending the LGraphNode.
@@ -93,14 +97,25 @@ export abstract class RgthreeBaseNode extends LGraphNode {
       this.checkAndRunOnConstructed();
     });
 
+    // Newer ComfyUI frontends track `mode` through an accessor on LGraphNode (backed by
+    // `_state.mode`, which is what gets serialized), so our override must delegate to it.
+    // On legacy frontends `mode` is a plain data property and this is null.
+    const protoMode = findPrototypePropertyDescriptor(this, "mode");
+    const readMode = (): LGraphEventMode | undefined =>
+      protoMode?.get ? protoMode.get.call(this) : this.rgthree_mode;
+
     defineProperty(this, "mode", {
-      get: () => {
-        return this.rgthree_mode;
-      },
+      get: () => readMode(),
       set: (mode: LGraphEventMode) => {
-        if (this.rgthree_mode != mode) {
-          const oldMode = this.rgthree_mode;
+        const oldMode = readMode();
+        if (protoMode?.set) {
+          // Newer frontends: write through so `_state.mode` (used by serialization) stays in sync.
+          protoMode.set.call(this, mode);
+        } else {
+          // Legacy frontends: keep the original behavior.
           this.rgthree_mode = mode;
+        }
+        if (oldMode != mode) {
           this.onModeChange(oldMode, mode);
         }
       },

@@ -5,7 +5,7 @@ import { LogLevel, rgthree } from "./rgthree.js";
 import { addHelpMenuItem } from "./utils.js";
 import { RgthreeHelpDialog } from "../../rgthree/common/dialog.js";
 import { importIndividualNodesInnerOnDragDrop, importIndividualNodesInnerOnDragOver, } from "./feature_import_individual_nodes.js";
-import { defineProperty, moveArrayItem } from "../../rgthree/common/shared_utils.js";
+import { defineProperty, findPrototypePropertyDescriptor, moveArrayItem, } from "../../rgthree/common/shared_utils.js";
 export class RgthreeBaseNode extends LGraphNode {
     constructor(title = RgthreeBaseNode.title, skipOnConstructedCall = true) {
         super(title);
@@ -32,14 +32,19 @@ export class RgthreeBaseNode extends LGraphNode {
             }
             this.checkAndRunOnConstructed();
         });
+        const protoMode = findPrototypePropertyDescriptor(this, "mode");
+        const readMode = () => (protoMode === null || protoMode === void 0 ? void 0 : protoMode.get) ? protoMode.get.call(this) : this.rgthree_mode;
         defineProperty(this, "mode", {
-            get: () => {
-                return this.rgthree_mode;
-            },
+            get: () => readMode(),
             set: (mode) => {
-                if (this.rgthree_mode != mode) {
-                    const oldMode = this.rgthree_mode;
+                const oldMode = readMode();
+                if (protoMode === null || protoMode === void 0 ? void 0 : protoMode.set) {
+                    protoMode.set.call(this, mode);
+                }
+                else {
                     this.rgthree_mode = mode;
+                }
+                if (oldMode != mode) {
                     this.onModeChange(oldMode, mode);
                 }
             },

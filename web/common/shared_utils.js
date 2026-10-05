@@ -156,6 +156,16 @@ export function defineProperty(instance, property, desc) {
     }
     return Object.defineProperty(instance, property, desc);
 }
+export function findPrototypePropertyDescriptor(instance, property) {
+    let proto = Object.getPrototypeOf(instance);
+    while (proto) {
+        const descriptor = Object.getOwnPropertyDescriptor(proto, property);
+        if (descriptor && (descriptor.get || descriptor.set))
+            return descriptor;
+        proto = Object.getPrototypeOf(proto);
+    }
+    return null;
+}
 export function areDataViewsEqual(a, b) {
     if (a.byteLength !== b.byteLength) {
         return false;

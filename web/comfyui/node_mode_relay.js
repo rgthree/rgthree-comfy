@@ -52,6 +52,10 @@ class NodeModeRelay extends BaseCollectorNode {
     onModeChange(from, to) {
         var _a;
         super.onModeChange(from, to);
+        if (this.configuring) {
+            // Do not relay our mode while the workflow is being restored; loading must not rewrite other nodes.
+            return;
+        }
         if (this.inputs.length <= 1 && !this.isInputConnected(0) && this.isAnyOutputConnected()) {
             const [n, v] = logger.infoParts(`Mode change without any inputs; relaying our mode.`);
             (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
