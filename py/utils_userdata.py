@@ -47,4 +47,8 @@ def clean_path(rel_path: str):
   paths = rel_path.split('/')
   for path in paths:
     cleaned = os.path.join(cleaned, path)
+  cleaned = os.path.normpath(cleaned)
+  userdata_root = os.path.normpath(USERDATA)
+  if os.path.commonpath([cleaned, userdata_root]) != userdata_root:
+    raise ValueError(f'Invalid path: {rel_path}')
   return cleaned
