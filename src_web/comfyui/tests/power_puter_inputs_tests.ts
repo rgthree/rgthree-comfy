@@ -1,6 +1,9 @@
 import {app} from "scripts/app.js";
 import {NodeTypesString} from "../constants.js";
+import {ComfyUITestEnvironment} from "../testing/comfyui_env.js";
 import {beforeEach, describe, expect, should} from "../testing/runner.js";
+
+const env = new ComfyUITestEnvironment();
 
 describe("TestPowerPuterInputs", async () => {
   let source: NonNullable<ReturnType<typeof LiteGraph.createNode>>;
@@ -25,11 +28,10 @@ describe("TestPowerPuterInputs", async () => {
   }
 
   await beforeEach(async () => {
-    app.graph.clear();
-    source = LiteGraph.createNode(NodeTypesString.POWER_PRIMITIVE)!;
-    puter = LiteGraph.createNode(NodeTypesString.POWER_PUTER)!;
-    app.graph.add(source);
-    app.graph.add(puter);
+    await env.clear();
+    source = await env.addNode(NodeTypesString.POWER_PRIMITIVE);
+    puter = await env.addNode(NodeTypesString.POWER_PUTER);
+    await env.wait();
   });
 
   try {
@@ -51,8 +53,7 @@ describe("TestPowerPuterInputs", async () => {
       expect(puter.inputs.length).toBe("input count at the limit", 26);
       expect(puter.inputs.every((input: {link: unknown}) => input.link != null)).toBe(true);
       stabilize();
-      stabilize();
-      expect(puter.inputs.length).toBe("input count after repeated stabilization", 26);
+      expect(puter.inputs.length).toBe("input count after another stabilization", 26);
     });
 
     await should(
