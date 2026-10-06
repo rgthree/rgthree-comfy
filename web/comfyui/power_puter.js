@@ -7,7 +7,7 @@ import { ComfyWidgets } from "../../scripts/widgets.js";
 import { RgthreeBaseWidget } from "./utils_widgets.js";
 import { drawPlusIcon, drawRoundedRectangle, drawWidgetButton, isLowQuality, measureText, } from "./utils_canvas.js";
 import { rgthree } from "./rgthree.js";
-const ALPHABET = "abcdefghijklmnopqrstuv".split("");
+const ALPHABET = "abcdefghijklmnopqrstuvwxyz".split("");
 const OUTPUT_TYPES = ["STRING", "INT", "FLOAT", "BOOLEAN", "*"];
 class RgthreePowerPuter extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
@@ -39,7 +39,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
         }
     }
     addAnyInput(num = 1) {
-        for (let i = 0; i < num; i++) {
+        for (let i = 0; i < num && this.inputs.length < ALPHABET.length; i++) {
             this.addInput(ALPHABET[this.inputs.length], "*");
         }
     }
