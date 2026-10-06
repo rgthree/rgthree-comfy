@@ -34,6 +34,7 @@ export const NodeTypesString = {
     SDXL_POWER_PROMPT_POSITIVE: addRgthree("SDXL Power Prompt - Positive"),
     SDXL_POWER_PROMPT_NEGATIVE: addRgthree("SDXL Power Prompt - Simple / Negative"),
     POWER_LORA_LOADER: addRgthree("Power Lora Loader"),
+    SUPER_POWER_LORA_LOADER: addRgthree("Super Power Lora Loader"),
     KSAMPLER_CONFIG: addRgthree("KSampler Config"),
     NODE_COLLECTOR: addRgthree("Node Collector"),
     REROUTE: addRgthree("Reroute"),
