@@ -42,13 +42,23 @@ export async function tryToGetWorkflowDataFromFile(file) {
     if (file.type === "application/json" || ((_a = file.name) === null || _a === void 0 ? void 0 : _a.endsWith(".json"))) {
         const resolver = getResolver();
         const reader = new FileReader();
-        reader.onload = async () => {
-            const json = parseWorkflowJson(reader.result);
-            const isApiJson = Object.values(json).every((v) => v.class_type);
-            const prompt = isApiJson ? json : null;
-            const workflow = !isApiJson && !(json === null || json === void 0 ? void 0 : json.templates) ? json : null;
-            return { workflow, prompt };
+        reader.onload = () => {
+            try {
+                const json = parseWorkflowJson(reader.result);
+                const isApiJson = Object.values(json).every((v) => v.class_type);
+                const prompt = isApiJson ? json : null;
+                const workflow = !isApiJson && !(json === null || json === void 0 ? void 0 : json.templates) ? json : null;
+                resolver.resolve({ workflow, prompt });
+            }
+            catch (error) {
+                resolver.reject(error instanceof Error ? error : new Error(String(error)));
+            }
         };
+        reader.onerror = () => {
+            var _a;
+            resolver.reject((_a = reader.error) !== null && _a !== void 0 ? _a : new Error("Failed to read JSON file"));
+        };
+        reader.readAsText(file);
         return resolver.promise;
     }
     return { workflow: null, prompt: null };
