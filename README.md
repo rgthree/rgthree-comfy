@@ -66,12 +66,14 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >    </details>
 
 ## Bookmark (🔖)
-> Place the bookmark node anywhere on screen to quickly navigate to that with a shortcut key.
+> Place the bookmark node anywhere on screen to quickly navigate to it with a shortcut — and set it with a long‑press, just like saving a station on your car radio.
 > <details>
 >    <summary>ℹ️ <i>See More Information</i></summary>
 >
 >    - Define the `shortcut_key` to press to go right to that bookmark node, anchored in the top left.
 >    - You can also define the zoom level as well!
+>    - Quick press: Jump to the bookmark.
+>    - Press and hold: Hold the same shortcut for ~1 second to set/update the bookmark to your current viewport and zoom (must be on the same graph).
 >    - Pro tip: `shortcut_key` can be multiple keys. For instance "alt + shift + !" would require
 >      pressing the alt key, the shift key, and the "!" (as in the "1" key, but with shift pressed)
 >      in order to trigger.
@@ -101,7 +103,7 @@ Note, you can right-click on a bunch of the rgthree-comfy nodes and select `🛟
 >      - `image_b` _Optional._ The second image to use to compare. Optional only if image_a is a batch with two images.
 >    - **Properties:** You can change the following properties (by right-clicking on the node, and select "Properties" or "Properties Panel" from the menu):
 >      - `comparer_mode` - Choose between "Slide" and "Click". Defaults to "Slide".
-
+>    </details>
 
 ## Image Inset Crop
 > The node that lets you crop an input image by either pixel value, or percentage value.
