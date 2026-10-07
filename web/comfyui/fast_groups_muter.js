@@ -21,6 +21,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         this.tempSize = null;
         this.serialize_widgets = false;
         this.helpActions = "mute and unmute";
+        this.debouncerNormalizeSize = 0;
         this.properties[PROPERTY_MATCH_COLORS] = "";
         this.properties[PROPERTY_MATCH_TITLE] = "";
         this.properties[PROPERTY_SHOW_NAV] = true;
@@ -170,6 +171,15 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             this.debouncerTempWidth && clearTimeout(this.debouncerTempWidth);
             this.debouncerTempWidth = setTimeout(() => {
                 this.tempSize = null;
+                this.debouncerNormalizeSize && clearTimeout(this.debouncerNormalizeSize);
+                this.debouncerNormalizeSize = setTimeout(() => {
+                    var _a;
+                    const normalizedSize = super.computeSize(out);
+                    if (normalizedSize[0] !== this.size[0] || normalizedSize[1] !== this.size[1]) {
+                        this.setSize(normalizedSize);
+                    }
+                    (_a = this.graph) === null || _a === void 0 ? void 0 : _a.setDirtyCanvas(true, true);
+                }, 0);
             }, 32);
         }
         setTimeout(() => {
