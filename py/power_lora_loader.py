@@ -31,12 +31,15 @@ class RgthreePowerLoraLoader:
       "hidden": {},
     }
 
-  RETURN_TYPES = ("MODEL", "CLIP")
-  RETURN_NAMES = ("MODEL", "CLIP")
+  RETURN_TYPES = ("MODEL", "CLIP", "STRING")
+  RETURN_NAMES = ("MODEL", "CLIP", "lora_info_text")
   FUNCTION = "load_loras"
 
   def load_loras(self, model=None, clip=None, **kwargs):
     """Loops over the provided loras in kwargs and applies valid ones."""
+    lora_info_text = ""
+    lora_lines = []
+    
     for key, value in kwargs.items():
       key = key.upper()
       if key.startswith('LORA_') and 'on' in value and 'lora' in value and 'strength' in value:
@@ -54,8 +57,18 @@ class RgthreePowerLoraLoader:
           lora = get_lora_by_filename(value['lora'], log_node=self.NAME)
           if model is not None and lora is not None:
             model, clip = LoraLoader().load_lora(model, clip, lora, strength_model, strength_clip)
-
-    return (model, clip)
+            
+          # 收集Lora信息用于输出文本
+          lora_filename = value['lora']
+          # 对于大多数情况，使用模型强度作为显示强度
+          display_strength = strength_model
+          lora_lines.append(f"{lora_filename}: {display_strength:.2f}")
+    
+    # 将收集的Lora信息格式化为文本
+    if lora_lines:
+      lora_info_text = "\n".join(lora_lines)
+      
+    return (model, clip, lora_info_text)
 
   @classmethod
   def get_enabled_loras_from_prompt_node(cls,
