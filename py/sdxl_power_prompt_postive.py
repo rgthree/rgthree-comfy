@@ -157,11 +157,17 @@ class RgthreeSDXLPowerPromptPositive:
         crop_width = crop_width if crop_width and crop_width > 0 else 0
         crop_height = crop_height if crop_height and crop_height > 0 else 0
         try:
-          conditioning = CLIPTextEncodeSDXL().encode(opt_clip, opt_clip_width, opt_clip_height,
-                                                     crop_width, crop_height, target_width,
-                                                     target_height, prompt_g, prompt_l)[0]
+          sdxl_node = CLIPTextEncodeSDXL()
+          if hasattr(sdxl_node, 'encode'):
+            conditioning = sdxl_node.encode(opt_clip, opt_clip_width, opt_clip_height,
+                                            crop_width, crop_height, target_width,
+                                            target_height, prompt_g, prompt_l)[0]
+          else:
+            conditioning = sdxl_node.execute(opt_clip, opt_clip_width, opt_clip_height,
+                                             crop_width, crop_height, target_width,
+                                             target_height, prompt_g, prompt_l)[0]
         except Exception:
-          do_regular_clip_text_encode = True
+          do_regular_clip_text_encode = False
           log_node_info(
             self.NAME,
             'Exception while attempting to CLIPTextEncodeSDXL, will fall back to standard encoding.'
