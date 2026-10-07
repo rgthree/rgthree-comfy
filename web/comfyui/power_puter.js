@@ -28,9 +28,14 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
         return debounce(this.stabilizeBound, ms);
     }
     stabilize() {
+        var _a, _b;
         removeUnusedInputsFromEnd(this, 1);
         this.addAnyInput();
         this.setOutputs();
+        (_b = (_a = this.outputTypeWidget) === null || _a === void 0 ? void 0 : _a.triggerDraw) === null || _b === void 0 ? void 0 : _b.call(_a);
+        if (this.outputs && this.outputs.length) {
+            this.outputs.splice(0, this.outputs.length, ...this.outputs);
+        }
     }
     addInitialWidgets() {
         if (!this.outputTypeWidget) {
@@ -56,6 +61,7 @@ class RgthreePowerPuter extends RgthreeBaseServerNode {
             output = output || this.addOutput("", "");
             const outputLabel = output.label === "*" || output.label === output.type ? null : output.label;
             output.type = String(desired);
+            output.name = outputLabel || output.type;
             output.label = outputLabel || output.type;
         }
     }
