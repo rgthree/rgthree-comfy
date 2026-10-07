@@ -180,6 +180,18 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     }
     async handleAction(action) {
         var _a, _b, _c, _d, _e;
+        // Helper: some widgets (FastGroupsToggleRowWidget) expose boolean state as widget.toggled
+        // while others might use widget.value. Normalize to a boolean.
+        const getWidgetBool = (widget) => {
+            try {
+                if (typeof widget.toggled !== "undefined") {
+                    return !!widget.toggled;
+                }
+            }
+            catch (e) { /* ignore */ }
+            return !!widget.value;
+        };
+
         if (action === "Mute all" || action === "Bypass all") {
             const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === "always one";
             for (const [index, widget] of this.widgets.entries()) {
@@ -196,7 +208,9 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             const onlyOne = (_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION].includes(" one");
             let foundOne = false;
             for (const [index, widget] of this.widgets.entries()) {
-                let newValue = onlyOne && foundOne ? false : !widget.value;
+                // use normalized boolean state
+                const current = getWidgetBool(widget);
+                let newValue = onlyOne && foundOne ? false : !current;
                 foundOne = foundOne || newValue;
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(newValue, true);
             }
