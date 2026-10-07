@@ -386,6 +386,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   label: string = "";
   group: LGraphGroup;
   node: BaseFastGroupsModeChanger;
+  declare triggerDraw?: () => void;
 
   constructor(group: LGraphGroup, node: BaseFastGroupsModeChanger) {
     super("RGTHREE_TOGGLE_AND_NAV");
@@ -420,6 +421,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   }
   set toggled(value: boolean) {
     this.value.toggled = value;
+    this.triggerDraw?.();
   }
 
   toggle(value?: boolean) {
