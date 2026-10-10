@@ -404,20 +404,22 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
       offsetX = (nodeWidth - targetWidth) / 2;
     }
     const widthMultiplier = image?.img.naturalWidth / targetWidth;
+    // Clamp the reveal position into the image box: pointerOverPos can be anywhere over
+    // the node, but everything below assumes cropX within [offsetX, offsetX + targetWidth].
+    const cx = cropX == null ? undefined : Math.max(offsetX, Math.min(cropX, offsetX + targetWidth));
 
     const sourceX = 0;
     const sourceY = 0;
-    const sourceWidth =
-      cropX != null ? (cropX - offsetX) * widthMultiplier : image?.img.naturalWidth;
+    const sourceWidth = cx != null ? (cx - offsetX) * widthMultiplier : image?.img.naturalWidth;
     const sourceHeight = image?.img.naturalHeight;
     const destX = (nodeWidth - targetWidth) / 2;
     const destY = y + (height - targetHeight) / 2;
-    const destWidth = cropX != null ? cropX - offsetX : targetWidth;
+    const destWidth = cx != null ? cx - offsetX : targetWidth;
     const destHeight = targetHeight;
     ctx.save();
     ctx.beginPath();
     let globalCompositeOperation = ctx.globalCompositeOperation;
-    if (cropX) {
+    if (cx != null) {
       ctx.rect(destX, destY, destWidth, destHeight);
       ctx.clip();
     }
@@ -438,10 +440,10 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     // ctx.textAlign = "center";
     // ctx.font = `32px Arial`;
     // ctx.fillText(image.name, nodeWidth / 2, y + 32);
-    if (cropX != null && cropX >= (nodeWidth - targetWidth) / 2 && cropX <= targetWidth + offsetX) {
+    if (cx != null) {
       ctx.beginPath();
-      ctx.moveTo(cropX, destY);
-      ctx.lineTo(cropX, destY + destHeight);
+      ctx.moveTo(cx, destY);
+      ctx.lineTo(cx, destY + destHeight);
       ctx.globalCompositeOperation = "difference";
       ctx.strokeStyle = "rgba(255,255,255, 1)";
       ctx.stroke();
