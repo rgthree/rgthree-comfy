@@ -618,6 +618,11 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
         ? Object.values(((_b = serverNodeData.input) === null || _b === void 0 ? void 0 : _b.optional) || {}).map((i) => i[0])
         : serverNodeData.output;
     const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
+    for (const slot of slots || []) {
+        if (slot && Array.isArray(slot.type)) {
+            slot.type = "COMBO";
+        }
+    }
     let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
     if (firstIndex > -1) {
         const links = {};
@@ -637,7 +642,7 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
             else if (currentNodeSlot === -1) {
                 const splicedItem = {
                     name: serverSlotName,
-                    type: serverSlotTypes[index],
+                    type: Array.isArray(serverSlotTypes[index]) ? "COMBO" : serverSlotTypes[index],
                     links: [],
                 };
                 slots.splice(index, 0, splicedItem);
@@ -659,6 +664,9 @@ export async function matchLocalSlotsToServer(node, direction, serverNodeData) {
             let currentNodeSlot = slots.map((s) => s.name).indexOf(name);
             if (currentNodeSlot > -1) {
                 for (const linkData of slotLinks) {
+                    if (linkData.link && Array.isArray(linkData.link.type)) {
+                        linkData.link.type = "COMBO";
+                    }
                     if (direction == IoDirection.INPUT) {
                         linkData.link.target_slot = currentNodeSlot;
                     }
