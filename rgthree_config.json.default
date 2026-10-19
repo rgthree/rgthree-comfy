@@ -58,7 +58,8 @@
     },
     "power_lora_loader": {
       "show_info_badge": true,
-      "info_autoplay_video": true
+      "info_autoplay_video": true,
+      "verify_paths_on_load": true
     }
   },
   "announcements": {

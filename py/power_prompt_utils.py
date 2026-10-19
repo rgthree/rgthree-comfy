@@ -44,6 +44,16 @@ def get_lora_by_filename(file_path, lora_paths=None, log_node=None):
   if file_path in lora_paths:
     return file_path
 
+  # Workflows saved on Windows use backslashes for loras in subfolders while Linux/macOS use
+  # forward slashes. Compare with normalized separators so a workflow works on either.
+  file_path_normalized = file_path.replace('\\', '/')
+  lora_paths_normalized = [x.replace('\\', '/') for x in lora_paths]
+  if file_path_normalized in lora_paths_normalized:
+    found = lora_paths[lora_paths_normalized.index(file_path_normalized)]
+    if log_node is not None:
+      log_node_info(log_node, f'Matched Lora input "{file_path}" to "{found}".')
+    return found
+
   lora_paths_no_ext = [os.path.splitext(x)[0] for x in lora_paths]
 
   # See if we've entered the exact path, but without the extension
