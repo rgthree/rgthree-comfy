@@ -12,6 +12,24 @@ const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
 const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
+const PROPERTY_MANUAL_ORDER = "manualOrder";
+const DRAG_THRESHOLD_PX = 5;
+const ROW_ANIM_TAU_MS = 70;
+function parseManualOrder(raw) {
+    try {
+        const arr = JSON.parse(String(raw || "[]"));
+        return Array.isArray(arr) ? arr.map((t) => String(t)) : [];
+    }
+    catch (e) {
+        return [];
+    }
+}
+function mergeManualOrder(oldOrder, visibleNewOrder) {
+    const visible = new Set(visibleNewOrder);
+    const queue = [...visibleNewOrder];
+    const merged = oldOrder.map((title) => (visible.has(title) ? queue.shift() : title));
+    return merged.concat(queue);
+}
 export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     constructor(title = FastGroupsMuter.title) {
         super(title);
@@ -19,6 +37,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         this.modeOff = LiteGraph.NEVER;
         this.debouncerTempWidth = 0;
         this.tempSize = null;
+        this.draggingRows = false;
         this.serialize_widgets = false;
         this.helpActions = "mute and unmute";
         this.properties[PROPERTY_MATCH_COLORS] = "";
@@ -27,6 +46,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         this.properties[PROPERTY_SHOW_ALL_GRAPHS] = true;
         this.properties[PROPERTY_SORT] = "position";
         this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
+        this.properties[PROPERTY_MANUAL_ORDER] = "";
         this.properties[PROPERTY_RESTRICTION] = "default";
     }
     onConstructed() {
@@ -39,11 +59,64 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     onRemoved() {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
     }
+    moveRowTo(widget, localY) {
+        var _a, _b, _c;
+        const rows = this.widgets;
+        const from = rows.indexOf(widget);
+        if (from < 0) {
+            return;
+        }
+        let to = 0;
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            const top = (_a = row.last_y) !== null && _a !== void 0 ? _a : row.y;
+            if (typeof top === "number" && localY >= top) {
+                to = i;
+            }
+        }
+        if (to !== from) {
+            const a = (_b = rows[0]) === null || _b === void 0 ? void 0 : _b.last_y;
+            const b = (_c = rows[1]) === null || _c === void 0 ? void 0 : _c.last_y;
+            const stride = typeof a === "number" && typeof b === "number" && b > a
+                ? b - a
+                : LiteGraph.NODE_WIDGET_HEIGHT + 4;
+            const lo = Math.min(from, to);
+            const hi = Math.max(from, to);
+            const before = rows.slice(lo, hi + 1);
+            rows.splice(to, 0, rows.splice(from, 1)[0]);
+            rows.slice(lo, hi + 1).forEach((w, k) => {
+                const oldIndex = lo + before.indexOf(w);
+                const row = w;
+                row.animOffset = (row.animOffset || 0) + (oldIndex - (lo + k)) * stride;
+                row.lastAnimTime = null;
+            });
+            this.setDirtyCanvas(true, false);
+        }
+    }
+    commitManualOrder() {
+        var _a;
+        const visible = this.widgets
+            .map((w) => { var _a; return (_a = w.group) === null || _a === void 0 ? void 0 : _a.title; })
+            .filter((t) => !!t);
+        const old = parseManualOrder((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_MANUAL_ORDER]);
+        this.properties[PROPERTY_MANUAL_ORDER] = JSON.stringify(mergeManualOrder(old, visible));
+        this.properties[PROPERTY_SORT] = "manual";
+        this.draggingRows = false;
+        this.setDirtyCanvas(true, false);
+    }
     refreshWidgets() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        if (this.draggingRows) {
+            return;
+        }
         const canvas = app.canvas;
         let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
         let customAlphabet = null;
+        let manualRank = null;
+        if (sort === "manual") {
+            sort = "position";
+            manualRank = new Map(parseManualOrder((_k = this.properties) === null || _k === void 0 ? void 0 : _k[PROPERTY_MANUAL_ORDER]).map((t, i) => [t, i]));
+        }
         if (sort === "custom alphabet") {
             const customAlphaStr = (_c = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_SORT_CUSTOM_ALPHA]) === null || _c === void 0 ? void 0 : _c.replace(/\n/g, "");
             if (customAlphaStr && customAlphaStr.trim()) {
@@ -85,6 +158,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                 }
                 return a.title.localeCompare(b.title);
             });
+        }
+        if (manualRank) {
+            const rank = manualRank;
+            groups.sort((a, b) => { var _a, _b; return ((_a = rank.get(a.title)) !== null && _a !== void 0 ? _a : Infinity) - ((_b = rank.get(b.title)) !== null && _b !== void 0 ? _b : Infinity) || 0; });
         }
         let filterColors = (((_e = (_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_MATCH_COLORS]) === null || _e === void 0 ? void 0 : _e.split(",")) || []).filter((c) => c.trim());
         if (filterColors.length) {
@@ -235,7 +312,14 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             </p></li>
             <li><p>
               <code>${PROPERTY_SORT}</code> - Sort the toggles' order by "alphanumeric", graph
-              "position", or "custom alphabet". <i>(default: "position")</i>
+              "position", "custom alphabet", or "manual". <i>(default: "position")</i>
+            </p></li>
+            <li><p>
+              <code>manual</code> sort - Click and drag a toggle row up or down to reorder it. The
+              first drag switches <code>${PROPERTY_SORT}</code> to "manual" automatically, and the
+              order is saved with the workflow in the <code>${PROPERTY_MANUAL_ORDER}</code> property
+              (a JSON list of group titles; clear it to reset). Groups that are not in the saved
+              order appear last.
             </p></li>
             <li>
               <p>
@@ -285,9 +369,10 @@ BaseFastGroupsModeChanger["@showNav"] = { type: "boolean" };
 BaseFastGroupsModeChanger["@showAllGraphs"] = { type: "boolean" };
 BaseFastGroupsModeChanger["@sort"] = {
     type: "combo",
-    values: ["position", "alphanumeric", "custom alphabet"],
+    values: ["position", "alphanumeric", "custom alphabet", "manual"],
 };
 BaseFastGroupsModeChanger["@customSortAlphabet"] = { type: "string" };
+BaseFastGroupsModeChanger["@manualOrder"] = { type: "string" };
 BaseFastGroupsModeChanger["@toggleRestriction"] = {
     type: "combo",
     values: ["default", "max one", "always one"],
@@ -312,6 +397,9 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         this.options = { on: "yes", off: "no" };
         this.type = "custom";
         this.label = "";
+        this.dragActive = false;
+        this.animOffset = 0;
+        this.lastAnimTime = null;
         this.group = group;
         this.node = node;
     }
@@ -351,6 +439,47 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         }
     }
     draw(ctx, node, width, posY, height) {
+        if (this.animOffset !== 0) {
+            const now = performance.now();
+            const dt = this.lastAnimTime == null ? 16 : Math.min(now - this.lastAnimTime, 50);
+            this.animOffset *= Math.exp(-dt / ROW_ANIM_TAU_MS);
+            if (Math.abs(this.animOffset) < 0.5) {
+                this.animOffset = 0;
+                this.lastAnimTime = null;
+            }
+            else {
+                this.lastAnimTime = now;
+                requestAnimationFrame(() => node.setDirtyCanvas(true, false));
+            }
+        }
+        ctx.save();
+        ctx.globalAlpha = this.node.draggingRows && !this.dragActive ? 0.55 : 1;
+        ctx.translate(0, this.animOffset);
+        this.drawRow(ctx, node, width, posY, height);
+        if (this.dragActive) {
+            this.drawDragHighlight(ctx, width, posY, height);
+        }
+        ctx.restore();
+    }
+    drawDragHighlight(ctx, width, posY, height) {
+        const margin = 15;
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "rgba(136, 204, 255, 0.18)";
+        ctx.strokeStyle = "#8CF";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(margin, posY, width - margin * 2, height, 4);
+        }
+        else {
+            ctx.rect(margin, posY, width - margin * 2, height);
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+    drawRow(ctx, node, width, posY, height) {
         var _a;
         const widgetData = drawNodeWidget(ctx, { size: [width, height], pos: [15, posY] });
         const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
@@ -418,10 +547,48 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
                 }
             }
             else {
-                this.toggle();
+                this.beginPress(event);
             }
         }
         return true;
+    }
+    beginPress(downEvent) {
+        const canvas = app.canvas;
+        const startY = downEvent.clientY;
+        let dragging = false;
+        const onMove = (e) => {
+            if (!dragging) {
+                if (Math.abs(e.clientY - startY) < DRAG_THRESHOLD_PX) {
+                    return;
+                }
+                dragging = true;
+                this.node.draggingRows = true;
+                this.dragActive = true;
+                canvas.canvas.style.cursor = "grabbing";
+                canvas.node_dragged = null;
+            }
+            const [, graphY] = canvas.convertEventToCanvasOffset(e);
+            this.node.moveRowTo(this, graphY - this.node.pos[1]);
+        };
+        const finish = (commit) => {
+            document.removeEventListener("pointermove", onMove, true);
+            document.removeEventListener("pointerup", onUp, true);
+            document.removeEventListener("pointercancel", onCancel, true);
+            this.dragActive = false;
+            canvas.canvas.style.cursor = "";
+            if (dragging) {
+                this.node.commitManualOrder();
+            }
+            else if (commit) {
+                this.toggle();
+            }
+            this.node.draggingRows = false;
+        };
+        const onUp = () => finish(true);
+        const onCancel = () => finish(false);
+        document.addEventListener("pointermove", onMove, true);
+        document.addEventListener("pointerup", onUp, true);
+        document.addEventListener("pointercancel", onCancel, true);
     }
 }
 app.registerExtension({

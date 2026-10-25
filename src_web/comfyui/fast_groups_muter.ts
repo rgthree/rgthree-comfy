@@ -24,6 +24,34 @@ const PROPERTY_MATCH_TITLE = "matchTitle";
 const PROPERTY_SHOW_NAV = "showNav";
 const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
+const PROPERTY_MANUAL_ORDER = "manualOrder";
+
+/** How far (px, screen space) the pointer must travel vertically before a press becomes a drag. */
+const DRAG_THRESHOLD_PX = 5;
+
+/** Time constant (ms) for rows easing into their new slot. Lower is snappier (~4x this to settle). */
+const ROW_ANIM_TAU_MS = 70;
+
+/** Parses the saved manual order (a JSON array of group titles). Never throws. */
+function parseManualOrder(raw: unknown): string[] {
+  try {
+    const arr = JSON.parse(String(raw || "[]"));
+    return Array.isArray(arr) ? arr.map((t) => String(t)) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Re-fills the slots held by the currently visible groups with their new order, leaving groups that
+ * are hidden (by matchTitle / matchColors / etc.) exactly where they were in the saved order.
+ */
+function mergeManualOrder(oldOrder: string[], visibleNewOrder: string[]): string[] {
+  const visible = new Set(visibleNewOrder);
+  const queue = [...visibleNewOrder];
+  const merged = oldOrder.map((title) => (visible.has(title) ? queue.shift()! : title));
+  return merged.concat(queue);
+}
 
 /**
  * Fast Muter implementation that looks for groups in the workflow and adds toggles to mute them.
@@ -40,6 +68,9 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   private debouncerTempWidth: number = 0;
   tempSize: Vector2 | null = null;
 
+  /** True while the user is dragging a row; refreshWidgets() pauses so it doesn't fight the drag. */
+  draggingRows: boolean = false;
+
   // We don't need to serizalize since we'll just be checking group data on startup anyway
   override serialize_widgets = false;
 
@@ -51,9 +82,10 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   static "@showAllGraphs" = {type: "boolean"};
   static "@sort" = {
     type: "combo",
-    values: ["position", "alphanumeric", "custom alphabet"],
+    values: ["position", "alphanumeric", "custom alphabet", "manual"],
   };
   static "@customSortAlphabet" = {type: "string"};
+  static "@manualOrder" = {type: "string"};
 
   override properties!: RgthreeBaseVirtualNode["properties"] & {
     [PROPERTY_MATCH_COLORS]: string;
@@ -62,6 +94,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     [PROPERTY_SHOW_ALL_GRAPHS]: boolean;
     [PROPERTY_SORT]: string;
     [PROPERTY_SORT_CUSTOM_ALPHA]: string;
+    [PROPERTY_MANUAL_ORDER]: string;
     [PROPERTY_RESTRICTION]: string;
   };
 
@@ -78,6 +111,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     this.properties[PROPERTY_SHOW_ALL_GRAPHS] = true;
     this.properties[PROPERTY_SORT] = "position";
     this.properties[PROPERTY_SORT_CUSTOM_ALPHA] = "";
+    this.properties[PROPERTY_MANUAL_ORDER] = "";
     this.properties[PROPERTY_RESTRICTION] = "default";
   }
 
@@ -94,10 +128,79 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     FAST_GROUPS_SERVICE.removeFastGroupNode(this);
   }
 
+  /**
+   * Moves a row to the slot under the given node-local Y coordinate (used while drag-sorting).
+   */
+  moveRowTo(widget: FastGroupsToggleRowWidget, localY: number) {
+    const rows = this.widgets;
+    const from = rows.indexOf(widget);
+    if (from < 0) {
+      return;
+    }
+    // Find the last row whose top edge is at or above the pointer.
+    let to = 0;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i] as any;
+      const top = row.last_y ?? row.y;
+      if (typeof top === "number" && localY >= top) {
+        to = i;
+      }
+    }
+    if (to !== from) {
+      // Distance between two rows, so shifted rows can start from where they visually were.
+      const a = (rows[0] as any)?.last_y;
+      const b = (rows[1] as any)?.last_y;
+      const stride =
+        typeof a === "number" && typeof b === "number" && b > a
+          ? b - a
+          : LiteGraph.NODE_WIDGET_HEIGHT + 4;
+
+      const lo = Math.min(from, to);
+      const hi = Math.max(from, to);
+      const before = rows.slice(lo, hi + 1);
+      rows.splice(to, 0, rows.splice(from, 1)[0]!);
+      rows.slice(lo, hi + 1).forEach((w, k) => {
+        const oldIndex = lo + before.indexOf(w);
+        const row = w as any;
+        // Start drawn at the old slot, then ease to 0 (see FastGroupsToggleRowWidget.draw).
+        row.animOffset = (row.animOffset || 0) + (oldIndex - (lo + k)) * stride;
+        row.lastAnimTime = null;
+      });
+      this.setDirtyCanvas(true, false);
+    }
+  }
+
+  /**
+   * Saves the rows' current on-screen order as this node's manual order, and switches to it.
+   */
+  commitManualOrder() {
+    const visible = this.widgets
+      .map((w) => (w as any).group?.title as string | undefined)
+      .filter((t): t is string => !!t);
+    const old = parseManualOrder(this.properties?.[PROPERTY_MANUAL_ORDER]);
+    this.properties[PROPERTY_MANUAL_ORDER] = JSON.stringify(mergeManualOrder(old, visible));
+    this.properties[PROPERTY_SORT] = "manual";
+    this.draggingRows = false;
+    this.setDirtyCanvas(true, false);
+  }
+
   refreshWidgets() {
+    if (this.draggingRows) {
+      return;
+    }
     const canvas = app.canvas as TLGraphCanvas;
     let sort = this.properties?.[PROPERTY_SORT] || "position";
     let customAlphabet: string[] | null = null;
+    let manualRank: Map<string, number> | null = null;
+    if (sort === "manual") {
+      // The service only knows how to sort by position / alphanumeric; start from position and then
+      // re-order by the saved manual order below. Groups not in the saved order come last, in
+      // position order (Array.prototype.sort is stable).
+      sort = "position";
+      manualRank = new Map(
+        parseManualOrder(this.properties?.[PROPERTY_MANUAL_ORDER]).map((t, i) => [t, i] as [string, number]),
+      );
+    }
     if (sort === "custom alphabet") {
       const customAlphaStr = this.properties?.[PROPERTY_SORT_CUSTOM_ALPHA]?.replace(/\n/g, "");
       if (customAlphaStr && customAlphaStr.trim()) {
@@ -142,6 +245,11 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         }
         return a.title.localeCompare(b.title);
       });
+    }
+
+    if (manualRank) {
+      const rank = manualRank;
+      groups.sort((a, b) => (rank.get(a.title) ?? Infinity) - (rank.get(b.title) ?? Infinity) || 0);
     }
 
     // See if we're filtering by colors, and match against the built-in keywords and actuial hex
@@ -311,7 +419,14 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             </p></li>
             <li><p>
               <code>${PROPERTY_SORT}</code> - Sort the toggles' order by "alphanumeric", graph
-              "position", or "custom alphabet". <i>(default: "position")</i>
+              "position", "custom alphabet", or "manual". <i>(default: "position")</i>
+            </p></li>
+            <li><p>
+              <code>manual</code> sort - Click and drag a toggle row up or down to reorder it. The
+              first drag switches <code>${PROPERTY_SORT}</code> to "manual" automatically, and the
+              order is saved with the workflow in the <code>${PROPERTY_MANUAL_ORDER}</code> property
+              (a JSON list of group titles; clear it to reset). Groups that are not in the saved
+              order appear last.
             </p></li>
             <li>
               <p>
@@ -387,6 +502,12 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   group: LGraphGroup;
   node: BaseFastGroupsModeChanger;
 
+  /** True only for the row currently being dragged. */
+  dragActive = false;
+  /** Vertical px the row is currently drawn away from its real slot; eases back to 0. */
+  animOffset = 0;
+  lastAnimTime: number | null = null;
+
   constructor(group: LGraphGroup, node: BaseFastGroupsModeChanger) {
     super("RGTHREE_TOGGLE_AND_NAV");
     this.group = group;
@@ -431,6 +552,61 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   }
 
   draw(
+    ctx: CanvasRenderingContext2D,
+    node: FastGroupsMuter,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    // Ease the row toward its real slot after a reorder.
+    if (this.animOffset !== 0) {
+      const now = performance.now();
+      const dt = this.lastAnimTime == null ? 16 : Math.min(now - this.lastAnimTime, 50);
+      this.animOffset *= Math.exp(-dt / ROW_ANIM_TAU_MS);
+      if (Math.abs(this.animOffset) < 0.5) {
+        this.animOffset = 0;
+        this.lastAnimTime = null;
+      } else {
+        this.lastAnimTime = now;
+        requestAnimationFrame(() => node.setDirtyCanvas(true, false));
+      }
+    }
+
+    ctx.save();
+    // While dragging, fade every row except the one being moved so it's obvious which is which.
+    ctx.globalAlpha = this.node.draggingRows && !this.dragActive ? 0.55 : 1;
+    ctx.translate(0, this.animOffset);
+    this.drawRow(ctx, node, width, posY, height);
+    if (this.dragActive) {
+      this.drawDragHighlight(ctx, width, posY, height);
+    }
+    ctx.restore();
+  }
+
+  private drawDragHighlight(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    const margin = 15;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(136, 204, 255, 0.18)";
+    ctx.strokeStyle = "#8CF";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if ((ctx as any).roundRect) {
+      (ctx as any).roundRect(margin, posY, width - margin * 2, height, 4);
+    } else {
+      ctx.rect(margin, posY, width - margin * 2, height);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  private drawRow(
     ctx: CanvasRenderingContext2D,
     node: FastGroupsMuter,
     width: number,
@@ -522,10 +698,58 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
           canvas.setDirty(true, true);
         }
       } else {
-        this.toggle();
+        this.beginPress(event);
       }
     }
     return true;
+  }
+
+  /**
+   * A press on the row body is either a click (toggle on release) or a vertical drag (reorder).
+   *
+   * LiteGraph only reliably hands us the initial pointerdown, so we listen for the rest of the
+   * gesture on the document ourselves.
+   */
+  private beginPress(downEvent: CanvasMouseEvent) {
+    const canvas = app.canvas as TLGraphCanvas;
+    const startY = downEvent.clientY;
+    let dragging = false;
+
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) {
+        if (Math.abs(e.clientY - startY) < DRAG_THRESHOLD_PX) {
+          return;
+        }
+        dragging = true;
+        this.node.draggingRows = true;
+        this.dragActive = true;
+        canvas.canvas.style.cursor = "grabbing";
+        // Make sure the canvas doesn't also start dragging the whole node.
+        (canvas as any).node_dragged = null;
+      }
+      const [, graphY] = canvas.convertEventToCanvasOffset(e);
+      this.node.moveRowTo(this, graphY - this.node.pos[1]);
+    };
+
+    const finish = (commit: boolean) => {
+      document.removeEventListener("pointermove", onMove, true);
+      document.removeEventListener("pointerup", onUp, true);
+      document.removeEventListener("pointercancel", onCancel, true);
+      this.dragActive = false;
+      canvas.canvas.style.cursor = "";
+      if (dragging) {
+        this.node.commitManualOrder();
+      } else if (commit) {
+        this.toggle();
+      }
+      this.node.draggingRows = false;
+    };
+    const onUp = () => finish(true);
+    const onCancel = () => finish(false);
+
+    document.addEventListener("pointermove", onMove, true);
+    document.addEventListener("pointerup", onUp, true);
+    document.addEventListener("pointercancel", onCancel, true);
   }
 }
 
