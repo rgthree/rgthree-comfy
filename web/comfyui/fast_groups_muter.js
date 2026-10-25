@@ -14,6 +14,7 @@ const PROPERTY_SHOW_ALL_GRAPHS = "showAllGraphs";
 const PROPERTY_RESTRICTION = "toggleRestriction";
 const PROPERTY_MANUAL_ORDER = "manualOrder";
 const DRAG_THRESHOLD_PX = 5;
+const ROW_ANIM_TAU_MS = 70;
 function parseManualOrder(raw) {
     try {
         const arr = JSON.parse(String(raw || "[]"));
@@ -59,7 +60,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
     }
     moveRowTo(widget, localY) {
-        var _a;
+        var _a, _b, _c;
         const rows = this.widgets;
         const from = rows.indexOf(widget);
         if (from < 0) {
@@ -74,7 +75,21 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             }
         }
         if (to !== from) {
+            const a = (_b = rows[0]) === null || _b === void 0 ? void 0 : _b.last_y;
+            const b = (_c = rows[1]) === null || _c === void 0 ? void 0 : _c.last_y;
+            const stride = typeof a === "number" && typeof b === "number" && b > a
+                ? b - a
+                : LiteGraph.NODE_WIDGET_HEIGHT + 4;
+            const lo = Math.min(from, to);
+            const hi = Math.max(from, to);
+            const before = rows.slice(lo, hi + 1);
             rows.splice(to, 0, rows.splice(from, 1)[0]);
+            rows.slice(lo, hi + 1).forEach((w, k) => {
+                const oldIndex = lo + before.indexOf(w);
+                const row = w;
+                row.animOffset = (row.animOffset || 0) + (oldIndex - (lo + k)) * stride;
+                row.lastAnimTime = null;
+            });
             this.setDirtyCanvas(true, false);
         }
     }
@@ -382,6 +397,9 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         this.options = { on: "yes", off: "no" };
         this.type = "custom";
         this.label = "";
+        this.dragActive = false;
+        this.animOffset = 0;
+        this.lastAnimTime = null;
         this.group = group;
         this.node = node;
     }
@@ -421,6 +439,47 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         }
     }
     draw(ctx, node, width, posY, height) {
+        if (this.animOffset !== 0) {
+            const now = performance.now();
+            const dt = this.lastAnimTime == null ? 16 : Math.min(now - this.lastAnimTime, 50);
+            this.animOffset *= Math.exp(-dt / ROW_ANIM_TAU_MS);
+            if (Math.abs(this.animOffset) < 0.5) {
+                this.animOffset = 0;
+                this.lastAnimTime = null;
+            }
+            else {
+                this.lastAnimTime = now;
+                requestAnimationFrame(() => node.setDirtyCanvas(true, false));
+            }
+        }
+        ctx.save();
+        ctx.globalAlpha = this.node.draggingRows && !this.dragActive ? 0.55 : 1;
+        ctx.translate(0, this.animOffset);
+        this.drawRow(ctx, node, width, posY, height);
+        if (this.dragActive) {
+            this.drawDragHighlight(ctx, width, posY, height);
+        }
+        ctx.restore();
+    }
+    drawDragHighlight(ctx, width, posY, height) {
+        const margin = 15;
+        ctx.save();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "rgba(136, 204, 255, 0.18)";
+        ctx.strokeStyle = "#8CF";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (ctx.roundRect) {
+            ctx.roundRect(margin, posY, width - margin * 2, height, 4);
+        }
+        else {
+            ctx.rect(margin, posY, width - margin * 2, height);
+        }
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+    }
+    drawRow(ctx, node, width, posY, height) {
         var _a;
         const widgetData = drawNodeWidget(ctx, { size: [width, height], pos: [15, posY] });
         const showNav = ((_a = node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SHOW_NAV]) !== false;
@@ -504,6 +563,8 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
                 }
                 dragging = true;
                 this.node.draggingRows = true;
+                this.dragActive = true;
+                canvas.canvas.style.cursor = "grabbing";
                 canvas.node_dragged = null;
             }
             const [, graphY] = canvas.convertEventToCanvasOffset(e);
@@ -513,6 +574,8 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
             document.removeEventListener("pointermove", onMove, true);
             document.removeEventListener("pointerup", onUp, true);
             document.removeEventListener("pointercancel", onCancel, true);
+            this.dragActive = false;
+            canvas.canvas.style.cursor = "";
             if (dragging) {
                 this.node.commitManualOrder();
             }

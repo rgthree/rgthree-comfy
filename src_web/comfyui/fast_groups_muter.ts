@@ -29,6 +29,9 @@ const PROPERTY_MANUAL_ORDER = "manualOrder";
 /** How far (px, screen space) the pointer must travel vertically before a press becomes a drag. */
 const DRAG_THRESHOLD_PX = 5;
 
+/** Time constant (ms) for rows easing into their new slot. Lower is snappier (~4x this to settle). */
+const ROW_ANIM_TAU_MS = 70;
+
 /** Parses the saved manual order (a JSON array of group titles). Never throws. */
 function parseManualOrder(raw: unknown): string[] {
   try {
@@ -144,7 +147,25 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
       }
     }
     if (to !== from) {
+      // Distance between two rows, so shifted rows can start from where they visually were.
+      const a = (rows[0] as any)?.last_y;
+      const b = (rows[1] as any)?.last_y;
+      const stride =
+        typeof a === "number" && typeof b === "number" && b > a
+          ? b - a
+          : LiteGraph.NODE_WIDGET_HEIGHT + 4;
+
+      const lo = Math.min(from, to);
+      const hi = Math.max(from, to);
+      const before = rows.slice(lo, hi + 1);
       rows.splice(to, 0, rows.splice(from, 1)[0]!);
+      rows.slice(lo, hi + 1).forEach((w, k) => {
+        const oldIndex = lo + before.indexOf(w);
+        const row = w as any;
+        // Start drawn at the old slot, then ease to 0 (see FastGroupsToggleRowWidget.draw).
+        row.animOffset = (row.animOffset || 0) + (oldIndex - (lo + k)) * stride;
+        row.lastAnimTime = null;
+      });
       this.setDirtyCanvas(true, false);
     }
   }
@@ -481,6 +502,12 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   group: LGraphGroup;
   node: BaseFastGroupsModeChanger;
 
+  /** True only for the row currently being dragged. */
+  dragActive = false;
+  /** Vertical px the row is currently drawn away from its real slot; eases back to 0. */
+  animOffset = 0;
+  lastAnimTime: number | null = null;
+
   constructor(group: LGraphGroup, node: BaseFastGroupsModeChanger) {
     super("RGTHREE_TOGGLE_AND_NAV");
     this.group = group;
@@ -525,6 +552,61 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
   }
 
   draw(
+    ctx: CanvasRenderingContext2D,
+    node: FastGroupsMuter,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    // Ease the row toward its real slot after a reorder.
+    if (this.animOffset !== 0) {
+      const now = performance.now();
+      const dt = this.lastAnimTime == null ? 16 : Math.min(now - this.lastAnimTime, 50);
+      this.animOffset *= Math.exp(-dt / ROW_ANIM_TAU_MS);
+      if (Math.abs(this.animOffset) < 0.5) {
+        this.animOffset = 0;
+        this.lastAnimTime = null;
+      } else {
+        this.lastAnimTime = now;
+        requestAnimationFrame(() => node.setDirtyCanvas(true, false));
+      }
+    }
+
+    ctx.save();
+    // While dragging, fade every row except the one being moved so it's obvious which is which.
+    ctx.globalAlpha = this.node.draggingRows && !this.dragActive ? 0.55 : 1;
+    ctx.translate(0, this.animOffset);
+    this.drawRow(ctx, node, width, posY, height);
+    if (this.dragActive) {
+      this.drawDragHighlight(ctx, width, posY, height);
+    }
+    ctx.restore();
+  }
+
+  private drawDragHighlight(
+    ctx: CanvasRenderingContext2D,
+    width: number,
+    posY: number,
+    height: number,
+  ) {
+    const margin = 15;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "rgba(136, 204, 255, 0.18)";
+    ctx.strokeStyle = "#8CF";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    if ((ctx as any).roundRect) {
+      (ctx as any).roundRect(margin, posY, width - margin * 2, height, 4);
+    } else {
+      ctx.rect(margin, posY, width - margin * 2, height);
+    }
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  private drawRow(
     ctx: CanvasRenderingContext2D,
     node: FastGroupsMuter,
     width: number,
@@ -640,6 +722,8 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
         }
         dragging = true;
         this.node.draggingRows = true;
+        this.dragActive = true;
+        canvas.canvas.style.cursor = "grabbing";
         // Make sure the canvas doesn't also start dragging the whole node.
         (canvas as any).node_dragged = null;
       }
@@ -651,6 +735,8 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
       document.removeEventListener("pointermove", onMove, true);
       document.removeEventListener("pointerup", onUp, true);
       document.removeEventListener("pointercancel", onCancel, true);
+      this.dragActive = false;
+      canvas.canvas.style.cursor = "";
       if (dragging) {
         this.node.commitManualOrder();
       } else if (commit) {
