@@ -109,6 +109,11 @@ declare module "@comfyorg/frontend" {
     [key: symbol]: unknown;
   }
 
+  // @rgthree (Fix): widget is (or was?) available when inputs were moved from a widget.
+  interface IFoundSlot {
+    widget?: IBaseWidget;
+  }
+
   interface LGraphGroup {
     // @rgthree: Track whether a group has any active node from the fast group mode changers.
     rgthree_hasAnyActiveNode?: boolean;
@@ -175,13 +180,6 @@ declare module "@/lib/litegraph/src/types/widgets" {
      * the API workflow and graph state.
      */
     serialize?: boolean;
-  }
-}
-
-declare module "@/lib/litegraph/src/interfaces" {
-  // @rgthree (Fix): widget is (or was?) available when inputs were moved from a widget.
-  interface IFoundSlot {
-    widget?: IBaseWidget;
   }
 }
 

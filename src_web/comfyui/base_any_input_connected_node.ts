@@ -1,5 +1,5 @@
 import type {
-  Vector2,
+  Point,
   LLink,
   INodeInputSlot,
   INodeOutputSlot,
@@ -196,7 +196,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     callback: IBaseWidget["callback"] | string | null,
     options?: IWidgetOptions | string,
   ):
-    | IBaseWidget<string | number | boolean | object | undefined, string, IWidgetOptions<unknown>>
+    | IBaseWidget<string | number | boolean | object | null | undefined, string, IWidgetOptions<unknown>>
     | WidgetTypeMap[Type] {
     (this as any)._tempWidth = this.size[0];
     return super.addWidget(type, name, value, callback, options);
@@ -207,7 +207,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     super.removeWidget(widget);
   }
 
-  override computeSize(out: Vector2) {
+  override computeSize(out: Point) {
     let size = super.computeSize(out);
     if ((this as any)._tempWidth) {
       size[0] = (this as any)._tempWidth;

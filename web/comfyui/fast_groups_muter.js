@@ -40,12 +40,12 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         FAST_GROUPS_SERVICE.removeFastGroupNode(this);
     }
     refreshWidgets() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d;
         const canvas = app.canvas;
-        let sort = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_SORT]) || "position";
+        let sort = this.getPropString(PROPERTY_SORT, '') || "position";
         let customAlphabet = null;
         if (sort === "custom alphabet") {
-            const customAlphaStr = (_c = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_SORT_CUSTOM_ALPHA]) === null || _c === void 0 ? void 0 : _c.replace(/\n/g, "");
+            const customAlphaStr = this.getPropString(PROPERTY_SORT_CUSTOM_ALPHA, '').replace(/\n/g, "");
             if (customAlphaStr && customAlphaStr.trim()) {
                 customAlphabet = customAlphaStr.includes(",")
                     ? customAlphaStr.toLocaleLowerCase().split(",")
@@ -86,7 +86,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                 return a.title.localeCompare(b.title);
             });
         }
-        let filterColors = (((_e = (_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_MATCH_COLORS]) === null || _e === void 0 ? void 0 : _e.split(",")) || []).filter((c) => c.trim());
+        let filterColors = (((_b = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_MATCH_COLORS]) === null || _b === void 0 ? void 0 : _b.split(",")) || []).filter((c) => c.trim());
         if (filterColors.length) {
             filterColors = filterColors.map((color) => {
                 color = color.trim().toLocaleLowerCase();
@@ -103,7 +103,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         let index = 0;
         for (const group of groups) {
             if (filterColors.length) {
-                let groupColor = (_f = group.color) === null || _f === void 0 ? void 0 : _f.replace("#", "").trim().toLocaleLowerCase();
+                let groupColor = (_c = group.color) === null || _c === void 0 ? void 0 : _c.replace("#", "").trim().toLocaleLowerCase();
                 if (!groupColor) {
                     continue;
                 }
@@ -115,9 +115,10 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                     continue;
                 }
             }
-            if ((_h = (_g = this.properties) === null || _g === void 0 ? void 0 : _g[PROPERTY_MATCH_TITLE]) === null || _h === void 0 ? void 0 : _h.trim()) {
+            const matchTitle = this.getPropString(PROPERTY_MATCH_TITLE, '').trim();
+            if (matchTitle) {
                 try {
-                    if (!new RegExp(this.properties[PROPERTY_MATCH_TITLE], "i").exec(group.title)) {
+                    if (!new RegExp(matchTitle, "i").exec(group.title)) {
                         continue;
                     }
                 }
@@ -126,7 +127,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
                     continue;
                 }
             }
-            const showAllGraphs = (_j = this.properties) === null || _j === void 0 ? void 0 : _j[PROPERTY_SHOW_ALL_GRAPHS];
+            const showAllGraphs = (_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_SHOW_ALL_GRAPHS];
             if (!showAllGraphs && group.graph !== app.canvas.getCurrentGraph()) {
                 continue;
             }
@@ -179,7 +180,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         return size;
     }
     async handleAction(action) {
-        var _a, _b, _c, _d, _e;
+        var _a, _b, _c;
         if (action === "Mute all" || action === "Bypass all") {
             const alwaysOne = ((_a = this.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === "always one";
             for (const [index, widget] of this.widgets.entries()) {
@@ -187,21 +188,21 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             }
         }
         else if (action === "Enable all") {
-            const onlyOne = (_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION].includes(" one");
+            const onlyOne = this.getPropString(PROPERTY_RESTRICTION, '').includes(" one");
             for (const [index, widget] of this.widgets.entries()) {
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(onlyOne && index > 0 ? false : true, true);
             }
         }
         else if (action === "Toggle all") {
-            const onlyOne = (_c = this.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION].includes(" one");
+            const onlyOne = this.getPropString(PROPERTY_RESTRICTION, '').includes(" one");
             let foundOne = false;
             for (const [index, widget] of this.widgets.entries()) {
                 let newValue = onlyOne && foundOne ? false : !widget.value;
                 foundOne = foundOne || newValue;
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(newValue, true);
             }
-            if (!foundOne && ((_d = this.properties) === null || _d === void 0 ? void 0 : _d[PROPERTY_RESTRICTION]) === "always one") {
-                (_e = this.widgets[this.widgets.length - 1]) === null || _e === void 0 ? void 0 : _e.doModeChange(true, true);
+            if (!foundOne && ((_b = this.properties) === null || _b === void 0 ? void 0 : _b[PROPERTY_RESTRICTION]) === "always one") {
+                (_c = this.widgets[this.widgets.length - 1]) === null || _c === void 0 ? void 0 : _c.doModeChange(true, true);
             }
         }
     }
@@ -316,26 +317,26 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget {
         this.node = node;
     }
     doModeChange(force, skipOtherNodeCheck) {
-        var _a, _b, _c, _d;
+        var _a, _b;
         this.group.recomputeInsideNodes();
         const hasAnyActiveNodes = getGroupNodes(this.group).some((n) => n.mode === LiteGraph.ALWAYS);
         let newValue = force != null ? force : !hasAnyActiveNodes;
         if (skipOtherNodeCheck !== true) {
-            if (newValue && ((_b = (_a = this.node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === null || _b === void 0 ? void 0 : _b.includes(" one"))) {
+            if (newValue && this.node.getPropString(PROPERTY_RESTRICTION, '').includes(" one")) {
                 for (const widget of this.node.widgets) {
                     if ("doModeChange" in widget && typeof widget.doModeChange === "function") {
                         widget.doModeChange(false, true);
                     }
                 }
             }
-            else if (!newValue && ((_c = this.node.properties) === null || _c === void 0 ? void 0 : _c[PROPERTY_RESTRICTION]) === "always one") {
+            else if (!newValue && ((_a = this.node.properties) === null || _a === void 0 ? void 0 : _a[PROPERTY_RESTRICTION]) === "always one") {
                 newValue = this.node.widgets.every((w) => w === this || !("toggled" in w && w.toggled));
             }
         }
         changeModeOfNodes(getGroupNodes(this.group), (newValue ? this.node.modeOn : this.node.modeOff));
         this.group.rgthree_hasAnyActiveNode = newValue;
         this.toggled = newValue;
-        (_d = this.group.graph) === null || _d === void 0 ? void 0 : _d.setDirtyCanvas(true, false);
+        (_b = this.group.graph) === null || _b === void 0 ? void 0 : _b.setDirtyCanvas(true, false);
     }
     get toggled() {
         return this.value.toggled;

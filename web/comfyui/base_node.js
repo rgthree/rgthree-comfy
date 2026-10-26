@@ -50,6 +50,39 @@ export class RgthreeBaseNode extends LGraphNode {
             },
         });
     }
+    getPropString(key, fallback) {
+        var _a;
+        let prop = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[key];
+        if (typeof prop !== 'string') {
+            if (fallback === undefined) {
+                throw new Error(`Property ${key} is not string`);
+            }
+            prop = fallback;
+        }
+        return prop;
+    }
+    getPropNumber(key, fallback) {
+        var _a;
+        let prop = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[key];
+        if (typeof prop !== 'number') {
+            if (fallback === undefined) {
+                throw new Error(`Property ${key} is not number`);
+            }
+            prop = fallback;
+        }
+        return prop;
+    }
+    getPropBool(key, fallback) {
+        var _a;
+        let prop = (_a = this.properties) === null || _a === void 0 ? void 0 : _a[key];
+        if (typeof prop !== 'boolean') {
+            if (fallback === undefined) {
+                throw new Error(`Property ${key} is not boolean`);
+            }
+            prop = fallback;
+        }
+        return prop;
+    }
     checkAndRunOnConstructed() {
         var _a;
         if (!this.__constructed__) {

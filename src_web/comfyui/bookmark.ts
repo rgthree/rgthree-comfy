@@ -77,7 +77,7 @@ export class Bookmark extends RgthreeBaseVirtualNode {
     this.onConstructed();
   }
 
-  // override computeSize(out?: Vector2 | undefined): Vector2 {
+  // override computeSize(out?: Point | undefined): Point {
   //   super.computeSize(out);
   //   const minHeight = (this.widgets?.length || 0) * (LiteGraph.NODE_WIDGET_HEIGHT + 4) + 16;
   //   this.size[1] = Math.max(minHeight, this.size[1]);

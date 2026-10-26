@@ -65,7 +65,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
             }, {
                 values: Object.keys(PRIMITIVES),
             });
-            this.outputTypeWidget.hidden = this.properties[PROPERTY_HIDE_TYPE_SELECTOR];
+            this.outputTypeWidget.hidden = this.getPropBool(PROPERTY_HIDE_TYPE_SELECTOR, false);
         }
         this.setTypedData();
     }
@@ -145,7 +145,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
             if (!this.outputTypeWidget) {
                 return true;
             }
-            this.outputTypeWidget.hidden = this.properties[PROPERTY_HIDE_TYPE_SELECTOR];
+            this.outputTypeWidget.hidden = this.getPropBool(PROPERTY_HIDE_TYPE_SELECTOR, false);
             if (this.outputTypeWidget.hidden) {
                 this.outputTypeWidget.computeLayoutSize = () => ({
                     minHeight: 0,

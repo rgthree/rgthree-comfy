@@ -5,17 +5,15 @@ import type {
   ISlotType,
   INodeOutputSlot,
   INodeInputSlot,
-  SerialisedLLinkArray,
   LinkId,
-  ISerialisedNode,
-  ISerialisedGraph,
+  ComfyWorkflowJSON,
   NodeId,
 } from "@comfyorg/frontend";
 
 /**
  * The bad links data returned from either a fixer `check()`, or the results of a `fix()` call.
  */
-export interface BadLinksData<T = ISerialisedGraph | LGraph> {
+export interface BadLinksData<T = ComfyWorkflowJSON | LGraph> {
   hasBadLinks: boolean;
   graph: T;
   patches: number;
@@ -44,7 +42,7 @@ interface PatchedNodeSlots {
 }
 
 /**
- * Link data derived from either a ISerialisedGraph or LGraph `links` property.
+ * Link data derived from either a ComfyWorkflowJSON or LGraph `links` property.
  */
 interface LinkData {
   id: LinkId;
@@ -59,7 +57,7 @@ interface LinkData {
  * Returns a list of links data for the given links type; either from an LGraph or SerializedGraph.
  */
 function getLinksData(
-  links: ISerialisedGraph["links"] | LGraph["links"] | {[key: string]: LLink},
+  links: ComfyWorkflowJSON["links"] | LGraph["links"] | {[key: string]: LLink},
 ): LinkData[] {
   if (links instanceof Map) {
     const data: LinkData[] = [];
@@ -80,19 +78,19 @@ function getLinksData(
     }
     return data;
   }
-  return links.map((link: SerialisedLLinkArray) => ({
+  return links.map((link) => ({
     id: link[0] as LinkId,
     origin_id: link[1] as NodeId,
-    origin_slot: link[2],
+    origin_slot: link[2] as number,
     target_id: link[3] as NodeId,
-    target_slot: link[4],
-    type: link[5],
+    target_slot: link[4] as number,
+    type: link[5] as ISlotType,
   }));
 }
 
 /** The instruction data for fixing a node's inputs or outputs. */
 interface WorkflowLinkFixerNodeInstruction {
-  node: ISerialisedNode | LGraphNode;
+  node: ComfyWorkflowJSON["nodes"][0] | LGraphNode;
   op: "REMOVE" | "ADD";
   dir: IoDirection;
   slot: number;
@@ -112,13 +110,13 @@ type WorkflowLinkFixerInstruction =
   | WorkflowLinkFixerLinksInstruction;
 
 /**
- * The WorkflowLinkFixer for either ISerialisedGraph or a live LGraph.
+ * The WorkflowLinkFixer for either ComfyWorkflowJSON or a live LGraph.
  *
- * Use `WorkflowLinkFixer.create(graph: ISerialisedGraph | LGraph)` to create a new instance.
+ * Use `WorkflowLinkFixer.create(graph: ComfyWorkflowJSON | LGraph)` to create a new instance.
  */
 export abstract class WorkflowLinkFixer<
-  G extends ISerialisedGraph | LGraph,
-  N extends ISerialisedNode | LGraphNode,
+  G extends ComfyWorkflowJSON | LGraph,
+  N extends ComfyWorkflowJSON["nodes"][0] | LGraphNode,
 > {
   silent: boolean = false;
   checkedData: BadLinksData<G> | null = null;
@@ -131,15 +129,15 @@ export abstract class WorkflowLinkFixer<
   /**
    * Creates the WorkflowLinkFixer for the given graph type.
    */
-  static create(graph: ISerialisedGraph): WorkflowLinkFixerSerialized;
+  static create(graph: ComfyWorkflowJSON): WorkflowLinkFixerSerialized;
   static create(graph: LGraph): WorkflowLinkFixerGraph;
   static create(
-    graph: ISerialisedGraph | LGraph,
+    graph: ComfyWorkflowJSON | LGraph,
   ): WorkflowLinkFixerSerialized | WorkflowLinkFixerGraph {
     if (typeof (graph as LGraph).getNodeById === "function") {
       return new WorkflowLinkFixerGraph(graph as LGraph);
     }
-    return new WorkflowLinkFixerSerialized(graph as ISerialisedGraph);
+    return new WorkflowLinkFixerSerialized(graph as ComfyWorkflowJSON);
   }
 
   protected constructor(graph: G) {
@@ -471,8 +469,8 @@ export abstract class WorkflowLinkFixer<
 /**
  * A WorkflowLinkFixer for serialized data.
  */
-class WorkflowLinkFixerSerialized extends WorkflowLinkFixer<ISerialisedGraph, ISerialisedNode> {
-  constructor(graph: ISerialisedGraph) {
+class WorkflowLinkFixerSerialized extends WorkflowLinkFixer<ComfyWorkflowJSON, ComfyWorkflowJSON["nodes"][0]> {
+  constructor(graph: ComfyWorkflowJSON) {
     super(graph);
   }
 
@@ -483,7 +481,8 @@ class WorkflowLinkFixerSerialized extends WorkflowLinkFixer<ISerialisedGraph, IS
   override fix(force: boolean = false, times?: number) {
     const ret = super.fix(force, times);
     // If we're a serialized graph, we can filter out the links because it's just an array.
-    this.graph.links = this.graph.links.filter((l) => !!l);
+    // Not sure why, but have to cast the links as itself to stop TS from complaining here.
+    this.graph.links = (this.graph.links || []).filter((l) => !!l) as ComfyWorkflowJSON["links"];
     return ret;
   }
 
@@ -491,11 +490,11 @@ class WorkflowLinkFixerSerialized extends WorkflowLinkFixer<ISerialisedGraph, IS
     // Sometimes we got objects instead of serializzed array for links if passed after ComfyUI's
     // loadGraphData modifies the data. Let's find the id handling the bastardized objects just in
     // case.
-    const idx = this.graph.links.findIndex((l) => l && (l[0] === id || (l as any).id === id));
+    const idx = (this.graph.links || []).findIndex((l) => l && (l[0] === id || (l as any).id === id));
     if (idx === -1) {
       return `Link #${id} not found in workflow links.`;
     }
-    this.graph.links.splice(idx, 1);
+    (this.graph.links || []).splice(idx, 1);
     return true;
   }
 }

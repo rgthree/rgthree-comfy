@@ -1,7 +1,7 @@
 import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphNode,
-  Vector2,
+  Point,
   CanvasMouseEvent,
 } from "@comfyorg/frontend";
 
@@ -33,21 +33,21 @@ export class Label extends RgthreeBaseVirtualNode {
   static "@borderRadius" = {type: "number"};
   static "@angle" = {type: "number"};
 
-  override properties!: RgthreeBaseVirtualNode["properties"] & {
-    fontSize: number;
-    fontFamily: string;
-    fontColor: string;
-    textAlign: string;
-    backgroundColor: string;
-    padding: number;
-    borderRadius: number;
-    angle: number;
-  };
-
-  override resizable = false;
+  // 🤮 Can't define property types as override any longer.
+  // override properties!: RgthreeBaseVirtualNode["properties"] & {
+  //   fontSize: number;
+  //   fontFamily: string;
+  //   fontColor: string;
+  //   textAlign: string;
+  //   backgroundColor: string;
+  //   padding: number;
+  //   borderRadius: number;
+  //   angle: number;
+  // };
 
   constructor(title = Label.title) {
     super(title);
+    this.resizable = false;
     this.properties["fontSize"] = 12;
     this.properties["fontFamily"] = "Arial";
     this.properties["fontColor"] = "#ffffff";
@@ -68,9 +68,9 @@ export class Label extends RgthreeBaseVirtualNode {
     ctx.save();
     this.color = "#fff0";
     this.bgcolor = "#fff0";
-    const fontColor = this.properties["fontColor"] || "#ffffff";
-    const backgroundColor = this.properties["backgroundColor"] || "";
-    ctx.font = `${Math.max(this.properties["fontSize"] || 0, 1)}px ${
+    const fontColor = this.getPropString("fontColor", "#ffffff");
+    const backgroundColor = this.getPropString("backgroundColor", "");
+    ctx.font = `${Math.max(this.getPropNumber("fontSize", 0), 1)}px ${
       this.properties["fontFamily"] ?? "Arial"
     }`;
     const padding = Number(this.properties["padding"]) ?? 0;
@@ -81,7 +81,7 @@ export class Label extends RgthreeBaseVirtualNode {
 
     const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
     this.size[0] = maxWidth + padding * 2;
-    this.size[1] = this.properties["fontSize"] * lines.length + padding * 2;
+    this.size[1] = this.getPropNumber("fontSize", 1) * lines.length + padding * 2;
 
     // Apply rotation around the center, if angle provided
     const angleDeg = parseInt(String(this.properties["angle"] ?? 0)) || 0;
@@ -114,14 +114,14 @@ export class Label extends RgthreeBaseVirtualNode {
     let currentY = padding;
     for (let i = 0; i < lines.length; i++) {
       ctx.fillText(lines[i] || " ", textX, currentY);
-      currentY += this.properties["fontSize"];
+      currentY += this.getPropNumber("fontSize", 1);
     }
     ctx.restore();
   }
 
-  override onDblClick(event: CanvasMouseEvent, pos: Vector2, canvas: TLGraphCanvas) {
+  override onDblClick(event: CanvasMouseEvent, pos: Point, canvas: TLGraphCanvas) {
     // Since everything we can do here is in the properties, let's pop open the properties panel.
-    LGraphCanvas.active_canvas.showShowNodePanel(this);
+    LGraphCanvas.active_canvas.showShowNodePanel(this as LGraphNode);
   }
 
   override onShowCustomPanelInfo(panel: HTMLElement) {
@@ -132,7 +132,7 @@ export class Label extends RgthreeBaseVirtualNode {
   override inResizeCorner(x: number, y: number) {
     // A little ridiculous there's both a resizable property and this method separately to draw the
     // resize icon...
-    return this.resizable;
+    return this.resizable ?? true;
   }
 
   override getHelp() {

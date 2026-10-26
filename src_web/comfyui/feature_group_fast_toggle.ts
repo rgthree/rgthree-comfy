@@ -2,7 +2,7 @@ import type {
   LGraphCanvas as TLGraphCanvas,
   LGraphGroup as TLGraphGroup,
   LGraph as TLGraph,
-  Vector2,
+  Point,
   CanvasMouseEvent,
 } from "@comfyorg/frontend";
 import type {AdjustedMouseCustomEvent} from "typings/rgthree.js";
@@ -13,7 +13,7 @@ import {changeModeOfNodes, getGroupNodes, getOutputNodes} from "./utils.js";
 import {SERVICE as CONFIG_SERVICE} from "./services/config_service.js";
 
 const BTN_SIZE = 20;
-const BTN_MARGIN: Vector2 = [6, 6];
+const BTN_MARGIN: Point = [6, 6];
 const BTN_SPACING = 8;
 const BTN_GRID = BTN_SIZE / 8;
 

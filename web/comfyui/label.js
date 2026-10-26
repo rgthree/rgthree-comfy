@@ -26,15 +26,15 @@ export class Label extends RgthreeBaseVirtualNode {
         ctx.save();
         this.color = "#fff0";
         this.bgcolor = "#fff0";
-        const fontColor = this.properties["fontColor"] || "#ffffff";
-        const backgroundColor = this.properties["backgroundColor"] || "";
-        ctx.font = `${Math.max(this.properties["fontSize"] || 0, 1)}px ${(_a = this.properties["fontFamily"]) !== null && _a !== void 0 ? _a : "Arial"}`;
+        const fontColor = this.getPropString("fontColor", "#ffffff");
+        const backgroundColor = this.getPropString("backgroundColor", "");
+        ctx.font = `${Math.max(this.getPropNumber("fontSize", 0), 1)}px ${(_a = this.properties["fontFamily"]) !== null && _a !== void 0 ? _a : "Arial"}`;
         const padding = (_b = Number(this.properties["padding"])) !== null && _b !== void 0 ? _b : 0;
         const processedTitle = ((_c = this.title) !== null && _c !== void 0 ? _c : "").replace(/\\n/g, "\n").replace(/\n*$/, "");
         const lines = processedTitle.split("\n");
         const maxWidth = Math.max(...lines.map((s) => ctx.measureText(s).width));
         this.size[0] = maxWidth + padding * 2;
-        this.size[1] = this.properties["fontSize"] * lines.length + padding * 2;
+        this.size[1] = this.getPropNumber("fontSize", 1) * lines.length + padding * 2;
         const angleDeg = parseInt(String((_d = this.properties["angle"]) !== null && _d !== void 0 ? _d : 0)) || 0;
         if (angleDeg) {
             const cx = this.size[0] / 2;
@@ -65,7 +65,7 @@ export class Label extends RgthreeBaseVirtualNode {
         let currentY = padding;
         for (let i = 0; i < lines.length; i++) {
             ctx.fillText(lines[i] || " ", textX, currentY);
-            currentY += this.properties["fontSize"];
+            currentY += this.getPropNumber("fontSize", 1);
         }
         ctx.restore();
     }
@@ -78,7 +78,8 @@ export class Label extends RgthreeBaseVirtualNode {
         (_b = panel.querySelector('div.property[data-property="Color"]')) === null || _b === void 0 ? void 0 : _b.remove();
     }
     inResizeCorner(x, y) {
-        return this.resizable;
+        var _a;
+        return (_a = this.resizable) !== null && _a !== void 0 ? _a : true;
     }
     getHelp() {
         return `

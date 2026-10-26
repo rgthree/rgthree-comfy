@@ -12,7 +12,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
         this.hasShadowInputs = true;
         this.lastInputsList = [];
         this.shadowInputs = [
-            { name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null },
+            { name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: [0, 0, 0, 0] },
         ];
     }
     getContextInputsList() {
@@ -48,7 +48,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
     refreshInputsAndOutputs() {
         var _a;
         const inputs = [
-            { name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null },
+            { name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: [0, 0, 0, 0] },
         ];
         let numConnected = 0;
         for (let i = 0; i < this.inputs.length; i++) {
@@ -73,7 +73,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
                     type: slotData.type,
                     link: null,
                     count: 1,
-                    boundingRect: null,
+                    boundingRect: [0, 0, 0, 0],
                 });
             }
         }

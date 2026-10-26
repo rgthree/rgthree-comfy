@@ -69,7 +69,6 @@ class NodeModeRepeater extends BaseCollectorNode {
             }
             else {
                 if (!this.configuring) {
-                    // Do not rewrite linked nodes while the workflow is being restored (links are rebuilt during configure).
                     changeModeOfNodes(inputNode, this.mode);
                 }
             }
@@ -93,7 +92,6 @@ class NodeModeRepeater extends BaseCollectorNode {
         var _a, _b;
         super.onModeChange(from, to);
         if (this.configuring) {
-            // Do not push our mode to linked nodes while the workflow is being restored.
             return;
         }
         const linkedNodes = getConnectedInputNodesAndFilterPassThroughs(this).filter((node) => node.type !== NodeTypesString.NODE_MODE_RELAY);

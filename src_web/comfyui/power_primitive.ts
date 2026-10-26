@@ -36,9 +36,10 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
 
   static "@hideTypeSelector" = {type: "boolean"};
 
-  override properties!: RgthreeBaseServerNode["properties"] & {
-    [PROPERTY_HIDE_TYPE_SELECTOR]: boolean;
-  };
+  // 🤮 Can't define property types as override any longer.
+  // override properties!: RgthreeBaseServerNode["properties"] & {
+  //   [PROPERTY_HIDE_TYPE_SELECTOR]: boolean;
+  // };
 
   constructor(title = NODE_CLASS.title) {
     super(title);
@@ -123,7 +124,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
           values: Object.keys(PRIMITIVES),
         },
       ) as IWidget;
-      this.outputTypeWidget.hidden = this.properties[PROPERTY_HIDE_TYPE_SELECTOR];
+      this.outputTypeWidget.hidden = this.getPropBool(PROPERTY_HIDE_TYPE_SELECTOR, false);
     }
     this.setTypedData();
   }
@@ -222,7 +223,7 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       if (!this.outputTypeWidget) {
         return true;
       }
-      this.outputTypeWidget.hidden = this.properties[PROPERTY_HIDE_TYPE_SELECTOR];
+      this.outputTypeWidget.hidden = this.getPropBool(PROPERTY_HIDE_TYPE_SELECTOR, false);
       if (this.outputTypeWidget.hidden) {
         this.outputTypeWidget.computeLayoutSize = () => ({
           minHeight: 0,

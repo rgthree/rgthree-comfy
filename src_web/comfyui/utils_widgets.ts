@@ -1,7 +1,7 @@
 import type {
   LGraphNode,
   LGraphCanvas as TLGraphCanvas,
-  Vector2,
+  Point,
   ICustomWidget,
   IWidgetOptions,
   CanvasPointerEvent,
@@ -45,28 +45,28 @@ export function drawLabelAndValue(
 
 export type RgthreeBaseWidgetBounds = {
   /** The bounds, either [x, width] assuming the full height, or [x, y, width, height] if height. */
-  bounds: Vector2 | Vector4;
+  bounds: Point | Vector4;
   onDown?(
     event: CanvasPointerEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ): boolean | void;
   onUp?(
     event: CanvasPointerEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ): boolean | void;
   onMove?(
     event: CanvasPointerEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ): boolean | void;
   onClick?(
     event: CanvasPointerEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ): boolean | void;
@@ -100,7 +100,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   last_y: number = 0;
   disabled: boolean = false;
 
-  protected mouseDowned: Vector2 | null = null;
+  protected mouseDowned: Point | null = null;
   protected isMouseDownedAndOver: boolean = false;
 
   // protected hitAreas: {[key: string]: RgthreeBaseWidgetBounds} = {};
@@ -116,7 +116,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
     return this.value;
   }
 
-  private clickWasWithinBounds(pos: Vector2, bounds: Vector2 | Vector4) {
+  private clickWasWithinBounds(pos: Point, bounds: Point | Vector4) {
     let xStart = bounds[0];
     let xEnd = xStart + (bounds.length > 2 ? bounds[2]! : bounds[1]!);
     const clickedX = pos[0] >= xStart && pos[0] <= xEnd;
@@ -126,11 +126,11 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
     return clickedX && pos[1] >= bounds[1] && pos[1] <= bounds[1] + bounds[3]!;
   }
 
-  mouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
+  mouse(event: CanvasPointerEvent, pos: Point, node: LGraphNode) {
     const canvas = app.canvas as TLGraphCanvas;
 
     if (event.type == "pointerdown") {
-      this.mouseDowned = [...pos] as Vector2;
+      this.mouseDowned = [...pos] as Point;
       this.isMouseDownedAndOver = true;
       this.downedHitAreasForMove.length = 0;
       this.downedHitAreasForClick.length = 0;
@@ -217,7 +217,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
   }
 
   /** An event that fires when the pointer is pressed down (once). */
-  onMouseDown(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseDown(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -225,7 +225,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * An event that fires when the pointer is let go. Only fires if this was the widget that was
    * originally pressed down.
    */
-  onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseUp(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -233,7 +233,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * An event that fires when the pointer is let go _over the widget_ and when the widget that was
    * originally pressed down.
    */
-  onMouseClick(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseClick(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean | void {
     return;
   }
 
@@ -242,7 +242,7 @@ export abstract class RgthreeBaseWidget<V extends ICustomWidget["value"]> implem
    * of the widget. Check `isMouseDownedAndOver` to determine if the mouse is currently over the
    * widget or not.
    */
-  onMouseMove(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean | void {
+  onMouseMove(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean | void {
     return;
   }
 }
@@ -255,13 +255,13 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
 
   value: string = "";
   label: string = "";
-  mouseClickCallback: (event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) => boolean | void;
+  mouseClickCallback: (event: CanvasPointerEvent, pos: Point, node: LGraphNode) => boolean | void;
 
   constructor(
     name: string,
     mouseClickCallback: (
       event: CanvasPointerEvent,
-      pos: Vector2,
+      pos: Point,
       node: LGraphNode,
     ) => boolean | void,
     label?: string,
@@ -280,7 +280,7 @@ export class RgthreeBetterButtonWidget extends RgthreeBaseWidget<string> {
     );
   }
 
-  override onMouseClick(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode) {
+  override onMouseClick(event: CanvasPointerEvent, pos: Point, node: LGraphNode) {
     return this.mouseClickCallback(event, pos, node);
   }
 }
@@ -305,7 +305,7 @@ export class RgthreeBetterTextWidget extends RgthreeBaseWidget<string> {
     }
   }
 
-  override mouse(event: CanvasPointerEvent, pos: Vector2, node: LGraphNode): boolean {
+  override mouse(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean {
     const canvas = app.canvas as TLGraphCanvas;
     if (event.type == "pointerdown") {
       canvas.prompt("Label", this.value, (v: string) => (this.value = v), event);
@@ -452,7 +452,7 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
     ctx.restore();
   }
 
-  override mouse(event: CanvasPointerEvent, nodePos: Vector2, node: LGraphNode): boolean {
+  override mouse(event: CanvasPointerEvent, nodePos: Point, node: LGraphNode): boolean {
     if (
       event.type !== "pointerdown" ||
       isLowQuality() ||
@@ -462,7 +462,7 @@ export class RgthreeLabelWidget extends RgthreeBaseWidget<string> {
       return false;
     }
 
-    const pos: Vector2 = [nodePos[0], nodePos[1] - this.posY];
+    const pos: Point = [nodePos[0], nodePos[1] - this.posY];
     const rightX = node.size[0] - 15;
     if (pos[0] > rightX || pos[0] < rightX - 16) {
       return false;
@@ -494,7 +494,7 @@ export class RgthreeInvisibleWidget<T extends ICustomWidget["value"]> extends Rg
   draw() {
     return;
   }
-  computeSize(width: number): Vector2 {
+  computeSize(width: number): Point {
     return [0, 0];
   }
 

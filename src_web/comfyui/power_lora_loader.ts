@@ -2,7 +2,7 @@ import type {
   ComfyNodeDef,
   LGraphNode as TLGraphNode,
   LGraphCanvas,
-  Vector2,
+  Point,
   IContextMenuValue,
   IFoundSlot,
   CanvasMouseEvent,
@@ -191,7 +191,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     this.addCustomWidget(
       new RgthreeBetterButtonWidget(
         "➕ Add Lora",
-        (event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) => {
+        (event: CanvasMouseEvent, pos: Point, node: TLGraphNode) => {
           this.showLoraChooser(event, (value: string) => {
             if (value.includes("Power Lora Chooser")) {
               // new RgthreePowerLoraChooserDialog().show();
@@ -452,7 +452,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
   override readonly type = "custom";
 
   protected override hitAreas: RgthreeBaseHitAreas<"toggle"> = {
-    toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
+    toggle: {bounds: [0, 0] as Point, onDown: this.onToggleDown},
   };
 
   private showModelAndClip: boolean | null = null;
@@ -514,7 +514,7 @@ class PowerLoraLoaderHeaderWidget extends RgthreeBaseWidget<{type: string}> {
   /**
    * Handles a pointer down on the toggle's defined hit area.
    */
-  onToggleDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onToggleDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     (node as RgthreePowerLoraLoader).toggleAllLoras();
     this.cancelMouseDown();
     return true;
@@ -561,19 +561,19 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     | "strengthTwoInc"
     | "strengthTwoAny"
   > = {
-    toggle: {bounds: [0, 0] as Vector2, onDown: this.onToggleDown},
-    lora: {bounds: [0, 0] as Vector2, onClick: this.onLoraClick},
-    info: {bounds: [0, 0] as Vector2, onDown: this.onInfoDown},
+    toggle: {bounds: [0, 0] as Point, onDown: this.onToggleDown},
+    lora: {bounds: [0, 0] as Point, onClick: this.onLoraClick},
+    info: {bounds: [0, 0] as Point, onDown: this.onInfoDown},
 
-    strengthDec: {bounds: [0, 0] as Vector2, onClick: this.onStrengthDecDown},
-    strengthVal: {bounds: [0, 0] as Vector2, onClick: this.onStrengthValUp},
-    strengthInc: {bounds: [0, 0] as Vector2, onClick: this.onStrengthIncDown},
-    strengthAny: {bounds: [0, 0] as Vector2, onMove: this.onStrengthAnyMove},
+    strengthDec: {bounds: [0, 0] as Point, onClick: this.onStrengthDecDown},
+    strengthVal: {bounds: [0, 0] as Point, onClick: this.onStrengthValUp},
+    strengthInc: {bounds: [0, 0] as Point, onClick: this.onStrengthIncDown},
+    strengthAny: {bounds: [0, 0] as Point, onMove: this.onStrengthAnyMove},
 
-    strengthTwoDec: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoDecDown},
-    strengthTwoVal: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoValUp},
-    strengthTwoInc: {bounds: [0, 0] as Vector2, onClick: this.onStrengthTwoIncDown},
-    strengthTwoAny: {bounds: [0, 0] as Vector2, onMove: this.onStrengthTwoAnyMove},
+    strengthTwoDec: {bounds: [0, 0] as Point, onClick: this.onStrengthTwoDecDown},
+    strengthTwoVal: {bounds: [0, 0] as Point, onClick: this.onStrengthTwoValUp},
+    strengthTwoInc: {bounds: [0, 0] as Point, onClick: this.onStrengthTwoIncDown},
+    strengthTwoAny: {bounds: [0, 0] as Point, onMove: this.onStrengthTwoAnyMove},
   };
 
   constructor(name: string) {
@@ -776,17 +776,17 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     return v;
   }
 
-  onToggleDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onToggleDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.value.on = !this.value.on;
     this.cancelMouseDown(); // Clear the down since we handle it.
     return true;
   }
 
-  onInfoDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onInfoDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.showLoraInfoDialog();
   }
 
-  onLoraClick(event: CanvasMouseEvent, pos: Vector2, node: RgthreePowerLoraLoader) {
+  onLoraClick(event: CanvasMouseEvent, pos: Point, node: RgthreePowerLoraLoader) {
     node.showLoraChooser(event, (value: string) => {
       this.value.lora = value;
       this.loraInfo = null;
@@ -795,24 +795,24 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     this.cancelMouseDown();
   }
 
-  onStrengthDecDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthDecDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.stepStrength(-1, false);
   }
-  onStrengthIncDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthIncDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.stepStrength(1, false);
   }
-  onStrengthTwoDecDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthTwoDecDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.stepStrength(-1, true);
   }
-  onStrengthTwoIncDown(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthTwoIncDown(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.stepStrength(1, true);
   }
 
-  onStrengthAnyMove(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthAnyMove(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.doOnStrengthAnyMove(event, false);
   }
 
-  onStrengthTwoAnyMove(event: CanvasMouseEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthTwoAnyMove(event: CanvasMouseEvent, pos: Point, node: TLGraphNode) {
     this.doOnStrengthAnyMove(event, true);
   }
 
@@ -824,11 +824,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     }
   }
 
-  onStrengthValUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthValUp(event: CanvasPointerEvent, pos: Point, node: TLGraphNode) {
     this.doOnStrengthValUp(event, false);
   }
 
-  onStrengthTwoValUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode) {
+  onStrengthTwoValUp(event: CanvasPointerEvent, pos: Point, node: TLGraphNode) {
     this.doOnStrengthValUp(event, true);
   }
 
@@ -839,7 +839,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     canvas.prompt("Value", this.value[prop]!, (v: string) => (this.value[prop] = Number(v)), event);
   }
 
-  override onMouseUp(event: CanvasPointerEvent, pos: Vector2, node: TLGraphNode): boolean | void {
+  override onMouseUp(event: CanvasPointerEvent, pos: Point, node: TLGraphNode): boolean | void {
     super.onMouseUp(event, pos, node);
     this.haveMouseMovedStrength = false;
   }

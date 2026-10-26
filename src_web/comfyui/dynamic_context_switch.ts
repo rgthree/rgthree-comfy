@@ -9,7 +9,7 @@ import type {
 } from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
-import {DynamicContextNodeBase, InputLike} from "./dynamic_context_base.js";
+import {DynamicContextNodeBase} from "./dynamic_context_base.js";
 import {NodeTypesString} from "./constants.js";
 import {
   InputMutation,
@@ -56,8 +56,8 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
    */
   lastInputsList: ShadowInputData[] = [];
 
-  private shadowInputs: (InputLike & {count: number})[] = [
-    {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null},
+  private shadowInputs: (INodeInputSlot & {count: number})[] = [
+    {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: [0,0,0,0]},
   ];
 
   constructor(title = DynamicContextSwitchNode.title) {
@@ -109,8 +109,8 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
    * recompiling the shadowInputs and outputs.
    */
   private refreshInputsAndOutputs() {
-    const inputs: (InputLike & {count: number})[] = [
-      {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: null},
+    const inputs: (INodeInputSlot & {count: number})[] = [
+      {name: "base_ctx", type: "RGTHREE_DYNAMIC_CONTEXT", link: null, count: 0, boundingRect: [0,0,0,0]},
     ];
     let numConnected = 0;
     for (let i = 0; i < this.inputs.length; i++) {
@@ -140,7 +140,7 @@ class DynamicContextSwitchNode extends DynamicContextNodeBase {
           type: slotData.type,
           link: null,
           count: 1,
-          boundingRect: null,
+          boundingRect: [0,0,0,0],
         });
       }
     }

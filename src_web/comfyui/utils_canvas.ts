@@ -1,4 +1,4 @@
-import type {LGraphCanvas as TLGraphCanvas, Vector2} from "@comfyorg/frontend";
+import type {LGraphCanvas as TLGraphCanvas, Point} from "@comfyorg/frontend";
 
 import {app} from "scripts/app.js";
 
@@ -137,15 +137,15 @@ type DrawNumberWidgetPartOptions = {
 export function drawNumberWidgetPart(
   ctx: CanvasRenderingContext2D,
   options: DrawNumberWidgetPartOptions,
-): [Vector2, Vector2, Vector2] {
+): [Point, Point, Point] {
   const arrowWidth = 9;
   const arrowHeight = 10;
   const innerMargin = 3;
   const numberWidth = 32;
 
-  const xBoundsArrowLess: Vector2 = [0, 0];
-  const xBoundsNumber: Vector2 = [0, 0];
-  const xBoundsArrowMore: Vector2 = [0, 0];
+  const xBoundsArrowLess: Point = [0, 0];
+  const xBoundsNumber: Point = [0, 0];
+  const xBoundsArrowMore: Point = [0, 0];
 
   ctx.save();
 
@@ -218,7 +218,7 @@ type DrawTogglePartOptions = {
 export function drawTogglePart(
   ctx: CanvasRenderingContext2D,
   options: DrawTogglePartOptions,
-): Vector2 {
+): Point {
   const lowQuality = isLowQuality();
   ctx.save();
 
