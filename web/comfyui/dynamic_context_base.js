@@ -65,15 +65,11 @@ export class DynamicContextNodeBase extends BaseContextNode {
     }
     clone() {
         const cloned = super.clone();
-        while (cloned.inputs.length > 1) {
-            cloned.removeInput(cloned.inputs.length - 1);
-        }
+        cloned.inputs.splice(1);
         while (cloned.widgets.length > 1) {
             cloned.removeWidget(cloned.widgets.length - 1);
         }
-        while (cloned.outputs.length > 1) {
-            cloned.removeOutput(cloned.outputs.length - 1);
-        }
+        cloned.outputs.splice(1);
         return cloned;
     }
     onNodeCreated() {

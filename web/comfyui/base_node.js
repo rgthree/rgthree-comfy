@@ -91,7 +91,6 @@ export class RgthreeBaseNode extends LGraphNode {
         if ((cloned === null || cloned === void 0 ? void 0 : cloned.properties) && !!window.structuredClone) {
             cloned.properties = structuredClone(cloned.properties);
         }
-        cloned.graph = this.graph;
         return cloned;
     }
     onModeChange(from, to) {

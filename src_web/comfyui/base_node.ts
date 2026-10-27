@@ -179,12 +179,12 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (cloned?.properties && !!window.structuredClone) {
       cloned.properties = structuredClone(cloned.properties);
     }
-    // [🤮] https://github.com/Comfy-Org/ComfyUI_frontend/issues/5037
-    // ComfyUI started throwing errors when some of our nodes wanted to remove inputs when cloning
-    // (like our dynamic inputs) because the disconnect method that's automatically called assumes
-    // there should be a graph. For now, I _think_ we can simply assign the current graph to avoid
-    // the error, which would then be overwritten when placed...
-    cloned.graph = this.graph;
+    // NOTE: We used to assign `cloned.graph = this.graph` here to work around
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/5037 (removing inputs on a graph-less
+    // clone threw). That is no longer needed since subclasses now trim their clone's slot arrays
+    // directly, and it became harmful: the clone keeps the original's id, and newer frontends
+    // resolve slot links from the graph's link store by node id, so a graph-attached clone both
+    // serializes the original's links and disconnects them when its slots are removed.
     return cloned;
   }
 
