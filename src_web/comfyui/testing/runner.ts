@@ -17,19 +17,31 @@ declare global {
 
 window.rgthree_tests = window.rgthree_tests || {};
 
+export type TestMatcher = {
+  shouldLabel?: string;
+  expectedProperty?: string;
+  expectedLabel?: any;
+};
+
 type TestContext = {
   label?: string;
   beforeEach?: Function[];
 };
 
 let contexts: TestContext[] = [];
+let globalMatcher: TestMatcher = {};
 
-export function describe(label: string, fn: Function) {
+export function describe(label: string, fn: () => void | Promise<void>) {
   if (!label.startsWith("Test")) {
     throw new Error('Test labels should start with "Test"');
   }
-  window.rgthree_tests[label] = async () => {
+  window.rgthree_tests[label] = async (matcher?: string | TestMatcher) => {
+    if (typeof matcher === "string") {
+      matcher = {shouldLabel: matcher};
+    }
+    globalMatcher = matcher ?? {};
     await describeRun(label, fn);
+    globalMatcher = {};
   };
   return window.rgthree_tests[label];
 }
@@ -46,6 +58,9 @@ export async function describeRun(label: string, fn: Function) {
 export async function should(declaration: string, fn: Function) {
   if (!contexts[contexts.length - 1]) {
     throw Error("Called should outside of a describe.");
+  }
+  if (globalMatcher?.shouldLabel && !declaration.includes(globalMatcher.shouldLabel)) {
+    return;
   }
   console.group(`...should ${declaration}`);
   try {
@@ -139,7 +154,7 @@ class Expectation {
     this.expectedFn = (v) => v.includes(expected);
     return this.toBeEval();
   }
-  toMatch(labelOrExpected: string | RegExp, maybeExpected?: RegExp): boolean {
+  toMatch(labelOrExpected: string | RegExp, maybeExpected?: RegExp) {
     let expected: RegExp | null = null;
     if (maybeExpected instanceof RegExp) {
       expected = maybeExpected;
@@ -155,6 +170,17 @@ class Expectation {
     return this.toBeEval();
   }
   toBeEval(strict = false) {
+    if (
+      (globalMatcher.expectedProperty !== undefined &&
+        this.propertyLabel?.includes(globalMatcher.expectedProperty) &&
+        (globalMatcher.expectedLabel === undefined ||
+          globalMatcher.expectedLabel === this.expectedLabel)) ||
+      (globalMatcher.expectedProperty === undefined &&
+        globalMatcher.expectedLabel !== undefined &&
+        globalMatcher.expectedLabel === this.expectedLabel)
+    ) {
+      return null;
+    }
     let evaluation = this.expectedFn(this.value);
     let msg = `Expected ${this.propertyLabel ? this.propertyLabel + ` to ${this.verbLabel} ` : ""}${
       this.expectedLabel
@@ -163,11 +189,12 @@ class Expectation {
     this.log(evaluation, msg);
     return evaluation;
   }
-  log(value: boolean, msg: string) {
+  async log(value: boolean, msg: string) {
     if (value) {
       log(`🗸 ${msg}`, "color:#060; background:#cec; padding: 2px 6px;");
     } else {
       log(`X ${msg}`, "color:#600; background:#fdd; padding: 2px 6px;");
+      throw new Error(msg);
     }
   }
 }
