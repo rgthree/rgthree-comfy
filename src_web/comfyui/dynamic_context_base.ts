@@ -89,15 +89,14 @@ export class DynamicContextNodeBase extends BaseContextNode {
   }
   override clone() {
     const cloned = super.clone()! as DynamicContextNodeBase;
-    while (cloned.inputs.length > 1) {
-      cloned.removeInput(cloned.inputs.length - 1);
-    }
+    // Trim slot arrays directly rather than calling `removeInput()`/`removeOutput()`. The clone
+    // shares the original's id, and newer frontends resolve slot links from the graph's link store
+    // by node id, so those calls on a graph-attached clone disconnect the ORIGINAL node's links.
+    cloned.inputs.splice(1);
     while (cloned.widgets.length > 1) {
       cloned.removeWidget(cloned.widgets.length - 1);
     }
-    while (cloned.outputs.length > 1) {
-      cloned.removeOutput(cloned.outputs.length - 1);
-    }
+    cloned.outputs.splice(1);
     return cloned;
   }
 

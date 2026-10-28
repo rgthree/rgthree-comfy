@@ -57,9 +57,11 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     // so if it's pasted/templatized the data is correct. Otherwise, clear the inputs and so the new
     // node is ready to go, fresh.
     if (!rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes) {
-      while (cloned.inputs.length > 1) {
-        cloned.removeInput(cloned.inputs.length - 1);
-      }
+      // Trim the slot array directly rather than calling `removeInput()`. The clone shares the
+      // original's id, and newer frontends resolve slot links from the graph's link store by node
+      // id, so `removeInput()` on a graph-attached clone disconnects the ORIGINAL node's links
+      // (and on a graph-less clone, older frontends threw). The clone's inputs carry no links.
+      cloned.inputs.splice(1);
       if (cloned.inputs[0]) {
         cloned.inputs[0].label = "";
       }
