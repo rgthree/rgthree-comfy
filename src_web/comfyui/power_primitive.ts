@@ -141,7 +141,15 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
     if (this.typeState == newTypeState) return;
     this.typeState = newTypeState;
 
+    // [🤮] Need to remove the widget first because we can no longer rename the widget and ComfyUI
+    // frontend now forces an incremental name that can't be changes (e.g. "value#3").
     let value = this.valueWidget?.value ?? null;
+    let newIndex = this.widgets.indexOf(this.valueWidget);
+    if (this.valueWidget) {
+      this.removeWidget(this.valueWidget);
+    } else {
+      newIndex = this.widgets.length;
+    }
     let newWidget: IWidget | null = null;
     // If we're linked, then set the UI to an empty string widget input, since the ComfyUI is rather
     // confusing by showing a value that is not the actual value used (from the input).
@@ -174,14 +182,10 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
       throw new Error(`Unsupported type "${type}".`);
     }
 
-    if (this.valueWidget) {
-      this.replaceWidget(this.valueWidget, newWidget);
-    } else {
-      if (!this.widgets.includes(newWidget)) {
-        this.addCustomWidget(newWidget);
-      }
-      moveArrayItem(this.widgets, newWidget, 1);
+    if (!this.widgets.includes(newWidget)) {
+      this.addCustomWidget(newWidget);
     }
+    moveArrayItem(this.widgets, newWidget, newIndex);
     this.valueWidget = newWidget;
 
     // Set the input data.

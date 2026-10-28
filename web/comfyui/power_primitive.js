@@ -80,6 +80,13 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
             return;
         this.typeState = newTypeState;
         let value = (_e = (_c = this.valueWidget) === null || _c === void 0 ? void 0 : _c.value) !== null && _e !== void 0 ? _e : null;
+        let newIndex = this.widgets.indexOf(this.valueWidget);
+        if (this.valueWidget) {
+            this.removeWidget(this.valueWidget);
+        }
+        else {
+            newIndex = this.widgets.length;
+        }
         let newWidget = null;
         if (linked) {
             newWidget = ComfyWidgets["STRING"](this, name, ["STRING"], app).widget;
@@ -112,15 +119,10 @@ class RgthreePowerPrimitive extends RgthreeBaseServerNode {
         if (newWidget == null) {
             throw new Error(`Unsupported type "${type}".`);
         }
-        if (this.valueWidget) {
-            this.replaceWidget(this.valueWidget, newWidget);
+        if (!this.widgets.includes(newWidget)) {
+            this.addCustomWidget(newWidget);
         }
-        else {
-            if (!this.widgets.includes(newWidget)) {
-                this.addCustomWidget(newWidget);
-            }
-            moveArrayItem(this.widgets, newWidget, 1);
-        }
+        moveArrayItem(this.widgets, newWidget, newIndex);
         this.valueWidget = newWidget;
         if (!((_d = this.inputs) === null || _d === void 0 ? void 0 : _d.length)) {
             this.addInput("value", "*", { widget: this.valueWidget });
