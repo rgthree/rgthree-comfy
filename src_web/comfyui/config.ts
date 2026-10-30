@@ -158,6 +158,15 @@ const CONFIGURABLE: { [key: string]: ConfigurationSchema[] } = {
       label: "Autoplay video previews in info dialog.",
       description: "In the info dialog, autoplay video preview images.",
     },
+    {
+      key: "nodes.power_lora_loader.verify_paths_on_load",
+      type: ConfigType.BOOLEAN,
+      label: "Check lora paths when loading a workflow",
+      description:
+        "When a workflow loads, alert if any loras are missing or saved with a different path " +
+        "(like a workflow from another OS) and offer to fix them. You can always run this from " +
+        'a node\'s right-click menu with "Verify & Fix Lora Paths."',
+    },
   ],
   advanced: [
     {

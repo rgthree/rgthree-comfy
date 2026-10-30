@@ -12,12 +12,100 @@ import { showLoraChooser } from "./utils_menu.js";
 import { moveArrayItem, removeArrayItem } from "../../rgthree/common/shared_utils.js";
 import { RgthreeLoraInfoDialog } from "./dialog_info.js";
 import { LORA_INFO_SERVICE } from "../../rgthree/common/model_info_service.js";
+import { resolveLoraPath } from "../../rgthree/common/lora_path_utils.js";
 const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
 const PROP_LABEL_SHOW_STRENGTHS_STATIC = `@${PROP_LABEL_SHOW_STRENGTHS}`;
 const PROP_LABEL_LORA_MATCH = "Match";
 const PROP_LABEL_LORA_MATCH_STATIC = `@${PROP_LABEL_LORA_MATCH}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
+const MSG_ID_LORA_PATHS = "power-lora-loader-paths";
+function newLoraPathsSummary() {
+    return { fixable: [], relocated: [], ambiguous: [], missing: [] };
+}
+function mergeLoraPathsSummaries(summaries) {
+    const merged = newLoraPathsSummary();
+    for (const s of summaries) {
+        merged.fixable.push(...s.fixable);
+        merged.relocated.push(...s.relocated);
+        merged.ambiguous.push(...s.ambiguous);
+        merged.missing.push(...s.missing);
+    }
+    return merged;
+}
+function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+}
+function loraNamesList(results, max = 3) {
+    const names = [...new Set(results.map((r) => r.original))];
+    let list = names
+        .slice(0, max)
+        .map((n) => `<code>${escapeHtml(n)}</code>`)
+        .join(", ");
+    if (names.length > max) {
+        list += ` and ${names.length - max} more`;
+    }
+    return list;
+}
+function plural(num, singular, pluralStr = `${singular}s`) {
+    return `${num} ${num === 1 ? singular : pluralStr}`;
+}
+function showLoraPathsMessage(summary, onFix, numFixed = 0) {
+    const numFixable = summary.fixable.length + summary.relocated.length;
+    const lines = [];
+    if (numFixed) {
+        lines.push(`Corrected ${plural(numFixed, "lora path")}.`);
+    }
+    if (numFixable) {
+        lines.push(`${plural(numFixable, "lora path")} can be corrected` +
+            (summary.relocated.length
+                ? ` (${summary.relocated.length} found in a different folder)`
+                : "") +
+            ".");
+    }
+    if (summary.ambiguous.length) {
+        lines.push(`${plural(summary.ambiguous.length, "lora")} matched more than one file and need choosing: ` +
+            `${loraNamesList(summary.ambiguous)}.`);
+    }
+    if (summary.missing.length) {
+        lines.push(`${plural(summary.missing.length, "lora")} could not be found: ` +
+            `${loraNamesList(summary.missing)}.`);
+    }
+    const actions = [];
+    if (numFixable && onFix) {
+        actions.push({
+            label: "Fix paths",
+            callback: (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onFix();
+            },
+        });
+    }
+    actions.push({
+        label: "Dismiss",
+        callback: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            rgthree.hideMessage(MSG_ID_LORA_PATHS);
+        },
+    });
+    rgthree.showMessage({
+        id: MSG_ID_LORA_PATHS,
+        type: summary.missing.length || summary.ambiguous.length ? "warn" : "info",
+        message: `<b>Power Lora Loader</b>: ${lines.join(" ")}`,
+        actions,
+    });
+}
+function markWorkflowChanged() {
+    var _c, _d, _e, _f, _g, _h;
+    (_c = app.graph) === null || _c === void 0 ? void 0 : _c.setDirtyCanvas(true, true);
+    try {
+        (_h = (_g = (_f = (_e = (_d = app.extensionManager) === null || _d === void 0 ? void 0 : _d.workflow) === null || _e === void 0 ? void 0 : _e.activeWorkflow) === null || _f === void 0 ? void 0 : _f.changeTracker) === null || _g === void 0 ? void 0 : _g.checkState) === null || _h === void 0 ? void 0 : _h.call(_g);
+    }
+    catch (e) {
+    }
+}
 class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     constructor(title = NODE_CLASS.title) {
         super(title);
@@ -71,6 +159,69 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         this.addNonLoraWidgets();
         this.size[0] = this._tempWidth;
         this.size[1] = Math.max(this._tempHeight, this.computeSize()[1]);
+        this.verifyLoraPaths();
+    }
+    getLoraWidgets() {
+        return (this.widgets || []).filter((w) => { var _c; return (_c = w.name) === null || _c === void 0 ? void 0 : _c.startsWith("lora_"); });
+    }
+    async verifyLoraPaths(fix = false, refresh = false) {
+        var _c, _d;
+        const summary = newLoraPathsSummary();
+        let available;
+        try {
+            available = (await rgthreeApi.getLoras(refresh)).map((l) => l.file);
+        }
+        catch (e) {
+            const [n, v] = this.logger.errorParts("Could not fetch loras list to verify paths.", e);
+            (_c = console[n]) === null || _c === void 0 ? void 0 : _c.call(console, ...v);
+            return summary;
+        }
+        let changed = false;
+        for (const widget of this.getLoraWidgets()) {
+            const lora = (_d = widget.value) === null || _d === void 0 ? void 0 : _d.lora;
+            if (!lora || lora === "None") {
+                widget.pathResult = null;
+                continue;
+            }
+            let result = resolveLoraPath(lora, available);
+            if (result.status === "fixed")
+                summary.fixable.push(result);
+            if (result.status === "relocated")
+                summary.relocated.push(result);
+            if (result.status === "ambiguous")
+                summary.ambiguous.push(result);
+            if (result.status === "missing")
+                summary.missing.push(result);
+            if (fix && result.resolved && (result.status === "fixed" || result.status === "relocated")) {
+                widget.setLora(result.resolved);
+                changed = true;
+                result = resolveLoraPath(result.resolved, available);
+            }
+            widget.pathResult = result;
+        }
+        if (changed) {
+            markWorkflowChanged();
+        }
+        this.setDirtyCanvas(true, true);
+        return summary;
+    }
+    async verifyAndFixLoraPaths() {
+        const summary = await this.verifyLoraPaths(true, true);
+        const numFixed = summary.fixable.length + summary.relocated.length;
+        if (summary.missing.length || summary.ambiguous.length) {
+            showLoraPathsMessage({ ...summary, fixable: [], relocated: [] }, undefined, numFixed);
+        }
+        else {
+            rgthree.hideMessage(MSG_ID_LORA_PATHS);
+            rgthree.showMessage({
+                id: `${MSG_ID_LORA_PATHS}-fixed`,
+                type: "success",
+                message: numFixed
+                    ? `Corrected ${plural(numFixed, "lora path")}; all loras found.`
+                    : "All loras found.",
+                timeout: 4000,
+            });
+        }
     }
     onNodeCreated() {
         var _c;
@@ -164,47 +315,55 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         return slot;
     }
     getSlotMenuOptions(slot) {
-        var _c, _d, _e, _f, _g, _h;
+        var _c, _d, _e, _f, _g, _h, _j;
         if ((_d = (_c = slot === null || slot === void 0 ? void 0 : slot.widget) === null || _c === void 0 ? void 0 : _c.name) === null || _d === void 0 ? void 0 : _d.startsWith("lora_")) {
             const widget = slot.widget;
             const index = this.widgets.indexOf(widget);
             const canMoveUp = !!((_f = (_e = this.widgets[index - 1]) === null || _e === void 0 ? void 0 : _e.name) === null || _f === void 0 ? void 0 : _f.startsWith("lora_"));
             const canMoveDown = !!((_h = (_g = this.widgets[index + 1]) === null || _g === void 0 ? void 0 : _g.name) === null || _h === void 0 ? void 0 : _h.startsWith("lora_"));
-            const menuItems = [
-                {
-                    content: `ℹ️ Show Info`,
-                    callback: () => {
-                        widget.showLoraInfoDialog();
+            const menuItems = [];
+            if (((_j = widget.pathResult) === null || _j === void 0 ? void 0 : _j.status) === "ambiguous") {
+                menuItems.push({
+                    content: `⚠️ Choose Matching Lora`,
+                    has_submenu: true,
+                    submenu: {
+                        options: widget.pathResult.candidates,
+                        callback: (value) => {
+                            widget.setLora(String(value));
+                            this.verifyLoraPaths();
+                            markWorkflowChanged();
+                        },
                     },
+                }, null);
+            }
+            menuItems.push({
+                content: `ℹ️ Show Info`,
+                callback: () => {
+                    widget.showLoraInfoDialog();
                 },
-                null,
-                {
-                    content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
-                    callback: () => {
-                        widget.value.on = !widget.value.on;
-                    },
+            }, null, {
+                content: `${widget.value.on ? "⚫" : "🟢"} Toggle ${widget.value.on ? "Off" : "On"}`,
+                callback: () => {
+                    widget.value.on = !widget.value.on;
                 },
-                {
-                    content: `⬆️ Move Up`,
-                    disabled: !canMoveUp,
-                    callback: () => {
-                        moveArrayItem(this.widgets, widget, index - 1);
-                    },
+            }, {
+                content: `⬆️ Move Up`,
+                disabled: !canMoveUp,
+                callback: () => {
+                    moveArrayItem(this.widgets, widget, index - 1);
                 },
-                {
-                    content: `⬇️ Move Down`,
-                    disabled: !canMoveDown,
-                    callback: () => {
-                        moveArrayItem(this.widgets, widget, index + 1);
-                    },
+            }, {
+                content: `⬇️ Move Down`,
+                disabled: !canMoveDown,
+                callback: () => {
+                    moveArrayItem(this.widgets, widget, index + 1);
                 },
-                {
-                    content: `🗑️ Remove`,
-                    callback: () => {
-                        removeArrayItem(this.widgets, widget);
-                    },
+            }, {
+                content: `🗑️ Remove`,
+                callback: () => {
+                    removeArrayItem(this.widgets, widget);
                 },
-            ];
+            });
             new LiteGraph.ContextMenu(menuItems, {
                 title: "LORA WIDGET",
                 event: rgthree.lastCanvasMouseEvent,
@@ -214,7 +373,18 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
         return this.defaultGetSlotMenuOptions(slot);
     }
     refreshComboInNode(defs) {
-        rgthreeApi.getLoras(true);
+        this.verifyLoraPaths(false, true);
+    }
+    getExtraMenuOptions(canvas, options) {
+        super.getExtraMenuOptions(canvas, options);
+        options.splice(0, 0, {
+            content: "🔍 Verify & Fix Lora Paths",
+            disabled: !this.hasLoraWidgets(),
+            callback: () => {
+                this.verifyAndFixLoraPaths();
+            },
+        }, null);
+        return [];
     }
     hasLoraWidgets() {
         var _c;
@@ -363,6 +533,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         this.loraInfoPromise = null;
         this.loraInfo = null;
         this.showModelAndClip = null;
+        this.pathResult = null;
         this.hitAreas = {
             toggle: { bounds: [0, 0], onDown: this.onToggleDown },
             lora: { bounds: [0, 0], onClick: this.onLoraClick },
@@ -398,18 +569,19 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     }
     setLora(lora) {
         this._value.lora = lora;
-        this.getLoraInfo();
+        this.pathResult = null;
+        this.resetLoraInfo();
     }
     draw(ctx, node, w, posY, height) {
-        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
-        var _q, _r, _s, _t;
+        var _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
+        var _r, _s, _t, _u;
         let currentShowModelAndClip = node.properties[PROP_LABEL_SHOW_STRENGTHS] === PROP_VALUE_SHOW_STRENGTHS_SEPARATE;
         if (this.showModelAndClip !== currentShowModelAndClip) {
             let oldShowModelAndClip = this.showModelAndClip;
             this.showModelAndClip = currentShowModelAndClip;
             if (this.showModelAndClip) {
                 if (oldShowModelAndClip != null) {
-                    this.value.strengthTwo = (_q = this.value.strength) !== null && _q !== void 0 ? _q : 1;
+                    this.value.strengthTwo = (_r = this.value.strength) !== null && _r !== void 0 ? _r : 1;
                 }
             }
             else {
@@ -439,8 +611,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         let rposX = node.size[0] - margin - innerMargin - innerMargin;
         const strengthValue = this.showModelAndClip
-            ? ((_r = this.value.strengthTwo) !== null && _r !== void 0 ? _r : 1)
-            : ((_s = this.value.strength) !== null && _s !== void 0 ? _s : 1);
+            ? ((_s = this.value.strengthTwo) !== null && _s !== void 0 ? _s : 1)
+            : ((_t = this.value.strength) !== null && _t !== void 0 ? _t : 1);
         let textColor = undefined;
         if (((_c = this.loraInfo) === null || _c === void 0 ? void 0 : _c.strengthMax) != null && strengthValue > ((_d = this.loraInfo) === null || _d === void 0 ? void 0 : _d.strengthMax)) {
             textColor = "#c66";
@@ -479,7 +651,7 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
                 posX: rposX,
                 posY,
                 height,
-                value: (_t = this.value.strength) !== null && _t !== void 0 ? _t : 1,
+                value: (_u = this.value.strength) !== null && _u !== void 0 ? _u : 1,
                 direction: -1,
                 textColor,
             });
@@ -506,8 +678,14 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         const loraWidth = rposX - posX;
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        const loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
+        let loraLabel = String(((_p = this.value) === null || _p === void 0 ? void 0 : _p.lora) || "None");
+        const pathStatus = (_q = this.pathResult) === null || _q === void 0 ? void 0 : _q.status;
+        if (pathStatus && pathStatus !== "ok") {
+            ctx.fillStyle = pathStatus === "missing" ? "#c66" : "#ca6";
+            loraLabel = `⚠ ${loraLabel}`;
+        }
         ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
+        ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
         this.hitAreas.lora.bounds = [posX, loraWidth];
         posX += loraWidth + innerMargin;
         ctx.globalAlpha = app.canvas.editor_alpha;
@@ -536,8 +714,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
     onLoraClick(event, pos, node) {
         node.showLoraChooser(event, (value) => {
             this.value.lora = value;
-            this.loraInfo = null;
-            this.getLoraInfo();
+            this.pathResult = null;
+            this.resetLoraInfo();
         });
         this.cancelMouseDown();
     }
@@ -602,6 +780,11 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget {
         let strength = ((_c = this.value[prop]) !== null && _c !== void 0 ? _c : 1) + step * direction;
         this.value[prop] = Math.round(strength * 100) / 100;
     }
+    resetLoraInfo() {
+        this.loraInfo = null;
+        this.loraInfoPromise = null;
+        this.getLoraInfo();
+    }
     getLoraInfo(force = false) {
         if (!this.loraInfoPromise || force == true) {
             let promise;
@@ -624,4 +807,55 @@ app.registerExtension({
             NODE_CLASS.setUp(nodeType, nodeData);
         }
     },
+    async afterConfigureGraph() {
+        if (!CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.verify_paths_on_load")) {
+            return;
+        }
+        const nodes = getAllPowerLoraLoaderNodes();
+        if (!nodes.length) {
+            return;
+        }
+        const summary = mergeLoraPathsSummaries(await Promise.all(nodes.map((n) => n.verifyLoraPaths())));
+        const numIssues = summary.fixable.length +
+            summary.relocated.length +
+            summary.ambiguous.length +
+            summary.missing.length;
+        if (!numIssues) {
+            return;
+        }
+        showLoraPathsMessage(summary, async () => {
+            const fixed = mergeLoraPathsSummaries(await Promise.all(getAllPowerLoraLoaderNodes().map((n) => n.verifyLoraPaths(true))));
+            const numFixed = fixed.fixable.length + fixed.relocated.length;
+            if (fixed.missing.length || fixed.ambiguous.length) {
+                showLoraPathsMessage({ ...fixed, fixable: [], relocated: [] }, undefined, numFixed);
+            }
+            else {
+                rgthree.hideMessage(MSG_ID_LORA_PATHS);
+                rgthree.showMessage({
+                    id: `${MSG_ID_LORA_PATHS}-fixed`,
+                    type: "success",
+                    message: `Corrected ${plural(numFixed, "lora path")}; all loras found.`,
+                    timeout: 4000,
+                });
+            }
+        });
+    },
 });
+function getAllPowerLoraLoaderNodes() {
+    var _c;
+    var _d, _e;
+    const graphs = [app.graph];
+    const subgraphs = (_c = app.graph) === null || _c === void 0 ? void 0 : _c.subgraphs;
+    if (subgraphs === null || subgraphs === void 0 ? void 0 : subgraphs.values) {
+        graphs.push(...subgraphs.values());
+    }
+    const nodes = [];
+    for (const graph of graphs) {
+        for (const node of (_e = (_d = graph === null || graph === void 0 ? void 0 : graph.nodes) !== null && _d !== void 0 ? _d : graph === null || graph === void 0 ? void 0 : graph._nodes) !== null && _e !== void 0 ? _e : []) {
+            if ((node === null || node === void 0 ? void 0 : node.type) === NODE_CLASS.type && typeof node.verifyLoraPaths === "function") {
+                nodes.push(node);
+            }
+        }
+    }
+    return nodes;
+}

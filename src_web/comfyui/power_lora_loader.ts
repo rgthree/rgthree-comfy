@@ -38,6 +38,7 @@ import {showLoraChooser} from "./utils_menu.js";
 import {moveArrayItem, removeArrayItem} from "rgthree/common/shared_utils.js";
 import {RgthreeLoraInfoDialog} from "./dialog_info.js";
 import {LORA_INFO_SERVICE} from "rgthree/common/model_info_service.js";
+import {resolveLoraPath, type LoraPathResult} from "rgthree/common/lora_path_utils.js";
 // import { RgthreePowerLoraChooserDialog } from "./dialog_power_lora_chooser.js";
 
 const PROP_LABEL_SHOW_STRENGTHS = "Show Strengths";
@@ -46,6 +47,129 @@ const PROP_LABEL_LORA_MATCH = "Match";
 const PROP_LABEL_LORA_MATCH_STATIC = `@${PROP_LABEL_LORA_MATCH}`;
 const PROP_VALUE_SHOW_STRENGTHS_SINGLE = "Single Strength";
 const PROP_VALUE_SHOW_STRENGTHS_SEPARATE = "Separate Model & Clip";
+
+const MSG_ID_LORA_PATHS = "power-lora-loader-paths";
+
+/** The result of verifying the lora paths of one or more Power Lora Loader nodes. */
+type LoraPathsSummary = {
+  /** Loras whose path differed by separator, case, or extension from a lora on the server. */
+  fixable: LoraPathResult[];
+  /** Loras found under a different folder than the one saved in the workflow. */
+  relocated: LoraPathResult[];
+  /** Loras where more than one file on the server could be the match. */
+  ambiguous: LoraPathResult[];
+  /** Loras not found on the server at all. */
+  missing: LoraPathResult[];
+};
+
+function newLoraPathsSummary(): LoraPathsSummary {
+  return {fixable: [], relocated: [], ambiguous: [], missing: []};
+}
+
+function mergeLoraPathsSummaries(summaries: LoraPathsSummary[]): LoraPathsSummary {
+  const merged = newLoraPathsSummary();
+  for (const s of summaries) {
+    merged.fixable.push(...s.fixable);
+    merged.relocated.push(...s.relocated);
+    merged.ambiguous.push(...s.ambiguous);
+    merged.missing.push(...s.missing);
+  }
+  return merged;
+}
+
+function escapeHtml(str: string) {
+  return str.replace(
+    /[&<>"']/g,
+    (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"})[c]!,
+  );
+}
+
+/** Builds a short, human readable list of lora names, truncating after a few. */
+function loraNamesList(results: LoraPathResult[], max = 3) {
+  const names = [...new Set(results.map((r) => r.original))];
+  let list = names
+    .slice(0, max)
+    .map((n) => `<code>${escapeHtml(n)}</code>`)
+    .join(", ");
+  if (names.length > max) {
+    list += ` and ${names.length - max} more`;
+  }
+  return list;
+}
+
+function plural(num: number, singular: string, pluralStr = `${singular}s`) {
+  return `${num} ${num === 1 ? singular : pluralStr}`;
+}
+
+/**
+ * Shows a message at the top of the screen describing a lora paths summary. When there are
+ * fixable paths and `onFix` is supplied, a "Fix paths" action is shown.
+ */
+function showLoraPathsMessage(summary: LoraPathsSummary, onFix?: () => void, numFixed = 0) {
+  const numFixable = summary.fixable.length + summary.relocated.length;
+  const lines: string[] = [];
+  if (numFixed) {
+    lines.push(`Corrected ${plural(numFixed, "lora path")}.`);
+  }
+  if (numFixable) {
+    lines.push(
+      `${plural(numFixable, "lora path")} can be corrected` +
+        (summary.relocated.length
+          ? ` (${summary.relocated.length} found in a different folder)`
+          : "") +
+        ".",
+    );
+  }
+  if (summary.ambiguous.length) {
+    lines.push(
+      `${plural(summary.ambiguous.length, "lora")} matched more than one file and need choosing: ` +
+        `${loraNamesList(summary.ambiguous)}.`,
+    );
+  }
+  if (summary.missing.length) {
+    lines.push(
+      `${plural(summary.missing.length, "lora")} could not be found: ` +
+        `${loraNamesList(summary.missing)}.`,
+    );
+  }
+
+  const actions: {label: string; callback: (e: MouseEvent) => void}[] = [];
+  if (numFixable && onFix) {
+    actions.push({
+      label: "Fix paths",
+      callback: (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onFix();
+      },
+    });
+  }
+  actions.push({
+    label: "Dismiss",
+    callback: (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      rgthree.hideMessage(MSG_ID_LORA_PATHS);
+    },
+  });
+
+  rgthree.showMessage({
+    id: MSG_ID_LORA_PATHS,
+    type: summary.missing.length || summary.ambiguous.length ? "warn" : "info",
+    message: `<b>Power Lora Loader</b>: ${lines.join(" ")}`,
+    actions,
+  });
+}
+
+/** Lets ComfyUI know the workflow changed when we modify widget values outside of the canvas. */
+function markWorkflowChanged() {
+  app.graph?.setDirtyCanvas(true, true);
+  try {
+    (app as any).extensionManager?.workflow?.activeWorkflow?.changeTracker?.checkState?.();
+  } catch (e) {
+    // Not critical; ComfyUI will pick up the change on the next interaction.
+  }
+}
 
 /**
  * The Power Lora Loader is a super-simply Lora Loader node that can load multiple Loras at once
@@ -145,6 +269,78 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
     this.addNonLoraWidgets();
     this.size[0] = (this as any)._tempWidth;
     this.size[1] = Math.max((this as any)._tempHeight, this.computeSize()[1]);
+    // Check (but don't change) the lora paths so missing or mismatched ones are flagged right
+    // away, like when a workflow is loaded from another machine.
+    this.verifyLoraPaths();
+  }
+
+  /** Returns the lora widgets on this node. */
+  getLoraWidgets() {
+    return (this.widgets || []).filter((w) =>
+      w.name?.startsWith("lora_"),
+    ) as PowerLoraLoaderWidget[];
+  }
+
+  /**
+   * Checks each lora's saved path against the loras the server has, flagging any that are missing
+   * or mismatched (like from a workflow saved on an OS with a different path separator).
+   *
+   * @param fix If true, update loras that can be confidently matched to the server's path.
+   * @param refresh If true, refetch the loras list from the server first.
+   */
+  async verifyLoraPaths(fix = false, refresh = false): Promise<LoraPathsSummary> {
+    const summary = newLoraPathsSummary();
+    let available: string[];
+    try {
+      available = (await rgthreeApi.getLoras(refresh)).map((l) => l.file);
+    } catch (e) {
+      const [n, v] = this.logger.errorParts("Could not fetch loras list to verify paths.", e);
+      console[n]?.(...v);
+      return summary;
+    }
+    let changed = false;
+    for (const widget of this.getLoraWidgets()) {
+      const lora = widget.value?.lora;
+      if (!lora || lora === "None") {
+        widget.pathResult = null;
+        continue;
+      }
+      let result = resolveLoraPath(lora, available);
+      if (result.status === "fixed") summary.fixable.push(result);
+      if (result.status === "relocated") summary.relocated.push(result);
+      if (result.status === "ambiguous") summary.ambiguous.push(result);
+      if (result.status === "missing") summary.missing.push(result);
+      if (fix && result.resolved && (result.status === "fixed" || result.status === "relocated")) {
+        widget.setLora(result.resolved);
+        changed = true;
+        result = resolveLoraPath(result.resolved, available);
+      }
+      widget.pathResult = result;
+    }
+    if (changed) {
+      markWorkflowChanged();
+    }
+    this.setDirtyCanvas(true, true);
+    return summary;
+  }
+
+  /** Verifies and fixes this node's lora paths, then shows the user what happened. */
+  async verifyAndFixLoraPaths() {
+    const summary = await this.verifyLoraPaths(true, true);
+    const numFixed = summary.fixable.length + summary.relocated.length;
+    if (summary.missing.length || summary.ambiguous.length) {
+      showLoraPathsMessage({...summary, fixable: [], relocated: []}, undefined, numFixed);
+    } else {
+      rgthree.hideMessage(MSG_ID_LORA_PATHS);
+      rgthree.showMessage({
+        id: `${MSG_ID_LORA_PATHS}-fixed`,
+        type: "success",
+        message: numFixed
+          ? `Corrected ${plural(numFixed, "lora path")}; all loras found.`
+          : "All loras found.",
+        timeout: 4000,
+      });
+    }
   }
 
   /**
@@ -302,7 +498,26 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
       const index = this.widgets.indexOf(widget);
       const canMoveUp = !!this.widgets[index - 1]?.name?.startsWith("lora_");
       const canMoveDown = !!this.widgets[index + 1]?.name?.startsWith("lora_");
-      const menuItems: (IContextMenuValue | null)[] = [
+      const menuItems: (IContextMenuValue | null)[] = [];
+      // If the lora's saved path matched more than one file on the server, let the user pick.
+      if (widget.pathResult?.status === "ambiguous") {
+        menuItems.push(
+          {
+            content: `⚠️ Choose Matching Lora`,
+            has_submenu: true,
+            submenu: {
+              options: widget.pathResult.candidates,
+              callback: (value: any) => {
+                widget.setLora(String(value));
+                this.verifyLoraPaths();
+                markWorkflowChanged();
+              },
+            },
+          } as IContextMenuValue,
+          null,
+        );
+      }
+      menuItems.push(
         {
           content: `ℹ️ Show Info`,
           callback: () => {
@@ -336,7 +551,7 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
             removeArrayItem(this.widgets, widget);
           },
         },
-      ];
+      );
       new LiteGraph.ContextMenu(menuItems, {
         title: "LORA WIDGET",
         event: rgthree.lastCanvasMouseEvent!,
@@ -353,7 +568,27 @@ class RgthreePowerLoraLoader extends RgthreeBaseServerNode {
    * When `refreshComboInNode` is called from ComfyUI, then we'll kick off a fresh loras fetch.
    */
   override refreshComboInNode(defs: any) {
-    rgthreeApi.getLoras(true);
+    this.verifyLoraPaths(false, true);
+  }
+
+  override getExtraMenuOptions(
+    canvas: LGraphCanvas,
+    options: (IContextMenuValue<unknown> | null)[],
+  ) {
+    super.getExtraMenuOptions(canvas, options);
+    options.splice(
+      0,
+      0,
+      {
+        content: "🔍 Verify & Fix Lora Paths",
+        disabled: !this.hasLoraWidgets(),
+        callback: () => {
+          this.verifyAndFixLoraPaths();
+        },
+      },
+      null,
+    );
+    return [];
   }
 
   /**
@@ -548,6 +783,9 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
 
   private showModelAndClip: boolean | null = null;
 
+  /** The result of the last path verification for this lora, set by the node. */
+  pathResult: LoraPathResult | null = null;
+
   protected override hitAreas: RgthreeBaseHitAreas<
     | "toggle"
     | "lora"
@@ -605,7 +843,8 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
 
   setLora(lora: string) {
     this._value.lora = lora;
-    this.getLoraInfo();
+    this.pathResult = null;
+    this.resetLoraInfo();
   }
 
   /** Draws our widget with a toggle, lora selector, and number selector all in a single row. */
@@ -750,8 +989,16 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     const loraWidth = rposX - posX;
     ctx.textAlign = "left";
     ctx.textBaseline = "middle";
-    const loraLabel = String(this.value?.lora || "None");
+    let loraLabel = String(this.value?.lora || "None");
+    // Flag loras that aren't on the server ("missing") in red, and those that are there under a
+    // different path, or can't be determined, in amber, until fixed.
+    const pathStatus = this.pathResult?.status;
+    if (pathStatus && pathStatus !== "ok") {
+      ctx.fillStyle = pathStatus === "missing" ? "#c66" : "#ca6";
+      loraLabel = `⚠ ${loraLabel}`;
+    }
     ctx.fillText(fitString(ctx, loraLabel, loraWidth), posX, midY);
+    ctx.fillStyle = LiteGraph.WIDGET_TEXT_COLOR;
 
     this.hitAreas.lora.bounds = [posX, loraWidth];
     posX += loraWidth + innerMargin;
@@ -789,8 +1036,9 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
   onLoraClick(event: CanvasMouseEvent, pos: Point, node: RgthreePowerLoraLoader) {
     node.showLoraChooser(event, (value: string) => {
       this.value.lora = value;
-      this.loraInfo = null;
-      this.getLoraInfo();
+      // Chosen from the server's list, so it's known to exist.
+      this.pathResult = null;
+      this.resetLoraInfo();
     });
     this.cancelMouseDown();
   }
@@ -863,6 +1111,13 @@ class PowerLoraLoaderWidget extends RgthreeBaseWidget<PowerLoraLoaderWidgetValue
     this.value[prop] = Math.round(strength * 100) / 100;
   }
 
+  /** Clears the lora info for a previous lora value and fetches it for the current one. */
+  private resetLoraInfo() {
+    this.loraInfo = null;
+    this.loraInfoPromise = null;
+    this.getLoraInfo();
+  }
+
   private getLoraInfo(force = false) {
     if (!this.loraInfoPromise || force == true) {
       let promise;
@@ -888,4 +1143,64 @@ app.registerExtension({
       NODE_CLASS.setUp(nodeType, nodeData);
     }
   },
+
+  /**
+   * After a workflow loads, check all Power Lora Loader nodes' lora paths and, if any are
+   * mismatched (like a workflow from another OS) or missing, let the user know before they queue.
+   */
+  async afterConfigureGraph() {
+    if (!CONFIG_SERVICE.getConfigValue("nodes.power_lora_loader.verify_paths_on_load")) {
+      return;
+    }
+    const nodes = getAllPowerLoraLoaderNodes();
+    if (!nodes.length) {
+      return;
+    }
+    const summary = mergeLoraPathsSummaries(
+      await Promise.all(nodes.map((n) => n.verifyLoraPaths())),
+    );
+    const numIssues =
+      summary.fixable.length +
+      summary.relocated.length +
+      summary.ambiguous.length +
+      summary.missing.length;
+    if (!numIssues) {
+      return;
+    }
+    showLoraPathsMessage(summary, async () => {
+      const fixed = mergeLoraPathsSummaries(
+        await Promise.all(getAllPowerLoraLoaderNodes().map((n) => n.verifyLoraPaths(true))),
+      );
+      const numFixed = fixed.fixable.length + fixed.relocated.length;
+      if (fixed.missing.length || fixed.ambiguous.length) {
+        showLoraPathsMessage({...fixed, fixable: [], relocated: []}, undefined, numFixed);
+      } else {
+        rgthree.hideMessage(MSG_ID_LORA_PATHS);
+        rgthree.showMessage({
+          id: `${MSG_ID_LORA_PATHS}-fixed`,
+          type: "success",
+          message: `Corrected ${plural(numFixed, "lora path")}; all loras found.`,
+          timeout: 4000,
+        });
+      }
+    });
+  },
 });
+
+/** Returns all Power Lora Loader nodes in the current workflow, including inside subgraphs. */
+function getAllPowerLoraLoaderNodes(): RgthreePowerLoraLoader[] {
+  const graphs: any[] = [app.graph];
+  const subgraphs = (app.graph as any)?.subgraphs;
+  if (subgraphs?.values) {
+    graphs.push(...subgraphs.values());
+  }
+  const nodes: RgthreePowerLoraLoader[] = [];
+  for (const graph of graphs) {
+    for (const node of graph?.nodes ?? graph?._nodes ?? []) {
+      if (node?.type === NODE_CLASS.type && typeof node.verifyLoraPaths === "function") {
+        nodes.push(node as RgthreePowerLoraLoader);
+      }
+    }
+  }
+  return nodes;
+}
