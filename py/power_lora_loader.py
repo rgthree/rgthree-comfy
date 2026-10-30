@@ -77,7 +77,7 @@ class RgthreePowerLoraLoader:
     return result
 
   @classmethod
-  def get_enabled_triggers_from_prompt_node(cls, prompt_node: dict, max_each: int = 1):
+  def get_enabled_triggers_from_prompt_node(cls, prompt_node: dict, civitai: bool = False, max_each: int = 1):
     """Gets trigger words up to the max for enabled loras of a node within a server prompt."""
     loras = [l['name'] for l in cls.get_enabled_loras_from_prompt_node(prompt_node)]
     trained_words = []
@@ -97,5 +97,8 @@ class RgthreePowerLoraLoader:
           'civitai or manually added words?'
         )
         continue
-      trained_words += [w for wi in info['trainedWords'][:max_each] if (wi and (w := wi['word']))]
+      if civitai:
+        trained_words += [w for wi in info['trainedWords'][:max_each] if wi and wi.get('civitai') is True and (w := wi['word'])]
+      else:
+        trained_words += [w for wi in info['trainedWords'][:max_each] if (wi and (w := wi['word']))]
     return trained_words
