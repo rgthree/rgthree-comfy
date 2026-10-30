@@ -427,6 +427,35 @@ class Rgthree extends EventTarget {
     const graphSerialize = LGraph.prototype.serialize;
     LGraph.prototype.serialize = function () {
       const response = graphSerialize.apply(this, [...arguments] as any) as any;
+      if (response?.links) {
+        for (const link of response.links) {
+          if (link && Array.isArray(link[5])) {
+            link[5] = "COMBO";
+          }
+        }
+      }
+      if (response?.definitions?.subgraphs) {
+        for (const sg of response.definitions.subgraphs) {
+          if (sg?.links) {
+            for (const link of sg.links) {
+              if (link && Array.isArray(link.type)) {
+                link.type = "COMBO";
+              }
+            }
+          }
+        }
+      }
+      if (response?.extra?.subgraphs) {
+        for (const sg of response.extra.subgraphs) {
+          if (sg?.links) {
+            for (const link of sg.links) {
+              if (link && Array.isArray(link.type)) {
+                link.type = "COMBO";
+              }
+            }
+          }
+        }
+      }
       rgthree.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = response;
       return response;
     };

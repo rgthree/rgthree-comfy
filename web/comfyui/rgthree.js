@@ -273,7 +273,37 @@ class Rgthree extends EventTarget {
         const rgthree = this;
         const graphSerialize = LGraph.prototype.serialize;
         LGraph.prototype.serialize = function () {
+            var _a, _b, _c, _d;
             const response = graphSerialize.apply(this, [...arguments]);
+            if (response === null || response === void 0 ? void 0 : response.links) {
+                for (const link of response.links) {
+                    if (link && Array.isArray(link[5])) {
+                        link[5] = "COMBO";
+                    }
+                }
+            }
+            if ((_b = (_a = response === null || response === void 0 ? void 0 : response.definitions) === null || _a === void 0 ? void 0 : _a.subgraphs) === null || _b === void 0 ? void 0 : _b.length) {
+                for (const sg of response.definitions.subgraphs) {
+                    if (sg === null || sg === void 0 ? void 0 : sg.links) {
+                        for (const link of sg.links) {
+                            if (link && Array.isArray(link.type)) {
+                                link.type = "COMBO";
+                            }
+                        }
+                    }
+                }
+            }
+            if ((_d = (_c = response === null || response === void 0 ? void 0 : response.extra) === null || _c === void 0 ? void 0 : _c.subgraphs) === null || _d === void 0 ? void 0 : _d.length) {
+                for (const sg of response.extra.subgraphs) {
+                    if (sg === null || sg === void 0 ? void 0 : sg.links) {
+                        for (const link of sg.links) {
+                            if (link && Array.isArray(link.type)) {
+                                link.type = "COMBO";
+                            }
+                        }
+                    }
+                }
+            }
             rgthree.initialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff = response;
             return response;
         };

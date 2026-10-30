@@ -938,6 +938,12 @@ export async function matchLocalSlotsToServer(
       : serverNodeData.output;
   const slots = direction == IoDirection.INPUT ? node.inputs : node.outputs;
 
+  for (const slot of slots || []) {
+    if (slot && Array.isArray(slot.type)) {
+      slot.type = "COMBO";
+    }
+  }
+
   // Let's go through the node data names and make sure our current ones match, and update if not.
   let firstIndex = slots.findIndex((o, i) => i !== serverSlotNames.indexOf(o.name));
   if (firstIndex > -1) {
@@ -961,7 +967,7 @@ export async function matchLocalSlotsToServer(
       } else if (currentNodeSlot === -1) {
         const splicedItem = {
           name: serverSlotName,
-          type: serverSlotTypes![index],
+          type: (Array.isArray(serverSlotTypes![index]) ? "COMBO" : serverSlotTypes![index]) as any,
           links: [],
         };
         slots.splice(index, 0, splicedItem as any);
@@ -985,6 +991,9 @@ export async function matchLocalSlotsToServer(
       let currentNodeSlot = slots.map((s) => s.name).indexOf(name);
       if (currentNodeSlot > -1) {
         for (const linkData of slotLinks) {
+          if (linkData.link && Array.isArray(linkData.link.type)) {
+            linkData.link.type = "COMBO";
+          }
           if (direction == IoDirection.INPUT) {
             linkData.link.target_slot = currentNodeSlot;
           } else {
