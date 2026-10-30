@@ -32,6 +32,7 @@ from comfy_extras.nodes_latent import LatentBatch
 
 AstNumConstantClasses = (ast.Num, ast.Constant) if hasattr(ast, "Num") else (ast.Constant)
 
+
 class LoopBreak(Exception):
   """A special error type that is caught in a loop for correct breaking behavior."""
 
@@ -176,11 +177,14 @@ _BUILT_INS = MappingProxyType(
 # A dict of types to blocked attributes/methods. Used to disallow file system access or other
 # invocations we may want to block. Necessary for any instance type that is possible to create from
 # the code or standard ComfyUI inputs.
-#
-# For instance, a user does not have access to the numpy module directly, so they cannot invoke
-# `numpy.save`. However, a user can access a numpy.ndarray instance from a tensor and, from there,
-# an attempt to call `tofile` or `dump` etc. would need to be blocked.
-_BLOCKED_METHODS_OR_ATTRS = MappingProxyType({np.ndarray: ['tofile', 'dump']})
+_BLOCKED_METHODS_OR_ATTRS = MappingProxyType({
+  # A user does not have access to the numpy module directly, so they cannot invoke `numpy.save`.
+  # However, a user can access a numpy.ndarray instance from a tensor and, from there, an attempt to
+  # call `tofile` or `dump` etc. would need to be blocked.
+  np.ndarray: ['tofile', 'dump'],
+  # Disallow access for anything to prefixed with an underscore for all objects.
+  object: [re.compile(r'^_')],
+})
 
 # Special functions by class type (called from the Attrs.)
 _SPECIAL_FUNCTIONS = {
@@ -561,8 +565,13 @@ class _Puter:
         attr = self._eval_statement(stmt.slice, ctx=ctx)
       # Check if we're blocking access to this attribute/method on this item type.
       for typ, names in _BLOCKED_METHODS_OR_ATTRS.items():
-        if isinstance(item, typ) and isinstance(attr, str) and attr in names:
-          raise ValueError(f'Disallowed access to "{attr}" for type {typ}.')
+        if isinstance(item, typ):
+          found = next((
+            n for n in names
+            if isinstance(n, re.Pattern) and n.search(str(attr)) or attr == n
+          ), None)
+          if found:
+            raise ValueError(f'Disallowed access to "{attr}" for type {typ}.')
       try:
         val = item[attr]
       except (TypeError, IndexError, KeyError):
