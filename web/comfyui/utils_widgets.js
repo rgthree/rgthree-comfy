@@ -85,10 +85,8 @@ export class RgthreeBaseWidget {
                 part.wasMouseClickedAndIsOver = false;
             }
             for (const part of this.downedHitAreasForClick) {
-                if (this.clickWasWithinBounds(pos, part.bounds)) {
-                    const thisHandled = part.onClick.apply(this, [event, pos, node, part]);
-                    anyHandled = anyHandled || thisHandled == true;
-                }
+                const thisHandled = part.onClick.apply(this, [event, pos, node, part]);
+                anyHandled = anyHandled || thisHandled == true;
             }
             this.downedHitAreasForClick.length = 0;
             if (wasMouseDownedAndOver) {
