@@ -147,7 +147,7 @@ class RgthreeInfoDialog extends RgthreeDialog {
 
         ${infoTableRow("Name", info.name || ((_k = (_j = info.raw) === null || _j === void 0 ? void 0 : _j.metadata) === null || _k === void 0 ? void 0 : _k.ss_output_name) || "", "The name for display.", "name")}
 
-        ${!info.baseModelFile && !info.baseModelFile
+        ${!info.baseModel && !info.baseModelFile
             ? ""
             : infoTableRow("Base Model", (info.baseModel || "") + (info.baseModelFile ? ` (${info.baseModelFile})` : ""))}
 

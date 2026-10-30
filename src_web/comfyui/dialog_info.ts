@@ -203,7 +203,7 @@ abstract class RgthreeInfoDialog extends RgthreeDialog {
         )}
 
         ${
-          !info.baseModelFile && !info.baseModelFile
+          !info.baseModel && !info.baseModelFile
             ? ""
             : infoTableRow(
                 "Base Model",
