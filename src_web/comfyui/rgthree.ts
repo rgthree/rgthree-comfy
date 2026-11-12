@@ -710,9 +710,28 @@ class Rgthree extends EventTarget {
     // our custom logic as ComfyUI-Inspire-Pack would cause it not to work.
     // app.canvas.selectItems(nodes);
     // app.extensionManager.command.execute('Comfy.QueueSelectedOutputNodes');
-    const nodeIds = nodes.map((n) => n.id);
+    const nodeIds = nodes.flatMap((node) => {
+      if (!node.graph || node.graph === app.graph) {
+        return [String(node.id)];
+      }
+      const executionIds: string[] = [];
+      const visitGraph = (graph: TLGraph, prefix = "") => {
+        for (const child of graph.nodes) {
+          const executionId = `${prefix}${child.id}`;
+          if (child === node) {
+            executionIds.push(executionId);
+          }
+          if (child.isSubgraphNode?.() && child.subgraph) {
+            visitGraph(child.subgraph, `${executionId}:`);
+          }
+        }
+      };
+      // A shared subgraph definition can have several instances. Queue every matching path.
+      visitGraph(app.graph);
+      return executionIds;
+    });
     try {
-      this.queueNodeIds = nodeIds;
+      this.queueNodeIds = nodes.length ? nodeIds : null;
       await app.queuePrompt(0);
     } catch (e) {
       const [n, v] = this.logParts(
@@ -731,7 +750,12 @@ class Rgthree extends EventTarget {
    */
   private recursiveAddNodes(nodeId: string, oldOutput: ComfyApiFormat, newOutput: ComfyApiFormat) {
     let currentId = nodeId;
-    let currentNode = oldOutput[currentId]!;
+    let currentNode = oldOutput[currentId];
+    if (!currentNode) {
+      const [n, v] = this.logParts(LogLevel.WARN, `Skipping missing prompt node ${currentId}`);
+      console[n]?.(...v);
+      return newOutput;
+    }
     if (newOutput[currentId] == null) {
       newOutput[currentId] = currentNode;
       for (const inputValue of Object.values(currentNode.inputs || [])) {
@@ -795,7 +819,7 @@ class Rgthree extends EventTarget {
     // so only those are evaluated.
     const apiQueuePrompt = api.queuePrompt as Function;
     api.queuePrompt = async function (index: number, prompt: ComfyApiPrompt, ...args: any[]) {
-      if (rgthree.queueNodeIds?.length && prompt.output) {
+      if (rgthree.queueNodeIds && prompt.output) {
         const oldOutput = prompt.output;
         let newOutput = {};
         for (const queueNodeId of rgthree.queueNodeIds) {

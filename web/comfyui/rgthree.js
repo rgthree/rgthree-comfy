@@ -477,9 +477,28 @@ class Rgthree extends EventTarget {
     }
     async queueOutputNodes(nodes) {
         var _a;
-        const nodeIds = nodes.map((n) => n.id);
+        const nodeIds = nodes.flatMap((node) => {
+            if (!node.graph || node.graph === app.graph) {
+                return [String(node.id)];
+            }
+            const executionIds = [];
+            const visitGraph = (graph, prefix = "") => {
+                var _a;
+                for (const child of graph.nodes) {
+                    const executionId = `${prefix}${child.id}`;
+                    if (child === node) {
+                        executionIds.push(executionId);
+                    }
+                    if (((_a = child.isSubgraphNode) === null || _a === void 0 ? void 0 : _a.call(child)) && child.subgraph) {
+                        visitGraph(child.subgraph, `${executionId}:`);
+                    }
+                }
+            };
+            visitGraph(app.graph);
+            return executionIds;
+        });
         try {
-            this.queueNodeIds = nodeIds;
+            this.queueNodeIds = nodes.length ? nodeIds : null;
             await app.queuePrompt(0);
         }
         catch (e) {
@@ -491,8 +510,14 @@ class Rgthree extends EventTarget {
         }
     }
     recursiveAddNodes(nodeId, oldOutput, newOutput) {
+        var _a;
         let currentId = nodeId;
         let currentNode = oldOutput[currentId];
+        if (!currentNode) {
+            const [n, v] = this.logParts(LogLevel.WARN, `Skipping missing prompt node ${currentId}`);
+            (_a = console[n]) === null || _a === void 0 ? void 0 : _a.call(console, ...v);
+            return newOutput;
+        }
         if (newOutput[currentId] == null) {
             newOutput[currentId] = currentNode;
             for (const inputValue of Object.values(currentNode.inputs || [])) {
@@ -537,8 +562,7 @@ class Rgthree extends EventTarget {
         };
         const apiQueuePrompt = api.queuePrompt;
         api.queuePrompt = async function (index, prompt, ...args) {
-            var _a;
-            if (((_a = rgthree.queueNodeIds) === null || _a === void 0 ? void 0 : _a.length) && prompt.output) {
+            if (rgthree.queueNodeIds && prompt.output) {
                 const oldOutput = prompt.output;
                 let newOutput = {};
                 for (const queueNodeId of rgthree.queueNodeIds) {
