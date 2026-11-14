@@ -226,12 +226,14 @@
   height: 36px;
   padding: 0 12px;
   border-radius: 0;
-  background: var(--p-button-secondary-background);
-  color: var(--p-button-secondary-color);
+  /* Frontend 1.59 dropped PrimeVue --p-button-* tokens. An empty inherited
+     custom property would also ignore a fallback, so use the theme colors. */
+  background: var(--secondary, #262729);
+  color: var(--foreground, #fff);
 }
 :not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button.-primary {
-  background: var(--p-button-primary-background);
-  color: var(--p-button-primary-color);
+  background: var(--primary, #0b8ce9);
+  color: var(--primary-foreground, #fff);
 }
 :not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::before, :not(#fakeid) .rgthree-comfybar-top-button-group .rgthree-comfybar-top-button::after {
   border-radius: 0;
