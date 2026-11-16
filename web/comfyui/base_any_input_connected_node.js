@@ -17,9 +17,7 @@ export class BaseAnyInputConnectedNode extends RgthreeBaseVirtualNode {
     clone() {
         const cloned = super.clone();
         if (!rgthree.canvasCurrentlyCopyingToClipboardWithMultipleNodes) {
-            while (cloned.inputs.length > 1) {
-                cloned.removeInput(cloned.inputs.length - 1);
-            }
+            cloned.inputs.splice(1);
             if (cloned.inputs[0]) {
                 cloned.inputs[0].label = "";
             }

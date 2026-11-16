@@ -2,7 +2,6 @@ import type {
   LGraphNode,
   LGraph as TLGraph,
   LGraphCanvas as TLGraphCanvas,
-  Vector2,
   Size,
   LGraphGroup,
   CanvasMouseEvent,
@@ -66,7 +65,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
   readonly modeOff: number = LiteGraph.NEVER;
 
   private debouncerTempWidth: number = 0;
-  tempSize: Vector2 | null = null;
+  tempSize: Point | null = null;
 
   /** True while the user is dragging a row; refreshWidgets() pauses so it doesn't fight the drag. */
   draggingRows: boolean = false;
@@ -189,7 +188,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
       return;
     }
     const canvas = app.canvas as TLGraphCanvas;
-    let sort = this.properties?.[PROPERTY_SORT] || "position";
+    let sort = this.getPropString(PROPERTY_SORT, '') || "position";
     let customAlphabet: string[] | null = null;
     let manualRank: Map<string, number> | null = null;
     if (sort === "manual") {
@@ -202,7 +201,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
       );
     }
     if (sort === "custom alphabet") {
-      const customAlphaStr = this.properties?.[PROPERTY_SORT_CUSTOM_ALPHA]?.replace(/\n/g, "");
+      const customAlphaStr = this.getPropString(PROPERTY_SORT_CUSTOM_ALPHA, '').replace(/\n/g, "");
       if (customAlphaStr && customAlphaStr.trim()) {
         customAlphabet = customAlphaStr.includes(",")
           ? customAlphaStr.toLocaleLowerCase().split(",")
@@ -287,9 +286,10 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
           continue;
         }
       }
-      if (this.properties?.[PROPERTY_MATCH_TITLE]?.trim()) {
+      const matchTitle = this.getPropString(PROPERTY_MATCH_TITLE, '').trim();
+      if (matchTitle) {
         try {
-          if (!new RegExp(this.properties[PROPERTY_MATCH_TITLE], "i").exec(group.title)) {
+          if (!new RegExp(matchTitle, "i").exec(group.title)) {
             continue;
           }
         } catch (e) {
@@ -342,7 +342,7 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
     }
   }
 
-  override computeSize(out?: Vector2) {
+  override computeSize(out?: Point) {
     let size = super.computeSize(out);
     if (this.tempSize) {
       size[0] = Math.max(this.tempSize[0], size[0]);
@@ -366,12 +366,12 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
         (widget as any)?.doModeChange(alwaysOne && !index ? true : false, true);
       }
     } else if (action === "Enable all") {
-      const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
+      const onlyOne = this.getPropString(PROPERTY_RESTRICTION,'').includes(" one");
       for (const [index, widget] of this.widgets.entries()) {
         (widget as any)?.doModeChange(onlyOne && index > 0 ? false : true, true);
       }
     } else if (action === "Toggle all") {
-      const onlyOne = this.properties?.[PROPERTY_RESTRICTION].includes(" one");
+      const onlyOne = this.getPropString(PROPERTY_RESTRICTION,'').includes(" one");
       let foundOne = false;
       for (const [index, widget] of this.widgets.entries()) {
         // If you have only one, then we'll stop at the first.
@@ -520,7 +520,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
     let newValue = force != null ? force : !hasAnyActiveNodes;
     if (skipOtherNodeCheck !== true) {
       // TODO: This work should probably live in BaseFastGroupsModeChanger instead of the widgets.
-      if (newValue && this.node.properties?.[PROPERTY_RESTRICTION]?.includes(" one")) {
+      if (newValue && this.node.getPropString(PROPERTY_RESTRICTION,'').includes(" one")) {
         for (const widget of this.node.widgets) {
           if ("doModeChange" in widget && typeof widget.doModeChange === "function") {
             widget.doModeChange(false, true);
@@ -679,7 +679,7 @@ class FastGroupsToggleRowWidget extends RgthreeBaseWidget<{toggled: boolean}> {
     return this.value;
   }
 
-  override mouse(event: CanvasMouseEvent, pos: Vector2, node: LGraphNode): boolean {
+  override mouse(event: CanvasMouseEvent, pos: Point, node: LGraphNode): boolean {
     if (event.type == "pointerdown") {
       if (node.properties?.[PROPERTY_SHOW_NAV] !== false && pos[0] >= node.size[0] - 15 - 28 - 1) {
         const canvas = app.canvas as TLGraphCanvas;

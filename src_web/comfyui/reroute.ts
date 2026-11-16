@@ -1,5 +1,4 @@
 import type {
-  Vector2,
   LLink,
   LGraphCanvas as TLGraphCanvas,
   LGraph as TLGraph,
@@ -61,7 +60,7 @@ while (configWidth * configHeight < 400) {
   configWidth += 10;
   configHeight += 10;
 }
-const configDefaultSize = [configWidth, configHeight] as Vector2;
+const configDefaultSize = [configWidth, configHeight] as Point;
 const configResizable = !!CONFIG_REROUTE["default_resizable"];
 let configLayout: [string, string] = CONFIG_REROUTE["default_layout"];
 if (!Array.isArray(configLayout)) {
@@ -79,7 +78,7 @@ type FastRerouteEntryCtx = {
   input?: INodeInputSlot;
   output?: INodeOutputSlot;
   slot: number;
-  pos: Vector2;
+  pos: Point;
   direction?: LinkDirection;
 };
 
@@ -214,7 +213,7 @@ class RerouteService {
         input: oldCanvas.connecting_input,
         output: oldCanvas.connecting_output,
         slot: oldCanvas.connecting_slot,
-        pos: [...oldCanvas.connecting_pos] as Vector2,
+        pos: [...oldCanvas.connecting_pos] as Point,
       };
     }
     const canvas = app.canvas;
@@ -404,7 +403,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
 
   static collapsable = false;
   static layout_slot_offset = 5;
-  static size: Vector2 = configDefaultSize; // Starting size, read from within litegraph.core
+  static size: Point = configDefaultSize; // Starting size, read from within litegraph.core
 
   override isVirtualNode = true;
   readonly hideSlotLabels = true;
@@ -421,16 +420,16 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     resize: {
       keys: CONFIG_KEY_RESIZE,
       state: false,
-      initialMousePos: [-1, -1] as Vector2,
-      initialNodeSize: [-1, -1] as Vector2,
-      initialNodePos: [-1, -1] as Vector2,
-      resizeOnSide: [-1, -1] as Vector2,
+      initialMousePos: [-1, -1] as Point,
+      initialNodeSize: [-1, -1] as Point,
+      initialNodePos: [-1, -1] as Point,
+      resizeOnSide: [-1, -1] as Point,
     },
     move: {
       keys: CONFIG_KEY_MOVE,
       state: false,
-      initialMousePos: [-1, -1] as Vector2,
-      initialNodePos: [-1, -1] as Vector2,
+      initialMousePos: [-1, -1] as Point,
+      initialNodePos: [-1, -1] as Point,
     },
   };
 
@@ -596,8 +595,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
     let inputNodeOutputSlot = null;
     while (currentNode) {
       updateNodes.unshift(currentNode);
-      const linkId: LinkId | null = currentNode.inputs[0]!.link;
-      if (linkId !== null) {
+      const linkId: LinkId | null | undefined = currentNode.inputs[0]?.link;
+      if (linkId != null) {
         const link: LLink = app.graph.links[linkId]!;
         const node: TLGraphNode = app.graph.getNodeById(link.origin_id)!;
         if (!node) {
@@ -783,7 +782,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
   /**
    * When called, sets the node size, and the properties size, and calls out to `stabilizeLayout`.
    */
-  override setSize(size: Vector2): void {
+  override setSize(size: Point): void {
     const oldSize = [...this.size] as Size;
     const newSize = [...size] as Size;
     super.setSize(newSize);
@@ -795,7 +794,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
    * Looks at the current layout and determins if we also need to set a `connections_dir` based on
    * the size of the node (and what that connections_dir should be).
    */
-  private stabilizeLayout(oldSize: Vector2, newSize: Vector2) {
+  private stabilizeLayout(oldSize: Point, newSize: Point) {
     if (newSize[0] === 10 || newSize[1] === 10) {
       const props = this.properties;
       props["connections_layout"] = props["connections_layout"] || ["Left", "Right"];

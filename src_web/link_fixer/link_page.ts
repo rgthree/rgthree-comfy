@@ -1,4 +1,4 @@
-import type {ISerialisedGraph} from "@comfyorg/frontend";
+import type {ComfyWorkflowJSON} from "@comfyorg/frontend";
 import type {BadLinksData} from "../common/link_fixer.js";
 
 import {WorkflowLinkFixer} from "../common/link_fixer.js";
@@ -29,7 +29,7 @@ export class LinkPage {
   private outputImageEl: HTMLImageElement;
 
   private file?: File | Blob;
-  private graph?: ISerialisedGraph;
+  private graph?: ComfyWorkflowJSON;
   private graphResults?: BadLinksData;
   private graphFinalResults?: BadLinksData;
 
@@ -185,7 +185,7 @@ export class LinkPage {
     }
   }
 
-  private async loadGraphData(graphData: ISerialisedGraph) {
+  private async loadGraphData(graphData: ComfyWorkflowJSON) {
     this.fixer = WorkflowLinkFixer.create(graphData);
     this.graphResults = this.fixer.check();
     this.updateUi();

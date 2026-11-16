@@ -86,7 +86,7 @@ describe("TestContextDynamic", async () => {
     await env.queuePrompt();
 
     expect(displayAny1.widgets![0]!.value).toBe("output 1", 30);
-    expect(displayAny2.widgets![0]!.value).toBe("output 3", '"normal"');
+    expect(displayAny2.widgets![0]!.value).toBe("output 3", 'simple');
     expect(displayAny3.widgets![0]!.value).toBe("output 4", 30);
     expect(displayAny4.widgets![0]!.value).toBe("output 6", "None");
   });

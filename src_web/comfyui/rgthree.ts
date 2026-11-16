@@ -5,6 +5,7 @@ import type {
   LGraph as TLGraph,
   IContextMenuOptions,
   ISerialisedGraph,
+  ComfyWorkflowJSON,
   CanvasMouseEvent,
   CanvasPointerExtensions,
   NodeId,
@@ -307,16 +308,15 @@ class Rgthree extends EventTarget {
   async checkForStartupMessages() {
     // Check for ComfyUI_Swwann. I can't seem to tell from the JS alone, so we'll need the server
     // side to check if ComfyUI_Swwann is in the extensions.
-    const response = await rgthreeApi.fetchJson("/incompatible-extensions")
+    const response = await rgthreeApi.fetchJson("/incompatible-extensions");
     console.log(response);
-    if (response?.extensions?.includes('ComfyUI_Swwan')) {
+    if (response?.extensions?.includes("ComfyUI_Swwan")) {
       setTimeout(() => {
-        rgthreeApi.print('COMFYUI_SWWAN');
+        rgthreeApi.print("COMFYUI_SWWAN");
         rgthree.showMessage({
           id: "bad-ComfyUI_Swwan",
           type: "warn",
-          message:
-            `The installed custom node "ComfyUI_Swwan" conflicts with "rgthree-comfy" by crudely
+          message: `The installed custom node "ComfyUI_Swwan" conflicts with "rgthree-comfy" by crudely
             copying its code causing it to no longer function correctly when both are installed. To
             restore "rgthree-comfy" you may need to remove "ComfyUI_Swwan," restart your server and
             refresh the browser.`,
@@ -327,8 +327,8 @@ class Rgthree extends EventTarget {
                 event.stopPropagation();
                 event.preventDefault();
                 rgthree.hideMessage("bad-ComfyUI_Swwan");
-              }
-            }
+              },
+            },
           ],
         });
       }, 5000);
@@ -825,14 +825,14 @@ class Rgthree extends EventTarget {
     // NOTE: This was "serializedLGraph" in pre-litegraph types, which maps to `ISerialisedGraph`
     // now; though, @comfyorg/comfyui-frontend-types have the signature as `ComfyWorkflowJSON` which
     // is not exported and a zod type. Looks like there's mostly an overlap with ISerialisedGraph.
-    app.loadGraphData = function (graph: ISerialisedGraph) {
+    app.loadGraphData = function (graph: ComfyWorkflowJSON, ...args: any[]) {
       if (rgthree.monitorLinkTimeout) {
         clearTimeout(rgthree.monitorLinkTimeout);
         rgthree.monitorLinkTimeout = null;
       }
       rgthree.clearAllMessages();
       // Try to make a copy to use, because ComfyUI's loadGraphData will modify it.
-      let graphCopy: ISerialisedGraph | null;
+      let graphCopy: ComfyWorkflowJSON | null;
       try {
         graphCopy = JSON.parse(JSON.stringify(graph));
       } catch (e) {
@@ -842,8 +842,9 @@ class Rgthree extends EventTarget {
         const wasLoadingAborted = document
           .querySelector(".comfy-modal-content")
           ?.textContent?.includes("Loading aborted due");
-        const graphToUse = wasLoadingAborted ? graphCopy || graph : app.graph;
-        const fixer = WorkflowLinkFixer.create(graphToUse as unknown as TLGraph);
+        const fixer = wasLoadingAborted
+          ? WorkflowLinkFixer.create(graphCopy || graph)
+          : WorkflowLinkFixer.create(app.graph);
         const fixBadLinksResult = fixer.check();
         if (fixBadLinksResult.hasBadLinks) {
           const [n, v] = rgthree.logParts(
@@ -882,7 +883,8 @@ class Rgthree extends EventTarget {
                           alert(
                             "Success! It's possible some valid links may have been affected. Please check and verify your workflow.",
                           );
-                          wasLoadingAborted && app.loadGraphData(fixBadLinksResult.graph);
+                          wasLoadingAborted &&
+                            app.loadGraphData(fixBadLinksResult.graph as ComfyWorkflowJSON);
                           if (
                             CONFIG_SERVICE.getConfigValue("features.monitor_for_corrupt_links") ||
                             CONFIG_SERVICE.getConfigValue("features.monitor_bad_links")

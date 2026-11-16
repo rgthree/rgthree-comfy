@@ -329,15 +329,15 @@ class WorkflowLinkFixerSerialized extends WorkflowLinkFixer {
     }
     fix(force = false, times) {
         const ret = super.fix(force, times);
-        this.graph.links = this.graph.links.filter((l) => !!l);
+        this.graph.links = (this.graph.links || []).filter((l) => !!l);
         return ret;
     }
     deleteGraphLink(id) {
-        const idx = this.graph.links.findIndex((l) => l && (l[0] === id || l.id === id));
+        const idx = (this.graph.links || []).findIndex((l) => l && (l[0] === id || l.id === id));
         if (idx === -1) {
             return `Link #${id} not found in workflow links.`;
         }
-        this.graph.links.splice(idx, 1);
+        (this.graph.links || []).splice(idx, 1);
         return true;
     }
 }

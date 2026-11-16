@@ -20,10 +20,11 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         this.canvasWidget = null;
         this.properties["comparer_mode"] = "Slide";
     }
-    onExecuted(output) {
+    onExecuted(output_arg) {
         var _a;
-        (_a = super.onExecuted) === null || _a === void 0 ? void 0 : _a.call(this, output);
-        if ("images" in output) {
+        (_a = super.onExecuted) === null || _a === void 0 ? void 0 : _a.call(this, output_arg);
+        if ("images" in output_arg) {
+            const output = output_arg;
             this.canvasWidget.value = {
                 images: (output.images || []).map((d, i) => {
                     return {
@@ -35,6 +36,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
             };
         }
         else {
+            const output = output_arg;
             output.a_images = output.a_images || [];
             output.b_images = output.b_images || [];
             const imagesToChoose = [];

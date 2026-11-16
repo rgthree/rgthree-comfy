@@ -57,11 +57,12 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
 
   private executingFromShortcut = false;
 
-  override properties!: BaseAnyInputConnectedNode["properties"] & {
-    buttonText: string;
-    shortcutModifier: string;
-    shortcutKey: string;
-  };
+  // 🤮 Can't define property types as override any longer.
+  // override properties(): BaseAnyInputConnectedNode["properties"] & {
+  //   buttonText: string;
+  //   shortcutModifier: string;
+  //   shortcutKey: string;
+  // };
 
   constructor(title?: string) {
     super(title);
@@ -132,8 +133,8 @@ class FastActionsButton extends BaseAnyInputConnectedNode {
       return;
     }
     if (
-      this.properties["shortcutKey"].trim() &&
-      this.properties["shortcutKey"].toLowerCase() === event.key.toLowerCase()
+      (this.properties["shortcutKey"] as string).trim() &&
+      (this.properties["shortcutKey"] as string).toLowerCase() === event.key.toLowerCase()
     ) {
       const shortcutModifier = this.properties["shortcutModifier"];
       let good = shortcutModifier === "ctrl" && event.ctrlKey;

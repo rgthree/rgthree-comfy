@@ -376,8 +376,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         return this.schedulePromise;
     }
     stabilize() {
-        var _a, _b, _c, _d, _e, _f, _g;
-        var _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
+        var _j, _k, _l, _m;
         if (this.configuring) {
             return;
         }
@@ -389,8 +389,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
         let inputNodeOutputSlot = null;
         while (currentNode) {
             updateNodes.unshift(currentNode);
-            const linkId = currentNode.inputs[0].link;
-            if (linkId !== null) {
+            const linkId = (_a = currentNode.inputs[0]) === null || _a === void 0 ? void 0 : _a.link;
+            if (linkId != null) {
                 const link = app.graph.links[linkId];
                 const node = app.graph.getNodeById(link.origin_id);
                 if (!node) {
@@ -411,8 +411,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                 else {
                     inputNode = node;
                     inputNodeOutputSlot = link.origin_slot;
-                    input = (_h = node.outputs[inputNodeOutputSlot]) !== null && _h !== void 0 ? _h : null;
-                    inputType = (_j = input === null || input === void 0 ? void 0 : input.type) !== null && _j !== void 0 ? _j : null;
+                    input = (_j = node.outputs[inputNodeOutputSlot]) !== null && _j !== void 0 ? _j : null;
+                    inputType = (_k = input === null || input === void 0 ? void 0 : input.type) !== null && _k !== void 0 ? _k : null;
                     break;
                 }
             }
@@ -443,7 +443,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                         updateNodes.push(node);
                     }
                     else {
-                        const output = (_k = (_a = node.inputs) === null || _a === void 0 ? void 0 : _a[link.target_slot]) !== null && _k !== void 0 ? _k : null;
+                        const output = (_l = (_b = node.inputs) === null || _b === void 0 ? void 0 : _b[link.target_slot]) !== null && _l !== void 0 ? _l : null;
                         const nodeOutType = output === null || output === void 0 ? void 0 : output.type;
                         if (nodeOutType == null) {
                             console.warn(`[rgthree] Reroute - Connected node ${node.id} does not have type information for ` +
@@ -467,10 +467,10 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                                 try {
                                     const config = getWidgetConfig(output);
                                     if (!outputWidgetConfig && config) {
-                                        outputWidgetConfig = (_l = config[1]) !== null && _l !== void 0 ? _l : {};
+                                        outputWidgetConfig = (_m = config[1]) !== null && _m !== void 0 ? _m : {};
                                         outputType = config[0];
                                         if (!outputWidget) {
-                                            outputWidget = (_b = outputNode.widgets) === null || _b === void 0 ? void 0 : _b.find((w) => { var _a; return w.name === ((_a = output === null || output === void 0 ? void 0 : output.widget) === null || _a === void 0 ? void 0 : _a.name); });
+                                            outputWidget = (_c = outputNode.widgets) === null || _c === void 0 ? void 0 : _c.find((w) => { var _a; return w.name === ((_a = output === null || output === void 0 ? void 0 : output.widget) === null || _a === void 0 ? void 0 : _a.name); });
                                         }
                                         const merged = mergeIfValid(output, [config[0], outputWidgetConfig]);
                                         if (merged === null || merged === void 0 ? void 0 : merged["customConfig"]) {
@@ -498,7 +498,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
             node.__outputType = displayType;
             node.outputs[0].name = (input === null || input === void 0 ? void 0 : input.name) || "";
             node.size = node.computeSize();
-            (_d = (_c = node).applyNodeSize) === null || _d === void 0 ? void 0 : _d.call(_c);
+            (_e = (_d = node).applyNodeSize) === null || _e === void 0 ? void 0 : _e.call(_d);
             for (const l of node.outputs[0].links || []) {
                 const link = app.graph.links[l];
                 if (link && color) {
@@ -519,7 +519,7 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                 console.error("[rgthree] Could not set widget config for reroute; maybe ComfyUI updated?");
                 outputWidgetConfig = null;
                 outputWidget = null;
-                if ((_e = node.inputs[0]) === null || _e === void 0 ? void 0 : _e.widget) {
+                if ((_f = node.inputs[0]) === null || _f === void 0 ? void 0 : _f.widget) {
                     delete node.inputs[0].widget;
                 }
             }
@@ -533,8 +533,8 @@ class RerouteNode extends RgthreeBaseVirtualNode {
                 }
             }
         }
-        (_f = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _f === void 0 ? void 0 : _f.call(inputNode);
-        (_g = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(outputNode);
+        (_g = inputNode === null || inputNode === void 0 ? void 0 : inputNode.onConnectionsChainChange) === null || _g === void 0 ? void 0 : _g.call(inputNode);
+        (_h = outputNode === null || outputNode === void 0 ? void 0 : outputNode.onConnectionsChainChange) === null || _h === void 0 ? void 0 : _h.call(outputNode);
         app.graph.setDirtyCanvas(true, true);
     }
     setSize(size) {

@@ -5,7 +5,7 @@ import type {
   LGraphEventMode,
   LGraphNode,
   LLink,
-  Vector2,
+  Point,
   ISerialisedNode,
 } from "@comfyorg/frontend";
 
@@ -136,7 +136,7 @@ class NodeModeRelay extends BaseCollectorNode {
     }
   }
 
-  override computeSize(out: Vector2) {
+  override computeSize(out: Point) {
     let size = super.computeSize(out);
     if (
       this.properties["on_muted_inputs"] !== "MUTE" ||

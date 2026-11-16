@@ -122,6 +122,57 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     });
   }
 
+  /**
+   * Returns the string property. If no fallback is provided, this will throw if the property
+   * is not contained in the list. The fallback can be null or a string.
+   */
+  getPropString(key: string, fallback: string): string;
+  getPropString(key: string, fallback: null): string | null;
+  getPropString(key: string, fallback?: string|null): string | null {
+    let prop = this.properties?.[key];
+    if (typeof prop !== 'string') {
+      if (fallback === undefined) {
+        throw new Error(`Property ${key} is not string`);
+      }
+      prop = fallback;
+    }
+    return prop;
+  }
+
+  /**
+   * Returns the number property. If no fallback is provided, this will throw if the property
+   * is not contained in the list. The fallback can be null or a number.
+   */
+  getPropNumber(key: string, fallback: number): number;
+  getPropNumber(key: string, fallback: null): number | null;
+  getPropNumber(key: string, fallback?: number|null): number | null {
+    let prop = this.properties?.[key];
+    if (typeof prop !== 'number') {
+      if (fallback === undefined) {
+        throw new Error(`Property ${key} is not number`);
+      }
+      prop = fallback;
+    }
+    return prop;
+  }
+
+  /**
+   * Returns the number property. If no fallback is provided, this will throw if the property
+   * is not contained in the list. The fallback can be null or a number.
+   */
+  getPropBool(key: string, fallback: boolean): boolean;
+  getPropBool(key: string, fallback: null): boolean | null;
+  getPropBool(key: string, fallback?: boolean|null): boolean | null {
+    let prop = this.properties?.[key];
+    if (typeof prop !== 'boolean') {
+      if (fallback === undefined) {
+        throw new Error(`Property ${key} is not boolean`);
+      }
+      prop = fallback;
+    }
+    return prop;
+  }
+
   private checkAndRunOnConstructed() {
     if (!this.__constructed__) {
       this.onConstructed();
@@ -179,12 +230,12 @@ export abstract class RgthreeBaseNode extends LGraphNode {
     if (cloned?.properties && !!window.structuredClone) {
       cloned.properties = structuredClone(cloned.properties);
     }
-    // [🤮] https://github.com/Comfy-Org/ComfyUI_frontend/issues/5037
-    // ComfyUI started throwing errors when some of our nodes wanted to remove inputs when cloning
-    // (like our dynamic inputs) because the disconnect method that's automatically called assumes
-    // there should be a graph. For now, I _think_ we can simply assign the current graph to avoid
-    // the error, which would then be overwritten when placed...
-    cloned.graph = this.graph;
+    // NOTE: We used to assign `cloned.graph = this.graph` here to work around
+    // https://github.com/Comfy-Org/ComfyUI_frontend/issues/5037 (removing inputs on a graph-less
+    // clone threw). That is no longer needed since subclasses now trim their clone's slot arrays
+    // directly, and it became harmful: the clone keeps the original's id, and newer frontends
+    // resolve slot links from the graph's link store by node id, so a graph-attached clone both
+    // serializes the original's links and disconnects them when its slots are removed.
     return cloned;
   }
 
@@ -246,7 +297,7 @@ export abstract class RgthreeBaseNode extends LGraphNode {
   /**
    * A default version of the logive when a node does not set `getSlotMenuOptions`. This is
    * necessary because child nodes may want to define getSlotMenuOptions but LiteGraph then won't do
-   * it's default logic. This bakes it so child nodes can call this instead (and this doesn't set
+   * it's default logic. This makes it so child nodes can call this instead (and this doesn't set
    * getSlotMenuOptions for all child nodes in case it doesn't exist).
    */
   defaultGetSlotMenuOptions(slot: IFoundSlot): IContextMenuValue[] {

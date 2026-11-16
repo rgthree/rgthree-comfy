@@ -3,7 +3,7 @@ import type {
   LGraphNode,
   IWidget,
   IContextMenuValue,
-  Vector2,
+  Point,
   CanvasMouseEvent,
 } from "@comfyorg/frontend";
 
@@ -189,17 +189,17 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
     | "output8"
     | "output9"
   > = {
-    add: {bounds: [0, 0] as Vector2, onClick: this.onAddChipDown},
-    output0: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 0}},
-    output1: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 1}},
-    output2: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 2}},
-    output3: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 3}},
-    output4: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 4}},
-    output5: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 5}},
-    output6: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 6}},
-    output7: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 7}},
-    output8: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 8}},
-    output9: {bounds: [0, 0] as Vector2, onClick: this.onOutputChipDown, data: {index: 9}},
+    add: {bounds: [0, 0] as Point, onClick: this.onAddChipDown},
+    output0: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 0}},
+    output1: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 1}},
+    output2: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 2}},
+    output3: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 3}},
+    output4: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 4}},
+    output5: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 5}},
+    output6: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 6}},
+    output7: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 7}},
+    output8: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 8}},
+    output9: {bounds: [0, 0] as Point, onClick: this.onOutputChipDown, data: {index: 9}},
   };
 
   constructor(name: string, node: RgthreePowerPuter) {
@@ -222,7 +222,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
   /** Displays the menu to choose a new output type. */
   onAddChipDown(
     event: CanvasMouseEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ) {
@@ -246,7 +246,7 @@ class OutputsWidget extends RgthreeBaseWidget<OutputsWidgetValue> {
   /** Displays a context menu tied to an output chip within our widget. */
   onOutputChipDown(
     event: CanvasMouseEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds: RgthreeBaseWidgetBounds,
   ) {

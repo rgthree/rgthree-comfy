@@ -2,7 +2,6 @@ import {
   ComfyNodeDef,
   LGraphCanvas,
   LGraphNode,
-  Vector2,
   CanvasMouseEvent,
   ISerialisedNode,
   Point,
@@ -53,7 +52,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
 
   isPointerDown = false;
   isPointerOver = false;
-  pointerOverPos: Vector2 = [0, 0];
+  pointerOverPos: Point = [0, 0];
 
   private canvasWidget: RgthreeImageComparerWidget | null = null;
 
@@ -67,9 +66,10 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     this.properties["comparer_mode"] = "Slide";
   }
 
-  override onExecuted(output: ExecutedPayload | OldExecutedPayload) {
-    super.onExecuted?.(output);
-    if ("images" in output) {
+  override onExecuted(output_arg: unknown) {
+    super.onExecuted?.(output_arg);
+    if ("images" in (output_arg as OldExecutedPayload)) {
+      const output = output_arg as OldExecutedPayload;
       this.canvasWidget!.value = {
         images: (output.images || []).map((d, i) => {
           return {
@@ -80,6 +80,7 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         }),
       };
     } else {
+      const output = output_arg as ExecutedPayload;
       output.a_images = output.a_images || [];
       output.b_images = output.b_images || [];
       const imagesToChoose: ComfyImageData[] = [];
@@ -367,7 +368,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   private onSelectionDown(
     event: CanvasMouseEvent,
-    pos: Vector2,
+    pos: Point,
     node: LGraphNode,
     bounds?: RgthreeBaseWidgetBounds,
   ) {
@@ -450,7 +451,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     ctx.restore();
   }
 
-  computeSize(width: number): Vector2 {
+  computeSize(width: number): Point {
     return [width, 20];
   }
 
