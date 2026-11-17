@@ -254,6 +254,9 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   private selected: [ComfyImageData?, ComfyImageData?] = [];
 
+  /** Set by ComfyUI's layout from `computeLayoutSize`. */
+  computedHeight?: number;
+
   constructor(name: string, node: RgthreeImageComparer) {
     super(name);
     this.node = node;
@@ -325,6 +328,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
 
   draw(ctx: CanvasRenderingContext2D, node: RgthreeImageComparer, width: number, y: number) {
     this.hitAreas = {};
+    const bottom = y + (this.computedHeight ?? node.size[1] - y);
     if (this.value.images.length > 2) {
       ctx.textAlign = "left";
       ctx.textBaseline = "top";
@@ -343,7 +347,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
         });
         x += width + spacing;
       }
-      x = (node.size[0] - (x - spacing)) / 2;
+      x = (width - (x - spacing)) / 2;
       for (const d of drawData) {
         ctx.fillStyle = d.img.selected ? "rgba(180, 180, 180, 1)" : "rgba(180, 180, 180, 0.5)";
         ctx.fillText(d.text, x, y);
@@ -358,11 +362,11 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     }
 
     if (node.properties?.["comparer_mode"] === "Click") {
-      this.drawImage(ctx, this.selected[this.node.isPointerDown ? 1 : 0], y);
+      this.drawImage(ctx, this.selected[this.node.isPointerDown ? 1 : 0], width, y, bottom);
     } else {
-      this.drawImage(ctx, this.selected[0], y);
+      this.drawImage(ctx, this.selected[0], width, y, bottom);
       if (node.isPointerOver) {
-        this.drawImage(ctx, this.selected[1], y, this.node.pointerOverPos[0]);
+        this.drawImage(ctx, this.selected[1], width, y, bottom, this.node.pointerOverPos[0]);
       }
     }
   }
@@ -391,15 +395,16 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
   private drawImage(
     ctx: CanvasRenderingContext2D,
     image: ComfyImageData | undefined,
+    nodeWidth: number,
     y: number,
+    bottom: number,
     cropX?: number,
   ) {
     if (!image?.img?.naturalWidth || !image?.img?.naturalHeight) {
       return;
     }
-    let [nodeWidth, nodeHeight] = this.node.size as [number, number];
     const imageAspect = image?.img.naturalWidth / image?.img.naturalHeight;
-    let height = nodeHeight - y;
+    const height = Math.max(0, bottom - y);
     const widgetAspect = nodeWidth / height;
     let targetWidth, targetHeight;
     let offsetX = 0;
@@ -458,8 +463,8 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
     ctx.restore();
   }
 
-  computeSize(width: number): Point {
-    return [width, 20];
+  computeLayoutSize() {
+    return {minHeight: 20, minWidth: 0};
   }
 
   override serializeValue(

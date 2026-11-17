@@ -246,7 +246,9 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
     }
     draw(ctx, node, width, y) {
         var _a;
+        var _b;
         this.hitAreas = {};
+        const bottom = y + ((_b = this.computedHeight) !== null && _b !== void 0 ? _b : node.size[1] - y);
         if (this.value.images.length > 2) {
             ctx.textAlign = "left";
             ctx.textBaseline = "top";
@@ -264,7 +266,7 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
                 });
                 x += width + spacing;
             }
-            x = (node.size[0] - (x - spacing)) / 2;
+            x = (width - (x - spacing)) / 2;
             for (const d of drawData) {
                 ctx.fillStyle = d.img.selected ? "rgba(180, 180, 180, 1)" : "rgba(180, 180, 180, 0.5)";
                 ctx.fillText(d.text, x, y);
@@ -278,12 +280,12 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
             y += 20;
         }
         if (((_a = node.properties) === null || _a === void 0 ? void 0 : _a["comparer_mode"]) === "Click") {
-            this.drawImage(ctx, this.selected[this.node.isPointerDown ? 1 : 0], y);
+            this.drawImage(ctx, this.selected[this.node.isPointerDown ? 1 : 0], width, y, bottom);
         }
         else {
-            this.drawImage(ctx, this.selected[0], y);
+            this.drawImage(ctx, this.selected[0], width, y, bottom);
             if (node.isPointerOver) {
-                this.drawImage(ctx, this.selected[1], y, this.node.pointerOverPos[0]);
+                this.drawImage(ctx, this.selected[1], width, y, bottom, this.node.pointerOverPos[0]);
             }
         }
     }
@@ -303,14 +305,13 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
         }
         this.setSelected(selected);
     }
-    drawImage(ctx, image, y, cropX) {
+    drawImage(ctx, image, nodeWidth, y, bottom, cropX) {
         var _a, _b;
         if (!((_a = image === null || image === void 0 ? void 0 : image.img) === null || _a === void 0 ? void 0 : _a.naturalWidth) || !((_b = image === null || image === void 0 ? void 0 : image.img) === null || _b === void 0 ? void 0 : _b.naturalHeight)) {
             return;
         }
-        let [nodeWidth, nodeHeight] = this.node.size;
         const imageAspect = (image === null || image === void 0 ? void 0 : image.img.naturalWidth) / (image === null || image === void 0 ? void 0 : image.img.naturalHeight);
-        let height = nodeHeight - y;
+        const height = Math.max(0, bottom - y);
         const widgetAspect = nodeWidth / height;
         let targetWidth, targetHeight;
         let offsetX = 0;
@@ -351,8 +352,8 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
         ctx.globalCompositeOperation = globalCompositeOperation;
         ctx.restore();
     }
-    computeSize(width) {
-        return [width, 20];
+    computeLayoutSize() {
+        return { minHeight: 20, minWidth: 0 };
     }
     serializeValue(node, index) {
         const v = [];
