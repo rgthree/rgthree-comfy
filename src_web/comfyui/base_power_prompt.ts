@@ -277,14 +277,17 @@ export class PowerPrompt {
       console.error("Asked to insert text, but no textbox found.");
       return;
     }
-    let prompt = this.promptEl.value;
+    const promptWidget = this.node.widgets![0]!;
+    let prompt = String(promptWidget.value ?? "");
+    // In Nodes 2.0 the prompt is edited in a different textarea, so `promptEl` has no cursor.
+    const cursor = this.promptEl.isConnected ? this.promptEl.selectionEnd : prompt.length;
     // Use selectionEnd as the split; if we have highlighted text, then we likely don't want to
     // overwrite it (we could have just deleted it more easily).
-    let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, "");
+    let first = prompt.substring(0, cursor).replace(/ +$/, "");
     first = first + (["\n"].includes(first[first.length - 1]!) ? "" : first.length ? " " : "");
-    let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, "");
+    let second = prompt.substring(cursor).replace(/^ +/, "");
     second = (["\n"].includes(second[0]!) ? "" : second.length ? " " : "") + second;
-    this.promptEl.value = first + text + second;
+    promptWidget.value = first + text + second;
     this.promptEl.focus();
     this.promptEl.selectionStart = first.length;
     this.promptEl.selectionEnd = first.length + text.length;
