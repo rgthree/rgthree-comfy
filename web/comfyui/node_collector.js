@@ -24,6 +24,7 @@ class CombinerNode extends CollectorNode {
         note.inputEl.value =
             'The Node Combiner has been renamed to Node Collector. You can right-click and select "Update to Node Collector" to attempt to automatically update.';
         note.inputEl.readOnly = true;
+        note.options.read_only = true;
         note.inputEl.style.backgroundColor = "#332222";
         note.inputEl.style.fontWeight = "bold";
         note.inputEl.style.fontStyle = "italic";

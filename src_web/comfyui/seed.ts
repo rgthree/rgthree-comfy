@@ -216,6 +216,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
       app,
     ).widget as unknown as IWidget;
     this.lastSeedValue!.inputEl!.readOnly = true;
+    this.lastSeedValue!.options.read_only = true;
     this.lastSeedValue!.inputEl!.style.fontSize = "0.75rem";
     this.lastSeedValue!.inputEl!.style.textAlign = "center";
     this.computeSize();
