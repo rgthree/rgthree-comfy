@@ -76,17 +76,20 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
         this.setSize(this.computeSize());
         this.setDirtyCanvas(true, true);
     }
-    setIsPointerDown(down = this.isPointerDown) {
-        const newIsDown = down && !!app.canvas.pointer_is_down;
-        if (this.isPointerDown !== newIsDown) {
-            this.isPointerDown = newIsDown;
-            this.setDirtyCanvas(true, false);
-        }
-        this.imageIndex = this.isPointerDown ? 1 : 0;
-        if (this.isPointerDown) {
-            requestAnimationFrame(() => {
-                this.setIsPointerDown();
-            });
+    setIsPointerDown(down) {
+        if (this.isPointerDown === down)
+            return;
+        this.isPointerDown = down;
+        this.imageIndex = down ? 1 : 0;
+        this.setDirtyCanvas(true, false);
+        if (down) {
+            const release = () => {
+                window.removeEventListener("pointerup", release, true);
+                window.removeEventListener("pointercancel", release, true);
+                this.setIsPointerDown(false);
+            };
+            window.addEventListener("pointerup", release, true);
+            window.addEventListener("pointercancel", release, true);
         }
     }
     onMouseDown(event, pos, canvas) {
@@ -98,13 +101,11 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
     onMouseEnter(event) {
         var _a;
         (_a = super.onMouseEnter) === null || _a === void 0 ? void 0 : _a.call(this, event);
-        this.setIsPointerDown(!!app.canvas.pointer_is_down);
         this.isPointerOver = true;
     }
     onMouseLeave(event) {
         var _a;
         (_a = super.onMouseLeave) === null || _a === void 0 ? void 0 : _a.call(this, event);
-        this.setIsPointerDown(false);
         this.isPointerOver = false;
     }
     onMouseMove(event, pos, canvas) {
@@ -284,6 +285,12 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget {
             if (node.isPointerOver) {
                 this.drawImage(ctx, this.selected[1], y, this.node.pointerOverPos[0]);
             }
+        }
+    }
+    onMouseDown(event, pos, node) {
+        var _a;
+        if (((_a = this.node.properties) === null || _a === void 0 ? void 0 : _a["comparer_mode"]) === "Click") {
+            this.node.setIsPointerDown(true);
         }
     }
     onSelectionDown(event, pos, node, bounds) {
