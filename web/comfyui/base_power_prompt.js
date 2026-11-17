@@ -185,16 +185,19 @@ export class PowerPrompt {
         }
     }
     insertSelectionText(text) {
+        var _a;
         if (!this.promptEl) {
             console.error("Asked to insert text, but no textbox found.");
             return;
         }
-        let prompt = this.promptEl.value;
-        let first = prompt.substring(0, this.promptEl.selectionEnd).replace(/ +$/, "");
+        const promptWidget = this.node.widgets[0];
+        let prompt = String((_a = promptWidget.value) !== null && _a !== void 0 ? _a : "");
+        const cursor = this.promptEl.isConnected ? this.promptEl.selectionEnd : prompt.length;
+        let first = prompt.substring(0, cursor).replace(/ +$/, "");
         first = first + (["\n"].includes(first[first.length - 1]) ? "" : first.length ? " " : "");
-        let second = prompt.substring(this.promptEl.selectionEnd).replace(/^ +/, "");
+        let second = prompt.substring(cursor).replace(/^ +/, "");
         second = (["\n"].includes(second[0]) ? "" : second.length ? " " : "") + second;
-        this.promptEl.value = first + text + second;
+        promptWidget.value = first + text + second;
         this.promptEl.focus();
         this.promptEl.selectionStart = first.length;
         this.promptEl.selectionEnd = first.length + text.length;
