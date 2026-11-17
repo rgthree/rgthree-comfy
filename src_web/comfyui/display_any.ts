@@ -27,6 +27,7 @@ app.registerExtension({
           app,
         ).widget;
         (this as any).showValueWidget.inputEl!.readOnly = true;
+        (this as any).showValueWidget.options.read_only = true;
         (this as any).showValueWidget.serializeValue = async (node: TLGraphNode, index: number) => {
           const n =
             rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);

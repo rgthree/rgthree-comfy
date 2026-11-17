@@ -12,6 +12,7 @@ app.registerExtension({
                 onNodeCreated ? onNodeCreated.apply(this, []) : undefined;
                 this.showValueWidget = ComfyWidgets["STRING"](this, "output", ["STRING", { multiline: true }], app).widget;
                 this.showValueWidget.inputEl.readOnly = true;
+                this.showValueWidget.options.read_only = true;
                 this.showValueWidget.serializeValue = async (node, index) => {
                     const n = rgthree.getNodeFromInitialGraphToPromptSerializedWorkflowBecauseComfyUIBrokeStuff(node);
                     if (n) {

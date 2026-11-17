@@ -127,21 +127,24 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
   }
 
   /**
-   * Sets mouse as down or up based on param. If it's down, we also loop to check pointer is still
-   * down. This is because LiteGraph doesn't fire `onMouseUp` every time there's a mouse up, so we
-   * need to manually monitor `pointer_is_down` and, when it's no longer true, set mouse as up here.
+   * Sets the pointer as down or up. Called when the node (LiteGraph canvas) or its widget (both
+   * renderers) is pressed; in Nodes 2.0 neither the node-level `onMouseDown` nor
+   * `app.canvas.pointer_is_down` see presses on the node. The release is watched on the window
+   * since the pointer may be let go off of the node.
    */
-  private setIsPointerDown(down: boolean = this.isPointerDown) {
-    const newIsDown = down && !!app.canvas.pointer_is_down;
-    if (this.isPointerDown !== newIsDown) {
-      this.isPointerDown = newIsDown;
-      this.setDirtyCanvas(true, false);
-    }
-    this.imageIndex = this.isPointerDown ? 1 : 0;
-    if (this.isPointerDown) {
-      requestAnimationFrame(() => {
-        this.setIsPointerDown();
-      });
+  setIsPointerDown(down: boolean) {
+    if (this.isPointerDown === down) return;
+    this.isPointerDown = down;
+    this.imageIndex = down ? 1 : 0;
+    this.setDirtyCanvas(true, false);
+    if (down) {
+      const release = () => {
+        window.removeEventListener("pointerup", release, true);
+        window.removeEventListener("pointercancel", release, true);
+        this.setIsPointerDown(false);
+      };
+      window.addEventListener("pointerup", release, true);
+      window.addEventListener("pointercancel", release, true);
     }
   }
 
@@ -153,13 +156,11 @@ export class RgthreeImageComparer extends RgthreeBaseServerNode {
 
   override onMouseEnter(event: CanvasPointerEvent): void {
     super.onMouseEnter?.(event);
-    this.setIsPointerDown(!!app.canvas.pointer_is_down);
     this.isPointerOver = true;
   }
 
   override onMouseLeave(event: CanvasPointerEvent): void {
     super.onMouseLeave?.(event);
-    this.setIsPointerDown(false);
     this.isPointerOver = false;
   }
 
@@ -363,6 +364,12 @@ class RgthreeImageComparerWidget extends RgthreeBaseWidget<RgthreeImageComparerW
       if (node.isPointerOver) {
         this.drawImage(ctx, this.selected[1], y, this.node.pointerOverPos[0]);
       }
+    }
+  }
+
+  override onMouseDown(event: CanvasPointerEvent, pos: Point, node: LGraphNode): boolean | void {
+    if (this.node.properties?.["comparer_mode"] === "Click") {
+      this.node.setIsPointerDown(true);
     }
   }
 

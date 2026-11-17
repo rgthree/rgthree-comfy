@@ -115,6 +115,7 @@ class RgthreeSeed extends RgthreeBaseServerNode {
             return;
         this.lastSeedValue = ComfyWidgets["STRING"](this, "last_seed", ["STRING", { multiline: true }], app).widget;
         this.lastSeedValue.inputEl.readOnly = true;
+        this.lastSeedValue.options.read_only = true;
         this.lastSeedValue.inputEl.style.fontSize = "0.75rem";
         this.lastSeedValue.inputEl.style.textAlign = "center";
         this.computeSize();
