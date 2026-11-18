@@ -197,7 +197,7 @@ export class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
             const onlyOne = this.getPropString(PROPERTY_RESTRICTION, '').includes(" one");
             let foundOne = false;
             for (const [index, widget] of this.widgets.entries()) {
-                let newValue = onlyOne && foundOne ? false : !widget.value;
+                let newValue = onlyOne && foundOne ? false : !widget.toggled;
                 foundOne = foundOne || newValue;
                 widget === null || widget === void 0 ? void 0 : widget.doModeChange(newValue, true);
             }

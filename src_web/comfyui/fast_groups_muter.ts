@@ -268,7 +268,8 @@ export abstract class BaseFastGroupsModeChanger extends RgthreeBaseVirtualNode {
       let foundOne = false;
       for (const [index, widget] of this.widgets.entries()) {
         // If you have only one, then we'll stop at the first.
-        let newValue: boolean = onlyOne && foundOne ? false : !widget.value;
+        let newValue: boolean =
+          onlyOne && foundOne ? false : !(widget as FastGroupsToggleRowWidget).toggled;
         foundOne = foundOne || newValue;
         (widget as any)?.doModeChange(newValue, true);
       }
